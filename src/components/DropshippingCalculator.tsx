@@ -497,6 +497,30 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
     try {
       const list = await ProductService.getAll(organizationId ?? undefined);
       handleProductsResponse(list);
+      
+      // Sincronizar registeredBlingBySku com produtos reais
+      // Remover SKUs que não existem mais na tabela products
+      const existingSkus = new Set(list.map(p => p.sku?.trim()).filter(Boolean));
+      setRegisteredBlingBySku((prev) => {
+        const cleaned: Record<string, string[]> = {};
+        let hasChanges = false;
+        
+        for (const [sku, ids] of Object.entries(prev)) {
+          if (existingSkus.has(sku)) {
+            cleaned[sku] = ids;
+          } else {
+            hasChanges = true;
+            // Remover IDs do registeredBlingIds também
+            setRegisteredBlingIds((prevIds) => {
+              const next = new Set(prevIds);
+              ids.forEach(id => next.delete(id));
+              return next;
+            });
+          }
+        }
+        
+        return hasChanges ? cleaned : prev;
+      });
     } catch (error: unknown) {
       console.error('Error loading products:', error);
       toast.error('Erro ao carregar produtos', {
