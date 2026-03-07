@@ -160,8 +160,6 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
           value={accountType} 
           onValueChange={(value) => {
             setAccountType(value as 'cpf' | 'cnpj');
-            // Limpar titular quando mudar o tipo
-            setAccountHolder('');
           }}
         >
           <SelectTrigger>
