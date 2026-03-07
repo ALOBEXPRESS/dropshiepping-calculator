@@ -501,11 +501,11 @@ export default function LoginPremium() {
           backgroundColor: '#000000'
         }}
       >
-        {/* Gradiente oval para criar efeito de luz no braço */}
+        {/* Gradiente oval da esquerda para direita - esquerda mais transparente */}
         <div 
           className="absolute inset-0 z-10 pointer-events-none"
           style={{
-            background: 'radial-gradient(ellipse 60% 100% at 20% 50%, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.6) 30%, transparent 60%)'
+            background: 'radial-gradient(ellipse 150% 100% at 0% 50%, transparent 0%, rgba(0, 0, 0, 0.3) 25%, rgba(0, 0, 0, 0.7) 50%, rgba(0, 0, 0, 0.9) 70%)'
           }}
         />
         
