@@ -136,6 +136,7 @@ video/
 !public/**/*.png
 !public/**/*.jpg
 !public/**/*.svg
+!src/imgs/**/*.webp
 
 # Backup files
 *.bak
