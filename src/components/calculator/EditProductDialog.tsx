@@ -606,6 +606,11 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
   const handleSave = async () => {
     if (!product) return;
     
+    console.log('=== DEBUG SAVE ===');
+    console.log('promoVideoChannels:', formData.promoVideoChannels);
+    console.log('promoVideoChannelLinks:', formData.promoVideoChannelLinks);
+    console.log('promoVideoChannelNames:', formData.promoVideoChannelNames);
+    
     const trimmedImageUrl = formData.imageUrl.trim();
     const hasValidImage = trimmedImageUrl ? await isValidImageUrl(trimmedImageUrl) : false;
     const resolvedImageUrl = hasValidImage
@@ -748,6 +753,12 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       promoVideoChannelLinks: formData.promoVideoChannelLinks,
       promoVideoChannelNames: formData.promoVideoChannelNames,
     };
+    
+    console.log('=== UPDATED PRODUCT ===');
+    console.log('promoVideoChannels:', updated.promoVideoChannels);
+    console.log('promoVideoChannelLinks:', updated.promoVideoChannelLinks);
+    console.log('promoVideoChannelNames:', updated.promoVideoChannelNames);
+    
     onSave(updated);
     onClose();
   };
@@ -1930,7 +1941,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                                     }));
                                   }}
                                   placeholder="Nome do grupo"
-                                  className="h-8 bg-white"
+                                  className="h-8 bg-white text-gray-900 placeholder:text-gray-400"
                                 />
                               </div>
                             )}
@@ -1952,7 +1963,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                                   }));
                                 }}
                                 placeholder="https://"
-                                className="h-8 bg-white"
+                                className="h-8 bg-white text-gray-900 placeholder:text-gray-400"
                               />
                             </div>
                           </div>
