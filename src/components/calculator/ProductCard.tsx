@@ -445,6 +445,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onDelete, onE
     product.shopeeFollowerCouponEnabled ||
     product.shopeeSellerVoucherEnabled
   );
+  
+  // Debug: Log coupon status for Shopee products
+  if (product.marketplace === 'shopee' && product.sku === 'C1259') {
+    console.log('Product C1259 Shopee Coupons:', {
+      marketplace: product.marketplace,
+      shopeeStoreCouponEnabled: product.shopeeStoreCouponEnabled,
+      shopeeProductCouponEnabled: product.shopeeProductCouponEnabled,
+      shopeeFollowerCouponEnabled: product.shopeeFollowerCouponEnabled,
+      shopeeSellerVoucherEnabled: product.shopeeSellerVoucherEnabled,
+      hasAnyShopeeCoupon
+    });
+  }
+  
   const marketplaceShippingValue = parseCurrency(product.marketplaceShippingCost ?? 0);
   const showFreeShippingIcon = (product.marketplace === 'mercadolivre' && (product.meliPlus || parseCurrency(product.mlShippingCost ?? 0) > 0))
     || (product.marketplace === 'shopee' && product.shippingOption === 'with')
