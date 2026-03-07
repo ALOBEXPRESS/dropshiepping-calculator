@@ -171,11 +171,8 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
             <SelectValue placeholder="Selecione o tipo" />
           </SelectTrigger>
           <SelectContent>
-            {accountTypes.map((type) => (
-              <SelectItem key={type} value={type}>
-                {type}
-              </SelectItem>
-            ))}
+            <SelectItem value="cpf">CPF</SelectItem>
+            <SelectItem value="cnpj">CNPJ</SelectItem>
           </SelectContent>
         </Select>
       </div>
