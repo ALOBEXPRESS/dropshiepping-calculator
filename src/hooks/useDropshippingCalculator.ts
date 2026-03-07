@@ -248,6 +248,27 @@ export const useDropshippingCalculator = () => {
 
   const [currentCredits, setCurrentCredits] = useState('1000');
   const [videoDuration, setVideoDuration] = useState('10');
+
+  // Apply supplier fee when component mounts with a supplier already selected
+  useEffect(() => {
+    if (supplierName && supplierName.trim() !== '') {
+      const normalized = supplierName.trim().toLowerCase();
+      if (normalized === 'tyr' || normalized === 'tyr (yeizidrop)') {
+        setSupplierFeeType('percent');
+        setSupplierFeePercent('0');
+        setSupplierFixedFee('0');
+      } else if (normalized === 'dogama') {
+        setSupplierFeePercent('6');
+        setSupplierFixedFee('1,00');
+        setSupplierGatewayFeeType('fixed');
+        setSupplierGatewayFixedFee('1,00');
+        setSupplierGatewayFee('0');
+      } else if (normalized === 'yeizidrop' || normalized === 'dsers') {
+        setSupplierFeePercent('0');
+        setSupplierFixedFee('0');
+      }
+    }
+  }, []); // Empty dependency array - only run once on mount
   
   // Selected Influencer for Video Generation
   const [selectedInfluencerId, setSelectedInfluencerId] = useState<string | null>(null);
