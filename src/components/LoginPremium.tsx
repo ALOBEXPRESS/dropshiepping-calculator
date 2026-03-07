@@ -501,11 +501,11 @@ export default function LoginPremium() {
           backgroundColor: '#000000'
         }}
       >
-        {/* Gradiente oval da esquerda para direita - esquerda mais transparente */}
+        {/* Gradiente oval da esquerda para direita - esquerda escura, direita transparente */}
         <div 
           className="absolute inset-0 z-10 pointer-events-none"
           style={{
-            background: 'radial-gradient(ellipse 150% 100% at 0% 50%, transparent 0%, rgba(0, 0, 0, 0.3) 25%, rgba(0, 0, 0, 0.7) 50%, rgba(0, 0, 0, 0.9) 70%)'
+            background: 'radial-gradient(ellipse 150% 100% at 100% 50%, transparent 0%, rgba(0, 0, 0, 0.3) 25%, rgba(0, 0, 0, 0.7) 50%, rgba(0, 0, 0, 0.9) 70%)'
           }}
         />
         
