@@ -287,15 +287,40 @@ export const useDropshippingCalculator = () => {
     videoModel: string;
     priceSort: string;
     stockFilter: string;
-  }>({
-    marketplace: 'all',
-    supplier: '',
-    holder: '',
-    accountType: 'all',
-    cnpj: '',
-    videoModel: 'all',
-    priceSort: 'all',
-    stockFilter: 'all'
+  }>(() => {
+    // Carregar filtros salvos do localStorage
+    if (typeof window === 'undefined' || !('localStorage' in window)) {
+      return {
+        marketplace: 'all',
+        supplier: '',
+        holder: '',
+        accountType: 'all',
+        cnpj: '',
+        videoModel: 'all',
+        priceSort: 'all',
+        stockFilter: 'all'
+      };
+    }
+    try {
+      const saved = window.localStorage.getItem('product_filters_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        console.log('[Filters Load] Loaded from localStorage:', parsed);
+        return parsed;
+      }
+    } catch (error) {
+      console.log('[Filters Load] Error loading filters:', error);
+    }
+    return {
+      marketplace: 'all',
+      supplier: '',
+      holder: '',
+      accountType: 'all',
+      cnpj: '',
+      videoModel: 'all',
+      priceSort: 'all',
+      stockFilter: 'all'
+    };
   });
 
   // Organic Options
@@ -1140,6 +1165,18 @@ export const useDropshippingCalculator = () => {
       });
   }, [variations, packagingCost, supplierFixedFee, supplierFeePercent, marketplace, category, shippingOption, shopeeSellerType, adType, extraCommission, useShopeeAds, adsCPC, dailyBudget, salesQuantity, mercadoAdsEnabled, mercadoAdsDailyBudget, mercadoAdsSalesQuantity, mercadoAdsCpc, mercadoAdsConversionRate, gatewayFee, gatewayFixedFee, gatewayFeeType, competitorPrice, competitorMarkup, tiktokCommission, wordpressShipping, operationMode, emergencyReserve, returnRate, paidTraffic, mlShippingCost, paidTrafficType, paidTrafficGatewayFee, paidTrafficGatewayFixedFee, paidTrafficGatewayFeeType, enjoeiAdType, enjoeiInactivityMonths, trafficMode, gatewayBank, gatewayMethod, paidTrafficGatewayBank, paidTrafficGatewayMethod, meliPlus, supplierGatewayFee, supplierGatewayFixedFee, supplierGatewayFeeType, supplierFeeType, amazonPlan, amazonCategory, customCommission, shopeeStoreCouponEnabled, shopeeStoreCouponValue, shopeeStoreCouponType, shopeeProductCouponEnabled, shopeeProductCouponValue, shopeeProductCouponType, shopeeFollowerCouponEnabled, shopeeFollowerCouponValue, shopeeFollowerCouponType, shopeeSellerVoucherEnabled, shopeeSellerVoucherValue, shopeeSellerVoucherType, manualSellingPrice,
     tiktokAdsEnabled, tiktokDailyBudget, tiktokAdsSalesQuantity, tiktokCPA, tiktokCPM, tiktokCTR, tiktokCVR, influencers, affiliates]);
+
+  // Salvar filtros no localStorage sempre que mudarem
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'localStorage' in window) {
+      try {
+        console.log('[Filters Save] Saving to localStorage:', productFilters);
+        window.localStorage.setItem('product_filters_v1', JSON.stringify(productFilters));
+      } catch (error) {
+        console.log('[Filters Save] Error saving filters:', error);
+      }
+    }
+  }, [productFilters]);
 
   return {
     productName, setProductName,
