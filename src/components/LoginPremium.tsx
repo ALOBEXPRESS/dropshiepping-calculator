@@ -509,6 +509,14 @@ export default function LoginPremium() {
           }}
         />
         
+        {/* Gradiente linear adicional da esquerda para direita - esquerda preta, direita transparente */}
+        <div 
+          className="absolute inset-0 z-10 pointer-events-none"
+          style={{
+            background: 'linear-gradient(90deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 20%, transparent 50%)'
+          }}
+        />
+        
         {/* Banner Principal */}
         <img
           src={banner}
