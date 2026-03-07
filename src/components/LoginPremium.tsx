@@ -280,11 +280,11 @@ export default function LoginPremium() {
           backgroundColor: '#000000'
         }}
       >
-        {/* Lightning atrás do formulário - diagonal completa esquerda para direita */}
-        <div className="absolute inset-0 -left-[40%] -top-[100%] -right-[10%] rotate-[35deg] scale-[3] origin-top-left opacity-45 pointer-events-none z-0">
+        {/* Lightning atrás do formulário - diagonal completa direita para esquerda (refletido) */}
+        <div className="absolute inset-0 -right-[40%] -top-[100%] -left-[10%] -rotate-[35deg] scale-[3] origin-top-right opacity-45 pointer-events-none z-0">
           <Lightning
             hue={348}
-            xOffset={-0.3}
+            xOffset={0.3}
             speed={1.5}
             intensity={1.4}
             size={0.8}
@@ -495,7 +495,7 @@ export default function LoginPremium() {
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="hidden lg:block flex-1 relative overflow-hidden h-screen group"
+        className="hidden lg:block flex-1 relative overflow-hidden h-screen"
         style={{
           background: 'linear-gradient(270deg, rgba(0, 0, 0, 0.75) 4%, rgba(255, 255, 255, 0) 71%, rgba(23, 23, 23, 0) 100%)',
           backgroundColor: '#000000'
@@ -515,34 +515,6 @@ export default function LoginPremium() {
           alt="Banner promocional"
           className="w-full h-full object-cover relative z-[5]"
           loading="lazy"
-        />
-        
-        {/* Glitch Effect Layers no Banner - Apenas no Hover */}
-        <img
-          src={banner}
-          alt=""
-          aria-hidden="true"
-          className="w-full h-full object-cover absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity duration-150 pointer-events-none z-[6]"
-          loading="lazy"
-          style={{
-            filter: 'drop-shadow(0 0 3px rgba(255, 0, 0, 0.6))',
-            animation: 'glitch 2s infinite linear alternate-reverse',
-            clipPath: 'inset(0 0 0 0)',
-            transform: 'translateX(2px)'
-          }}
-        />
-        <img
-          src={banner}
-          alt=""
-          aria-hidden="true"
-          className="w-full h-full object-cover absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity duration-150 pointer-events-none z-[6]"
-          loading="lazy"
-          style={{
-            filter: 'drop-shadow(0 0 3px rgba(0, 255, 255, 0.6))',
-            animation: 'glitch 1.5s infinite linear alternate-reverse',
-            clipPath: 'inset(0 0 0 0)',
-            transform: 'translateX(-2px)'
-          }}
         />
       </motion.div>
     </div>
