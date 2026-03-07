@@ -86,7 +86,7 @@ export const StockReportTable: React.FC<StockReportTableProps> = ({ organization
   };
 
   return (
-    <Card className="p-6 border-gray-100 dark:border-zinc-800 flex flex-col h-full">
+    <Card className="p-6 border-gray-100 dark:border-zinc-800 flex flex-col h-full w-full overflow-hidden">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           Relatório de Estoque
@@ -108,39 +108,39 @@ export const StockReportTable: React.FC<StockReportTableProps> = ({ organization
               return (
                 <div
                   key={index}
-                  className="flex items-start gap-4 py-3 border-b border-gray-100 dark:border-zinc-800 last:border-0"
+                  className="flex flex-col gap-2 py-3 border-b border-gray-100 dark:border-zinc-800 last:border-0"
                 >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                      {item.product_name}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {formatCurrency(item.price)}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                    <div className="w-32">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-gray-600 dark:text-gray-400">
-                          {item.stock_quantity} un.
-                        </span>
-                        <span className="text-xs text-gray-600 dark:text-gray-400">
-                          {item.stock_percentage}%
-                        </span>
-                      </div>
-                      <div className="w-full h-2 bg-gray-200 dark:bg-zinc-800 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full ${statusConfig.barColor} transition-all duration-300`}
-                          style={{ width: `${item.stock_percentage}%` }}
-                        />
-                      </div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {item.product_name}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        {formatCurrency(item.price)}
+                      </p>
                     </div>
 
-                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${statusConfig.color}`}>
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium whitespace-nowrap flex-shrink-0 ${statusConfig.color}`}>
                       <StatusIcon className="w-3 h-3" />
                       {statusConfig.label}
                     </span>
+                  </div>
+
+                  <div className="w-full">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-gray-600 dark:text-gray-400">
+                        {item.stock_quantity} un.
+                      </span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">
+                        {item.stock_percentage}%
+                      </span>
+                    </div>
+                    <div className="w-full h-2 bg-gray-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full ${statusConfig.barColor} transition-all duration-300`}
+                        style={{ width: `${item.stock_percentage}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
               );
