@@ -91,9 +91,6 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
 }) => {
   console.log('[ProductInfo] Render - accountHoldersList:', accountHoldersList, 'accountType:', accountType);
   
-  // Tipos de conta fixos (sempre CPF e CNPJ)
-  const accountTypes = ['CPF', 'CNPJ'];
-  
   // Mostrar todos os titulares independente do tipo de conta selecionado
   const filteredHolders = accountHoldersList;
 
