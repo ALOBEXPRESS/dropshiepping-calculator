@@ -1,0 +1,743 @@
+{
+  "config": {
+    "configFile": "D:\\workspace\\no-code\\dropshipping-calculator-app\\playwright.config.ts",
+    "rootDir": "D:/workspace/no-code/dropshipping-calculator-app/src/test",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 2
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "D:/workspace/no-code/dropshipping-calculator-app/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/workspace/no-code/dropshipping-calculator-app/src/test",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.57.0",
+    "workers": 2,
+    "webServer": {
+      "command": "npm run preview",
+      "url": "http://localhost:4173",
+      "reuseExistingServer": true,
+      "timeout": 120000,
+      "env": {
+        "VITE_E2E": "true"
+      }
+    }
+  },
+  "suites": [
+    {
+      "title": "audit.spec.ts",
+      "file": "audit.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Audit Dropshipping Calculator",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 13097,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-02-24T23:35:27.811Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "45efdff6a4d2e1f7e786-12ff679d2d95fbcefa8d",
+          "file": "audit.spec.ts",
+          "line": 3,
+          "column": 1
+        },
+        {
+          "title": "Navegacao para Produtos",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 1,
+                  "status": "passed",
+                  "duration": 9481,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-02-24T23:35:27.824Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "45efdff6a4d2e1f7e786-b1f450b7aa04c51a8a61",
+          "file": "audit.spec.ts",
+          "line": 58,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "fixes-verification.spec.ts",
+      "file": "fixes-verification.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Fixes Verification",
+          "file": "fixes-verification.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Organic Traffic should NOT include Paid Traffic Gateway Fees",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 4927,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "PAGE LOG: [Draft Load] No draft found in localStorage\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Render - accountHoldersList: [] accountType: cnpj\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Filtered holders: []\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [Hook Lifecycle] Component mounted/updated\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [Hook Lifecycle] Current localStorage value: null\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [Draft Save] Saving to localStorage: dropshipping_product_draft_v1 {productName: , productSku: , stockQuantity: , weight: , width: }\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [Auth Listener] Setting up auth state change listener\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Render - accountHoldersList: [] accountType: cnpj\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Filtered holders: []\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [Auth Listener] Auth event: INITIAL_SESSION Session: null\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Render - accountHoldersList: [] accountType: cnpj\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Filtered holders: []\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Render - accountHoldersList: [] accountType: cnpj\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Filtered holders: []\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Render - accountHoldersList: [] accountType: cnpj\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Filtered holders: []\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [Draft Save] Saving to localStorage: dropshipping_product_draft_v1 {productName: , productSku: , stockQuantity: , weight: , width: }\n"
+                        },
+                        {
+                          "text": "Found 0 fee elements\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-24T23:35:37.673Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6e4c3e4a4259f2024f8f-d9dc18e4cf66b8e66e44",
+              "file": "fixes-verification.spec.ts",
+              "line": 11,
+              "column": 3
+            },
+            {
+              "title": "Enjoei Inactivity Fee Logic",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 9835,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "PAGE LOG: [Draft Load] No draft found in localStorage\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Render - accountHoldersList: [] accountType: cnpj\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Filtered holders: []\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [Hook Lifecycle] Component mounted/updated\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [Hook Lifecycle] Current localStorage value: null\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [Draft Save] Saving to localStorage: dropshipping_product_draft_v1 {productName: , productSku: , stockQuantity: , weight: , width: }\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [Auth Listener] Setting up auth state change listener\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Render - accountHoldersList: [] accountType: cnpj\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Filtered holders: []\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [Auth Listener] Auth event: INITIAL_SESSION Session: null\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Render - accountHoldersList: [] accountType: cnpj\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Filtered holders: []\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Render - accountHoldersList: [] accountType: cnpj\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Filtered holders: []\n"
+                        },
+                        {
+                          "text": "Clicked trigger\n"
+                        },
+                        {
+                          "text": "Found 9 options\n"
+                        },
+                        {
+                          "text": "Option 0: Mercado Livre\n"
+                        },
+                        {
+                          "text": "Option 1: Shopee\n"
+                        },
+                        {
+                          "text": "Option 2: Tiktok Shop\n"
+                        },
+                        {
+                          "text": "Option 3: Wordpress (Site)\n"
+                        },
+                        {
+                          "text": "Option 4: Enjoei\n"
+                        },
+                        {
+                          "text": "Option 5: Amazon\n"
+                        },
+                        {
+                          "text": "Option 6: Shein\n"
+                        },
+                        {
+                          "text": "Option 7: Facebook\n"
+                        },
+                        {
+                          "text": "Option 8: OLX\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Render - accountHoldersList: [] accountType: cnpj\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Filtered holders: []\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [Draft Save] Saving to localStorage: dropshipping_product_draft_v1 {productName: , productSku: , stockQuantity: , weight: , width: }\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Render - accountHoldersList: [] accountType: cnpj\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Filtered holders: []\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [Draft Save] Saving to localStorage: dropshipping_product_draft_v1 {productName: , productSku: , stockQuantity: , weight: , width: }\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Render - accountHoldersList: [] accountType: cnpj\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Filtered holders: []\n"
+                        },
+                        {
+                          "text": "Fee 1 Month: - R$ 21,50 -> 21.5\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Render - accountHoldersList: [] accountType: cnpj\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Filtered holders: []\n"
+                        },
+                        {
+                          "text": "Fee 2 Months: - R$ 43,50 -> 43.5\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-24T23:35:41.713Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6e4c3e4a4259f2024f8f-368316fdd5ac8a953129",
+              "file": "fixes-verification.spec.ts",
+              "line": 39,
+              "column": 3
+            },
+            {
+              "title": "PicPay Installment Fee Calculation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 7629,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "PAGE LOG: [Draft Load] No draft found in localStorage\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Render - accountHoldersList: [] accountType: cnpj\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Filtered holders: []\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [Hook Lifecycle] Component mounted/updated\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [Hook Lifecycle] Current localStorage value: null\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [Draft Save] Saving to localStorage: dropshipping_product_draft_v1 {productName: , productSku: , stockQuantity: , weight: , width: }\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [Auth Listener] Setting up auth state change listener\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Render - accountHoldersList: [] accountType: cnpj\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Filtered holders: []\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [Auth Listener] Auth event: INITIAL_SESSION Session: null\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Render - accountHoldersList: [] accountType: cnpj\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Filtered holders: []\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Render - accountHoldersList: [] accountType: cnpj\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Filtered holders: []\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Render - accountHoldersList: [] accountType: cnpj\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Filtered holders: []\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [Draft Save] Saving to localStorage: dropshipping_product_draft_v1 {productName: , productSku: , stockQuantity: , weight: , width: }\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Render - accountHoldersList: [] accountType: cnpj\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Filtered holders: []\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [Draft Save] Saving to localStorage: dropshipping_product_draft_v1 {productName: , productSku: , stockQuantity: , weight: , width: }\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Render - accountHoldersList: [] accountType: cnpj\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Filtered holders: []\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Render - accountHoldersList: [] accountType: cnpj\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [ProductInfo] Filtered holders: []\n"
+                        },
+                        {
+                          "text": "PAGE LOG: [Draft Save] Saving to localStorage: dropshipping_product_draft_v1 {productName: , productSku: , stockQuantity: , weight: , width: }\n"
+                        },
+                        {
+                          "text": "Gateway Fee Text: - R$ 1,00\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-24T23:35:42.662Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "6e4c3e4a4259f2024f8f-2c32a7d5173d9fee00f3",
+              "file": "fixes-verification.spec.ts",
+              "line": 97,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "full-evaluation.spec.ts",
+      "file": "full-evaluation.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Full Application Evaluation",
+          "file": "full-evaluation.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Should handle Paid Traffic (Fixed vs Percent) correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "interrupted",
+                      "duration": 22708,
+                      "error": {
+                        "message": "Error: locator.click: Test ended.\nCall log:\n\u001b[2m  - waiting for locator('#paidTraffic').locator('xpath=ancestor::div[contains(@class,\"grid\")][1]').locator('button').filter({ hasText: 'R$' }).first()\u001b[22m\n\u001b[2m    - locator resolved to <button class=\"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-background shadow-sm hover:bg-accent hover:text-accent-foreground rounded-md px-3 h-6 text-xs\">R$</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"flex flex-col space-y-1.5 p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors select-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is visible, enabled and stable\u001b[22m\n\u001b[2m    - scrolling into view if needed\u001b[22m\n\u001b[2m    - done scrolling\u001b[22m\n\u001b[2m    - <div class=\"rounded-xl border bg-card text-card-foreground shadow-xl border-gray-100 dark:border-transparent overflow-hidden mt-0\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  2 × retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"p-6 space-y-5 pt-4\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  6 × retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"flex flex-col space-y-1.5 p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors select-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"rounded-xl border bg-card text-card-foreground shadow-xl border-gray-100 dark:border-transparent overflow-hidden mt-0\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"p-6 space-y-5 pt-4\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"p-6 space-y-5 pt-4\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 500ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is visible, enabled and stable\u001b[22m\n\u001b[2m    - scrolling into view if needed\u001b[22m\n\u001b[2m    - done scrolling\u001b[22m\n\u001b[2m    - <div class=\"flex flex-col space-y-1.5 p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors select-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 500ms\u001b[22m\n",
+                        "stack": "Error: locator.click: Test ended.\nCall log:\n\u001b[2m  - waiting for locator('#paidTraffic').locator('xpath=ancestor::div[contains(@class,\"grid\")][1]').locator('button').filter({ hasText: 'R$' }).first()\u001b[22m\n\u001b[2m    - locator resolved to <button class=\"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-background shadow-sm hover:bg-accent hover:text-accent-foreground rounded-md px-3 h-6 text-xs\">R$</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"flex flex-col space-y-1.5 p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors select-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is visible, enabled and stable\u001b[22m\n\u001b[2m    - scrolling into view if needed\u001b[22m\n\u001b[2m    - done scrolling\u001b[22m\n\u001b[2m    - <div class=\"rounded-xl border bg-card text-card-foreground shadow-xl border-gray-100 dark:border-transparent overflow-hidden mt-0\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  2 × retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"p-6 space-y-5 pt-4\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  6 × retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"flex flex-col space-y-1.5 p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors select-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"rounded-xl border bg-card text-card-foreground shadow-xl border-gray-100 dark:border-transparent overflow-hidden mt-0\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"p-6 space-y-5 pt-4\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"p-6 space-y-5 pt-4\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 500ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is visible, enabled and stable\u001b[22m\n\u001b[2m    - scrolling into view if needed\u001b[22m\n\u001b[2m    - done scrolling\u001b[22m\n\u001b[2m    - <div class=\"flex flex-col space-y-1.5 p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors select-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 500ms\u001b[22m\n\n    at D:\\workspace\\no-code\\dropshipping-calculator-app\\src\\test\\full-evaluation.spec.ts:24:75",
+                        "location": {
+                          "file": "D:\\workspace\\no-code\\dropshipping-calculator-app\\src\\test\\full-evaluation.spec.ts",
+                          "column": 75,
+                          "line": 24
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 22 |\u001b[39m     \u001b[90m// 4. Select \"R$\" (Fixed) within the paid traffic section\u001b[39m\n \u001b[90m 23 |\u001b[39m     \u001b[36mconst\u001b[39m paidTrafficSection \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'#paidTraffic'\u001b[39m)\u001b[33m.\u001b[39mlocator(\u001b[32m'xpath=ancestor::div[contains(@class,\"grid\")][1]'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 24 |\u001b[39m     \u001b[36mawait\u001b[39m paidTrafficSection\u001b[33m.\u001b[39mlocator(\u001b[32m'button'\u001b[39m\u001b[33m,\u001b[39m { hasText\u001b[33m:\u001b[39m \u001b[32m'R$'\u001b[39m })\u001b[33m.\u001b[39mfirst()\u001b[33m.\u001b[39mclick()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                                                           \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 25 |\u001b[39m     \n \u001b[90m 26 |\u001b[39m     \u001b[90m// 5. Verify Calculation\u001b[39m\n \u001b[90m 27 |\u001b[39m     \u001b[90m// Total Cost = 100 + 2 (pkg) = 102\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\workspace\\no-code\\dropshipping-calculator-app\\src\\test\\full-evaluation.spec.ts",
+                            "column": 75,
+                            "line": 24
+                          },
+                          "message": "Error: locator.click: Test ended.\nCall log:\n\u001b[2m  - waiting for locator('#paidTraffic').locator('xpath=ancestor::div[contains(@class,\"grid\")][1]').locator('button').filter({ hasText: 'R$' }).first()\u001b[22m\n\u001b[2m    - locator resolved to <button class=\"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-background shadow-sm hover:bg-accent hover:text-accent-foreground rounded-md px-3 h-6 text-xs\">R$</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"flex flex-col space-y-1.5 p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors select-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is visible, enabled and stable\u001b[22m\n\u001b[2m    - scrolling into view if needed\u001b[22m\n\u001b[2m    - done scrolling\u001b[22m\n\u001b[2m    - <div class=\"rounded-xl border bg-card text-card-foreground shadow-xl border-gray-100 dark:border-transparent overflow-hidden mt-0\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  2 × retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"p-6 space-y-5 pt-4\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  6 × retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"flex flex-col space-y-1.5 p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors select-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"rounded-xl border bg-card text-card-foreground shadow-xl border-gray-100 dark:border-transparent overflow-hidden mt-0\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"p-6 space-y-5 pt-4\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"p-6 space-y-5 pt-4\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 500ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is visible, enabled and stable\u001b[22m\n\u001b[2m    - scrolling into view if needed\u001b[22m\n\u001b[2m    - done scrolling\u001b[22m\n\u001b[2m    - <div class=\"flex flex-col space-y-1.5 p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors select-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 500ms\u001b[22m\n\n\n  22 |     // 4. Select \"R$\" (Fixed) within the paid traffic section\n  23 |     const paidTrafficSection = page.locator('#paidTraffic').locator('xpath=ancestor::div[contains(@class,\"grid\")][1]');\n> 24 |     await paidTrafficSection.locator('button', { hasText: 'R$' }).first().click();\n     |                                                                           ^\n  25 |     \n  26 |     // 5. Verify Calculation\n  27 |     // Total Cost = 100 + 2 (pkg) = 102\n    at D:\\workspace\\no-code\\dropshipping-calculator-app\\src\\test\\full-evaluation.spec.ts:24:75"
+                        },
+                        {
+                          "message": "Error: browserContext.close: Test ended.\nBrowser logs:\n\n<launching> C:\\Users\\jonat\\AppData\\Local\\ms-playwright\\chromium_headless_shell-1200\\chrome-headless-shell-win64\\chrome-headless-shell.exe --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AcceptCHFrame,AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --user-data-dir=C:\\Users\\jonat\\AppData\\Local\\Temp\\playwright_chromiumdev_profile-wpXFMj --remote-debugging-pipe --no-startup-window\n<launched> pid=3088\n[pid=3088][err] [0224/203528.409:ERROR:gpu\\ipc\\client\\command_buffer_proxy_impl.cc:122] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.\n[pid=3088][err] [0224/203529.202:INFO:CONSOLE:101] \"[Draft Load] No draft found in localStorage\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203529.227:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203529.227:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203529.484:INFO:CONSOLE:101] \"[Hook Lifecycle] Component mounted/updated\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203529.485:INFO:CONSOLE:101] \"[Hook Lifecycle] Current localStorage value: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203529.486:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203529.486:INFO:CONSOLE:101] \"[Auth Listener] Setting up auth state change listener\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203529.496:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203529.496:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203529.680:INFO:CONSOLE:101] \"[Auth Listener] Auth event: INITIAL_SESSION Session: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203534.603:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203534.605:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203535.576:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203535.576:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203535.970:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203535.970:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203536.017:INFO:CONSOLE:55] \"Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.\", source: http://localhost:4173/assets/index-BICf9cBp.js (55)\n[pid=3088][err] [0224/203536.285:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203536.286:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203536.784:INFO:CONSOLE:101] \"[Hook Lifecycle] Visibility changed: hidden\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203537.175:INFO:CONSOLE:101] \"[Draft Load] Loaded from localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203537.212:INFO:CONSOLE:51] \"GSAP target .animate-fadeIn not found. https://gsap.com\", source: http://localhost:4173/assets/index-BICf9cBp.js (51)\n[pid=3088][err] [0224/203537.213:INFO:CONSOLE:51] \"GSAP target  not found. https://gsap.com\", source: http://localhost:4173/assets/index-BICf9cBp.js (51)\n[pid=3088][err] [0224/203537.214:INFO:CONSOLE:101] \"[Hook Lifecycle] Component mounted/updated\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203537.214:INFO:CONSOLE:101] \"[Hook Lifecycle] Current localStorage value: {\"productName\":\"\",\"productSku\":\"\",\"stockQuantity\":\"\",\"weight\":\"\",\"width\":\"\",\"height\":\"\",\"depth\":\"\",\"unitOfMeasure\":\"\",\"productImage\":\"\",\"supplierName\":\"\",\"supplier_id\":\"\",\"costPrice\":\"\",\"manualSellingPrice\":\"\",\"packagingCost\":\"0\",\"markupMultiplier\":\"0\",\"hasVariations\":false,\"variations\":[],\"variationType\":\"size\",\"variationName\":\"\",\"variationSku\":\"\",\"variationStock\":\"\",\"variationCost\":\"\",\"variationMarkup\":\"1,5\",\"supplierFeeType\":\"percent\",\"supplierFeePercent\":\"0\",\"supplierFixedFee\":\"0\",\"supplierGatewayFeeType\":\"fixed\",\"supplierGatewayFee\":\"0\",\"supplierGatewayFixedFee\":\"0\",\"gatewayFeeType\":\"fixed\",\"gatewayFee\":\"0\",\"gatewayFixedFee\":\"0\",\"accountHolder\":\"\",\"accountType\":\"cnpj\",\"adType\":\"classico\",\"category\":\"eletronicos\",\"marketplace\":\"mercadolivre\",\"mlShippingCost\":\"0\",\"hasReputation\":false,\"meliPlus\":false,\"facebookDelivery\":\"entrega\",\"shopeeStoreCouponEnabled\":false,\"shopeeStoreCouponValue\":\"\",\"shopeeStoreCouponType\":\"percent\",\"shopeeProductCouponEnabled\":false,\"shopeeProductCouponValue\":\"\",\"shopeeProductCouponType\":\"percent\",\"shopeeFollowerCouponEnabled\":false,\"shopeeFollowerCouponValue\":\"\",\"shopeeFollowerCouponType\":\"percent\",\"shopeeSellerVoucherEnabled\":false,\"shopeeSellerVoucherValue\":\"\",\"shopeeSellerVoucherType\":\"percent\",\"shopeeTotalBudget\":\"\",\"shopeeStartDate\":\"2026-02-24\",\"shopeeEndDate\":\"\",\"shopeeAdType\":\"descoberta\",\"shopeeBidType\":\"automatico\",\"shopeeKeywordInput\":\"\",\"shopeeKeywords\":[],\"shopeeMaxCpc\":\"\",\"mercadoAdsEnabled\":false,\"mercadoAdsManagementMode\":\"automatico\",\"mercadoAdsSolution\":\"product_ads\",\"mercadoAdsSelection\":\"\",\"mercadoAdsDailyBudget\":\"\",\"mercadoAdsAcosTarget\":\"\",\"mercadoAdsSalesQuantity\":\"\",\"mercadoAdsCpc\":\"\",\"mercadoAdsConversionRate\":\"\",\"mercadoAdsBudgetType\":\"diaria\",\"tiktokAdsEnabled\":false,\"tiktokAdFormat\":\"in_feed\",\"tiktokAudience\":\"\",\"tiktokCampaignObjective\":\"conversions\",\"tiktokDailyBudget\":\"\",\"tiktokCPA\":\"\",\"tiktokAdsSalesQuantity\":\"\",\"tiktokCPM\":\"\",\"tiktokCTR\":\"1,00\",\"tiktokCVR\":\"1,50\",\"tiktokCatalogId\":\"\",\"organicChannels\":[],\"organicChannelLinks\":{},\"organicChannelNames\":{},\"influencers\":[],\"affiliates\":[],\"deliveryMode\":\"mercado_envios\",\"deliveryLogistics\":\"\",\"productCondition\":\"\",\"productDescription\":\"\",\"extraCommission\":\"\"}\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203537.215:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203537.215:INFO:CONSOLE:101] \"[Auth Listener] Setting up auth state change listener\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203537.296:INFO:CONSOLE:101] \"[Auth Listener] Auth event: INITIAL_SESSION Session: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203538.750:INFO:CONSOLE:101] \"[Draft Load] No draft found in localStorage\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203538.780:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203538.781:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203539.147:INFO:CONSOLE:101] \"[Hook Lifecycle] Component mounted/updated\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203539.148:INFO:CONSOLE:101] \"[Hook Lifecycle] Current localStorage value: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203539.148:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203539.149:INFO:CONSOLE:101] \"[Auth Listener] Setting up auth state change listener\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203539.178:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203539.179:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203539.332:INFO:CONSOLE:101] \"[Auth Listener] Auth event: INITIAL_SESSION Session: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203540.326:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203540.327:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203540.487:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203540.488:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203541.214:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203541.214:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203541.368:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203543.394:INFO:CONSOLE:101] \"[Draft Load] No draft found in localStorage\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203543.458:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203543.459:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203543.749:INFO:CONSOLE:101] \"[Hook Lifecycle] Component mounted/updated\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203543.749:INFO:CONSOLE:101] \"[Hook Lifecycle] Current localStorage value: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203543.751:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203543.752:INFO:CONSOLE:101] \"[Auth Listener] Setting up auth state change listener\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203543.763:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203543.763:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203543.864:INFO:CONSOLE:101] \"[Auth Listener] Auth event: INITIAL_SESSION Session: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203544.746:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203544.746:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203545.610:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203545.611:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203546.470:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203546.471:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203546.487:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203546.985:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203546.985:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203547.004:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203547.552:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203547.553:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203547.687:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203547.688:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203547.870:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203552.020:INFO:CONSOLE:101] \"[Draft Load] No draft found in localStorage\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203552.044:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203552.045:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203552.276:INFO:CONSOLE:101] \"[Hook Lifecycle] Component mounted/updated\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203552.277:INFO:CONSOLE:101] \"[Hook Lifecycle] Current localStorage value: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203552.278:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203552.279:INFO:CONSOLE:101] \"[Auth Listener] Setting up auth state change listener\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203552.292:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203552.293:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203552.379:INFO:CONSOLE:101] \"[Auth Listener] Auth event: INITIAL_SESSION Session: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203552.694:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203552.696:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203553.275:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203553.275:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203553.941:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203553.942:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203554.550:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203554.551:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203554.604:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=3088][err] [0224/203554.890:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=3088][err] [0224/203554.891:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-24T23:35:50.378Z",
+                      "annotations": [],
+                      "attachments": [],
+                      "errorLocation": {
+                        "file": "D:\\workspace\\no-code\\dropshipping-calculator-app\\src\\test\\full-evaluation.spec.ts",
+                        "column": 75,
+                        "line": 24
+                      }
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "fcf32190069f58a444ad-2a0a4a748febcab7488a",
+              "file": "full-evaluation.spec.ts",
+              "line": 10,
+              "column": 3
+            },
+            {
+              "title": "Should have correct Markup Selector order",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2942,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-24T23:35:51.712Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "fcf32190069f58a444ad-4592ca9053276a792307",
+              "file": "full-evaluation.spec.ts",
+              "line": 45,
+              "column": 3
+            },
+            {
+              "title": "Should display COMPARATIVO RÁPIDO with correct CPA",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "interrupted",
+                      "duration": 18385,
+                      "error": {
+                        "message": "Error: locator.click: Target page, context or browser has been closed\nBrowser logs:\n\n<launching> C:\\Users\\jonat\\AppData\\Local\\ms-playwright\\chromium_headless_shell-1200\\chrome-headless-shell-win64\\chrome-headless-shell.exe --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AcceptCHFrame,AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --user-data-dir=C:\\Users\\jonat\\AppData\\Local\\Temp\\playwright_chromiumdev_profile-UbRipr --remote-debugging-pipe --no-startup-window\n<launched> pid=17276\n[pid=17276][err] [0224/203529.432:INFO:CONSOLE:101] \"[Draft Load] No draft found in localStorage\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203529.459:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203529.459:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203529.753:INFO:CONSOLE:101] \"[Hook Lifecycle] Component mounted/updated\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203529.754:INFO:CONSOLE:101] \"[Hook Lifecycle] Current localStorage value: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203529.758:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203529.758:INFO:CONSOLE:101] \"[Auth Listener] Setting up auth state change listener\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203529.767:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203529.767:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203530.000:INFO:CONSOLE:101] \"[Auth Listener] Auth event: INITIAL_SESSION Session: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203535.999:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203535.999:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203542.708:INFO:CONSOLE:101] \"[Draft Load] No draft found in localStorage\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203542.733:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203542.733:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203542.974:INFO:CONSOLE:101] \"[Hook Lifecycle] Component mounted/updated\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203542.974:INFO:CONSOLE:101] \"[Hook Lifecycle] Current localStorage value: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203542.975:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203542.975:INFO:CONSOLE:101] \"[Auth Listener] Setting up auth state change listener\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203542.982:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203542.983:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203543.080:INFO:CONSOLE:101] \"[Auth Listener] Auth event: INITIAL_SESSION Session: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203543.318:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203543.319:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203543.363:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203543.364:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203548.342:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203548.342:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203548.414:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203548.638:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203548.640:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203548.805:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203549.270:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203549.271:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203550.551:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203550.551:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203552.197:INFO:CONSOLE:101] \"[Draft Load] No draft found in localStorage\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203552.221:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203552.222:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203552.512:INFO:CONSOLE:101] \"[Hook Lifecycle] Component mounted/updated\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203552.512:INFO:CONSOLE:101] \"[Hook Lifecycle] Current localStorage value: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203552.513:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203552.513:INFO:CONSOLE:101] \"[Auth Listener] Setting up auth state change listener\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203552.531:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203552.532:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203552.896:INFO:CONSOLE:101] \"[Auth Listener] Auth event: INITIAL_SESSION Session: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203553.858:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203553.859:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203556.286:INFO:CONSOLE:101] \"[Draft Load] No draft found in localStorage\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203556.315:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203556.316:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203556.588:INFO:CONSOLE:101] \"[Hook Lifecycle] Component mounted/updated\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203556.590:INFO:CONSOLE:101] \"[Hook Lifecycle] Current localStorage value: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203556.591:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203556.592:INFO:CONSOLE:101] \"[Auth Listener] Setting up auth state change listener\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203556.603:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203556.604:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203556.745:INFO:CONSOLE:101] \"[Auth Listener] Auth event: INITIAL_SESSION Session: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203557.053:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203557.053:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203557.349:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203557.349:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203559.013:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203559.013:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203559.258:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203559.258:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203559.344:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203600.204:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203600.204:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\nCall log:\n\u001b[2m  - waiting for locator('#paidTraffic').locator('xpath=ancestor::div[contains(@class,\"grid\")][1]').locator('button').filter({ hasText: 'R$' }).first()\u001b[22m\n\u001b[2m    - locator resolved to <button class=\"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-background shadow-sm hover:bg-accent hover:text-accent-foreground rounded-md px-3 h-6 text-xs\">R$</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"flex flex-col space-y-1.5 p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors select-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is visible, enabled and stable\u001b[22m\n\u001b[2m    - scrolling into view if needed\u001b[22m\n\u001b[2m    - done scrolling\u001b[22m\n\u001b[2m    - <div class=\"rounded-xl border bg-card text-card-foreground shadow-xl border-gray-100 dark:border-transparent overflow-hidden mt-0\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  2 × retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"p-6 space-y-5 pt-4\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  4 × retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"flex flex-col space-y-1.5 p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors select-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"rounded-xl border bg-card text-card-foreground shadow-xl border-gray-100 dark:border-transparent overflow-hidden mt-0\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"p-6 space-y-5 pt-4\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"p-6 space-y-5 pt-4\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 500ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is visible, enabled and stable\u001b[22m\n\u001b[2m    - scrolling into view if needed\u001b[22m\n\u001b[2m    - done scrolling\u001b[22m\n\u001b[2m    - <div class=\"flex flex-col space-y-1.5 p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors select-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 500ms\u001b[22m\n",
+                        "stack": "Error: locator.click: Target page, context or browser has been closed\nBrowser logs:\n\n<launching> C:\\Users\\jonat\\AppData\\Local\\ms-playwright\\chromium_headless_shell-1200\\chrome-headless-shell-win64\\chrome-headless-shell.exe --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AcceptCHFrame,AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --user-data-dir=C:\\Users\\jonat\\AppData\\Local\\Temp\\playwright_chromiumdev_profile-UbRipr --remote-debugging-pipe --no-startup-window\n<launched> pid=17276\n[pid=17276][err] [0224/203529.432:INFO:CONSOLE:101] \"[Draft Load] No draft found in localStorage\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203529.459:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203529.459:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203529.753:INFO:CONSOLE:101] \"[Hook Lifecycle] Component mounted/updated\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203529.754:INFO:CONSOLE:101] \"[Hook Lifecycle] Current localStorage value: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203529.758:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203529.758:INFO:CONSOLE:101] \"[Auth Listener] Setting up auth state change listener\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203529.767:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203529.767:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203530.000:INFO:CONSOLE:101] \"[Auth Listener] Auth event: INITIAL_SESSION Session: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203535.999:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203535.999:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203542.708:INFO:CONSOLE:101] \"[Draft Load] No draft found in localStorage\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203542.733:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203542.733:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203542.974:INFO:CONSOLE:101] \"[Hook Lifecycle] Component mounted/updated\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203542.974:INFO:CONSOLE:101] \"[Hook Lifecycle] Current localStorage value: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203542.975:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203542.975:INFO:CONSOLE:101] \"[Auth Listener] Setting up auth state change listener\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203542.982:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203542.983:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203543.080:INFO:CONSOLE:101] \"[Auth Listener] Auth event: INITIAL_SESSION Session: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203543.318:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203543.319:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203543.363:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203543.364:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203548.342:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203548.342:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203548.414:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203548.638:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203548.640:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203548.805:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203549.270:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203549.271:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203550.551:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203550.551:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203552.197:INFO:CONSOLE:101] \"[Draft Load] No draft found in localStorage\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203552.221:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203552.222:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203552.512:INFO:CONSOLE:101] \"[Hook Lifecycle] Component mounted/updated\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203552.512:INFO:CONSOLE:101] \"[Hook Lifecycle] Current localStorage value: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203552.513:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203552.513:INFO:CONSOLE:101] \"[Auth Listener] Setting up auth state change listener\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203552.531:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203552.532:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203552.896:INFO:CONSOLE:101] \"[Auth Listener] Auth event: INITIAL_SESSION Session: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203553.858:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203553.859:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203556.286:INFO:CONSOLE:101] \"[Draft Load] No draft found in localStorage\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203556.315:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203556.316:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203556.588:INFO:CONSOLE:101] \"[Hook Lifecycle] Component mounted/updated\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203556.590:INFO:CONSOLE:101] \"[Hook Lifecycle] Current localStorage value: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203556.591:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203556.592:INFO:CONSOLE:101] \"[Auth Listener] Setting up auth state change listener\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203556.603:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203556.604:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203556.745:INFO:CONSOLE:101] \"[Auth Listener] Auth event: INITIAL_SESSION Session: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203557.053:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203557.053:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203557.349:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203557.349:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203559.013:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203559.013:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203559.258:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203559.258:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203559.344:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203600.204:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203600.204:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\nCall log:\n\u001b[2m  - waiting for locator('#paidTraffic').locator('xpath=ancestor::div[contains(@class,\"grid\")][1]').locator('button').filter({ hasText: 'R$' }).first()\u001b[22m\n\u001b[2m    - locator resolved to <button class=\"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-background shadow-sm hover:bg-accent hover:text-accent-foreground rounded-md px-3 h-6 text-xs\">R$</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"flex flex-col space-y-1.5 p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors select-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is visible, enabled and stable\u001b[22m\n\u001b[2m    - scrolling into view if needed\u001b[22m\n\u001b[2m    - done scrolling\u001b[22m\n\u001b[2m    - <div class=\"rounded-xl border bg-card text-card-foreground shadow-xl border-gray-100 dark:border-transparent overflow-hidden mt-0\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  2 × retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"p-6 space-y-5 pt-4\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  4 × retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"flex flex-col space-y-1.5 p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors select-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"rounded-xl border bg-card text-card-foreground shadow-xl border-gray-100 dark:border-transparent overflow-hidden mt-0\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"p-6 space-y-5 pt-4\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"p-6 space-y-5 pt-4\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 500ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is visible, enabled and stable\u001b[22m\n\u001b[2m    - scrolling into view if needed\u001b[22m\n\u001b[2m    - done scrolling\u001b[22m\n\u001b[2m    - <div class=\"flex flex-col space-y-1.5 p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors select-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 500ms\u001b[22m\n\n    at D:\\workspace\\no-code\\dropshipping-calculator-app\\src\\test\\full-evaluation.spec.ts:73:75",
+                        "location": {
+                          "file": "D:\\workspace\\no-code\\dropshipping-calculator-app\\src\\test\\full-evaluation.spec.ts",
+                          "column": 75,
+                          "line": 73
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 71 |\u001b[39m     \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mfill(\u001b[32m'#paidTraffic'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'20'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 72 |\u001b[39m     \u001b[36mconst\u001b[39m paidTrafficSection \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'#paidTraffic'\u001b[39m)\u001b[33m.\u001b[39mlocator(\u001b[32m'xpath=ancestor::div[contains(@class,\"grid\")][1]'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 73 |\u001b[39m     \u001b[36mawait\u001b[39m paidTrafficSection\u001b[33m.\u001b[39mlocator(\u001b[32m'button'\u001b[39m\u001b[33m,\u001b[39m { hasText\u001b[33m:\u001b[39m \u001b[32m'R$'\u001b[39m })\u001b[33m.\u001b[39mfirst()\u001b[33m.\u001b[39mclick()\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                                                           \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 74 |\u001b[39m     \n \u001b[90m 75 |\u001b[39m     \u001b[90m// Check CPA in Comparativo Rápido\u001b[39m\n \u001b[90m 76 |\u001b[39m     \u001b[90m// Should contain \"CPA = R$ 20.00\" (plus any ads cost if enabled, assuming 0 ads for now)\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "D:\\workspace\\no-code\\dropshipping-calculator-app\\src\\test\\full-evaluation.spec.ts",
+                            "column": 75,
+                            "line": 73
+                          },
+                          "message": "Error: locator.click: Target page, context or browser has been closed\nBrowser logs:\n\n<launching> C:\\Users\\jonat\\AppData\\Local\\ms-playwright\\chromium_headless_shell-1200\\chrome-headless-shell-win64\\chrome-headless-shell.exe --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-extensions --disable-features=AcceptCHFrame,AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --enable-automation --disable-infobars --disable-search-engine-choice-screen --disable-sync --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --user-data-dir=C:\\Users\\jonat\\AppData\\Local\\Temp\\playwright_chromiumdev_profile-UbRipr --remote-debugging-pipe --no-startup-window\n<launched> pid=17276\n[pid=17276][err] [0224/203529.432:INFO:CONSOLE:101] \"[Draft Load] No draft found in localStorage\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203529.459:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203529.459:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203529.753:INFO:CONSOLE:101] \"[Hook Lifecycle] Component mounted/updated\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203529.754:INFO:CONSOLE:101] \"[Hook Lifecycle] Current localStorage value: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203529.758:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203529.758:INFO:CONSOLE:101] \"[Auth Listener] Setting up auth state change listener\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203529.767:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203529.767:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203530.000:INFO:CONSOLE:101] \"[Auth Listener] Auth event: INITIAL_SESSION Session: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203535.999:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203535.999:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203542.708:INFO:CONSOLE:101] \"[Draft Load] No draft found in localStorage\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203542.733:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203542.733:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203542.974:INFO:CONSOLE:101] \"[Hook Lifecycle] Component mounted/updated\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203542.974:INFO:CONSOLE:101] \"[Hook Lifecycle] Current localStorage value: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203542.975:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203542.975:INFO:CONSOLE:101] \"[Auth Listener] Setting up auth state change listener\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203542.982:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203542.983:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203543.080:INFO:CONSOLE:101] \"[Auth Listener] Auth event: INITIAL_SESSION Session: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203543.318:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203543.319:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203543.363:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203543.364:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203548.342:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203548.342:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203548.414:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203548.638:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203548.640:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203548.805:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203549.270:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203549.271:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203550.551:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203550.551:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203552.197:INFO:CONSOLE:101] \"[Draft Load] No draft found in localStorage\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203552.221:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203552.222:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203552.512:INFO:CONSOLE:101] \"[Hook Lifecycle] Component mounted/updated\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203552.512:INFO:CONSOLE:101] \"[Hook Lifecycle] Current localStorage value: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203552.513:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203552.513:INFO:CONSOLE:101] \"[Auth Listener] Setting up auth state change listener\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203552.531:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203552.532:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203552.896:INFO:CONSOLE:101] \"[Auth Listener] Auth event: INITIAL_SESSION Session: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203553.858:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203553.859:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203556.286:INFO:CONSOLE:101] \"[Draft Load] No draft found in localStorage\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203556.315:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203556.316:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203556.588:INFO:CONSOLE:101] \"[Hook Lifecycle] Component mounted/updated\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203556.590:INFO:CONSOLE:101] \"[Hook Lifecycle] Current localStorage value: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203556.591:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203556.592:INFO:CONSOLE:101] \"[Auth Listener] Setting up auth state change listener\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203556.603:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203556.604:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203556.745:INFO:CONSOLE:101] \"[Auth Listener] Auth event: INITIAL_SESSION Session: null\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203557.053:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203557.053:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203557.349:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203557.349:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203559.013:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203559.013:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203559.258:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203559.258:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203559.344:INFO:CONSOLE:101] \"[Draft Save] Saving to localStorage: dropshipping_product_draft_v1 [object Object]\", source: http://localhost:4173/assets/index-BICf9cBp.js (101)\n[pid=17276][err] [0224/203600.204:INFO:CONSOLE:97] \"[ProductInfo] Render - accountHoldersList:  accountType: cnpj\", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\n[pid=17276][err] [0224/203600.204:INFO:CONSOLE:97] \"[ProductInfo] Filtered holders: \", source: http://localhost:4173/assets/index-BICf9cBp.js (97)\nCall log:\n\u001b[2m  - waiting for locator('#paidTraffic').locator('xpath=ancestor::div[contains(@class,\"grid\")][1]').locator('button').filter({ hasText: 'R$' }).first()\u001b[22m\n\u001b[2m    - locator resolved to <button class=\"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-background shadow-sm hover:bg-accent hover:text-accent-foreground rounded-md px-3 h-6 text-xs\">R$</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"flex flex-col space-y-1.5 p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors select-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is visible, enabled and stable\u001b[22m\n\u001b[2m    - scrolling into view if needed\u001b[22m\n\u001b[2m    - done scrolling\u001b[22m\n\u001b[2m    - <div class=\"rounded-xl border bg-card text-card-foreground shadow-xl border-gray-100 dark:border-transparent overflow-hidden mt-0\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  2 × retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"p-6 space-y-5 pt-4\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  4 × retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"flex flex-col space-y-1.5 p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors select-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"rounded-xl border bg-card text-card-foreground shadow-xl border-gray-100 dark:border-transparent overflow-hidden mt-0\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"p-6 space-y-5 pt-4\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"p-6 space-y-5 pt-4\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 500ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is visible, enabled and stable\u001b[22m\n\u001b[2m    - scrolling into view if needed\u001b[22m\n\u001b[2m    - done scrolling\u001b[22m\n\u001b[2m    - <div class=\"flex flex-col space-y-1.5 p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors select-none\">…</div> intercepts pointer events\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 500ms\u001b[22m\n\n\n  71 |     await page.fill('#paidTraffic', '20');\n  72 |     const paidTrafficSection = page.locator('#paidTraffic').locator('xpath=ancestor::div[contains(@class,\"grid\")][1]');\n> 73 |     await paidTrafficSection.locator('button', { hasText: 'R$' }).first().click();\n     |                                                                           ^\n  74 |     \n  75 |     // Check CPA in Comparativo Rápido\n  76 |     // Should contain \"CPA = R$ 20.00\" (plus any ads cost if enabled, assuming 0 ads for now)\n    at D:\\workspace\\no-code\\dropshipping-calculator-app\\src\\test\\full-evaluation.spec.ts:73:75"
+                        },
+                        {
+                          "message": "Error: browserContext.close: Target page, context or browser has been closed"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-02-24T23:35:54.701Z",
+                      "annotations": [],
+                      "attachments": [],
+                      "errorLocation": {
+                        "file": "D:\\workspace\\no-code\\dropshipping-calculator-app\\src\\test\\full-evaluation.spec.ts",
+                        "column": 75,
+                        "line": 73
+                      }
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "fcf32190069f58a444ad-abd763b925de11bb523d",
+              "file": "full-evaluation.spec.ts",
+              "line": 61,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "product-flow.spec.ts",
+      "file": "product-flow.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Product Management Flow",
+          "file": "product-flow.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Should perform full product lifecycle (Add, Duplicate, Edit, Delete)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f94eefc864c41bd6476d-2fec4b8a3e3525bb3815",
+              "file": "product-flow.spec.ts",
+              "line": 5,
+              "column": 3
+            },
+            {
+              "title": "Should configure Investment settings and verify visualization",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f94eefc864c41bd6476d-bf4ba192838091c0c869",
+              "file": "product-flow.spec.ts",
+              "line": 181,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-02-24T23:35:24.738Z",
+    "duration": 48821.512,
+    "expected": 6,
+    "skipped": 4,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

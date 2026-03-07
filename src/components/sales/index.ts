@@ -1,0 +1,11 @@
+export { RevenueReportChart } from './RevenueReportChart';
+export { StatisticsCards } from './StatisticsCards';
+export { TopSellingProductsTable } from './TopSellingProductsTable';
+export { StockReportTable } from './StockReportTable';
+export { TopCustomersList } from './TopCustomersList';
+export { RecentOrdersChart } from './RecentOrdersChart';
+export { TransactionsList } from './TransactionsList';
+export { RecentOrdersTable } from './RecentOrdersTable';
+export { CustomersStatistics } from './CustomersStatistics';
+export { BrazilStatesDistribution } from './BrazilStatesDistribution';
+export { BrazilMap } from './BrazilMap';

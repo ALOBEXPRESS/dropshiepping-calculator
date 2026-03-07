@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resetar Filtro - Produtos Integrados</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background: white;
+            padding: 3rem;
+            border-radius: 1rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 2rem;
+        }
+        p {
+            color: #666;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        .status {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+        .status.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .countdown {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #667eea;
+            margin: 1rem 0;
+        }
+        .instructions {
+            background: #f3f4f6;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin-top: 2rem;
+            text-align: left;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .instructions ol {
+            margin: 0;
+            padding-left: 1.5rem;
+        }
+        .instructions li {
+            margin-bottom: 0.5rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Resetar Filtro</h1>
+        <p>Este arquivo vai limpar o localStorage e resetar todos os filtros da aplicação "Produtos Integrados".</p>
+        
+        <div id="status" class="status pending">
+            ⏳ Aguardando ação...
+        </div>
+        
+        <div id="countdown" class="countdown" style="display: none;">3</div>
+        
+        <button id="resetBtn" onclick="resetFilters()">
+            Limpar Filtros Agora
+        </button>
+        
+        <div class="instructions">
+            <h3>📋 Instruções:</h3>
+            <ol>
+                <li>Clique no botão "Limpar Filtros Agora"</li>
+                <li>Aguarde 3 segundos</li>
+                <li>Você será redirecionado para sua aplicação</li>
+                <li>Todos os produtos devem aparecer novamente</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        function resetFilters() {
+            const statusEl = document.getElementById('status');
+            const countdownEl = document.getElementById('countdown');
+            const btnEl = document.getElementById('resetBtn');
+            
+            // Desabilitar botão
+            btnEl.disabled = true;
+            btnEl.textContent = 'Limpando...';
+            
+            // Atualizar status
+            statusEl.textContent = '🔄 Limpando localStorage...';
+            statusEl.className = 'status pending';
+            
+            // Limpar localStorage
+            localStorage.clear();
+            
+            // Atualizar status
+            statusEl.textContent = '✅ Filtros limpos com sucesso!';
+            statusEl.className = 'status success';
+            
+            // Mostrar countdown
+            countdownEl.style.display = 'block';
+            let count = 3;
+            
+            const interval = setInterval(() => {
+                count--;
+                countdownEl.textContent = count;
+                
+                if (count === 0) {
+                    clearInterval(interval);
+                    countdownEl.textContent = '🚀';
+                    
+                    // Redirecionar para a aplicação
+                    // IMPORTANTE: Altere a URL abaixo para a URL da sua aplicação
+                    const appUrl = 'http://localhost:5173'; // OU http://127.0.0.1:5173
+                    
+                    statusEl.textContent = `🚀 Redirecionando para ${appUrl}...`;
+                    
+                    setTimeout(() => {
+                        window.location.href = appUrl;
+                    }, 500);
+                }
+            }, 1000);
+        }
+        
+        // Detectar se foi aberto diretamente (não via aplicação)
+        window.addEventListener('load', () => {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('auto') === 'true') {
+                // Auto-executar se tiver parâmetro ?auto=true
+                setTimeout(() => {
+                    resetFilters();
+                }, 1000);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+# ============================================
+# SECURITY - CRITICAL FILES (NEVER COMMIT)
+# ============================================
+.env
+.env.local
+.env.*.local
+*.env
+*.pem
+*.key
+*.cert
+*.p12
+*.pfx
+credentials.json
+serviceAccountKey.json
+*secret*
+*token*
+*apikey*
+apikeyn8n.md
+secretsbling.md
+.kiro/security/
+src/hooks/n8n*
+tests/*
+scripts/*
+# ============================================
+# LOGS
+# ============================================
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log.*
+
+# ============================================
+# DEPENDENCIES
+# ============================================
+node_modules/
+.pnp
+.pnp.js
+
+# ============================================
+# BUILD OUTPUT
+# ============================================
+dist/
+dist-ssr/
+build/
+.next/
+out/
+.cache/
+*.tsbuildinfo
+
+# ============================================
+# TESTING
+# ============================================
+coverage/
+.nyc_output/
+test-results/
+tests/
+playwright-report/
+*.spec.ts.snap
+
+# ============================================
+# LOCK FILES (using pnpm)
+# ============================================
+package-lock.json
+yarn.lock
+
+# ============================================
+# EDITOR & IDE
+# ============================================
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+*~
+
+# ============================================
+# OS FILES
+# ============================================
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.temp
+
+# ============================================
+# PROJECT SPECIFIC
+# ============================================
+# N8N Workflows (contain hardcoded secrets)
+src/hooks/n8n/workflows/*.json
+
+# Documentation (too large for repo)
+docs/
+Docs/
+DOCUMENTATION.md
+DEPLOY.md
+
+# Kiro & Trae configs (local only)
+.kiro/*
+!.kiro/steering/
+.trae/*
+
+# Database migrations (managed separately)
+supabase/
+
+# Scripts (contain sensitive operations)
+scripts/
+
+# Features documentation
+Features/
+
+# CSS Pack (external dependency)
+src/styles/css-pack-snippets/
+antigravity-awesome-skills/
+CSS PACK para Elementor - Heitor Ferreira/
+
+# Screenshots & Media
+screenshots/
+video/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.mp4
+*.mov
+!public/**/*.png
+!public/**/*.jpg
+!public/**/*.svg
+
+# Backup files
+*.bak
+*_old.*
+*_backup.*
+*_copy.*
+
+# Local development
+*.local
+.vercel

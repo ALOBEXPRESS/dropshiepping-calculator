@@ -1,0 +1,267 @@
+{
+  "Animações": [],
+  "Animações de Scroll Avançado": [
+    {
+      "title": "Scroll card vertical com barra de progresso",
+      "description": "Seus cards nunca mais serão os mesmos após esse código. Uma grande combinação de efeitos e dinâmicas que irão apresentar as informações dos seus cards..."
+    },
+    {
+      "title": "Headline dinâmica vinculada ao scroll",
+      "description": ""
+    },
+    {
+      "title": "Mockup com efeito scroll zoom",
+      "description": ""
+    },
+    {
+      "title": "Vídeo vinculado ao scroll",
+      "description": ""
+    },
+    {
+      "title": "Texto com revelação 3d vinculado ao scroll",
+      "description": ""
+    },
+    {
+      "title": "Scroll de perspectiva",
+      "description": ""
+    },
+    {
+      "title": "Macbook com tela 3d",
+      "description": ""
+    },
+    {
+      "title": "Elemento mascarado vinculado ao scroll",
+      "description": ""
+    }
+  ],
+  "Botões": [
+    {
+      "title": "Botão com luz dinâmica",
+      "description": "Aqui vamos usar todo o potencial que uma estilização de grande impacto pode causar. Efeitos de hover com interações dinâmicas é o que se pode esperar ..."
+    },
+    {
+      "title": "Botão com informação adicional no hover",
+      "description": ""
+    },
+    {
+      "title": "Texto do botão com fade animado",
+      "description": ""
+    },
+    {
+      "title": "Texto do botão com opacidade aleatória",
+      "description": ""
+    },
+    {
+      "title": "Botão magnético",
+      "description": ""
+    },
+    {
+      "title": "Botão com box shadow + brilho no hover + cta duplo",
+      "description": ""
+    },
+    {
+      "title": "Botão com estrelas e borda animada",
+      "description": ""
+    },
+    {
+      "title": "Botão com variação de largura e animação no ícone",
+      "description": ""
+    }
+  ],
+  "Carrosséis": [
+    {
+      "title": "Carrossel vertical 3d",
+      "description": "Carrosséis verticais são sempre um grande diferencial em comparação do horizontal sempre utilizado, com esse código, faremos isso e um pouco mais, cri..."
+    },
+    {
+      "title": "Carrossel com barra de progresso",
+      "description": ""
+    },
+    {
+      "title": "Mockup de notebook com carrossel",
+      "description": ""
+    },
+    {
+      "title": "Carrossel de lista de ícone",
+      "description": ""
+    },
+    {
+      "title": "Carrossel manual",
+      "description": ""
+    },
+    {
+      "title": "Carrossel 3d",
+      "description": ""
+    },
+    {
+      "title": "Carrossel com efeito de cartas",
+      "description": ""
+    },
+    {
+      "title": "Carrossel com coverflow",
+      "description": ""
+    }
+  ],
+  "Composições": [
+    {
+      "title": "Efeito buraco negro",
+      "description": "Aqui vai mais uma excelente opção de composição pra dar aquele toque a mais na seção, esse efeito de estrelas imersivas simulando um buraco negro vai ..."
+    },
+    {
+      "title": "Luzes espirais animadas",
+      "description": ""
+    },
+    {
+      "title": "Fundo com linhas quadriculadas duplicadas",
+      "description": ""
+    },
+    {
+      "title": "Textura bolinhas",
+      "description": ""
+    },
+    {
+      "title": "Estrelas subindo",
+      "description": ""
+    },
+    {
+      "title": "Fluído animado vinculado ao mouse",
+      "description": ""
+    },
+    {
+      "title": "Linhas fixas pontilhadas",
+      "description": ""
+    },
+    {
+      "title": "Fundo gradiente animado",
+      "description": ""
+    }
+  ],
+  "Ferramentas": [
+    {
+      "title": "Interação dinâmica",
+      "description": "Aqui, vamos elevar o nível de interação. Não sendo apenas algo que acontece quando o usuário interage com o elemento, mas sim, o que acontece enquanto..."
+    },
+    {
+      "title": "Abas com autoplay e barra de progresso",
+      "description": ""
+    },
+    {
+      "title": "Abas com botão slide",
+      "description": ""
+    },
+    {
+      "title": "Tela de carregamento com svg animado",
+      "description": ""
+    },
+    {
+      "title": "CTA fixo vinculado ao scroll",
+      "description": ""
+    },
+    {
+      "title": "Remover bloco de seleção azul no mobile",
+      "description": ""
+    },
+    {
+      "title": "Conteúdo com expansão dinâmica",
+      "description": ""
+    },
+    {
+      "title": "Copiar conteúdo ao clicar",
+      "description": ""
+    }
+  ],
+  "Formulário": [
+    {
+      "title": "Formulário com luz vinculada ao mouse",
+      "description": "Prepare-se para conhecer o que será provavelmente um efeito indispensável a partir de agora nos seus formulários, esse efeito de luz vinculada ao mous..."
+    },
+    {
+      "title": "Personalizações de formulário",
+      "description": ""
+    },
+    {
+      "title": "Botão do lado do campo no formulário",
+      "description": ""
+    },
+    {
+      "title": "Botão do formulário personalizado",
+      "description": ""
+    },
+    {
+      "title": "Formulário com divisor degradê",
+      "description": ""
+    },
+    {
+      "title": "Formulário com ícone",
+      "description": ""
+    }
+  ],
+  "Hover": [
+    {
+      "title": "Elementos gravitacionais interativos",
+      "description": "Aqui, vamos elevar o nível do que conhecemos como interação. Prepare-se para dar poderes de física real nas interações dos elementos com esse incrível..."
+    },
+    {
+      "title": "Interação dinâmica",
+      "description": ""
+    },
+    {
+      "title": "Texto com caractere aleatóro no hover",
+      "description": ""
+    },
+    {
+      "title": "Botão com luz dinâmica",
+      "description": ""
+    },
+    {
+      "title": "Texto com transição 3D no hover",
+      "description": ""
+    },
+    {
+      "title": "Botão com informação adicional no hover",
+      "description": ""
+    },
+    {
+      "title": "Card com interação no hover",
+      "description": ""
+    },
+    {
+      "title": "Imagem com flip 3d",
+      "description": ""
+    }
+  ],
+  "Personalizações": [
+    {
+      "title": "Elementos gravitacionais interativos",
+      "description": "Aqui, vamos elevar o nível do que conhecemos como interação. Prepare-se para dar poderes de física real nas interações dos elementos com esse incrível..."
+    },
+    {
+      "title": "Menu fixo com variação de largura",
+      "description": ""
+    },
+    {
+      "title": "Lista de ícones 3D com luz no hover",
+      "description": ""
+    },
+    {
+      "title": "Cursor com rastreio pixelado",
+      "description": ""
+    },
+    {
+      "title": "Texto com caractere aleatóro no hover",
+      "description": ""
+    },
+    {
+      "title": "Lista de ícones com barra interativa",
+      "description": ""
+    },
+    {
+      "title": "Texto com quadrado nas pontas",
+      "description": ""
+    },
+    {
+      "title": "Texto com duas fontes",
+      "description": ""
+    }
+  ]
+}

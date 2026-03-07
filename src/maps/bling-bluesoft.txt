@@ -1,0 +1,159 @@
+1. Efeitos e Decoração de Casa (12700466)
+
+GPC: Casa/Decoração → 50000000 - Artigos para Casa/Decoração
+
+Acessórios e Iluminação (12700868) → 50191600 - Artigos de Decoração ou 39000000 - Iluminação e Acessórios Elétricos
+
+
+
+2. Utensílios de Beleza (12700467)
+
+GPC: 53000000 - Higiene/Cuidados Pessoais/Beleza
+
+Maquiagem (12700468) → 53121500 - Maquiagem
+
+
+
+3. Casa e Jardim (12957331)
+
+GPC: 50000000 - Artigos para Casa/Decoração
+
+Subcategorias:
+Eletrodomésticos (12957332)
+
+GPC: 52000000 - Eletrodomésticos
+
+Controle Climático (12957333) → 52141500 - Aparelhos de Climatização
+Umidificadores (12957334) → 52141516 - Umidificadores
+
+
+
+Iluminação (12957335)
+
+GPC: 39000000 - Iluminação e Acessórios Elétricos
+
+Luminárias (12957336) → 39101600 - Luminárias
+
+
+
+Produtos de Cozinha (12957337)
+
+GPC: 50000000 - Artigos para Casa/Decoração ou 52000000 - Eletrodomésticos
+
+Acessórios para eletrodomésticos de cozinha (12957338) → 52131500 - Acessórios para Eletrodomésticos
+Combustível para gel de culinária (12957339) → 50401700 - Acessórios para Cozinha
+Marmitas para alimentos e bebidas (12957340) → 50401600 - Recipientes para Alimentos e Bebidas
+
+
+
+Utensílios de Cozinha (12957341)
+
+GPC: 50401500 - Utensílios de Cozinha/Mesa
+
+Afiadores de faca (12957342) → 50401503 - Acessórios para Facas
+Utensílios para mesa (12957343) → 50401700 - Louças e Utensílios de Mesa
+Utensílios para bebidas (12957344) → 50401800 - Copos e Canecas
+Canecas (12957345) → 50401803 - Canecas
+Copos (12957346) → 50401801 - Copos
+Mini Processador e Triturador de Alimentos (12957347) → 52151500 - Processadores de Alimentos
+
+
+
+Segurança (12957348)
+
+GPC: 46000000 - Segurança e Proteção
+
+Câmeras (12957349) → 45121700 - Câmeras de Segurança/Vigilância
+
+
+
+4. Eletrônicos (12957350)
+
+GPC: 43000000 - Computadores ou 52000000 - Eletrodomésticos/Eletrônicos
+
+Acessórios para consoles de videogames (12957351)
+
+GPC: 60141600 - Acessórios para Videogames
+
+Acessórios para eletrônicos (12957352)
+
+GPC: 43191500 - Acessórios para Computadores
+
+Adaptadores (12957353) → 43192600 - Adaptadores/Conversores
+Cabos (12957354) → 43192300 - Cabos de Computador
+Capa de celular (12957355) → 43191600 - Capas/Cases para Dispositivos Eletrônicos
+Componentes de Computador (12957356) → 43211500 - Componentes de Computador
+Energia (12957357) → 43212100 - Fontes de Alimentação
+Dispositivos de entrada (12957358) → 43211700 - Dispositivos de Entrada
+Mouse (12957359) → 43211712 - Mouse
+Carregadores e Adaptadores de Energia (12957360) → 43192900 - Carregadores/Adaptadores de Energia
+
+
+
+Áudio (12957361)
+
+GPC: 52161500 - Equipamentos de Áudio/Vídeo
+
+Componentes para Equipamento de Áudio (12957362) → 52161600 - Componentes de Áudio
+Alto-falantes (12957363) → 52161607 - Alto-falantes
+Caixa de Som (12957364) → 52161607 - Caixas de Som
+Fones de Ouvido e Headset (12957365) → 52161609 - Fones de Ouvido
+
+
+
+Impressão, cópia, digitalização e fax (12957366)
+
+GPC: 44101600 - Impressoras e Equipamentos de Escritório
+
+Impressoras, copiadoras, scanners e fax (12957367) → 44101800 - Impressoras/Scanners/Copiadoras
+
+
+
+Vídeo (12957368)
+
+GPC: 52161500 - Equipamentos de Áudio/Vídeo
+
+Gravadores e Players de vídeo (12957369) → 52161800 - Players/Gravadores de Vídeo
+Reprodutores multimídia (12957370) → 52161803 - Players Multimídia
+Projetores (12957371) → 44111700 - Projetores
+
+
+
+5. Infantil (12957372)
+
+GPC: 47000000 - Produtos para Bebês/Crianças
+
+Amamentação e Alimentação (12957373) → 47131600 - Alimentação Infantil
+Brinquedos (12957374) → 60000000 - Brinquedos e Jogos
+
+
+
+6. Materiais de escritório (12957375)
+
+GPC: 44000000 - Artigos de Papelaria/Escritório
+
+Arquivamento e Organização (12957376) → 44121600 - Produtos para Arquivamento
+Estojos (12957377) → 44121700 - Estojos/Organizadores
+Suprimentos em geral (12957378) → 44000000 - Artigos de Papelaria
+
+
+
+7. Saúde e Beleza (12957379)
+
+GPC: 53000000 - Higiene/Cuidados Pessoais/Beleza
+
+Cuidados Pessoais (12957380) → 53131600 - Cuidados Pessoais
+Barbearia e embelezamento (12957381) → 53141500 - Produtos para Barbear/Depilação
+Cuidado com as costas (12957382) → 53131700 - Cuidados Corporais
+Cuidados com o Cabelo (12957383) → 53111500 - Cuidados com Cabelo
+Massagem e Relaxamento (12957384) → 53151600 - Produtos para Massagem
+
+
+
+8. Vestuário e Acessórios (12957385)
+
+GPC: 42000000 - Vestuário e Acessórios
+
+Jóias (12957386) → 48161500 - Joias
+Acessórios para Relógios (12957387) → 48191600 - Acessórios para Relógios
+Pulseiras para Relógio (12957388) → 48191603 - Pulseiras para Relógios

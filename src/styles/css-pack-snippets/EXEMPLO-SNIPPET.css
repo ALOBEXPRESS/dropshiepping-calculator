@@ -1,0 +1,46 @@
+/**
+ * EXEMPLO DE SNIPPET CSS PACK
+ * 
+ * Fonte: CSS PACK - Heitor Ferreira
+ * URL: [copiar URL do efeito aqui]
+ * Categoria: [Personalizações/Animações/Botões/etc]
+ * 
+ * Descrição: [Breve descrição do efeito]
+ * Aplicação: [Onde usar - ex: títulos, botões, cards]
+ * 
+ * Adaptações feitas:
+ * - Substituído cores fixas por variáveis CSS
+ * - Adicionado prefixo csspack- nas classes
+ * - Ajustado para responsividade
+ * 
+ * Como usar:
+ * import './css-pack-snippets/categoria/nome-efeito.css';
+ * <div className="csspack-nome-efeito">Conteúdo</div>
+ */
+
+/* ========================================
+   CÓDIGO CSS DO EFEITO
+   ======================================== */
+
+.csspack-exemplo {
+  /* Cole o código CSS aqui */
+  /* Adapte conforme necessário */
+}
+
+/* ========================================
+   VARIAÇÕES (opcional)
+   ======================================== */
+
+.csspack-exemplo-variacao {
+  /* Variações do efeito */
+}
+
+/* ========================================
+   RESPONSIVIDADE (se necessário)
+   ======================================== */
+
+@media (max-width: 768px) {
+  .csspack-exemplo {
+    /* Ajustes para mobile */
+  }
+}

@@ -1,0 +1,721 @@
+- generic [ref=e2]:
+  - region "Notifications alt+T"
+  - generic [ref=e5]:
+    - complementary [ref=e6]:
+      - list [ref=e14]:
+        - listitem [ref=e15]:
+          - generic [ref=e16] [cursor=pointer]:
+            - img [ref=e17]
+            - generic [ref=e22]: Painel
+            - img [ref=e23]
+          - list [ref=e25]:
+            - listitem [ref=e26]:
+              - link "Calculadora" [ref=e27] [cursor=pointer]:
+                - /url: /
+                - text: Calculadora
+            - listitem [ref=e29]:
+              - link "Produtos" [ref=e30] [cursor=pointer]:
+                - /url: /produtos
+                - text: Produtos
+            - listitem [ref=e32]:
+              - link "Vendas" [ref=e33] [cursor=pointer]:
+                - /url: /vendas
+                - text: Vendas
+    - generic [ref=e35]:
+      - banner [ref=e36]:
+        - button [ref=e738] [cursor=pointer]:
+          - img [ref=e739]
+        - generic [ref=e40]:
+          - button [ref=e41] [cursor=pointer]:
+            - img
+          - button [ref=e42] [cursor=pointer]:
+            - img
+          - button "Notificações" [ref=e43] [cursor=pointer]:
+            - img
+          - img "@shadcn" [ref=e46] [cursor=pointer]
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - img "Alob Express" [ref=e52] [cursor=pointer]
+          - generic [ref=e53]:
+            - paragraph [ref=e54]: Calculadora de Precificação Dropshipping Nacional v2.8.0
+            - paragraph [ref=e55]: Taxas reais atualizadas de Marketplaces 2026
+        - button "Resumo Financeiro Geral" [ref=e57] [cursor=pointer]
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - generic [ref=e60]:
+              - generic [ref=e61]:
+                - img [ref=e62]
+                - generic [ref=e64]: Dados do Produto
+              - generic [ref=e65]:
+                - button "Resetar" [ref=e66] [cursor=pointer]
+                - button "Adicionar" [disabled] [ref=e67]:
+                  - img [ref=e68]
+                  - text: Adicionar
+            - generic [ref=e69]:
+              - generic [ref=e70]:
+                - generic [ref=e71]: Nome do Produto *
+                - textbox "Nome do Produto *" [ref=e72]:
+                  - /placeholder: "Ex: Fone Bluetooth"
+              - generic [ref=e73]:
+                - generic [ref=e74]: SKU do Produto *
+                - textbox "SKU do Produto *" [ref=e75]:
+                  - /placeholder: "Ex: SKU-001"
+              - generic [ref=e76]:
+                - generic [ref=e77]: Fornecedor *
+                - combobox [ref=e78] [cursor=pointer]:
+                  - generic: Dogama
+                  - img [ref=e79]
+              - generic [ref=e81]:
+                - generic [ref=e82]: Tipo de Conta
+                - combobox [ref=e83] [cursor=pointer]:
+                  - img [ref=e84]
+              - generic [ref=e86]:
+                - generic [ref=e87]: Titular
+                - combobox [ref=e88] [cursor=pointer]:
+                  - generic: Selecione o titular
+                  - img [ref=e89]
+              - generic [ref=e91]:
+                - generic [ref=e92]: Quantidade em estoque
+                - spinbutton "Quantidade em estoque" [ref=e93]
+              - generic [ref=e94]:
+                - generic [ref=e95]: Dimensões (kg/g/cm/m)
+                - generic [ref=e96]:
+                  - textbox "Peso (kg)" [ref=e97]
+                  - textbox "Largura (cm)" [ref=e98]
+                  - textbox "Altura (cm)" [ref=e99]
+                  - textbox "Profundidade (cm)" [ref=e100]
+              - generic [ref=e101]:
+                - generic [ref=e102]: Imagem do Produto (URL)
+                - textbox "Imagem do Produto (URL)" [ref=e103]:
+                  - /placeholder: https://exemplo.com/imagem.jpg
+                - paragraph [ref=e104]: Se não informar, usamos a imagem padrão do marketplace
+              - generic [ref=e105]:
+                - generic [ref=e106]: Descrição
+                - textbox "Descrição" [ref=e107]:
+                  - /placeholder: Digite a descrição do produto
+              - generic [ref=e108]:
+                - generic [ref=e109]: Modalidade
+                - combobox [ref=e110] [cursor=pointer]:
+                  - generic: Dropshipping
+                  - img [ref=e111]
+              - generic [ref=e113]:
+                - generic [ref=e114]: Chance de devolução (%)
+                - textbox "Chance de devolução (%)" [ref=e116]:
+                  - /placeholder: 33,33
+                  - text: 33,33
+              - generic [ref=e117]:
+                - generic [ref=e118]: Marketplace
+                - combobox [ref=e119] [cursor=pointer]:
+                  - generic: Enjoei
+                  - img [ref=e120]
+              - generic [ref=e122]:
+                - generic [ref=e123]: Preço de Custo do Fornecedor
+                - generic [ref=e124]:
+                  - generic [ref=e125]: R$
+                  - textbox "Preço de Custo do Fornecedor" [ref=e126]:
+                    - /placeholder: 0,00
+              - generic [ref=e127]:
+                - generic [ref=e128]: Preço de venda
+                - generic [ref=e129]:
+                  - generic [ref=e130]: R$
+                  - textbox "Preço de venda" [ref=e131]:
+                    - /placeholder: 0,00
+                    - text: 15,99
+              - generic [ref=e132]:
+                - generic [ref=e133]: Markup
+                - combobox [ref=e134] [cursor=pointer]:
+                  - generic: 0 (Automático / Margem Recomendada)
+                  - img [ref=e135]
+                - paragraph [ref=e137]: Define o preço sugerido multiplicando o custo.
+              - generic [ref=e138]:
+                - checkbox "É produto com variação?" [ref=e139] [cursor=pointer]
+                - generic [ref=e140] [cursor=pointer]: É produto com variação?
+              - generic [ref=e141]:
+                - generic [ref=e142]: Preço Mínimo Concorrente (Enjoei)
+                - generic [ref=e143]:
+                  - generic [ref=e144]: R$
+                  - textbox "Preço Mínimo Concorrente (Enjoei)" [ref=e145]:
+                    - /placeholder: 0,00
+              - generic [ref=e146]:
+                - generic [ref=e147]: Configuração de Pagamento
+                - generic [ref=e148]:
+                  - button "Mercado Pago" [ref=e149] [cursor=pointer]:
+                    - img "Mercado Pago" [ref=e150]
+                    - generic [ref=e151]: Mercado Pago
+                  - button "Nubank" [ref=e152] [cursor=pointer]:
+                    - img "Nubank" [ref=e153]
+                    - generic [ref=e154]: Nubank
+                  - button "PicPay" [ref=e155] [cursor=pointer]:
+                    - img "PicPay" [ref=e156]
+                    - generic [ref=e157]: PicPay
+                  - button "PayPal" [ref=e158] [cursor=pointer]:
+                    - img "PayPal" [ref=e159]
+                    - generic [ref=e160]: PayPal
+                  - button "Stripe" [ref=e161] [cursor=pointer]:
+                    - img "Stripe" [ref=e162]
+                    - generic [ref=e163]: Stripe
+                  - button "Bradesco" [ref=e164] [cursor=pointer]:
+                    - img "Bradesco" [ref=e165]
+                    - generic [ref=e166]: Bradesco
+                - generic [ref=e167]:
+                  - button "💠 PIX (0%)" [ref=e168] [cursor=pointer]
+                  - button "Pix com crédito (Taxa + Min R$5)" [ref=e169] [cursor=pointer]
+              - generic [ref=e170]:
+                - generic [ref=e171]:
+                  - generic [ref=e172]: Taxa de Gateway
+                  - generic [ref=e173]:
+                    - button "%" [ref=e174] [cursor=pointer]
+                    - button "R$" [ref=e175] [cursor=pointer]
+                - generic [ref=e176]:
+                  - generic [ref=e177]:
+                    - generic [ref=e178]: R$
+                    - textbox "Taxa de Gateway" [ref=e179]:
+                      - /placeholder: 0,00
+                      - text: "0"
+                  - generic [ref=e181]: R$ 0,00
+              - generic [ref=e183]:
+                - button "Tráfego Pago" [ref=e184] [cursor=pointer]
+                - button "Tráfego Orgânico" [ref=e185] [cursor=pointer]
+              - generic [ref=e186]:
+                - generic [ref=e188] [cursor=pointer]:
+                  - generic [ref=e189]:
+                    - img [ref=e190]
+                    - text: Configuração de Tráfego Orgânico
+                  - img [ref=e193]
+                - generic [ref=e196]:
+                  - generic [ref=e197]:
+                    - button "Forma Manual (MindVideo + n8n)" [ref=e198] [cursor=pointer]
+                    - button "Forma Automatizada (Kie.ai + n8n)" [ref=e199] [cursor=pointer]
+                  - generic [ref=e200]:
+                    - heading "Marketing de Influencer" [level=4] [ref=e201]
+                    - paragraph [ref=e203]: Nenhum influencer cadastrado. Cadastre influencers primeiro para poder selecioná-los.
+                  - generic [ref=e204]:
+                    - heading "Marketing de Afiliado" [level=4] [ref=e205]
+                    - paragraph [ref=e207]: Nenhum afiliado cadastrado. Cadastre afiliados primeiro para poder selecioná-los.
+                  - generic [ref=e208]:
+                    - generic [ref=e209]:
+                      - generic [ref=e210]: API de Inteligência Artificial
+                      - generic [ref=e211]:
+                        - button "Gemini (Grátis)" [ref=e212] [cursor=pointer]
+                        - button "ChatGPT (Pago)" [ref=e213] [cursor=pointer]
+                      - paragraph [ref=e214]:
+                        - text: "Inclui: Gemini Pro, Gemini Flash, etc."
+                        - link "Ver limitações" [ref=e215] [cursor=pointer]:
+                          - /url: https://ai.google.dev/pricing
+                    - generic [ref=e216]:
+                      - generic [ref=e217]: Canais
+                      - generic [ref=e218]:
+                        - button "Youtube Shorts" [ref=e219] [cursor=pointer]
+                        - button "Kaway Video" [ref=e220] [cursor=pointer]
+                        - button "Tiktok" [ref=e221] [cursor=pointer]
+                        - button "Instagram Reels" [ref=e222] [cursor=pointer]
+                        - button "WhatsApp" [ref=e223] [cursor=pointer]
+                        - button "Grupo Facebook" [ref=e224] [cursor=pointer]
+                        - button "Shopee Vídeo" [ref=e225] [cursor=pointer]
+                    - generic [ref=e226]:
+                      - generic [ref=e227]: Link Tiktok
+                      - textbox "https://" [ref=e228]
+                    - generic [ref=e229]:
+                      - generic [ref=e230]: Link Instagram Reels
+                      - textbox "https://" [ref=e231]
+                    - generic [ref=e232]:
+                      - generic [ref=e233]: Nome do grupo Facebook
+                      - textbox "Nome do grupo" [ref=e234]
+                      - generic [ref=e235]: Link do grupo Facebook
+                      - textbox "https://" [ref=e236]
+                    - generic [ref=e237]:
+                      - text: Impressão
+                      - generic [ref=e238]:
+                        - img [ref=e239]
+                        - generic: Total de visualizações/impressões
+                      - textbox "0" [ref=e241]
+                    - generic [ref=e242]:
+                      - text: Cliques
+                      - generic [ref=e243]:
+                        - img [ref=e244]
+                        - generic: Total de cliques no link
+                      - textbox "0" [ref=e246]
+                    - generic [ref=e247]:
+                      - text: CTR (Automático %)
+                      - textbox [ref=e248]: "0.00"
+                    - generic [ref=e249]:
+                      - text: Vendas (Total)
+                      - textbox "0" [ref=e250]
+                    - generic [ref=e251]:
+                      - text: Frequência de postagem (vídeos/dia)
+                      - textbox "1" [ref=e252]
+                    - generic [ref=e254]:
+                      - generic [ref=e256] [cursor=pointer]:
+                        - generic [ref=e257]: Influencer para Vídeo
+                        - img [ref=e258]
+                      - generic [ref=e263]:
+                        - text: Selecione o Influencer
+                        - combobox [ref=e264] [cursor=pointer]:
+                          - generic: Selecione um influencer
+                          - img [ref=e265]
+                        - paragraph [ref=e267]: Cadastre influencers na seção "Marketing de Influencer" acima
+                    - generic [ref=e269]:
+                      - generic [ref=e271] [cursor=pointer]:
+                        - generic [ref=e272]: Video Model
+                        - img [ref=e273]
+                      - generic [ref=e277]:
+                        - generic [ref=e278]:
+                          - button "Veo3" [ref=e279] [cursor=pointer]
+                          - button "Grok" [ref=e280] [cursor=pointer]
+                          - button "Sora2" [ref=e281] [cursor=pointer]
+                          - button "Wan 2" [ref=e282] [cursor=pointer]
+                        - generic [ref=e283]:
+                          - button "Cópia" [ref=e284] [cursor=pointer]
+                          - button "Kling" [ref=e285] [cursor=pointer]
+                          - button "Runway" [ref=e286] [cursor=pointer]
+                          - button "Luma" [ref=e287] [cursor=pointer]
+                          - button "Pika 2.5" [ref=e288] [cursor=pointer]
+                          - button "Seedance" [ref=e289] [cursor=pointer]
+                        - generic [ref=e290]:
+                          - text: Modelo de Vídeo
+                          - combobox [ref=e291] [cursor=pointer]:
+                            - generic: Sora2
+                            - img [ref=e292]
+                        - generic [ref=e294]:
+                          - generic [ref=e295]:
+                            - checkbox "Plano Gratuito" [checked] [ref=e296] [cursor=pointer]:
+                              - generic:
+                                - img
+                            - generic [ref=e297] [cursor=pointer]: Plano Gratuito
+                          - generic [ref=e298]:
+                            - checkbox "Plano Pago" [ref=e299] [cursor=pointer]
+                            - generic [ref=e300] [cursor=pointer]: Plano Pago
+              - generic [ref=e301]:
+                - generic [ref=e302]:
+                  - generic [ref=e303]: Taxa de Gateway do Fornecedor
+                  - generic [ref=e304]:
+                    - button "%" [ref=e305] [cursor=pointer]
+                    - button "R$" [ref=e306] [cursor=pointer]
+                - generic [ref=e307]:
+                  - generic [ref=e308]: R$
+                  - textbox "Taxa de Gateway do Fornecedor" [ref=e309]:
+                    - /placeholder: 0,00
+                    - text: 1,00
+              - generic [ref=e310]:
+                - generic [ref=e311]:
+                  - generic [ref=e312]: Taxa do fornecedor
+                  - generic [ref=e313]:
+                    - button "%" [ref=e314] [cursor=pointer]
+                    - button "R$" [ref=e315] [cursor=pointer]
+                - generic [ref=e316]:
+                  - textbox "Taxa do fornecedor" [ref=e317]:
+                    - /placeholder: 0,00
+                    - text: "6"
+                  - generic [ref=e318]: "%"
+              - generic [ref=e319]:
+                - heading "Configurações Enjoei" [level=3] [ref=e320]
+                - generic [ref=e321]:
+                  - generic [ref=e322]: Tipo de Anúncio
+                  - combobox [ref=e323] [cursor=pointer]:
+                    - generic: Clássico (12% + Taxa Fixa)
+                    - img [ref=e324]
+                  - paragraph [ref=e326]: Exposição padrão. Comissão menor.
+                - generic [ref=e327]:
+                  - generic [ref=e328]: Meses sem Vendas (Inatividade)
+                  - textbox "Meses sem Vendas (Inatividade)" [ref=e330]:
+                    - /placeholder: "0"
+                    - text: "0"
+                  - paragraph [ref=e331]: Cobrado R$ 11,00/mês se sem vendas por 2+ meses.
+                - generic [ref=e332]:
+                  - generic [ref=e333]: Valor do Frete (R$)
+                  - textbox "Valor do Frete (R$)" [ref=e335]:
+                    - /placeholder: 0,00
+                    - text: "0"
+          - generic [ref=e338]:
+            - generic [ref=e339]:
+              - generic [ref=e340]:
+                - heading "Produtos integrados" [level=3] [ref=e341]
+                - paragraph [ref=e342]: 311 produtos encontrados
+              - generic [ref=e343]:
+                - button "Limpar Filtros" [ref=e740] [cursor=pointer]
+                - button "Atualizar" [ref=e344] [cursor=pointer]:
+                  - img
+                  - text: Atualizar
+            - generic [ref=e345]:
+              - generic [ref=e346]:
+                - textbox "Buscar por nome ou SKU" [ref=e347]
+                - generic [ref=e348]:
+                  - button "Não categorizado" [active] [ref=e349] [cursor=pointer]
+                  - generic [ref=e350]:
+                    - textbox "Preço mínimo" [ref=e351]
+                    - textbox "Preço máximo" [ref=e352]
+              - combobox [ref=e354] [cursor=pointer]:
+                - generic: Todos
+                - img [ref=e355]
+              - generic [ref=e357]:
+                - combobox [ref=e358] [cursor=pointer]:
+                  - generic: Não categorizado
+                  - img [ref=e359]
+                - generic [ref=e362]: INTEGRAÇÃO BLING
+            - generic [ref=e363]:
+              - generic [ref=e741]:
+                - generic [ref=e742]:
+                  - img "Touca Antifrizz Dupla Face Cetim Beleza Express Para Cabelos" [ref=e744]
+                  - img "Bling" [ref=e747]
+                - generic [ref=e748]:
+                  - heading "Touca Antifrizz Dupla Face Cetim Beleza Express Para Cabelos" [level=3] [ref=e750]
+                  - generic [ref=e751]:
+                    - generic [ref=e752]:
+                      - paragraph [ref=e753]: Preço
+                      - paragraph [ref=e754]: R$ 8,99
+                    - generic [ref=e755]:
+                      - paragraph [ref=e756]: Custo
+                      - paragraph [ref=e757]: R$ 0,00
+                    - generic [ref=e758]:
+                      - paragraph [ref=e759]: Vendas
+                      - paragraph [ref=e760]: "0"
+                    - generic [ref=e761]:
+                      - paragraph [ref=e762]: Estoque
+                      - paragraph [ref=e763]: "0"
+                    - generic [ref=e764]:
+                      - paragraph [ref=e765]: SKU
+                      - paragraph [ref=e766]: ALOB003
+                  - button "Preencher" [ref=e768] [cursor=pointer]
+              - generic [ref=e769]:
+                - generic [ref=e770]:
+                  - generic [ref=e771]:
+                    - img "Camisa Feminina Baby Look Glória de Deus" [ref=e772]
+                    - button "Variação anterior" [ref=e773] [cursor=pointer]:
+                      - img [ref=e774]
+                    - button "Próxima variação" [ref=e776] [cursor=pointer]:
+                      - img [ref=e777]
+                  - img "Bling" [ref=e781]
+                - generic [ref=e782]:
+                  - heading "Camisa Feminina Baby Look Glória de Deus" [level=3] [ref=e784]
+                  - generic [ref=e785]:
+                    - generic [ref=e786]:
+                      - paragraph [ref=e787]: Preço
+                      - paragraph [ref=e788]: R$ 49,90
+                    - generic [ref=e789]:
+                      - paragraph [ref=e790]: Custo
+                      - paragraph [ref=e791]: R$ 0,00
+                    - generic [ref=e792]:
+                      - paragraph [ref=e793]: Vendas
+                      - paragraph [ref=e794]: "0"
+                    - generic [ref=e795]:
+                      - paragraph [ref=e796]: Estoque
+                      - paragraph [ref=e797]: "-"
+                    - generic [ref=e798]:
+                      - paragraph [ref=e799]: SKU
+                      - paragraph [ref=e800]: C1313
+                  - button "Preencher" [ref=e802] [cursor=pointer]
+              - generic [ref=e803]:
+                - generic [ref=e804]:
+                  - generic [ref=e805]:
+                    - img "Camisa Feminina Baby Look Love Onça" [ref=e806]
+                    - button "Variação anterior" [ref=e807] [cursor=pointer]:
+                      - img [ref=e808]
+                    - button "Próxima variação" [ref=e810] [cursor=pointer]:
+                      - img [ref=e811]
+                  - img "Bling" [ref=e815]
+                - generic [ref=e816]:
+                  - heading "Camisa Feminina Baby Look Love Onça" [level=3] [ref=e818]
+                  - generic [ref=e819]:
+                    - generic [ref=e820]:
+                      - paragraph [ref=e821]: Preço
+                      - paragraph [ref=e822]: R$ 39,90
+                    - generic [ref=e823]:
+                      - paragraph [ref=e824]: Custo
+                      - paragraph [ref=e825]: R$ 0,00
+                    - generic [ref=e826]:
+                      - paragraph [ref=e827]: Vendas
+                      - paragraph [ref=e828]: "0"
+                    - generic [ref=e829]:
+                      - paragraph [ref=e830]: Estoque
+                      - paragraph [ref=e831]: "-"
+                    - generic [ref=e832]:
+                      - paragraph [ref=e833]: SKU
+                      - paragraph [ref=e834]: C1189
+                  - button "Preencher" [ref=e836] [cursor=pointer]
+              - generic [ref=e837]:
+                - generic [ref=e838]:
+                  - generic [ref=e839]:
+                    - img "Camisa Feminina Baby Look Intense Feelings" [ref=e840]
+                    - button "Variação anterior" [ref=e841] [cursor=pointer]:
+                      - img [ref=e842]
+                    - button "Próxima variação" [ref=e844] [cursor=pointer]:
+                      - img [ref=e845]
+                  - img "Bling" [ref=e849]
+                - generic [ref=e850]:
+                  - heading "Camisa Feminina Baby Look Intense Feelings" [level=3] [ref=e852]
+                  - generic [ref=e853]:
+                    - generic [ref=e854]:
+                      - paragraph [ref=e855]: Preço
+                      - paragraph [ref=e856]: R$ 39,90
+                    - generic [ref=e857]:
+                      - paragraph [ref=e858]: Custo
+                      - paragraph [ref=e859]: R$ 0,00
+                    - generic [ref=e860]:
+                      - paragraph [ref=e861]: Vendas
+                      - paragraph [ref=e862]: "0"
+                    - generic [ref=e863]:
+                      - paragraph [ref=e864]: Estoque
+                      - paragraph [ref=e865]: "-"
+                    - generic [ref=e866]:
+                      - paragraph [ref=e867]: SKU
+                      - paragraph [ref=e868]: C1174
+                  - button "Preencher" [ref=e870] [cursor=pointer]
+              - generic [ref=e871]:
+                - generic [ref=e872]:
+                  - generic [ref=e873]:
+                    - img "Camisa Feminina Baby Cherry Vibes" [ref=e874]
+                    - button "Variação anterior" [ref=e875] [cursor=pointer]:
+                      - img [ref=e876]
+                    - button "Próxima variação" [ref=e878] [cursor=pointer]:
+                      - img [ref=e879]
+                  - img "Bling" [ref=e883]
+                - generic [ref=e884]:
+                  - heading "Camisa Feminina Baby Cherry Vibes" [level=3] [ref=e886]
+                  - generic [ref=e887]:
+                    - generic [ref=e888]:
+                      - paragraph [ref=e889]: Preço
+                      - paragraph [ref=e890]: R$ 39,90
+                    - generic [ref=e891]:
+                      - paragraph [ref=e892]: Custo
+                      - paragraph [ref=e893]: R$ 0,00
+                    - generic [ref=e894]:
+                      - paragraph [ref=e895]: Vendas
+                      - paragraph [ref=e896]: "0"
+                    - generic [ref=e897]:
+                      - paragraph [ref=e898]: Estoque
+                      - paragraph [ref=e899]: "-"
+                    - generic [ref=e900]:
+                      - paragraph [ref=e901]: SKU
+                      - paragraph [ref=e902]: C1181
+                  - button "Preencher" [ref=e904] [cursor=pointer]
+              - generic [ref=e905]:
+                - generic [ref=e906]:
+                  - generic [ref=e907]:
+                    - img "Camisa Feminina Baby Look Stitch in Love" [ref=e908]
+                    - button "Variação anterior" [ref=e909] [cursor=pointer]:
+                      - img [ref=e910]
+                    - button "Próxima variação" [ref=e912] [cursor=pointer]:
+                      - img [ref=e913]
+                  - img "Bling" [ref=e917]
+                - generic [ref=e918]:
+                  - heading "Camisa Feminina Baby Look Stitch in Love" [level=3] [ref=e920]
+                  - generic [ref=e921]:
+                    - generic [ref=e922]:
+                      - paragraph [ref=e923]: Preço
+                      - paragraph [ref=e924]: R$ 47,00
+                    - generic [ref=e925]:
+                      - paragraph [ref=e926]: Custo
+                      - paragraph [ref=e927]: R$ 0,00
+                    - generic [ref=e928]:
+                      - paragraph [ref=e929]: Vendas
+                      - paragraph [ref=e930]: "0"
+                    - generic [ref=e931]:
+                      - paragraph [ref=e932]: Estoque
+                      - paragraph [ref=e933]: "-"
+                    - generic [ref=e934]:
+                      - paragraph [ref=e935]: SKU
+                      - paragraph [ref=e936]: C1237
+                  - button "Preencher" [ref=e938] [cursor=pointer]
+              - generic [ref=e939]:
+                - generic [ref=e940]:
+                  - generic [ref=e941]:
+                    - img "Camisa Feminina Baby Look Lindinha" [ref=e942]
+                    - button "Variação anterior" [ref=e943] [cursor=pointer]:
+                      - img [ref=e944]
+                    - button "Próxima variação" [ref=e946] [cursor=pointer]:
+                      - img [ref=e947]
+                  - img "Bling" [ref=e951]
+                - generic [ref=e952]:
+                  - heading "Camisa Feminina Baby Look Lindinha" [level=3] [ref=e954]
+                  - generic [ref=e955]:
+                    - generic [ref=e956]:
+                      - paragraph [ref=e957]: Preço
+                      - paragraph [ref=e958]: R$ 47,00
+                    - generic [ref=e959]:
+                      - paragraph [ref=e960]: Custo
+                      - paragraph [ref=e961]: R$ 0,00
+                    - generic [ref=e962]:
+                      - paragraph [ref=e963]: Vendas
+                      - paragraph [ref=e964]: "0"
+                    - generic [ref=e965]:
+                      - paragraph [ref=e966]: Estoque
+                      - paragraph [ref=e967]: "-"
+                    - generic [ref=e968]:
+                      - paragraph [ref=e969]: SKU
+                      - paragraph [ref=e970]: C1250
+                  - button "Preencher" [ref=e972] [cursor=pointer]
+              - generic [ref=e973]:
+                - generic [ref=e974]:
+                  - generic [ref=e975]:
+                    - img "Camisa Feminina Baby Look Docinho" [ref=e976]
+                    - button "Variação anterior" [ref=e977] [cursor=pointer]:
+                      - img [ref=e978]
+                    - button "Próxima variação" [ref=e980] [cursor=pointer]:
+                      - img [ref=e981]
+                  - img "Bling" [ref=e985]
+                - generic [ref=e986]:
+                  - heading "Camisa Feminina Baby Look Docinho" [level=3] [ref=e988]
+                  - generic [ref=e989]:
+                    - generic [ref=e990]:
+                      - paragraph [ref=e991]: Preço
+                      - paragraph [ref=e992]: R$ 47,00
+                    - generic [ref=e993]:
+                      - paragraph [ref=e994]: Custo
+                      - paragraph [ref=e995]: R$ 0,00
+                    - generic [ref=e996]:
+                      - paragraph [ref=e997]: Vendas
+                      - paragraph [ref=e998]: "0"
+                    - generic [ref=e999]:
+                      - paragraph [ref=e1000]: Estoque
+                      - paragraph [ref=e1001]: "-"
+                    - generic [ref=e1002]:
+                      - paragraph [ref=e1003]: SKU
+                      - paragraph [ref=e1004]: C1251
+                  - button "Preencher" [ref=e1006] [cursor=pointer]
+              - generic [ref=e1007]:
+                - generic [ref=e1008]:
+                  - generic [ref=e1009]:
+                    - img "Camisa Feminina Baby Look Stitch Sitting" [ref=e1010]
+                    - button "Variação anterior" [ref=e1011] [cursor=pointer]:
+                      - img [ref=e1012]
+                    - button "Próxima variação" [ref=e1014] [cursor=pointer]:
+                      - img [ref=e1015]
+                  - img "Bling" [ref=e1019]
+                - generic [ref=e1020]:
+                  - heading "Camisa Feminina Baby Look Stitch Sitting" [level=3] [ref=e1022]
+                  - generic [ref=e1023]:
+                    - generic [ref=e1024]:
+                      - paragraph [ref=e1025]: Preço
+                      - paragraph [ref=e1026]: R$ 49,90
+                    - generic [ref=e1027]:
+                      - paragraph [ref=e1028]: Custo
+                      - paragraph [ref=e1029]: R$ 0,00
+                    - generic [ref=e1030]:
+                      - paragraph [ref=e1031]: Vendas
+                      - paragraph [ref=e1032]: "0"
+                    - generic [ref=e1033]:
+                      - paragraph [ref=e1034]: Estoque
+                      - paragraph [ref=e1035]: "-"
+                    - generic [ref=e1036]:
+                      - paragraph [ref=e1037]: SKU
+                      - paragraph [ref=e1038]: C1240
+                  - button "Preencher" [ref=e1040] [cursor=pointer]
+            - generic [ref=e656]:
+              - button [disabled]:
+                - img
+              - generic [ref=e657]: Página 1 de 3
+              - button [ref=e658] [cursor=pointer]:
+                - img
+        - generic [ref=e659]:
+          - generic [ref=e661] [cursor=pointer]:
+            - generic [ref=e662]:
+              - img [ref=e663]
+              - text: Taxas dos Marketplaces (Referência)
+            - img [ref=e665]
+          - generic [ref=e668]:
+            - generic [ref=e669]:
+              - heading "📦 Mercado Livre Clássico" [level=5] [ref=e670]
+              - list [ref=e671]:
+                - listitem [ref=e672]:
+                  - text: •
+                  - strong [ref=e673]: "Comissão:"
+                  - text: 10% a 14% sobre o valor da venda (varia por categoria)
+                - listitem [ref=e674]:
+                  - text: •
+                  - strong [ref=e675]: "Custo Fixo:"
+                  - text: Hoje varia por faixa de preço.
+                - listitem [ref=e676]:
+                  - text: •
+                  - strong [ref=e677]: "Frete Grátis:"
+                  - text: Políticas de frete grátis mudaram e agora são mais flexíveis.
+                - listitem [ref=e678]:
+                  - text: •
+                  - strong [ref=e679]: "Visibilidade:"
+                  - text: Alta
+                - listitem [ref=e680]:
+                  - text: •
+                  - strong [ref=e681]: "Parcelamento:"
+                  - text: Não inclui parcelamento sem juros
+            - generic [ref=e682]:
+              - heading "⭐ Anúncio Premium (Mercado Livre)" [level=5] [ref=e683]
+              - list [ref=e684]:
+                - listitem [ref=e685]:
+                  - text: •
+                  - strong [ref=e686]: "Comissão:"
+                  - text: 15% a 19% sobre o valor da venda (varia por categoria)
+                - listitem [ref=e687]:
+                  - text: •
+                  - strong [ref=e688]: "Custo Fixo:"
+                  - text: Hoje varia por faixa de preço.
+                - listitem [ref=e689]:
+                  - text: •
+                  - strong [ref=e690]: "Visibilidade:"
+                  - text: Máxima - destaque e prioridade nas buscas
+                - listitem [ref=e691]:
+                  - text: •
+                  - strong [ref=e692]: "Parcelamento:"
+                  - text: Até 12x sem juros para o comprador
+                - listitem [ref=e693]:
+                  - text: •
+                  - strong [ref=e694]: "Benefício:"
+                  - text: Maior conversão de vendas pela visibilidade
+            - generic [ref=e695]:
+              - heading "📦 Amazon" [level=5] [ref=e696]
+              - list [ref=e697]:
+                - listitem [ref=e698]:
+                  - text: •
+                  - strong [ref=e699]: "1. Comissão de Venda (Taxa de Referência):"
+                  - text: A Amazon cobra uma comissão sobre o valor total da venda (preço do item + frete + embalagem para presente).
+                  - list [ref=e700]:
+                    - listitem [ref=e701]:
+                      - strong [ref=e702]: "Porcentagem:"
+                      - text: Geralmente entre 10% e 15% para a maioria das categorias.
+                    - listitem [ref=e703]:
+                      - strong [ref=e704]: "Comissão mínima:"
+                      - text: Se o valor calculado da comissão for muito baixo, aplica-se uma comissão mínima de R$ 1,00 por item.
+                - listitem [ref=e705]:
+                  - text: •
+                  - strong [ref=e706]: "2. Taxa Fixa por Item (Plano Individual):"
+                  - text: "A taxa fixa depende do seu plano de vendedor:"
+                  - list [ref=e707]:
+                    - listitem [ref=e708]:
+                      - strong [ref=e709]: "Plano Individual:"
+                      - text: R$ 2,00 por item vendido (além da comissão de 10-15%).
+                    - listitem [ref=e710]:
+                      - strong [ref=e711]: "Plano Profissional:"
+                      - text: Não tem taxa fixa por item (apenas a comissão de 10-15%). Em vez disso, paga-se uma mensalidade de R$ 19,00.
+                - listitem [ref=e712]:
+                  - text: •
+                  - strong [ref=e713]: "3. Outras Taxas Possíveis:"
+                  - list [ref=e714]:
+                    - listitem [ref=e715]:
+                      - strong [ref=e716]: "Logística (FBA/DBA):"
+                      - text: Se você utilizar a logística da Amazon para enviar os produtos, haverá taxas de manuseio e frete, que variam conforme o peso e tamanho do produto.
+                    - listitem [ref=e717]:
+                      - strong [ref=e718]: "Parcelamento:"
+                      - text: Se o vendedor oferecer parcelamento sem juros, pode haver uma taxa adicional de 1,5% sobre o valor total da venda.
+            - generic [ref=e719]:
+              - heading "🛍️ Shopee" [level=5] [ref=e720]
+              - list [ref=e721]:
+                - listitem [ref=e722]:
+                  - text: •
+                  - strong [ref=e723]: "Com Frete Grátis:"
+                  - text: 14% comissão + 6% frete + R$ 4 fixo*
+                - listitem [ref=e724]:
+                  - text: •
+                  - strong [ref=e725]: "Sem Frete Grátis:"
+                  - text: 12% comissão + 2% transação + R$ 4 fixo*
+                - listitem [ref=e726]:
+                  - text: •
+                  - strong [ref=e727]: "*Produtos abaixo de R$ 8:"
+                  - text: Taxa fixa é 50% do valor do item (não R$ 4)
+            - generic [ref=e728]:
+              - paragraph [ref=e729]: "💡 Dicas Importantes:"
+              - list [ref=e730]:
+                - listitem [ref=e731]: "• O custo fixo varia conforme o preço: R$ 6,00 (até R$ 40), R$ 6,50 (R$ 40-60), R$ 6,75 (R$ 60-79)"
+                - listitem [ref=e732]: • A margem recomendada já considera custos operacionais e embalagem
+                - listitem [ref=e733]: • No Mercado Livre, o Premium tem maior custo mas gera mais vendas pela visibilidade
+                - listitem [ref=e734]: • Valores atualizados conforme políticas de 2024 dos marketplaces
+        - contentinfo [ref=e735]:
+          - paragraph [ref=e736]: "Desenvolvido por: Jonatan Renan"
+          - paragraph [ref=e737]: Alob Express © todos os direitos reservados
