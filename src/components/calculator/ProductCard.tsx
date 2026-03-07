@@ -25,6 +25,7 @@ import enjoeiLogo from '../../imgs/enjoei.svg';
 import tiktokLogo from '../../imgs/tiktok-shop-seller-cent-icon-filled-256.png';
 import mercadoLivreLogo from '../../imgs/mercadolivre.svg';
 import freeShippingLogo from '../../imgs/fretegratis.svg';
+import shopeeCouponBadge from '../../imgs/cupom-shopee.webp';
 import grokLogo from '../../imgs/Grok-feb-2025-logo.svg.png';
 import veo3Logo from '../../imgs/Google-Veo-3-1024x576.webp';
 import sora2Logo from '../../imgs/sora2.webp';
@@ -438,6 +439,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onDelete, onE
   };
   const showMeliPlus = product.marketplace === 'mercadolivre' && product.meliPlus;
   const showReputationIllustration = product.marketplace === 'mercadolivre' && product.hasReputation;
+  const hasAnyShopeeCoupon = product.marketplace === 'shopee' && (
+    product.shopeeStoreCouponEnabled ||
+    product.shopeeProductCouponEnabled ||
+    product.shopeeFollowerCouponEnabled ||
+    product.shopeeSellerVoucherEnabled
+  );
   const marketplaceShippingValue = parseCurrency(product.marketplaceShippingCost ?? 0);
   const showFreeShippingIcon = (product.marketplace === 'mercadolivre' && (product.meliPlus || parseCurrency(product.mlShippingCost ?? 0) > 0))
     || (product.marketplace === 'shopee' && product.shippingOption === 'with')
@@ -905,6 +912,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onDelete, onE
                         src={reputationExcellentIllustration}
                         alt="Reputação Mercado Livre"
                         className="h-10 w-auto object-contain drop-shadow-md"
+                      />
+                    </div>
+                  )}
+                  {hasAnyShopeeCoupon && (
+                    <div className="absolute -left-2 top-3">
+                      <img
+                        src={shopeeCouponBadge}
+                        alt="Cupom Shopee"
+                        className="h-12 w-auto object-contain drop-shadow-md"
+                        loading="lazy"
                       />
                     </div>
                   )}
