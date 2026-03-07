@@ -3309,15 +3309,17 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
 
             ) : null}
 
-          {/* Produtos do Bling */}
-          <div className="mt-6">
-            <ProductsLoaded
-              organizationId={organizationId}
-              onFill={handleFillFromBlingProduct}
-              registeredBlingIds={registeredBlingIds}
-              registeredSkus={registeredProductSkus}
-            />
-          </div>
+          {/* Produtos do Bling - Only show in calculator mode, not in products page */}
+          {!showOnlyProducts && (
+            <div className="mt-6">
+              <ProductsLoaded
+                organizationId={organizationId}
+                onFill={handleFillFromBlingProduct}
+                registeredBlingIds={registeredBlingIds}
+                registeredSkus={registeredProductSkus}
+              />
+            </div>
+          )}
         </div>
         ) : null}
 
