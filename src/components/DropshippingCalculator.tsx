@@ -1492,6 +1492,8 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       await ProductService.delete(productId);
       const list = await ProductService.getAll(organizationId ?? undefined);
       handleProductsResponse(list);
+      
+      // Remover do registeredBlingBySku se tiver SKU
       if (skuKey && registeredBlingBySku[skuKey]) {
         const idsToRemove = registeredBlingBySku[skuKey];
         setRegisteredBlingIds((prev) => {

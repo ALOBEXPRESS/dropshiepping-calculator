@@ -242,7 +242,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     height: source?.height !== undefined && source?.height !== null ? String(source.height) : '',
     depth: source?.depth !== undefined && source?.depth !== null ? String(source.depth) : '',
     accountHolder: source?.accountHolder || '',
-    accountType: source?.accountType || 'cpf',
+    accountType: source?.accountType ?? 'cpf',
     sellingPrice: source?.sellingPrice || '',
     costPrice: source?.costPrice || '',
     mlShippingCost: source?.mlShippingCost || '',
@@ -1999,7 +1999,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                                   }));
                                 }}
                                 placeholder="https://"
-                                className="h-8 bg-white text-gray-900 placeholder:text-gray-400"
+                                className="h-8 bg-white !text-gray-900 placeholder:text-gray-400 border-gray-300"
                               />
                             </div>
                             
