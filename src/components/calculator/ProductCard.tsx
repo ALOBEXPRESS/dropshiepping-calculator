@@ -42,6 +42,185 @@ import { AnimatedCard } from '../ui/AnimatedCard';
 import gsap from 'gsap';
 import { useProductSalesStats } from '../../hooks/useProductSalesStats';
 
+// Componente separado para painel de vídeo promocional
+interface PromoVideoPanelProps {
+  channelKey: string;
+  product: ProductItem;
+  channelBadges: Record<string, { label: string; bgColor: string; textColor: string }>;
+  cardPanelsCount: number;
+}
+
+const PromoVideoPanel: React.FC<PromoVideoPanelProps> = ({ channelKey, product, channelBadges, cardPanelsCount }) => {
+  const channelLabel = {
+    youtube_shorts: 'YouTube Shorts',
+    kaway_video: 'Kaway Video',
+    tiktok: 'TikTok',
+    instagram_reels: 'Instagram Reels',
+    whatsapp: 'WhatsApp',
+    grupo_facebook: 'Grupo Facebook',
+    shopee_video: 'Shopee Video'
+  }[channelKey] || channelKey;
+  
+  const channelBadgeInfo = channelBadges[channelKey];
+  const videoLink = product.promoVideoChannelLinks?.[channelKey] || '';
+  const groupName = product.promoVideoChannelNames?.[channelKey] || '';
+  const isGroupChannel = channelKey === 'whatsapp' || channelKey === 'grupo_facebook';
+  
+  // Extrair URL do iframe ou usar URL direta
+  const iframeMatch = videoLink.match(/src=["']([^"']+)["']/);
+  const videoUrl = iframeMatch && iframeMatch[1] ? iframeMatch[1] : videoLink;
+  
+  // Detectar se é TikTok e extrair video ID
+  const isTikTok = videoUrl.includes('tiktok.com');
+  
+  // Extrair video ID do TikTok
+  let tiktokVideoId = '';
+  if (isTikTok) {
+    const tiktokMatch = videoUrl.match(/\/video\/(\d+)/);
+    if (tiktokMatch && tiktokMatch[1]) {
+      tiktokVideoId = tiktokMatch[1];
+    }
+  }
+  
+  const isIframe = videoLink.includes('<iframe') || videoLink.includes('streamable.com');
+  const useTikTokEmbed = isTikTok && tiktokVideoId;
+  
+  return (
+    <div className="min-w-0 flex-shrink-0 px-2 flex flex-col justify-start" style={{ width: `${100 / cardPanelsCount}%` }}>
+      <div className="w-full rounded-xl border border-border p-3">
+        {/* Container para TikTok embed ajustado (180x315) */}
+        <div className="mx-auto mb-6" style={{ width: '184px' }}>
+          <ElectricBorder
+            color="#fe2c55"
+            speed={1}
+            chaos={0.05}
+            thickness={2}
+            style={{ borderRadius: 12 }}
+          >
+            <div className="relative overflow-hidden rounded-lg" style={{ width: '180px', height: '315px', background: 'transparent' }}>
+          {useTikTokEmbed ? (
+            // TikTok iframe direto usando oembed
+            <iframe
+              src={`https://www.tiktok.com/embed/v2/${tiktokVideoId}`}
+              allow="encrypted-media;"
+              allowFullScreen
+              className="absolute inset-0 h-full w-full border-none"
+              style={{ 
+                border: 'none', 
+                width: '100%', 
+                height: '100%', 
+                position: 'absolute', 
+                left: 0, 
+                top: 0, 
+                overflow: 'hidden',
+                borderRadius: '0.5rem'
+              }}
+              title={`Vídeo ${channelLabel}`}
+              loading="lazy"
+              scrolling="no"
+            />
+          ) : isIframe ? (
+            <iframe
+              src={videoUrl}
+              allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+              allowFullScreen
+              className="absolute inset-0 h-full w-full border-none"
+              style={{ 
+                border: 'none', 
+                width: '100%', 
+                height: '100%', 
+                position: 'absolute', 
+                left: 0, 
+                top: 0, 
+                overflow: 'hidden',
+                borderRadius: '0.5rem'
+              }}
+              title={`Vídeo ${channelLabel}`}
+              loading="lazy"
+              scrolling="no"
+            />
+          ) : (
+            <video
+              src={videoUrl}
+              autoPlay
+              loop
+              muted
+              playsInline
+              controls={false}
+              className="absolute inset-0 h-full w-full object-cover bg-black"
+              onError={(e) => {
+                const target = e.target as HTMLVideoElement;
+                target.style.display = 'none';
+                const parent = target.parentElement;
+                if (parent) {
+                  parent.innerHTML = '<div class="absolute inset-0 flex items-center justify-center text-[10px] text-muted-foreground">Erro ao carregar vídeo</div>';
+                }
+              }}
+            />
+          )}
+          
+          {/* Overlay clicável para abrir vídeo em nova aba */}
+          <a
+            href={videoLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="absolute inset-0 z-20 cursor-pointer"
+            title={`Abrir vídeo no ${channelLabel}`}
+          />
+          
+          {/* Badge do Canal */}
+          {channelBadgeInfo && (
+            <div className={`absolute top-2 right-2 ${channelBadgeInfo.bgColor} ${channelBadgeInfo.textColor} px-2 py-1 rounded-md text-[10px] font-bold shadow-lg z-30`}>
+              {channelBadgeInfo.label}
+            </div>
+          )}
+        </div>
+        </ElectricBorder>
+        </div>
+        
+        {/* Informações do Canal */}
+        <div className="space-y-3">
+          {isGroupChannel && groupName && (
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] text-muted-foreground uppercase">Nome do Grupo</span>
+              <span className="text-xs font-semibold text-foreground">{groupName}</span>
+            </div>
+          )}
+          {product.promoVideoChannelCopies && product.promoVideoChannelCopies[channelKey] && (
+            <div className="flex flex-col gap-2">
+              <span className="text-[10px] text-muted-foreground uppercase">Copy</span>
+              <p className="text-xs text-foreground leading-relaxed max-h-48 overflow-y-auto p-2 bg-muted/30 rounded-md">{product.promoVideoChannelCopies[channelKey]}</p>
+            </div>
+          )}
+          <div className="flex gap-4">
+            <div className="flex flex-col gap-1 flex-1">
+              <span className="text-[10px] text-muted-foreground uppercase">Canal</span>
+              <span className="text-xs font-semibold text-foreground">{channelLabel}</span>
+            </div>
+            {product.videoGenerationLlm && (
+              <div className="flex flex-col gap-1 flex-1">
+                <span className="text-[10px] text-muted-foreground uppercase">Model Video</span>
+                <span className="text-xs font-semibold text-foreground">
+                  {product.videoGenerationLlm === 'veo3' && 'Veo3'}
+                  {product.videoGenerationLlm === 'sora2' && 'Sora2'}
+                  {product.videoGenerationLlm === 'grok' && 'Grok'}
+                  {product.videoGenerationLlm === 'wan2' && 'Wan 2'}
+                  {product.videoGenerationLlm === 'copia' && 'Cópia'}
+                  {product.videoGenerationLlm === 'kling' && 'Kling'}
+                  {product.videoGenerationLlm === 'runway' && 'Runway'}
+                  {product.videoGenerationLlm === 'pika25' && 'Pika 2.5'}
+                  {product.videoGenerationLlm === 'luma' && 'Luma'}
+                  {product.videoGenerationLlm === 'seedance' && 'Seedance'}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 interface ProductCardProps {
   product: ProductItem;
   onDelete: (id: string) => void;
@@ -484,8 +663,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onDelete, onE
   
   // Sempre mostrar o painel de investimento para permitir múltiplos investimentos
   const showInvestPanel = true;
-  // 1 tela de produto + N telas de vídeo (uma por canal) + 1 tela de investimento
-  const cardPanelsCount = 1 + promoVideoChannelsWithLinks.length + (showInvestPanel ? 1 : 0);
+  // Vídeos adicionais
+  const additionalVideos = product.additionalVideos || [];
+  // 1 tela de produto + N telas de vídeo (uma por canal) + M vídeos adicionais + 1 tela de investimento
+  const cardPanelsCount = 1 + promoVideoChannelsWithLinks.length + additionalVideos.length + (showInvestPanel ? 1 : 0);
   const canNavigateToStep = (targetIndex: number) => {
     if (targetIndex <= investStep) return true;
     for (let i = 0; i < targetIndex; i += 1) {
@@ -587,8 +768,53 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onDelete, onE
 
   return (
     <>
+    <style>{`
+      /* TikTok Embed Nativo - Dimensões exatas 193x334 */
+      .tiktok-wrapper {
+        width: 193px !important;
+        height: 334px !important;
+        max-width: 193px !important;
+        max-height: 334px !important;
+        overflow: hidden !important;
+        position: relative !important;
+      }
+      
+      .tiktok-wrapper .tiktok-embed {
+        max-width: 193px !important;
+        min-width: 193px !important;
+        width: 193px !important;
+        height: 334px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border-radius: 0.5rem !important;
+        overflow: hidden !important;
+      }
+      
+      /* Forçar dimensões do iframe interno do TikTok */
+      .tiktok-wrapper .tiktok-embed iframe,
+      .tiktok-wrapper iframe {
+        width: 193px !important;
+        height: 334px !important;
+        max-width: 193px !important;
+        max-height: 334px !important;
+        border-radius: 0.5rem !important;
+        transform: scale(1) !important;
+      }
+      
+      /* Esconder elementos extras do TikTok que podem quebrar o layout */
+      .tiktok-wrapper .tiktok-embed > div:not(iframe) {
+        display: none !important;
+      }
+      
+      /* Fallback para iframes do TikTok sem wrapper */
+      iframe[src*="tiktok.com/embed"] {
+        border-radius: 0.5rem !important;
+        background: #000 !important;
+        object-fit: cover !important;
+      }
+    `}</style>
     <AnimatedCard className="rounded-xl p-4 shadow-sm relative group h-full flex flex-col justify-between min-w-0 backdrop-blur-xl bg-white/95 dark:bg-gray-900/95 border border-white/20 dark:border-gray-700/20" data-product-id={product.id}>
-      {showInvestPanel && (
+      {(promoVideoChannelsWithLinks.length > 0 || hasCompleteInvestData) && (
         <div className="absolute left-2 right-2 top-1/2 z-10 flex -translate-y-1/2 items-center justify-between pointer-events-none">
           <button
             type="button"
@@ -759,116 +985,199 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onDelete, onE
                 <p className="text-[10px] uppercase text-muted-foreground whitespace-nowrap">Pagamento</p>
                 <p className="font-semibold text-foreground truncate">{getGatewayMethodLabel(product.gatewayMethod, product.gatewayBank)}</p>
               </div>
+              
+              {/* Copy do primeiro vídeo promocional (se existir) */}
+              {promoVideoChannelsWithLinks.length > 0 && product.promoVideoChannelCopies && product.promoVideoChannelCopies[promoVideoChannelsWithLinks[0]] && (
+                <div className="col-span-2 mt-2">
+                  <p className="text-[10px] uppercase text-muted-foreground mb-1">Copy Vídeo</p>
+                  <p className="text-[10px] text-foreground leading-relaxed line-clamp-3">
+                    {product.promoVideoChannelCopies[promoVideoChannelsWithLinks[0]]}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Telas 2+: Vídeos Promocionais (uma por canal) */}
-          {promoVideoChannelsWithLinks.map((channelKey) => {
-            const channelLabel = {
-              youtube_shorts: 'YouTube Shorts',
-              kaway_video: 'Kaway Video',
-              tiktok: 'TikTok',
-              instagram_reels: 'Instagram Reels',
-              whatsapp: 'WhatsApp',
-              grupo_facebook: 'Grupo Facebook',
-              shopee_video: 'Shopee Video'
-            }[channelKey] || channelKey;
-            
-            const channelBadgeInfo = channelBadges[channelKey];
-            const videoLink = product.promoVideoChannelLinks?.[channelKey] || '';
-            const groupName = product.promoVideoChannelNames?.[channelKey] || '';
-            const isGroupChannel = channelKey === 'whatsapp' || channelKey === 'grupo_facebook';
-            
-            // Extrair URL do iframe ou usar URL direta
-            const iframeMatch = videoLink.match(/src=["']([^"']+)["']/);
-            let videoUrl = iframeMatch && iframeMatch[1] ? iframeMatch[1] : videoLink;
-            
-            // Converter URL do TikTok para embed
-            if (videoUrl.includes('tiktok.com') && !videoUrl.includes('/embed/')) {
-              const tiktokMatch = videoUrl.match(/\/video\/(\d+)/);
-              if (tiktokMatch && tiktokMatch[1]) {
-                videoUrl = `https://www.tiktok.com/embed/v2/${tiktokMatch[1]}`;
-              }
-            }
-            
-            const isIframe = videoLink.includes('<iframe') || videoLink.includes('streamable.com') || videoUrl.includes('tiktok.com/embed');
-            
-            return (
-              <div key={channelKey} className="min-w-0 flex-shrink-0 px-2 flex flex-col justify-center" style={{ width: `${100 / cardPanelsCount}%` }}>
-                <div className="w-full rounded-xl border border-border p-3">
-                  <div className="relative mx-auto w-full max-w-[280px] overflow-hidden rounded-lg bg-background aspect-[9/16]">
-                    {isIframe ? (
-                      <iframe
-                        src={videoUrl}
-                        allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-                        allowFullScreen
-                        className="absolute inset-0 h-full w-full border-none"
-                        style={{ border: 'none', width: '100%', height: '100%', position: 'absolute', left: 0, top: 0, overflow: 'hidden' }}
-                        title={`Vídeo ${channelLabel}`}
-                        loading="lazy"
-                      />
-                    ) : (
-                      <video
-                        src={videoUrl}
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                        controls={false}
-                        className="absolute inset-0 h-full w-full object-cover bg-black"
-                        onError={(e) => {
-                          const target = e.target as HTMLVideoElement;
-                          target.style.display = 'none';
-                          const parent = target.parentElement;
-                          if (parent) {
-                            parent.innerHTML = '<div class="absolute inset-0 flex items-center justify-center text-[10px] text-muted-foreground">Erro ao carregar vídeo</div>';
-                          }
-                        }}
-                      />
-                    )}
+          {promoVideoChannelsWithLinks.map((channelKey) => (
+            <PromoVideoPanel
+              key={channelKey}
+              channelKey={channelKey}
+              product={product}
+              channelBadges={channelBadges}
+              cardPanelsCount={cardPanelsCount}
+            />
+          ))}
+          
+          {/* Vídeos Adicionais */}
+          {additionalVideos.map((video, index) => (
+            <div key={video.id} className="min-w-0 flex-shrink-0 px-2 flex flex-col justify-start" style={{ width: `${100 / cardPanelsCount}%` }}>
+              <div className="w-full rounded-xl border border-border p-3">
+                {/* Container para vídeo adicional (180x318) */}
+                <div className="mx-auto mb-6" style={{ width: '184px' }}>
+                  <ElectricBorder
+                    color="#fe2c55"
+                    speed={1}
+                    chaos={0.05}
+                    thickness={2}
+                    style={{ borderRadius: 12 }}
+                  >
+                    <div className="relative overflow-hidden rounded-lg" style={{ width: '180px', height: '315px', background: 'transparent' }}>
+                  {(() => {
+                    const videoUrl = video.url;
+                    const isTikTok = videoUrl.includes('tiktok.com');
+                    const tiktokMatch = videoUrl.match(/\/video\/(\d+)/);
+                    const tiktokVideoId = tiktokMatch && tiktokMatch[1] ? tiktokMatch[1] : '';
+                    const useTikTokEmbed = isTikTok && tiktokVideoId;
+                    const isIframe = videoUrl.includes('<iframe') || videoUrl.includes('streamable.com');
+                    const iframeMatch = videoUrl.match(/src=["']([^"']+)["']/);
+                    const extractedUrl = iframeMatch && iframeMatch[1] ? iframeMatch[1] : videoUrl;
                     
-                    {/* Badge do Canal */}
-                    {channelBadgeInfo && (
-                      <div className={`absolute top-2 right-2 ${channelBadgeInfo.bgColor} ${channelBadgeInfo.textColor} px-2 py-1 rounded-md text-[10px] font-bold shadow-lg z-10`}>
-                        {channelBadgeInfo.label}
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Informações do Canal */}
-                  <div className="mt-4 space-y-2">
-                    {isGroupChannel && groupName && (
-                      <div className="flex flex-col gap-1">
-                        <span className="text-[10px] text-muted-foreground uppercase">Nome do Grupo</span>
-                        <span className="text-xs font-semibold text-foreground">{groupName}</span>
-                      </div>
-                    )}
-                    
-                    {product.promoVideoCopy && (
-                      <div className="flex flex-col gap-1">
-                        <span className="text-[10px] text-muted-foreground uppercase">Copy</span>
-                        <p className="text-xs text-foreground leading-relaxed">
-                          {product.promoVideoCopy}
-                        </p>
-                      </div>
-                    )}
-                    
-                    {videoGenerationIcon && (
-                      <div className="flex items-center gap-2 pt-2 border-t border-border">
-                        <img 
-                          src={videoGenerationIcon.src} 
-                          alt={videoGenerationIcon.alt} 
-                          className="h-4 w-auto object-contain" 
-                          loading="lazy" 
+                    if (useTikTokEmbed) {
+                      return (
+                        <iframe
+                          src={`https://www.tiktok.com/embed/v2/${tiktokVideoId}`}
+                          allow="encrypted-media;"
+                          allowFullScreen
+                          className="absolute inset-0 h-full w-full border-none"
+                          style={{ 
+                            border: 'none', 
+                            width: '100%', 
+                            height: '100%', 
+                            position: 'absolute', 
+                            left: 0, 
+                            top: 0, 
+                            overflow: 'hidden',
+                            borderRadius: '0.5rem'
+                          }}
+                          title={`Vídeo Adicional ${index + 1}`}
+                          loading="lazy"
+                          scrolling="no"
                         />
-                        <span className="text-[10px] font-semibold text-muted-foreground">{videoGenerationIcon.alt}</span>
+                      );
+                    } else if (isIframe) {
+                      return (
+                        <iframe
+                          src={extractedUrl}
+                          allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                          allowFullScreen
+                          className="absolute inset-0 h-full w-full border-none"
+                          style={{ 
+                            border: 'none', 
+                            width: '100%', 
+                            height: '100%', 
+                            position: 'absolute', 
+                            left: 0, 
+                            top: 0, 
+                            overflow: 'hidden',
+                            borderRadius: '0.5rem'
+                          }}
+                          title={`Vídeo Adicional ${index + 1}`}
+                          loading="lazy"
+                          scrolling="no"
+                        />
+                      );
+                    } else {
+                      return (
+                        <video
+                          src={extractedUrl}
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
+                          controls={false}
+                          className="absolute inset-0 h-full w-full object-cover bg-black"
+                          onError={(e) => {
+                            const target = e.target as HTMLVideoElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = '<div class="absolute inset-0 flex items-center justify-center text-[10px] text-muted-foreground">Erro ao carregar vídeo</div>';
+                            }
+                          }}
+                        />
+                      );
+                    }
+                  })()}
+                  
+                  {/* Overlay clicável para abrir vídeo em nova aba */}
+                  <a
+                    href={video.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="absolute inset-0 z-20 cursor-pointer"
+                    title="Abrir vídeo em nova aba"
+                  />
+                  
+                  {/* Badge do Canal (detectar automaticamente) */}
+                  {(() => {
+                    const videoUrl = video.url;
+                    let channelBadge = { label: 'Vídeo', bgColor: 'bg-purple-600', textColor: 'text-white' };
+                    
+                    if (videoUrl.includes('tiktok.com')) {
+                      channelBadge = { label: 'TikTok', bgColor: 'bg-black', textColor: 'text-white' };
+                    } else if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+                      channelBadge = { label: 'YouTube', bgColor: 'bg-red-600', textColor: 'text-white' };
+                    } else if (videoUrl.includes('instagram.com')) {
+                      channelBadge = { label: 'Instagram', bgColor: 'bg-gradient-to-r from-purple-600 to-pink-600', textColor: 'text-white' };
+                    } else if (videoUrl.includes('streamable.com')) {
+                      channelBadge = { label: 'Streamable', bgColor: 'bg-blue-600', textColor: 'text-white' };
+                    }
+                    
+                    return (
+                      <div className={`absolute top-2 right-2 ${channelBadge.bgColor} ${channelBadge.textColor} px-2 py-1 rounded-md text-[10px] font-bold shadow-lg z-30`}>
+                        {channelBadge.label}
+                      </div>
+                    );
+                  })()}
+                </div>
+                </ElectricBorder>
+                </div>
+                
+                {/* Informações do Vídeo Adicional */}
+                <div className="space-y-3">
+                  {video.copy && (
+                    <div className="flex flex-col gap-2">
+                      <span className="text-[10px] text-muted-foreground uppercase">Copy</span>
+                      <p className="text-xs text-foreground leading-relaxed max-h-48 overflow-y-auto p-2 bg-muted/30 rounded-md">{video.copy}</p>
+                    </div>
+                  )}
+                  <div className="flex gap-4">
+                    <div className="flex flex-col gap-1 flex-1">
+                      <span className="text-[10px] text-muted-foreground uppercase">Canal</span>
+                      <span className="text-xs font-semibold text-foreground">
+                        {(() => {
+                          const videoUrl = video.url;
+                          if (videoUrl.includes('tiktok.com')) return 'TikTok';
+                          if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) return 'YouTube';
+                          if (videoUrl.includes('instagram.com')) return 'Instagram';
+                          if (videoUrl.includes('streamable.com')) return 'Streamable';
+                          return 'Outro';
+                        })()}
+                      </span>
+                    </div>
+                    {product.videoGenerationLlm && (
+                      <div className="flex flex-col gap-1 flex-1">
+                        <span className="text-[10px] text-muted-foreground uppercase">Model Video</span>
+                        <span className="text-xs font-semibold text-foreground">
+                          {product.videoGenerationLlm === 'veo3' && 'Veo3'}
+                          {product.videoGenerationLlm === 'sora2' && 'Sora2'}
+                          {product.videoGenerationLlm === 'grok' && 'Grok'}
+                          {product.videoGenerationLlm === 'wan2' && 'Wan 2'}
+                          {product.videoGenerationLlm === 'copia' && 'Cópia'}
+                          {product.videoGenerationLlm === 'kling' && 'Kling'}
+                          {product.videoGenerationLlm === 'runway' && 'Runway'}
+                          {product.videoGenerationLlm === 'pika25' && 'Pika 2.5'}
+                          {product.videoGenerationLlm === 'luma' && 'Luma'}
+                          {product.videoGenerationLlm === 'seedance' && 'Seedance'}
+                        </span>
                       </div>
                     )}
                   </div>
                 </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
 
           {/* Última Tela: Investimento */}
           {showInvestPanel && (

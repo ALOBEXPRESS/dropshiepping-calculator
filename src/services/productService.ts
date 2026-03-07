@@ -50,6 +50,13 @@ type ProductRow = {
   organic_channels?: string[] | null;
   organic_channel_links?: Record<string, string> | null;
   organic_channel_names?: Record<string, string> | null;
+  promo_video_url?: string | null;
+  promo_video_copy?: string | null;
+  promo_video_channels?: string[] | null;
+  promo_video_channel_links?: Record<string, string> | null;
+  promo_video_channel_names?: Record<string, string> | null;
+  promo_video_channel_copies?: Record<string, string> | null;
+  additional_videos?: Array<{ id: string; url: string; copy: string }> | null;
   shopee_use_ads?: boolean | null;
   shopee_ads_cpc?: number | null;
   shopee_daily_budget?: number | null;
@@ -234,6 +241,13 @@ type ProductPayload = {
   organic_channels?: string[] | null;
   organic_channel_links?: Record<string, string> | null;
   organic_channel_names?: Record<string, string> | null;
+  promo_video_url?: string | null;
+  promo_video_copy?: string | null;
+  promo_video_channels?: string[] | null;
+  promo_video_channel_links?: Record<string, string> | null;
+  promo_video_channel_names?: Record<string, string> | null;
+  promo_video_channel_copies?: Record<string, string> | null;
+  additional_videos?: Array<{ id: string; url: string; copy: string }> | null;
   shopee_use_ads?: boolean | null;
   shopee_ads_cpc?: number | null;
   shopee_daily_budget?: number | null;
@@ -803,6 +817,13 @@ const mapProductRow = (item: ProductRow): ProductItem => ({
   organicChannels: item.organic_channels ?? [],
   organicChannelLinks: item.organic_channel_links ?? {},
   organicChannelNames: item.organic_channel_names ?? {},
+  promoVideoUrl: item.promo_video_url ?? '',
+  promoVideoCopy: item.promo_video_copy ?? '',
+  promoVideoChannels: item.promo_video_channels ?? [],
+  promoVideoChannelLinks: item.promo_video_channel_links ?? {},
+  promoVideoChannelNames: item.promo_video_channel_names ?? {},
+  promoVideoChannelCopies: item.promo_video_channel_copies ?? {},
+  additionalVideos: item.additional_videos ?? [],
   shopeeUseAds: item.shopee_use_ads ?? false,
   shopeeAdsCpc: item.shopee_ads_cpc != null ? String(item.shopee_ads_cpc) : '',
   shopeeDailyBudget: item.shopee_daily_budget != null ? String(item.shopee_daily_budget) : '',
@@ -980,6 +1001,13 @@ const productSelectColumnList = [
   'organic_channels',
   'organic_channel_links',
   'organic_channel_names',
+  'promo_video_url',
+  'promo_video_copy',
+  'promo_video_channels',
+  'promo_video_channel_links',
+  'promo_video_channel_names',
+  'promo_video_channel_copies',
+  'additional_videos',
   'shopee_use_ads',
   'shopee_ads_cpc',
   'shopee_daily_budget',
@@ -1435,6 +1463,13 @@ export const ProductService = {
       organic_channels: product.organicChannels ?? null,
       organic_channel_links: product.organicChannelLinks ?? null,
       organic_channel_names: product.organicChannelNames ?? null,
+      promo_video_url: product.promoVideoUrl ?? null,
+      promo_video_copy: product.promoVideoCopy ?? null,
+      promo_video_channels: product.promoVideoChannels ?? null,
+      promo_video_channel_links: product.promoVideoChannelLinks ?? null,
+      promo_video_channel_names: product.promoVideoChannelNames ?? null,
+      promo_video_channel_copies: product.promoVideoChannelCopies ?? null,
+      additional_videos: product.additionalVideos ?? null,
       shopee_use_ads: product.shopeeUseAds ?? null,
       shopee_ads_cpc: product.shopeeAdsCpc !== undefined && product.shopeeAdsCpc !== null && product.shopeeAdsCpc !== ''
         ? parseCurrency(product.shopeeAdsCpc)
@@ -1660,6 +1695,13 @@ export const ProductService = {
       organic_channels: product.organicChannels ?? null,
       organic_channel_links: product.organicChannelLinks ?? null,
       organic_channel_names: product.organicChannelNames ?? null,
+      promo_video_url: product.promoVideoUrl ?? null,
+      promo_video_copy: product.promoVideoCopy ?? null,
+      promo_video_channels: product.promoVideoChannels ?? null,
+      promo_video_channel_links: product.promoVideoChannelLinks ?? null,
+      promo_video_channel_names: product.promoVideoChannelNames ?? null,
+      promo_video_channel_copies: product.promoVideoChannelCopies ?? null,
+      additional_videos: product.additionalVideos ?? null,
       shopee_use_ads: product.shopeeUseAds ?? null,
       shopee_ads_cpc: product.shopeeAdsCpc !== undefined && product.shopeeAdsCpc !== null && product.shopeeAdsCpc !== ''
         ? parseCurrency(product.shopeeAdsCpc)

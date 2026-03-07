@@ -3121,7 +3121,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                   <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                     <Select value={productFilters.videoModel || "all"} onValueChange={(value) => handleProductFilterChange('videoModel', value)}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Modelo" />
+                        <SelectValue placeholder="Modelo de Vídeo" />
                       </SelectTrigger>
                       <SelectContent>
                         {videoModelOptions.map((option) => (
@@ -3133,7 +3133,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                     </Select>
                     <Select value={productFilters.priceSort || "all"} onValueChange={(value) => handleProductFilterChange('priceSort', value)}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Preço" />
+                        <SelectValue placeholder="Ordenar por Preço" />
                       </SelectTrigger>
                       <SelectContent>
                         {priceFilterOptions.map((option) => (
@@ -3145,7 +3145,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                     </Select>
                     <Select value={productFilters.stockFilter || "all"} onValueChange={(value) => handleProductFilterChange('stockFilter', value)}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Estoque" />
+                        <SelectValue placeholder="Filtrar por Estoque" />
                       </SelectTrigger>
                       <SelectContent>
                         {stockFilterOptions.map((option) => (
@@ -3169,7 +3169,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
 
                     <Select value={productFilters.accountType || "all"} onValueChange={(value) => handleProductFilterChange('accountType', value)}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Conta" />
+                        <SelectValue placeholder="Tipo de Conta" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Todos</SelectItem>
@@ -3180,7 +3180,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
 
                     <Select value={productFilters.holder || "all"} onValueChange={(value) => handleProductFilterChange('holder', value === "all" ? "" : value)}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Títular" />
+                        <SelectValue placeholder="Titular" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Todos</SelectItem>

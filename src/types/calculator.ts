@@ -181,6 +181,12 @@ export interface ProductItem {
   promoVideoChannels?: string[]; // Array de canais selecionados
   promoVideoChannelLinks?: Record<string, string>; // Links por canal
   promoVideoChannelNames?: Record<string, string>; // Nomes de grupos por canal
+  promoVideoChannelCopies?: Record<string, string>; // Copies por canal
+  additionalVideos?: Array<{ // Vídeos adicionais
+    id: string;
+    url: string;
+    copy: string;
+  }>;
 }
 
 export interface CalculationResult {

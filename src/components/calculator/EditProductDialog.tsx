@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ReferenceService, type Supplier, type AccountHolder, type Marketplace } from '@/services/referenceService';
+import { productPromotionalContentService } from '@/services/productPromotionalContentService';
 import { useSettings } from '@/contexts/SettingsContext';
 import { calculateMetrics } from '@/services/pricingService';
 import { formatCurrency, handleCurrencyChange, parseCurrency } from '@/utils/currency';
@@ -151,6 +152,12 @@ type EditProductFormData = {
   promoVideoChannels: string[];
   promoVideoChannelLinks: Record<string, string>;
   promoVideoChannelNames: Record<string, string>;
+  promoVideoChannelCopies: Record<string, string>;
+  additionalVideos: Array<{
+    id: string;
+    url: string;
+    copy: string;
+  }>;
 };
 
 export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, isOpen, onClose, onSave, mode = 'edit' }) => {
@@ -331,6 +338,8 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     promoVideoChannels: Array.isArray(source?.promoVideoChannels) ? source.promoVideoChannels : [],
     promoVideoChannelLinks: source?.promoVideoChannelLinks || {},
     promoVideoChannelNames: source?.promoVideoChannelNames || {},
+    promoVideoChannelCopies: source?.promoVideoChannelCopies || {},
+    additionalVideos: Array.isArray(source?.additionalVideos) ? source.additionalVideos : [],
     });
   };
   const [formData, setFormData] = useState<EditProductFormData>(() => buildFormData(product));
@@ -752,6 +761,8 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       promoVideoChannels: formData.promoVideoChannels,
       promoVideoChannelLinks: formData.promoVideoChannelLinks,
       promoVideoChannelNames: formData.promoVideoChannelNames,
+      promoVideoChannelCopies: formData.promoVideoChannelCopies,
+      additionalVideos: formData.additionalVideos,
     };
     
     console.log('=== UPDATED PRODUCT ===');
@@ -760,6 +771,31 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     console.log('promoVideoChannelNames:', updated.promoVideoChannelNames);
     
     onSave(updated);
+    
+    // Dual-write: Salvar conteúdo promocional na nova tabela normalizada
+    try {
+      if (product.organizationId) {
+        await productPromotionalContentService.upsert(
+          product.id,
+          product.organizationId,
+          {
+            promoVideoUrl: formData.promoVideoUrl,
+            promoVideoCopy: formData.promoVideoCopy,
+            promoVideoChannels: formData.promoVideoChannels,
+            promoVideoChannelLinks: formData.promoVideoChannelLinks,
+            promoVideoChannelNames: formData.promoVideoChannelNames,
+            organicChannels: formData.organicChannels,
+            organicChannelLinks: formData.organicChannelLinks,
+            organicChannelNames: formData.organicChannelNames
+          }
+        );
+        console.log('✅ Conteúdo promocional salvo na tabela normalizada');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao salvar conteúdo promocional:', error);
+      // Não bloqueia o fluxo - o produto já foi salvo
+    }
+    
     onClose();
   };
 
@@ -1966,9 +2002,119 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                                 className="h-8 bg-white text-gray-900 placeholder:text-gray-400"
                               />
                             </div>
+                            
+                            <div className="space-y-1">
+                              <label className="text-xs text-black font-semibold block">Copy</label>
+                              <textarea
+                                value={formData.promoVideoChannelCopies[channelKey] || ''}
+                                onChange={(e) => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    promoVideoChannelCopies: {
+                                      ...prev.promoVideoChannelCopies,
+                                      [channelKey]: e.target.value
+                                    }
+                                  }));
+                                }}
+                                placeholder="Texto do vídeo..."
+                                rows={3}
+                                className="w-full px-3 py-2 text-xs bg-white text-gray-900 placeholder:text-gray-400 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                            </div>
                           </div>
                         );
                       })}
+                      
+                      {/* Seção Novo Vídeo */}
+                      <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-bold text-blue-900">Novo Vídeo</p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (formData.additionalVideos.length >= 5) {
+                                alert('Você pode adicionar no máximo 5 vídeos adicionais.');
+                                return;
+                              }
+                              setFormData(prev => ({
+                                ...prev,
+                                additionalVideos: [
+                                  ...prev.additionalVideos,
+                                  {
+                                    id: `video-${Date.now()}`,
+                                    url: '',
+                                    copy: ''
+                                  }
+                                ]
+                              }));
+                            }}
+                            disabled={formData.additionalVideos.length >= 5}
+                            className={`px-3 py-1 text-xs font-bold text-white rounded-md transition-colors ${
+                              formData.additionalVideos.length >= 5
+                                ? 'bg-gray-400 cursor-not-allowed'
+                                : 'bg-blue-600 hover:bg-blue-700'
+                            }`}
+                          >
+                            + Adicionar Vídeo {formData.additionalVideos.length > 0 && `(${formData.additionalVideos.length}/5)`}
+                          </button>
+                        </div>
+                        
+                        {formData.additionalVideos.map((video, index) => (
+                          <div key={video.id} className="p-3 bg-white rounded-lg border border-blue-300 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs font-bold text-gray-700">Vídeo {index + 1}</p>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    additionalVideos: prev.additionalVideos.filter(v => v.id !== video.id)
+                                  }));
+                                }}
+                                className="text-xs text-red-600 hover:text-red-800 font-semibold"
+                              >
+                                Remover
+                              </button>
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <label className="text-xs text-black font-semibold block">URL do Vídeo</label>
+                              <Input
+                                type="url"
+                                value={video.url}
+                                onChange={(e) => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    additionalVideos: prev.additionalVideos.map(v =>
+                                      v.id === video.id ? { ...v, url: e.target.value } : v
+                                    )
+                                  }));
+                                }}
+                                placeholder="https://"
+                                className="h-8 bg-white text-gray-900 placeholder:text-gray-400"
+                              />
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <label className="text-xs text-black font-semibold block">Copy</label>
+                              <textarea
+                                value={video.copy}
+                                onChange={(e) => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    additionalVideos: prev.additionalVideos.map(v =>
+                                      v.id === video.id ? { ...v, copy: e.target.value } : v
+                                    )
+                                  }));
+                                }}
+                                placeholder="Texto do vídeo..."
+                                rows={3}
+                                className="w-full px-3 py-2 text-xs bg-white text-gray-900 placeholder:text-gray-400 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                       
                       <div className="space-y-1">
                         <label htmlFor="promoVideoUrl-organic" className="text-xs text-black font-bold block">URL do Vídeo (iframe ou URL direta)</label>
