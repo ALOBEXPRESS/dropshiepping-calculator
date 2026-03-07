@@ -1079,6 +1079,31 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
   }, [products]);
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
   const pagedProducts = filteredProducts.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  
+  // Animar produtos quando filtros mudam
+  useEffect(() => {
+    const productCards = document.querySelectorAll('[data-product-id]');
+    if (productCards.length > 0) {
+      gsap.fromTo(
+        productCards,
+        {
+          opacity: 0,
+          y: 30,
+          scale: 0.95
+        },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.5,
+          stagger: 0.1,
+          ease: 'power2.out',
+          clearProps: 'all'
+        }
+      );
+    }
+  }, [pagedProducts, productFilters, currentPage]);
+  
   const marketplaceTotals = useMemo(() => {
     return effectiveProducts.reduce<Record<string, number>>((acc, product) => {
       const label = getMarketplaceName(product.marketplace);
