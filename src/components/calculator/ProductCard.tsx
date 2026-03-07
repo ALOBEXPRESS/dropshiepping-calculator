@@ -781,8 +781,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onDelete, onE
             
             // Extrair URL do iframe ou usar URL direta
             const iframeMatch = videoLink.match(/src=["']([^"']+)["']/);
-            const videoUrl = iframeMatch && iframeMatch[1] ? iframeMatch[1] : videoLink;
-            const isIframe = videoLink.includes('<iframe') || videoLink.includes('streamable.com');
+            let videoUrl = iframeMatch && iframeMatch[1] ? iframeMatch[1] : videoLink;
+            
+            // Converter URL do TikTok para embed
+            if (videoUrl.includes('tiktok.com') && !videoUrl.includes('/embed/')) {
+              const tiktokMatch = videoUrl.match(/\/video\/(\d+)/);
+              if (tiktokMatch && tiktokMatch[1]) {
+                videoUrl = `https://www.tiktok.com/embed/v2/${tiktokMatch[1]}`;
+              }
+            }
+            
+            const isIframe = videoLink.includes('<iframe') || videoLink.includes('streamable.com') || videoUrl.includes('tiktok.com/embed');
             
             return (
               <div key={channelKey} className="min-w-0 flex-shrink-0 px-2 flex flex-col justify-center" style={{ width: `${100 / cardPanelsCount}%` }}>
@@ -791,11 +800,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onDelete, onE
                     {isIframe ? (
                       <iframe
                         src={videoUrl}
-                        allow="autoplay; fullscreen"
+                        allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
                         allowFullScreen
                         className="absolute inset-0 h-full w-full border-none"
                         style={{ border: 'none', width: '100%', height: '100%', position: 'absolute', left: 0, top: 0, overflow: 'hidden' }}
                         title={`Vídeo ${channelLabel}`}
+                        loading="lazy"
                       />
                     ) : (
                       <video
