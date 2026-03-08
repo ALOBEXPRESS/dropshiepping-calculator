@@ -11,6 +11,7 @@ type ProductCardProps = {
   product: BlingProductItem;
   variations?: BlingProductItem[];
   onFill: (product: BlingProductItem, variations: BlingProductItem[]) => void;
+  onUpdate?: (product: BlingProductItem, variations: BlingProductItem[]) => void;
   isRegistered?: boolean;
 };
 
@@ -18,6 +19,7 @@ export const ProductCard = ({
   product,
   variations = [],
   onFill,
+  onUpdate,
   isRegistered = false
 }: ProductCardProps) => {
   const parseVariationInfo = (value?: string | null) => {
@@ -212,7 +214,7 @@ export const ProductCard = ({
           </div>
         </div>
 
-        <div className="mt-3 flex items-center justify-center">
+        <div className="mt-3 flex flex-col gap-2">
           <Button
             type="button"
             className={isButtonActive
@@ -224,6 +226,16 @@ export const ProductCard = ({
           >
             {shouldShowFillLabel ? 'Preencher' : 'Cadastrado'}
           </Button>
+          {isRegistered && onUpdate && (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-9 border-blue-200 bg-blue-50 px-4 text-xs font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-200 dark:hover:bg-blue-900"
+              onClick={() => onUpdate(filledProduct, variations)}
+            >
+              Atualizar
+            </Button>
+          )}
         </div>
       </div>
     </div>

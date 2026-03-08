@@ -10,11 +10,12 @@ import { useDebounce } from '@/hooks/useDebounce';
 type ProductsLoadedProps = {
   organizationId?: string | null;
   onFill: (product: BlingProductItem, variations: BlingProductItem[]) => void;
+  onUpdate?: (product: BlingProductItem, variations: BlingProductItem[]) => void;
   registeredBlingIds?: Set<string>;
   registeredSkus?: Set<string>;
 };
 
-export const ProductsLoaded = ({ organizationId, onFill, registeredBlingIds, registeredSkus }: ProductsLoadedProps) => {
+export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBlingIds, registeredSkus }: ProductsLoadedProps) => {
   const normalizeSku = (value?: string | null) => (value ?? '').trim().toLowerCase();
   const [searchInput, setSearchInput] = useState('');
   const debouncedSearch = useDebounce(searchInput, 300);
@@ -329,6 +330,7 @@ export const ProductsLoaded = ({ organizationId, onFill, registeredBlingIds, reg
             product={group.base}
             variations={group.variations}
             onFill={onFill}
+            onUpdate={onUpdate}
             isRegistered={isRegistered}
           />
           );

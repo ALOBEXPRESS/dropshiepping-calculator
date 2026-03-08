@@ -1007,6 +1007,96 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       description: 'Os dados do produto foram preenchidos com sucesso.',
     });
   };
+
+  const handleUpdateFromBlingProduct = async (blingProduct: BlingProductItem, blingVariations: BlingProductItem[]) => {
+    try {
+      // Encontrar o produto na tabela products pelo SKU
+      const productSku = blingProduct.sku?.trim();
+      if (!productSku) {
+        toast.error('SKU não encontrado', {
+          description: 'O produto do Bling não possui SKU para atualização.',
+        });
+        return;
+      }
+
+      // Buscar o produto existente
+      const existingProduct = products.find(p => p.sku?.trim() === productSku);
+      if (!existingProduct) {
+        toast.error('Produto não encontrado', {
+          description: `Nenhum produto com SKU "${productSku}" foi encontrado na aba Produtos.`,
+        });
+        return;
+      }
+
+      // Preparar dados atualizados do Bling
+      const updatedData = {
+        name: blingProduct.name || existingProduct.name,
+        imageUrl: blingProduct.imageUrl || existingProduct.imageUrl,
+        description: blingProduct.description || existingProduct.description,
+        stockQuantity: blingProduct.stockQuantity ?? existingProduct.stockQuantity,
+        costPrice: blingProduct.costPrice ?? existingProduct.costPrice,
+        weight: blingProduct.weight ?? existingProduct.weight,
+        width: blingProduct.width ?? existingProduct.width,
+        height: blingProduct.height ?? existingProduct.height,
+        depth: blingProduct.depth ?? existingProduct.depth,
+        unitOfMeasure: blingProduct.unitOfMeasure || existingProduct.unitOfMeasure,
+      };
+
+      // Atualizar no banco de dados
+      const { error } = await supabase
+        .from('products')
+        .update(updatedData)
+        .eq('id', existingProduct.id);
+
+      if (error) {
+        console.error('Erro ao atualizar produto:', error);
+        toast.error('Erro ao atualizar', {
+          description: 'Não foi possível atualizar o produto no banco de dados.',
+        });
+        return;
+      }
+
+      // Atualizar variações se existirem
+      if (blingVariations.length > 0 && existingProduct.variations && existingProduct.variations.length > 0) {
+        const updatedVariations = existingProduct.variations.map((existingVar) => {
+          // Encontrar variação correspondente no Bling pelo SKU
+          const blingVar = blingVariations.find(bv => bv.sku?.trim() === existingVar.sku?.toString().trim());
+          if (blingVar) {
+            return {
+              ...existingVar,
+              stockQuantity: blingVar.stockQuantity ?? existingVar.stockQuantity,
+              cost: blingVar.costPrice ?? existingVar.cost,
+              imageUrl: blingVar.imageUrl || existingVar.imageUrl,
+            };
+          }
+          return existingVar;
+        });
+
+        // Atualizar variações no banco
+        const { error: varError } = await supabase
+          .from('products')
+          .update({ variations: updatedVariations })
+          .eq('id', existingProduct.id);
+
+        if (varError) {
+          console.error('Erro ao atualizar variações:', varError);
+        }
+      }
+
+      // Recarregar produtos
+      await loadProducts();
+
+      toast.success('Produto atualizado', {
+        description: `O produto "${blingProduct.name}" foi atualizado com sucesso.`,
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar produto:', error);
+      toast.error('Erro inesperado', {
+        description: 'Ocorreu um erro ao atualizar o produto.',
+      });
+    }
+  };
+
   const getProductUpdatedTimestamp = (product: ProductItem) => {
     const baseValue = product.updatedAt || product.createdAt || '';
     if (!baseValue) return 0;
@@ -2490,6 +2580,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
               <ProductsLoaded
                 organizationId={organizationId}
                 onFill={handleFillFromBlingProduct}
+                onUpdate={handleUpdateFromBlingProduct}
                 registeredBlingIds={registeredBlingIds}
                 registeredSkus={registeredProductSkus}
               />
@@ -3315,6 +3406,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
               <ProductsLoaded
                 organizationId={organizationId}
                 onFill={handleFillFromBlingProduct}
+                onUpdate={handleUpdateFromBlingProduct}
                 registeredBlingIds={registeredBlingIds}
                 registeredSkus={registeredProductSkus}
               />
