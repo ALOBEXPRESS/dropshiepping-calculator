@@ -1031,15 +1031,15 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       // Preparar dados atualizados do Bling
       const updatedData = {
         name: blingProduct.name || existingProduct.name,
-        imageUrl: blingProduct.imageUrl || existingProduct.imageUrl,
+        image_url: blingProduct.imageUrl || existingProduct.imageUrl,
         description: blingProduct.description || existingProduct.description,
-        stockQuantity: blingProduct.stockQuantity ?? existingProduct.stockQuantity,
-        costPrice: blingProduct.costPrice ?? existingProduct.costPrice,
-        weight: blingProduct.weight ?? existingProduct.weight,
-        width: blingProduct.width ?? existingProduct.width,
-        height: blingProduct.height ?? existingProduct.height,
-        depth: blingProduct.depth ?? existingProduct.depth,
-        unitOfMeasure: blingProduct.unitOfMeasure || existingProduct.unitOfMeasure,
+        stock_quantity: blingProduct.stockQuantity ?? existingProduct.stockQuantity,
+        cost_price: blingProduct.costPrice ?? existingProduct.costPrice,
+        peso: blingProduct.weight ?? existingProduct.weight,
+        largura: blingProduct.width ?? existingProduct.width,
+        altura: blingProduct.height ?? existingProduct.height,
+        profundidade: blingProduct.depth ?? existingProduct.depth,
+        unidade_medida: blingProduct.unitOfMeasure || existingProduct.unitOfMeasure,
       };
 
       // Atualizar no banco de dados

@@ -230,7 +230,7 @@ export const ProductCard = ({
             <Button
               type="button"
               variant="outline"
-              className="h-9 border-blue-200 bg-blue-50 px-4 text-xs font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-200 dark:hover:bg-blue-900"
+              className="h-9 border-[#ff4b26] bg-[#ff4b26] px-4 text-xs font-semibold text-white hover:bg-[#e63d1a] dark:border-[#ff4b26] dark:bg-[#ff4b26] dark:text-white dark:hover:bg-[#e63d1a]"
               onClick={() => onUpdate(filledProduct, variations)}
             >
               Atualizar
