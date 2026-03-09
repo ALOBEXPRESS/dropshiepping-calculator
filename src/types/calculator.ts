@@ -51,6 +51,7 @@ export interface ProductVariationRecord {
   netRevenue?: string | number;
   margin?: string | number;
   imageUrl?: string;
+  imageUrls?: string[]; // Múltiplas imagens para variações
   weight?: string | number;
   width?: string | number;
   height?: string | number;

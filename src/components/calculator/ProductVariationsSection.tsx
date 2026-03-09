@@ -2,22 +2,91 @@ import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Package, Image as ImageIcon, Ruler, Box, ChevronDown, ChevronUp } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Package, Image as ImageIcon, Ruler, Box, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Save } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import type { ProductVariationRecord } from '@/types/calculator';
 
 interface ProductVariationsSectionProps {
   variations: ProductVariationRecord[];
+  onUpdateVariation?: (index: number, updatedVariation: ProductVariationRecord) => void;
+  editable?: boolean;
 }
 
-export const ProductVariationsSection: React.FC<ProductVariationsSectionProps> = ({ variations }) => {
+export const ProductVariationsSection: React.FC<ProductVariationsSectionProps> = ({ 
+  variations, 
+  onUpdateVariation,
+  editable = false 
+}) => {
   const [selectedVariation, setSelectedVariation] = useState<number>(0);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [imageIndexes, setImageIndexes] = useState<Record<number, number>>({});
+  const [editingStock, setEditingStock] = useState<Record<number, string>>({});
 
   if (!variations || variations.length === 0) {
     return null;
   }
 
   const currentVariation = variations[selectedVariation];
+  const currentImageIndex = imageIndexes[selectedVariation] || 0;
+
+  // Obter array de imagens da variação (suporta imageUrls ou imageUrl único)
+  const getVariationImages = (variation: ProductVariationRecord): string[] => {
+    if (variation.imageUrls && variation.imageUrls.length > 0) {
+      return variation.imageUrls;
+    }
+    if (variation.imageUrl) {
+      return [variation.imageUrl];
+    }
+    return [];
+  };
+
+  const handlePrevImage = (variationIndex: number) => {
+    const images = getVariationImages(variations[variationIndex]);
+    setImageIndexes(prev => ({
+      ...prev,
+      [variationIndex]: ((prev[variationIndex] || 0) - 1 + images.length) % images.length
+    }));
+  };
+
+  const handleNextImage = (variationIndex: number) => {
+    const images = getVariationImages(variations[variationIndex]);
+    setImageIndexes(prev => ({
+      ...prev,
+      [variationIndex]: ((prev[variationIndex] || 0) + 1) % images.length
+    }));
+  };
+
+  const handleStockChange = (variationIndex: number, value: string) => {
+    setEditingStock(prev => ({
+      ...prev,
+      [variationIndex]: value
+    }));
+  };
+
+  const handleSaveStock = (variationIndex: number) => {
+    if (!onUpdateVariation) return;
+    
+    const newStock = editingStock[variationIndex];
+    if (newStock !== undefined) {
+      const updatedVariation = {
+        ...variations[variationIndex],
+        stockQuantity: newStock
+      };
+      onUpdateVariation(variationIndex, updatedVariation);
+      
+      // Limpar estado de edição
+      setEditingStock(prev => {
+        const newState = { ...prev };
+        delete newState[variationIndex];
+        return newState;
+      });
+    }
+  };
+
+  const currentImages = getVariationImages(currentVariation);
+  const hasMultipleImages = currentImages.length > 1;
 
   return (
     <div className="space-y-4">
@@ -53,62 +122,100 @@ export const ProductVariationsSection: React.FC<ProductVariationsSectionProps> =
 
       {/* Grid de Miniaturas - 4 por linha */}
       <div className="grid grid-cols-4 gap-3">
-        {variations.map((variation, index) => (
-          <button
-            key={variation.id || index}
-            onClick={() => {
-              setSelectedVariation(index);
-              setIsExpanded(true);
-            }}
-            className={`group relative overflow-hidden rounded-lg border-2 transition-all hover:shadow-md ${
-              selectedVariation === index
-                ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800'
-                : 'border-gray-200 hover:border-blue-300 dark:border-zinc-700 dark:hover:border-blue-600'
-            }`}
-          >
-            {/* Imagem da Variação */}
-            <div className="aspect-square w-full bg-gray-100 dark:bg-zinc-800">
-              {variation.imageUrl ? (
-                <img
-                  src={variation.imageUrl}
-                  alt={variation.name || `Variação ${index + 1}`}
-                  className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    const parent = e.currentTarget.parentElement;
-                    if (parent) {
-                      parent.innerHTML = `
-                        <div class="flex h-full w-full items-center justify-center">
-                          <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                      `;
-                    }
-                  }}
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center">
-                  <ImageIcon className="h-8 w-8 text-gray-400" />
+        {variations.map((variation, index) => {
+          const images = getVariationImages(variation);
+          const currentImgIndex = imageIndexes[index] || 0;
+          const currentImage = images[currentImgIndex];
+          const hasMultiple = images.length > 1;
+
+          return (
+            <button
+              key={variation.id || index}
+              onClick={() => {
+                setSelectedVariation(index);
+                setIsExpanded(true);
+              }}
+              className={`group relative overflow-hidden rounded-lg border-2 transition-all hover:shadow-md ${
+                selectedVariation === index
+                  ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800'
+                  : 'border-gray-200 hover:border-blue-300 dark:border-zinc-700 dark:hover:border-blue-600'
+              }`}
+            >
+              {/* Imagem da Variação */}
+              <div className="aspect-square w-full bg-gray-100 dark:bg-zinc-800">
+                {currentImage ? (
+                  <img
+                    src={currentImage}
+                    alt={variation.name || `Variação ${index + 1}`}
+                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      const parent = e.currentTarget.parentElement;
+                      if (parent) {
+                        parent.innerHTML = `
+                          <div class="flex h-full w-full items-center justify-center">
+                            <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                        `;
+                      }
+                    }}
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <ImageIcon className="h-8 w-8 text-gray-400" />
+                  </div>
+                )}
+              </div>
+
+              {/* Controles de Navegação de Imagens */}
+              {hasMultiple && (
+                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePrevImage(index);
+                    }}
+                    className="bg-black/60 hover:bg-black/80 text-white rounded-full p-1 transition-colors"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleNextImage(index);
+                    }}
+                    className="bg-black/60 hover:bg-black/80 text-white rounded-full p-1 transition-colors"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
                 </div>
               )}
-            </div>
 
-            {/* Nome da Variação */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
-              <p className="text-xs font-medium text-white truncate">
-                {variation.name || `Variação ${index + 1}`}
-              </p>
-            </div>
+              {/* Indicador de múltiplas imagens */}
+              {hasMultiple && (
+                <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full">
+                  {currentImgIndex + 1}/{images.length}
+                </div>
+              )}
 
-            {/* Indicador de Seleção */}
-            {selectedVariation === index && (
-              <div className="absolute top-2 right-2">
-                <div className="h-3 w-3 rounded-full bg-blue-500 ring-2 ring-white" />
+              {/* Nome da Variação */}
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                <p className="text-xs font-medium text-white truncate">
+                  {variation.name || `Variação ${index + 1}`}
+                </p>
               </div>
-            )}
-          </button>
-        ))}
+
+              {/* Indicador de Seleção */}
+              {selectedVariation === index && (
+                <div className="absolute top-2 right-2">
+                  <div className="h-3 w-3 rounded-full bg-blue-500 ring-2 ring-white" />
+                </div>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Detalhes da Variação Selecionada */}
@@ -124,6 +231,46 @@ export const ProductVariationsSection: React.FC<ProductVariationsSectionProps> =
               </Badge>
             </div>
 
+            {/* Galeria de Imagens */}
+            {hasMultipleImages && (
+              <div className="rounded-md bg-white p-3 dark:bg-zinc-900">
+                <Label className="text-xs text-gray-600 dark:text-gray-400 mb-2 block">
+                  Imagens da Variação ({currentImageIndex + 1}/{currentImages.length})
+                </Label>
+                <div className="relative">
+                  <div className="aspect-video w-full bg-gray-100 dark:bg-zinc-800 rounded-md overflow-hidden">
+                    {currentImages[currentImageIndex] ? (
+                      <img
+                        src={currentImages[currentImageIndex]}
+                        alt={`${currentVariation.name} - Imagem ${currentImageIndex + 1}`}
+                        className="h-full w-full object-contain"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <ImageIcon className="h-12 w-12 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                  {currentImages.length > 1 && (
+                    <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-2">
+                      <button
+                        onClick={() => handlePrevImage(selectedVariation)}
+                        className="bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors"
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                      </button>
+                      <button
+                        onClick={() => handleNextImage(selectedVariation)}
+                        className="bg-black/60 hover:bg-black/80 text-white rounded-full p-2 transition-colors"
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {/* SKU */}
               {currentVariation.sku && (
@@ -135,16 +282,38 @@ export const ProductVariationsSection: React.FC<ProductVariationsSectionProps> =
                 </div>
               )}
 
-              {/* Estoque */}
+              {/* Estoque - Editável */}
               {currentVariation.stockQuantity !== undefined && currentVariation.stockQuantity !== null && (
                 <div className="rounded-md bg-white px-3 py-2 dark:bg-zinc-900">
-                  <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                  <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 mb-1">
                     <Box className="h-3.5 w-3.5" />
                     Estoque
                   </div>
-                  <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                    {currentVariation.stockQuantity}
-                  </div>
+                  {editable ? (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="number"
+                        min="0"
+                        value={editingStock[selectedVariation] ?? currentVariation.stockQuantity}
+                        onChange={(e) => handleStockChange(selectedVariation, e.target.value)}
+                        className="h-7 text-sm"
+                      />
+                      {editingStock[selectedVariation] !== undefined && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleSaveStock(selectedVariation)}
+                          className="h-7 w-7 p-0"
+                        >
+                          <Save className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {currentVariation.stockQuantity}
+                    </div>
+                  )}
                 </div>
               )}
 
