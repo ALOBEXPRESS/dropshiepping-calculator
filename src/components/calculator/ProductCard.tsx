@@ -337,6 +337,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onDelete, onE
     ? `${product.name} - ${currentData?.name ?? ''}`.trim()
     : product.name;
   
+  // Check if we should show variation image instead of color swatch
+  const shouldShowVariationImage = currentSlide.kind === 'variation' && currentData?.imageUrl;
+  
   // Metrics
   const sellingPrice = currentSlide.kind === 'variation'
     ? currentData?.manualPrice ?? currentData?.suggestedPrice
@@ -866,7 +869,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onDelete, onE
               <div className="flex flex-col items-end gap-2">
                 <div className="relative">
                   <div className={`h-36 w-36 flex-shrink-0 overflow-hidden rounded-lg border ${showMoneyBorder ? 'border-green-500 bg-green-50' : 'border-border bg-muted'} relative group/image bg-white`}>
-                    {currentColorLabel ? (
+                    {shouldShowVariationImage ? (
+                      <img src={displayImage} alt={displayName} className="h-full w-full object-contain p-1" loading="lazy" />
+                    ) : currentColorLabel ? (
                       <div className="h-full w-full" style={getColorSwatchStyle(currentColorLabel)} />
                     ) : (
                       <img src={displayImage} alt={displayName} className="h-full w-full object-contain p-1" loading="lazy" />

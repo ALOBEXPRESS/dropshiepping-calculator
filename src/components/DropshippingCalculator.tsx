@@ -1170,28 +1170,52 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
   const pagedProducts = filteredProducts.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   
-  // Animar produtos quando filtros mudam
+  // Ref para controlar se a animação já foi executada para a página atual
+  const animatedPagesRef = useRef<Set<string>>(new Set());
+  
+  // Animar produtos quando filtros mudam ou página muda
   useEffect(() => {
     const productCards = document.querySelectorAll('[data-product-id]');
-    if (productCards.length > 0) {
-      gsap.fromTo(
-        productCards,
-        {
-          opacity: 0,
-          y: 30,
-          scale: 0.95
-        },
-        {
-          opacity: 1,
-          y: 0,
-          scale: 1,
-          duration: 0.5,
-          stagger: 0.1,
-          ease: 'power2.out',
-          clearProps: 'all'
-        }
-      );
+    if (productCards.length === 0) return;
+    
+    // Criar uma chave única para a combinação de filtros + página
+    const filterKey = JSON.stringify({
+      filters: productFilters,
+      page: currentPage,
+      productsCount: pagedProducts.length
+    });
+    
+    // Se já animamos esta combinação, não animar novamente
+    if (animatedPagesRef.current.has(filterKey)) {
+      return;
     }
+    
+    // Marcar como animado
+    animatedPagesRef.current.add(filterKey);
+    
+    // Limpar animações antigas se houver muitas chaves (evitar memory leak)
+    if (animatedPagesRef.current.size > 50) {
+      const keysArray = Array.from(animatedPagesRef.current);
+      animatedPagesRef.current = new Set(keysArray.slice(-25));
+    }
+    
+    gsap.fromTo(
+      productCards,
+      {
+        opacity: 0,
+        y: 30,
+        scale: 0.95
+      },
+      {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        duration: 0.5,
+        stagger: 0.1,
+        ease: 'power2.out',
+        clearProps: 'all'
+      }
+    );
   }, [pagedProducts, productFilters, currentPage]);
   
   const marketplaceTotals = useMemo(() => {
@@ -1739,7 +1763,14 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
     prevCalculations.current = calculations;
   }, { scope: container, dependencies: [calculations] });
 
+  // Track if initial animations have run
+  const hasAnimatedRef = useRef(false);
+
   useGSAP(() => {
+    // Only run animations on first mount
+    if (hasAnimatedRef.current) return;
+    hasAnimatedRef.current = true;
+
     // Animate Header
     gsap.from(".header-animate", {
       y: -30,

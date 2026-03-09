@@ -92,7 +92,7 @@ export const useProductsBling = (organizationId?: string | null) => {
       const buildQuery = (withOrganization: boolean) => {
         let query = supabase
           .from('products_bling')
-          .select('id,bling_id,id_produto_pai,variacao_nome,name,descricao,sku,sale_price,cost_price,stock_quantity,image_url1,image_url,situacao,sku_fornecedor,grupo_produto_id,created_at,updated_at,id_categoria,peso,largura,altura,profundidade,unidade_medida', { count: 'exact' });
+          .select('id,bling_id,name,descricao,sku,sale_price,cost_price,stock_quantity,image_url1,image_url,situacao,sku_fornecedor,grupo_produto_id,created_at,updated_at,id_categoria,peso,largura,altura,profundidade,unidade_medida', { count: 'exact' });
 
         if (withOrganization && organizationId) {
           query = query.eq('organization_id', organizationId);
@@ -235,8 +235,8 @@ export const useProductsBling = (organizationId?: string | null) => {
         groupProductId: row.grupo_produto_id ?? null,
         categoryId: row.id_categoria ?? null,
         blingId: row.bling_id ?? null,
-        parentBlingId: row.id_produto_pai ?? null,
-        variationName: row.variacao_nome ?? null,
+        parentBlingId: null, // Removido: agora só temos produtos pai
+        variationName: null, // Removido: agora só temos produtos pai
         weight: row.peso ?? null,
         width: row.largura ?? null,
         height: row.altura ?? null,
@@ -248,16 +248,112 @@ export const useProductsBling = (organizationId?: string | null) => {
         updatedAt: row.updated_at ?? null
       }));
 
-      // Sort by created_at DESC (newest first), using updated_at as fallback for NULL created_at
-      // Products with both NULL created_at and updated_at go to the end
-      mapped.sort((a, b) => {
-        const aDate = new Date(a.createdAt || a.updatedAt || '1970-01-01').getTime();
-        const bDate = new Date(b.createdAt || b.updatedAt || '1970-01-01').getTime();
-        return bDate - aDate; // DESC order (newest first)
+      // Buscar variações para cada produto pai
+      const productBlingIds = mapped.map(p => p.id).filter(Boolean);
+      let variations: BlingProductItem[] = [];
+      
+      if (productBlingIds.length > 0) {
+        const { data: variationsData } = await supabase
+          .from('products_variations_bling')
+          .select('id,product_id,bling_id,name,descricao,sku,sale_price,cost_price,stock_quantity,image_url1,situacao,sku_fornecedor,variacao_nome,created_at,updated_at,peso,largura,altura,profundidade,unidade_medida')
+          .in('product_id', productBlingIds);
+
+        if (variationsData && variationsData.length > 0) {
+          // Buscar contagem de vendas para variações
+          const variationIds = variationsData.map(v => v.id);
+          const variationSkus = variationsData.map(v => v.sku).filter(Boolean);
+          const variationSalesMap = new Map<string, number>();
+
+          if (variationIds.length > 0 || variationSkus.length > 0) {
+            // Query by product_variation_id FK
+            const { data: varSalesByIdData } = await supabase
+              .from('bling_order_items')
+              .select('product_variation_id, quantity')
+              .in('product_variation_id', variationIds);
+
+            if (varSalesByIdData) {
+              varSalesByIdData.forEach((item: { product_variation_id: string; quantity: number }) => {
+                if (item.product_variation_id) {
+                  const currentCount = variationSalesMap.get(item.product_variation_id) || 0;
+                  variationSalesMap.set(item.product_variation_id, currentCount + (item.quantity || 0));
+                }
+              });
+            }
+
+            // Query by code/SKU field as fallback
+            if (variationSkus.length > 0) {
+              const { data: varSalesBySkuData } = await supabase
+                .from('bling_order_items')
+                .select('code, quantity, product_variation_id')
+                .in('code', variationSkus);
+
+              if (varSalesBySkuData) {
+                const skuToIdMap = new Map<string, string>();
+                variationsData.forEach((row) => {
+                  if (row.sku) {
+                    skuToIdMap.set(row.sku, String(row.id));
+                  }
+                });
+
+                varSalesBySkuData.forEach((item: { code: string; quantity: number; product_variation_id: string | null }) => {
+                  if (item.code) {
+                    const variationId = skuToIdMap.get(item.code);
+                    if (variationId && !item.product_variation_id) {
+                      const currentCount = variationSalesMap.get(variationId) || 0;
+                      variationSalesMap.set(variationId, currentCount + (item.quantity || 0));
+                    }
+                  }
+                });
+              }
+            }
+          }
+
+          variations = variationsData.map((row) => {
+            // Find the parent product to get its bling_id
+            const parentProduct = mapped.find(p => p.id === row.product_id);
+            return {
+              id: String(row.id),
+              name: row.name ?? '',
+              description: sanitizeDescription(row.descricao),
+              sku: row.sku ?? '',
+              salePrice: row.sale_price ?? null,
+              costPrice: row.cost_price ?? null,
+              stockQuantity: row.stock_quantity ?? null,
+              imageUrl: row.image_url1 || '',
+              status: row.situacao ?? null,
+              supplierSku: row.sku_fornecedor ?? null,
+              groupProductId: null,
+              categoryId: parentProduct?.blingId ?? null, // Use parent's bling_id as categoryId for grouping
+              blingId: row.bling_id ?? null,
+              parentBlingId: parentProduct?.blingId ?? null, // Use parent's bling_id for proper grouping
+              variationName: row.variacao_nome ?? null,
+              weight: row.peso ?? null,
+              width: row.largura ?? null,
+              height: row.altura ?? null,
+              depth: row.profundidade ?? null,
+              unitOfMeasure: row.unidade_medida ?? null,
+              marketplace: 'Bling',
+              salesCount: variationSalesMap.get(String(row.id)) || 0,
+              createdAt: row.created_at ?? null,
+              updatedAt: row.updated_at ?? null
+            };
+          });
+        }
+      }
+
+      // Combinar produtos pai com suas variações
+      const allProducts = [...mapped, ...variations];
+
+      // Sort by updated_at DESC (most recently updated first), using created_at as fallback for NULL updated_at
+      // Products with both NULL updated_at and created_at go to the end
+      allProducts.sort((a, b) => {
+        const aDate = new Date(a.updatedAt || a.createdAt || '1970-01-01').getTime();
+        const bDate = new Date(b.updatedAt || b.createdAt || '1970-01-01').getTime();
+        return bDate - aDate; // DESC order (most recently updated first)
       });
       
-      setAllItems(mapped);
-      setTotalCount(mapped.length);
+      setAllItems(allProducts);
+      setTotalCount(mapped.length); // Count only parent products, not variations
       setIsLoading(false);
     } catch (err) {
       if (!isAbortError(err)) {

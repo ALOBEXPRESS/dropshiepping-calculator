@@ -290,15 +290,15 @@ async function getOrCreateSalesChannel(
 async function mapProductBlingToLocal(
   blingProductId: number,
   itemCode: string
-): Promise<{ productBlingId: string | null; productId: string | null }> {
-  // Buscar por ID do Bling
+): Promise<{ productBlingId: string | null; productId: string | null; productVariationId: string | null }> {
+  // Buscar por ID do Bling em products_bling (produtos pai)
   let { data: productBling } = await supabase
     .from('products_bling')
     .select('id')
     .eq('bling_id', blingProductId)
     .single();
 
-  // Se não encontrar por ID, buscar por SKU
+  // Se não encontrar por ID, buscar por SKU em products_bling
   if (!productBling && itemCode) {
     const { data } = await supabase
       .from('products_bling')
@@ -308,8 +308,41 @@ async function mapProductBlingToLocal(
     productBling = data;
   }
 
-  if (!productBling) {
-    return { productBlingId: null, productId: null };
+  // Se encontrou em products_bling, retornar
+  if (productBling) {
+    // Buscar produto local vinculado
+    const { data: product } = await supabase
+      .from('products')
+      .select('id')
+      .eq('sku', itemCode)
+      .single();
+
+    return { 
+      productBlingId: productBling.id, 
+      productId: product?.id || null,
+      productVariationId: null
+    };
+  }
+
+  // Se não encontrou em products_bling, buscar em products_variations_bling
+  let { data: productVariation } = await supabase
+    .from('products_variations_bling')
+    .select('id')
+    .eq('bling_id', blingProductId)
+    .single();
+
+  // Se não encontrar por ID, buscar por SKU em variations
+  if (!productVariation && itemCode) {
+    const { data } = await supabase
+      .from('products_variations_bling')
+      .select('id')
+      .eq('sku', itemCode)
+      .single();
+    productVariation = data;
+  }
+
+  if (!productVariation) {
+    return { productBlingId: null, productId: null, productVariationId: null };
   }
 
   // Buscar produto local vinculado
@@ -320,8 +353,9 @@ async function mapProductBlingToLocal(
     .single();
 
   return {
-    productBlingId: productBling.id,
+    productBlingId: null,
     productId: product?.id || null,
+    productVariationId: productVariation.id
   };
 }
 
@@ -561,7 +595,7 @@ async function createOrderItems(
 ): Promise<void> {
   const itemsToInsert = await Promise.all(
     items.map(async (item) => {
-      const { productBlingId, productId } = await mapProductBlingToLocal(
+      const { productBlingId, productId, productVariationId } = await mapProductBlingToLocal(
         item.produto.id,
         item.codigo
       );
@@ -570,6 +604,7 @@ async function createOrderItems(
         order_id: orderId,
         bling_item_id: item.id,
         product_bling_id: productBlingId,
+        product_variation_id: productVariationId,
         product_id: productId,
         code: item.codigo,
         description: item.descricao,

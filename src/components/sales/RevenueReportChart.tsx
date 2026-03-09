@@ -51,98 +51,19 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     
     setDeleting(true);
     try {
-      console.log('Deleting order:', orderToDelete);
-      
-      // 1. Remover referência bling_order_id da tabela orders (setar como NULL)
-      console.log('Step 1: Removing bling_order_id reference from orders...');
-      const { error: updateOrderError } = await supabase
+      // Deletar pedido da tabela orders
+      // O trigger delete_order_cascade irá automaticamente:
+      // 1. Excluir order_items (ON DELETE CASCADE)
+      // 2. Excluir bling_orders (via trigger)
+      // 3. Excluir bling_order_items (ON DELETE CASCADE de bling_orders)
+      const { error: orderError } = await supabase
         .from('orders')
-        .update({ bling_order_id: null })
+        .delete()
         .eq('id', orderToDelete.id);
       
-      console.log('Update orders result:', { updateOrderError });
-      if (updateOrderError) {
-        console.error('Error updating orders:', updateOrderError);
-        throw new Error(`Erro ao atualizar orders: ${updateOrderError.message}`);
-      }
-      
-      // 2. Remover referência bling_item_id da tabela order_items (setar como NULL)
-      console.log('Step 2: Removing bling_item_id reference from order_items...');
-      const { error: updateItemsError } = await supabase
-        .from('order_items')
-        .update({ bling_item_id: null })
-        .eq('order_id', orderToDelete.id);
-      
-      console.log('Update order_items result:', { updateItemsError });
-      if (updateItemsError) {
-        console.error('Error updating order_items:', updateItemsError);
-        throw new Error(`Erro ao atualizar order_items: ${updateItemsError.message}`);
-      }
-      
-      // 3. Buscar bling_order_id e deletar bling_order_items
-      console.log('Step 3: Getting bling_order_id and deleting bling_order_items...');
-      const { data: blingOrderData } = await supabase
-        .from('bling_orders')
-        .select('id')
-        .eq('processed_order_id', orderToDelete.id)
-        .single();
-      
-      if (blingOrderData) {
-        const { error: blingItemsError } = await supabase
-          .from('bling_order_items')
-          .delete()
-          .eq('order_id', blingOrderData.id);
-        
-        console.log('Bling items delete result:', { blingItemsError });
-        if (blingItemsError && blingItemsError.code !== 'PGRST116') {
-          console.error('Error deleting bling_order_items:', blingItemsError);
-          throw new Error(`Erro ao deletar bling_order_items: ${blingItemsError.message}`);
-        }
-      }
-      
-      // 4. Deletar referência em bling_orders (se existir)
-      console.log('Step 4: Deleting from bling_orders...');
-      const { data: blingData, error: blingError } = await supabase
-        .from('bling_orders')
-        .delete()
-        .eq('processed_order_id', orderToDelete.id)
-        .select();
-      
-      console.log('Bling delete result:', { blingData, blingError });
-      if (blingError && blingError.code !== 'PGRST116') {
-        console.error('Error deleting bling_orders:', blingError);
-        throw new Error(`Erro ao deletar bling_orders: ${blingError.message}`);
-      }
-      
-      // 5. Deletar itens do pedido
-      console.log('Step 5: Deleting order items...');
-      const { data: itemsData, error: itemsError } = await supabase
-        .from('order_items')
-        .delete()
-        .eq('order_id', orderToDelete.id)
-        .select();
-      
-      console.log('Items delete result:', { itemsData, itemsError });
-      if (itemsError) {
-        console.error('Error deleting order_items:', itemsError);
-        throw new Error(`Erro ao deletar order_items: ${itemsError.message}`);
-      }
-      
-      // 6. Deletar pedido
-      console.log('Step 6: Deleting order...');
-      const { data: orderData, error: orderError } = await supabase
-        .from('orders')
-        .delete()
-        .eq('id', orderToDelete.id)
-        .select();
-      
-      console.log('Order delete result:', { orderData, orderError });
       if (orderError) {
-        console.error('Error deleting order:', orderError);
-        throw new Error(`Erro ao deletar order: ${orderError.message}`);
+        throw new Error(`Erro ao excluir pedido: ${orderError.message}`);
       }
-      
-      console.log('Delete successful! Reloading...');
       
       // Fechar modal e tooltip
       setDeleteDialogOpen(false);
@@ -159,11 +80,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     } catch (err) {
       console.error('Error deleting order:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
-      alert(`Erro ao excluir pedido: ${errorMessage}`);
+      toast.error('Erro ao excluir métrica', {
+        description: errorMessage,
+      });
     } finally {
       setDeleting(false);
-      setDeleteDialogOpen(false);
-      setOrderToDelete(null);
     }
   };
 

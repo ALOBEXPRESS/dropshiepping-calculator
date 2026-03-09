@@ -137,20 +137,41 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed }
     setError(null);
 
     try {
+      console.log('🔄 Processando pedido:', blingOrderId);
+      console.log('🔄 Tipo do blingOrderId:', typeof blingOrderId);
+      console.log('🔄 blingOrderId é válido?', blingOrderId && blingOrderId.length > 0);
+      
       // Chamar a function do Supabase para processar o pedido
       const { data, error: processError } = await supabase.rpc(
         'process_bling_order_to_profit',
         {
           p_bling_order_id: blingOrderId,
-          p_user_id: null, // Pode adicionar o ID do usuário se necessário
+          p_user_id: null,
         }
       );
 
-      if (processError) throw processError;
+      console.log('📦 Resposta da RPC:');
+      console.log('  - data:', data);
+      console.log('  - error:', processError);
+
+      if (processError) {
+        console.error('❌ Erro na RPC:', processError);
+        throw processError;
+      }
+
+      if (!data) {
+        console.error('❌ Resposta vazia da RPC');
+        throw new Error('Resposta vazia do servidor');
+      }
 
       const result = data as ProcessResult;
+      console.log('✅ Resultado processado:', result);
+      console.log('  - success:', result.success);
+      console.log('  - message:', result.message);
 
       if (result.success) {
+        console.log('🎉 Pedido processado com sucesso!');
+        
         // Remover o pedido da lista
         setPendingOrders((prev) =>
           prev.filter((order) => order.bling_order_id !== blingOrderId)
@@ -168,14 +189,16 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed }
           onOrderProcessed();
         }
       } else {
-        throw new Error(result.message);
+        console.error('❌ Falha no processamento:', result.message);
+        throw new Error(result.message || 'Erro desconhecido ao processar pedido');
       }
     } catch (err) {
-      console.error('Error processing order:', err);
-      setError(
-        err instanceof Error ? err.message : 'Erro ao processar pedido'
-      );
-      alert(`❌ Erro ao processar pedido:\n${error}`);
+      console.error('❌ Erro capturado:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao processar pedido';
+      setError(errorMessage);
+      
+      // Mostrar detalhes do erro
+      alert(`❌ Erro ao processar pedido:\n\n${errorMessage}`);
     } finally {
       setProcessing(null);
     }

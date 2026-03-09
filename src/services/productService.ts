@@ -599,20 +599,35 @@ const formatDateTimeToUtcPlus3 = (value?: string | null) => {
 
 const enrichVariationsWithImages = async (products: ProductItem[]): Promise<ProductItem[]> => {
   // Collect all product SKUs that have variations
-  const productSkus = products
-    .filter(p => p.variations && p.variations.length > 0 && p.sku)
-    .map(p => p.sku)
-    .filter(Boolean) as string[];
+  const productsWithVariations = products.filter(p => p.variations && p.variations.length > 0 && p.sku);
 
-  if (productSkus.length === 0) {
+  if (productsWithVariations.length === 0) {
     return products;
   }
 
-  // Fetch all variation products from products_bling that match parent SKUs
-  // Variations have SKU like "C1314BRANCOP" where "C1314" is the parent SKU
-  const { data: blingData } = await supabase
+  // Get the product IDs from products_bling for these SKUs
+  const productSkus = productsWithVariations.map(p => p.sku).filter(Boolean) as string[];
+  const { data: blingParentData } = await supabase
     .from('products_bling')
-    .select('sku, name, image_url1, image_url2, image_url3, variacao_nome')
+    .select('id, sku')
+    .in('sku', productSkus);
+
+  if (!blingParentData || blingParentData.length === 0) {
+    return products;
+  }
+
+  // Create map: parent SKU -> parent product_id
+  const skuToProductId = new Map<string, string>();
+  blingParentData.forEach((item: { id: string; sku: string }) => {
+    skuToProductId.set(item.sku, item.id);
+  });
+
+  // Fetch all variations for these parent products using the product_id FK
+  const parentProductIds = Array.from(skuToProductId.values());
+  const { data: blingData } = await supabase
+    .from('products_variations_bling')
+    .select('sku, name, image_url1, image_url2, image_url3, variacao_nome, product_id')
+    .in('product_id', parentProductIds)
     .not('variacao_nome', 'is', null)
     .neq('variacao_nome', '');
   
@@ -623,23 +638,12 @@ const enrichVariationsWithImages = async (products: ProductItem[]): Promise<Prod
   // Create a map: parent SKU -> array of variation data
   const variationsByParentSku = new Map<string, Array<{ sku: string; variacao_nome: string; imageUrl: string }>>();
   
-  blingData.forEach((item: { sku: string; name?: string; image_url1?: string; image_url2?: string; image_url3?: string; variacao_nome?: string }) => {
+  blingData.forEach((item: { sku: string; name?: string; image_url1?: string; image_url2?: string; image_url3?: string; variacao_nome?: string; product_id: string }) => {
     const imageUrl = item.image_url1 || item.image_url2 || item.image_url3;
     if (!imageUrl || !item.variacao_nome) return;
     
-    // Find parent SKU by checking which product SKU is a prefix of this variation SKU
-    // Also handle cases where variation SKU has extra characters (e.g., C1172 -> C11721G, C11722P)
-    const parentSku = productSkus.find(psku => {
-      // Direct prefix match (e.g., C1314 matches C1314BRANCOP)
-      if (item.sku.startsWith(psku)) return true;
-      
-      // Handle cases where there's a digit inserted (e.g., C1172 -> C11721G, C11722G)
-      // Remove all non-letter characters from the end and check if it starts with parent SKU
-      const skuWithoutSuffix = item.sku.replace(/[A-Z]+$/, '');
-      if (skuWithoutSuffix.startsWith(psku)) return true;
-      
-      return false;
-    });
+    // Find parent SKU by looking up the product_id
+    const parentSku = Array.from(skuToProductId.entries()).find(([_, id]) => id === item.product_id)?.[0];
     
     if (!parentSku) return;
     
@@ -668,19 +672,24 @@ const enrichVariationsWithImages = async (products: ProductItem[]): Promise<Prod
   const parseVariationName = (name: string): { color?: string; size?: string } => {
     const normalized = normalizeVariationName(name);
     // Split by common separators: -, ;, comma, or space
-    const parts = normalized.split(/\s*[-;,]\s*/);
+    const parts = normalized.split(/\s*[-;,]\s*/).map(p => p.trim()).filter(p => p.length > 0);
     
     let color: string | undefined;
     let size: string | undefined;
     
     parts.forEach(part => {
       const trimmed = part.trim();
-      // Check if it's a size (P, M, G, GG, Unico, or sizes with slash like 34/35, 36/37)
+      // Check if it's a size (P, M, G, GG, Unico, or sizes with slash like 34/35, 36/37, 39/40)
       if (/^(p|m|g|gg|xg|xxg|pp|pequeno|medio|grande|unico|\d+\/\d+)$/i.test(trimmed)) {
         size = trimmed;
       } else if (trimmed.length > 0) {
-        // Everything else is considered color
-        color = trimmed;
+        // Everything else is considered color (can be multi-word like "Verde Água e Preto")
+        if (color) {
+          // If we already have a color, append this part (handles multi-word colors)
+          color = color + ' ' + trimmed;
+        } else {
+          color = trimmed;
+        }
       }
     });
     
@@ -906,7 +915,7 @@ const mapBlingProductRow = (item: BlingProductRow): BlingProduct => ({
   categoryId: item.id_categoria ?? null,
   supplierId: item.id_fornecedor ?? null,
   description: item.descricao ?? null,
-  variationName: item.variacao_nome ?? null,
+  variationName: null, // Removido: agora só temos produtos pai
   supplierSku: item.sku_fornecedor ?? null,
   status: item.situacao ?? null
 });
@@ -1160,7 +1169,8 @@ export const ProductService = {
         : supportsDimensionColumns === false
           ? productSelectColumnsWithoutDimensions
           : productSelectColumns;
-    const base = supabase.from('products').select(selectColumns).order('created_at', { ascending: false });
+    // Order by updated_at first (most recently updated products appear first)
+    const base = supabase.from('products').select(selectColumns).order('updated_at', { ascending: false });
     const primary = organizationId ? base.eq('organization_id', organizationId) : base;
     const { data, error } = await primary;
     if (!error) {
@@ -1250,7 +1260,7 @@ export const ProductService = {
       const fallbackBase = supabase
         .from('products')
         .select(fallbackConfig.columns)
-        .order('created_at', { ascending: false });
+        .order('updated_at', { ascending: false });
       const fallback = organizationId ? await fallbackBase.eq('organization_id', organizationId) : await fallbackBase;
       if (!fallback.error) {
         if (fallbackConfig.setReputationUnsupported) {
@@ -1328,7 +1338,7 @@ export const ProductService = {
     const legacyBase = supabase
       .from('products')
       .select(legacyProductSelectColumns)
-      .order('created_at', { ascending: false });
+      .order('updated_at', { ascending: false });
     const legacy = organizationId ? await legacyBase.eq('organization_id', organizationId) : await legacyBase;
     if (legacy.error) throw legacy.error;
     supportsReputationColumns = false;
@@ -1399,7 +1409,7 @@ export const ProductService = {
   async getBlingProducts(organizationId?: string): Promise<BlingProduct[]> {
     let query = supabase
       .from('products_bling')
-      .select('id,bling_id,name,sku,stock_quantity,image_url,image_url1,cost_price,sale_price,created_at,updated_at,id_categoria,id_fornecedor,descricao,variacao_nome,sku_fornecedor,situacao')
+      .select('id,bling_id,name,sku,stock_quantity,image_url,image_url1,cost_price,sale_price,created_at,updated_at,id_categoria,id_fornecedor,descricao,sku_fornecedor,situacao')
       .order('updated_at', { ascending: false });
 
     if (organizationId) {
