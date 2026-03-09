@@ -23,6 +23,7 @@ import type { ProductItem } from '../../types/calculator';
 import { AlertCircle, TrendingUp, X, Instagram, Music, Twitter } from "lucide-react";
 import { useInfluencers } from '@/hooks/useInfluencers';
 import { useAffiliates } from '@/hooks/useAffiliates';
+import { ProductVariationsSection } from './ProductVariationsSection';
 
 interface EditProductDialogProps {
   product: ProductItem | null;
@@ -1095,6 +1096,13 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                       />
                     </div>
                   </div>
+                  
+                  {/* Seção de Variações */}
+                  {product?.variations && product.variations.length > 0 && (
+                    <div className="col-span-4 mt-6">
+                      <ProductVariationsSection variations={product.variations} />
+                    </div>
+                  )}
                 </>
               )}
               {step === 1 && (
