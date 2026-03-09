@@ -2,27 +2,21 @@ import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Package, Image as ImageIcon, Ruler, Box, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Save } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Package, Image as ImageIcon, Ruler, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { ProductVariationRecord } from '@/types/calculator';
 
 interface ProductVariationsSectionProps {
   variations: ProductVariationRecord[];
-  onUpdateVariation?: (index: number, updatedVariation: ProductVariationRecord) => void;
-  editable?: boolean;
+  onSelectVariation?: (variation: ProductVariationRecord, index: number) => void;
 }
 
 export const ProductVariationsSection: React.FC<ProductVariationsSectionProps> = ({ 
   variations, 
-  onUpdateVariation,
-  editable = false 
+  onSelectVariation
 }) => {
   const [selectedVariation, setSelectedVariation] = useState<number>(0);
   const [isExpanded, setIsExpanded] = useState(false);
   const [imageIndexes, setImageIndexes] = useState<Record<number, number>>({});
-  const [editingStock, setEditingStock] = useState<Record<number, string>>({});
 
   if (!variations || variations.length === 0) {
     return null;
@@ -56,33 +50,6 @@ export const ProductVariationsSection: React.FC<ProductVariationsSectionProps> =
       ...prev,
       [variationIndex]: ((prev[variationIndex] || 0) + 1) % images.length
     }));
-  };
-
-  const handleStockChange = (variationIndex: number, value: string) => {
-    setEditingStock(prev => ({
-      ...prev,
-      [variationIndex]: value
-    }));
-  };
-
-  const handleSaveStock = (variationIndex: number) => {
-    if (!onUpdateVariation) return;
-    
-    const newStock = editingStock[variationIndex];
-    if (newStock !== undefined) {
-      const updatedVariation = {
-        ...variations[variationIndex],
-        stockQuantity: newStock
-      };
-      onUpdateVariation(variationIndex, updatedVariation);
-      
-      // Limpar estado de edição
-      setEditingStock(prev => {
-        const newState = { ...prev };
-        delete newState[variationIndex];
-        return newState;
-      });
-    }
   };
 
   const currentImages = getVariationImages(currentVariation);
@@ -134,6 +101,10 @@ export const ProductVariationsSection: React.FC<ProductVariationsSectionProps> =
               onClick={() => {
                 setSelectedVariation(index);
                 setIsExpanded(true);
+                // Notificar o componente pai sobre a seleção
+                if (onSelectVariation) {
+                  onSelectVariation(variation, index);
+                }
               }}
               className={`group relative overflow-hidden rounded-lg border-2 transition-all hover:shadow-md ${
                 selectedVariation === index
@@ -234,9 +205,9 @@ export const ProductVariationsSection: React.FC<ProductVariationsSectionProps> =
             {/* Galeria de Imagens */}
             {hasMultipleImages && (
               <div className="rounded-md bg-white p-3 dark:bg-zinc-900">
-                <Label className="text-xs text-gray-600 dark:text-gray-400 mb-2 block">
+                <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
                   Imagens da Variação ({currentImageIndex + 1}/{currentImages.length})
-                </Label>
+                </div>
                 <div className="relative">
                   <div className="aspect-video w-full bg-gray-100 dark:bg-zinc-800 rounded-md overflow-hidden">
                     {currentImages[currentImageIndex] ? (
@@ -271,7 +242,7 @@ export const ProductVariationsSection: React.FC<ProductVariationsSectionProps> =
               </div>
             )}
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {/* SKU */}
               {currentVariation.sku && (
                 <div className="rounded-md bg-white px-3 py-2 dark:bg-zinc-900">
@@ -279,41 +250,6 @@ export const ProductVariationsSection: React.FC<ProductVariationsSectionProps> =
                   <div className="font-mono text-sm font-medium text-gray-900 dark:text-white">
                     {currentVariation.sku}
                   </div>
-                </div>
-              )}
-
-              {/* Estoque - Editável */}
-              {currentVariation.stockQuantity !== undefined && currentVariation.stockQuantity !== null && (
-                <div className="rounded-md bg-white px-3 py-2 dark:bg-zinc-900">
-                  <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 mb-1">
-                    <Box className="h-3.5 w-3.5" />
-                    Estoque
-                  </div>
-                  {editable ? (
-                    <div className="flex items-center gap-1">
-                      <Input
-                        type="number"
-                        min="0"
-                        value={editingStock[selectedVariation] ?? currentVariation.stockQuantity}
-                        onChange={(e) => handleStockChange(selectedVariation, e.target.value)}
-                        className="h-7 text-sm"
-                      />
-                      {editingStock[selectedVariation] !== undefined && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleSaveStock(selectedVariation)}
-                          className="h-7 w-7 p-0"
-                        >
-                          <Save className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                      {currentVariation.stockQuantity}
-                    </div>
-                  )}
                 </div>
               )}
 

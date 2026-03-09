@@ -962,18 +962,20 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                     <div className="pb-6 border-b border-gray-200 dark:border-zinc-700">
                       <ProductVariationsSection 
                         variations={product.variations}
-                        editable={true}
-                        onUpdateVariation={(index, updatedVariation) => {
-                          // Atualizar a variação no produto
-                          if (product.variations) {
-                            const newVariations = [...product.variations];
-                            newVariations[index] = updatedVariation;
-                            // Atualizar o produto com as novas variações
-                            onSave({
-                              ...product,
-                              variations: newVariations
-                            });
-                          }
+                        onSelectVariation={(variation) => {
+                          // Preencher os campos do formulário com os dados da variação
+                          setFormData(prev => ({
+                            ...prev,
+                            imageUrl: variation.imageUrl || '',
+                            sku: variation.sku || '',
+                            stockQuantity: String(variation.stockQuantity ?? ''),
+                            costPrice: String(variation.cost ?? ''),
+                            sellingPrice: String(variation.manualPrice || variation.suggestedPrice || ''),
+                            weight: String(variation.weight ?? ''),
+                            width: String(variation.width ?? ''),
+                            height: String(variation.height ?? ''),
+                            depth: String(variation.depth ?? ''),
+                          }));
                         }}
                       />
                     </div>
