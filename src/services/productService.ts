@@ -643,7 +643,7 @@ const enrichVariationsWithImages = async (products: ProductItem[]): Promise<Prod
     if (!imageUrl || !item.variacao_nome) return;
     
     // Find parent SKU by looking up the product_id
-    const parentSku = Array.from(skuToProductId.entries()).find(([_, id]) => id === item.product_id)?.[0];
+    const parentSku = Array.from(skuToProductId.entries()).find(([, id]) => id === item.product_id)?.[0];
     
     if (!parentSku) return;
     

@@ -51,6 +51,10 @@ export interface ProductVariationRecord {
   netRevenue?: string | number;
   margin?: string | number;
   imageUrl?: string;
+  weight?: string | number;
+  width?: string | number;
+  height?: string | number;
+  depth?: string | number;
 }
 
 export interface ProductItem {
