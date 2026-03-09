@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useLocation } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -16,9 +17,17 @@ type ProductsLoadedProps = {
 };
 
 export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBlingIds, registeredSkus }: ProductsLoadedProps) => {
+  const location = useLocation();
   const normalizeSku = (value?: string | null) => (value ?? '').trim().toLowerCase();
   const [searchInput, setSearchInput] = useState('');
   const debouncedSearch = useDebounce(searchInput, 300);
+  
+  // Sync searchInput with URL query parameter
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const urlSearch = params.get('q') || '';
+    setSearchInput(urlSearch);
+  }, [location.search]);
   
   const {
     items,
