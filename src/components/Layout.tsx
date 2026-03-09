@@ -47,6 +47,30 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setSearchTerm(nextSearch.get('q') || '');
   }, [location.search]);
 
+  // Atualizar a URL em tempo real conforme o usuário digita
+  useEffect(() => {
+    const trimmed = searchTerm.trim();
+    const nextParams = new URLSearchParams(location.search);
+    
+    if (trimmed) {
+      nextParams.set('q', trimmed);
+    } else {
+      nextParams.delete('q');
+    }
+    
+    if (!nextParams.get('e2e') && e2eSearch) {
+      nextParams.set('e2e', 'true');
+    }
+    
+    const newSearch = nextParams.toString() ? `?${nextParams.toString()}` : '';
+    const currentSearch = location.search;
+    
+    // Só navegar se a URL mudou
+    if (newSearch !== currentSearch) {
+      navigate({ pathname: location.pathname, search: newSearch }, { replace: true });
+    }
+  }, [searchTerm, navigate, location.pathname, location.search, e2eSearch]);
+
   useEffect(() => {
     const channel = supabase
       .channel('products_bling_changes')
@@ -62,20 +86,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       supabase.removeChannel(channel);
     };
   }, [organizationId]);
-
-  const handleSearchSubmit = () => {
-    const trimmed = searchTerm.trim();
-    const nextParams = new URLSearchParams(location.search);
-    if (trimmed) {
-      nextParams.set('q', trimmed);
-    } else {
-      nextParams.delete('q');
-    }
-    if (!nextParams.get('e2e') && e2eSearch) {
-      nextParams.set('e2e', 'true');
-    }
-    navigate({ pathname: '/produtos', search: nextParams.toString() ? `?${nextParams.toString()}` : '' });
-  };
 
   const handleLogout = async () => {
     try {
@@ -173,15 +183,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       type="text"
                       id="search-navbar"
                       className="block w-full p-2 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                      placeholder="Search..."
+                      placeholder="Pesquisar produtos..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleSearchSubmit();
-                        }
-                      }}
-                      aria-label="Pesquisar"
+                      aria-label="Pesquisar produtos"
                     />
                 </div>
             </div>
