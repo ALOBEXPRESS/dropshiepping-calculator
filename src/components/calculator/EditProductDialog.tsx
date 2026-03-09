@@ -954,155 +954,169 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
               <h3 className="text-base font-semibold text-foreground">{steps[step]?.title}</h3>
               <p className="text-xs text-muted-foreground">{steps[step]?.description}</p>
             </div>
-            <div className="grid gap-4">
+            <div className="space-y-6">
               {step === 0 && (
                 <>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right dark:text-white">
-                      Nome
-                    </Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => handleChange('name', e.target.value)}
-                      className="col-span-3"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="imageUrl" className="text-right dark:text-white">
-                      URL da imagem
-                    </Label>
-                    <Input
-                      id="imageUrl"
-                      type="url"
-                      value={formData.imageUrl}
-                      onChange={(e) => handleChange('imageUrl', e.target.value)}
-                      className="col-span-3"
-                      placeholder="https://"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="sku" className="text-right dark:text-white">
-                      SKU
-                    </Label>
-                    <Input
-                      id="sku"
-                      value={formData.sku}
-                      onChange={(e) => handleChange('sku', e.target.value)}
-                      className="col-span-3"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="description" className="text-right dark:text-white">
-                      Descrição
-                    </Label>
-                    <textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => handleChange('description', e.target.value)}
-                      className="col-span-3 min-h-[80px] px-3 py-2 text-sm rounded-md border border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
-                      placeholder="Descrição detalhada do produto..."
-                      rows={3}
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="stockQuantity" className="text-right dark:text-white">
-                      Estoque
-                    </Label>
-                    <Input
-                      id="stockQuantity"
-                      type="number"
-                      inputMode="numeric"
-                      min="0"
-                      value={formData.stockQuantity}
-                      onChange={(e) => handleChange('stockQuantity', e.target.value)}
-                      className="col-span-3"
-                      placeholder="Quantidade em estoque"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="marketplace" className="text-right text-red-500 dark:text-red-400">
-                      Marketplace
-                    </Label>
-                    <Select value={formData.marketplace} onValueChange={handleMarketplaceChange}>
-                      <SelectTrigger className="col-span-3 border-red-500 focus:border-red-500">
-                        <SelectValue placeholder="Selecione o marketplace" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {allMarketplaceOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="supplier" className="text-right dark:text-white">
-                      Fornecedor
-                    </Label>
-                    <Select
-                        value={formData.supplierName}
-                        onValueChange={(val) => handleChange('supplierName', val)}
-                    >
-                        <SelectTrigger className="col-span-3">
-                            <SelectValue placeholder="Selecione o fornecedor" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {supplierOptions.map(supplier => (
-                                <SelectItem key={supplier.id} value={supplier.name}>
-                                    {supplier.name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label className="text-right dark:text-white">
-                      Dimensões
-                    </Label>
-                    <div className="col-span-3 grid grid-cols-4 gap-2">
-                      <Input
-                        type="text"
-                        inputMode="decimal"
-                        value={formData.weight}
-                        onChange={(e) => handleCurrencyChange(e, (val) => handleChange('weight', val))}
-                        placeholder="Peso (kg)"
-                        className="h-9"
-                      />
-                      <Input
-                        type="text"
-                        inputMode="decimal"
-                        value={formData.width}
-                        onChange={(e) => handleCurrencyChange(e, (val) => handleChange('width', val))}
-                        placeholder="Largura (cm)"
-                        className="h-9"
-                      />
-                      <Input
-                        type="text"
-                        inputMode="decimal"
-                        value={formData.height}
-                        onChange={(e) => handleCurrencyChange(e, (val) => handleChange('height', val))}
-                        placeholder="Altura (cm)"
-                        className="h-9"
-                      />
-                      <Input
-                        type="text"
-                        inputMode="decimal"
-                        value={formData.depth}
-                        onChange={(e) => handleCurrencyChange(e, (val) => handleChange('depth', val))}
-                        placeholder="Profundidade (cm)"
-                        className="h-9"
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Seção de Variações */}
+                  {/* Seção de Variações - Movida para o topo */}
                   {product?.variations && product.variations.length > 0 && (
-                    <div className="col-span-4 mt-6">
+                    <div className="pb-6 border-b border-gray-200 dark:border-zinc-700">
                       <ProductVariationsSection variations={product.variations} />
                     </div>
                   )}
+
+                  {/* Campos Básicos - Layout vertical limpo */}
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name" className="text-sm font-medium dark:text-white">
+                        Nome do Produto
+                      </Label>
+                      <Input
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => handleChange('name', e.target.value)}
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="imageUrl" className="text-sm font-medium dark:text-white">
+                        URL da Imagem
+                      </Label>
+                      <Input
+                        id="imageUrl"
+                        type="url"
+                        value={formData.imageUrl}
+                        onChange={(e) => handleChange('imageUrl', e.target.value)}
+                        className="w-full"
+                        placeholder="https://"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="sku" className="text-sm font-medium dark:text-white">
+                          SKU
+                        </Label>
+                        <Input
+                          id="sku"
+                          value={formData.sku}
+                          onChange={(e) => handleChange('sku', e.target.value)}
+                          className="w-full"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="stockQuantity" className="text-sm font-medium dark:text-white">
+                          Estoque
+                        </Label>
+                        <Input
+                          id="stockQuantity"
+                          type="number"
+                          inputMode="numeric"
+                          min="0"
+                          value={formData.stockQuantity}
+                          onChange={(e) => handleChange('stockQuantity', e.target.value)}
+                          className="w-full"
+                          placeholder="Quantidade"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="description" className="text-sm font-medium dark:text-white">
+                        Descrição
+                      </Label>
+                      <textarea
+                        id="description"
+                        value={formData.description}
+                        onChange={(e) => handleChange('description', e.target.value)}
+                        className="w-full min-h-[80px] px-3 py-2 text-sm rounded-md border border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
+                        placeholder="Descrição detalhada do produto..."
+                        rows={3}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="marketplace" className="text-sm font-medium text-red-500 dark:text-red-400">
+                          Marketplace
+                        </Label>
+                        <Select value={formData.marketplace} onValueChange={handleMarketplaceChange}>
+                          <SelectTrigger className="w-full border-red-500 focus:border-red-500">
+                            <SelectValue placeholder="Selecione o marketplace" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {allMarketplaceOptions.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="supplier" className="text-sm font-medium dark:text-white">
+                          Fornecedor
+                        </Label>
+                        <Select
+                            value={formData.supplierName}
+                            onValueChange={(val) => handleChange('supplierName', val)}
+                        >
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Selecione o fornecedor" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {supplierOptions.map(supplier => (
+                                    <SelectItem key={supplier.id} value={supplier.name}>
+                                        {supplier.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium dark:text-white">
+                        Dimensões
+                      </Label>
+                      <div className="grid grid-cols-4 gap-3">
+                        <Input
+                          type="text"
+                          inputMode="decimal"
+                          value={formData.weight}
+                          onChange={(e) => handleCurrencyChange(e, (val) => handleChange('weight', val))}
+                          placeholder="Peso (kg)"
+                          className="w-full"
+                        />
+                        <Input
+                          type="text"
+                          inputMode="decimal"
+                          value={formData.width}
+                          onChange={(e) => handleCurrencyChange(e, (val) => handleChange('width', val))}
+                          placeholder="Largura (cm)"
+                          className="w-full"
+                        />
+                        <Input
+                          type="text"
+                          inputMode="decimal"
+                          value={formData.height}
+                          onChange={(e) => handleCurrencyChange(e, (val) => handleChange('height', val))}
+                          placeholder="Altura (cm)"
+                          className="w-full"
+                        />
+                        <Input
+                          type="text"
+                          inputMode="decimal"
+                          value={formData.depth}
+                          onChange={(e) => handleCurrencyChange(e, (val) => handleChange('depth', val))}
+                          placeholder="Profundidade (cm)"
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </>
               )}
               {step === 1 && (
