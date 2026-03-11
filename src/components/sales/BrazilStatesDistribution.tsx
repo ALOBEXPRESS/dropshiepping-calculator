@@ -55,7 +55,7 @@ const brazilianStates = [
 ];
 
 // TopoJSON do Brasil
-const BRAZIL_TOPO_JSON = 'https://raw.githubusercontent.com/deldersveld/topojson/master/countries/brazil/brazil-states.json';
+const BRAZIL_TOPO_JSON = 'https://gist.githubusercontent.com/ruliana/1ccaaab05ea113b0dff3b22be3b4d637/raw/br-states.json';
 
 // URLs das bandeiras dos estados
 const getStateFlagUrl = (stateCode: string) => {
@@ -77,18 +77,10 @@ export const BrazilStatesDistribution: React.FC<BrazilStatesDistributionProps> =
       setError(null);
 
       try {
-        // Buscar pedidos com dados de estado via join com bling_orders
-        // Usando o nome da foreign key para evitar ambiguidade
+        // Buscar pedidos com dados de estado usando a view orders_with_location
         const { data: ordersData, error: fetchError } = await supabase
-          .from('orders')
-          .select(`
-            id,
-            total_amount,
-            bling_order_id,
-            bling_orders:bling_order_id (
-              label_state
-            )
-          `)
+          .from('orders_with_location')
+          .select('id, total_amount, label_state')
           .eq('organization_id', organizationId)
           .neq('status', 'cancelled');
 
@@ -98,13 +90,8 @@ export const BrazilStatesDistribution: React.FC<BrazilStatesDistributionProps> =
         const stateCounts: Record<string, { count: number; revenue: number }> = {};
         let totalOrders = 0;
 
-        (ordersData || []).forEach((order: { bling_orders?: { label_state?: string } | { label_state?: string }[] | null; total_amount?: number }) => {
-          let state: string | undefined;
-          if (Array.isArray(order.bling_orders)) {
-            state = order.bling_orders[0]?.label_state?.toUpperCase().trim();
-          } else {
-            state = order.bling_orders?.label_state?.toUpperCase().trim();
-          }
+        (ordersData || []).forEach((order: { label_state?: string; total_amount?: number }) => {
+          const state = order.label_state?.toUpperCase().trim();
           if (state && state.length === 2) {
             if (!stateCounts[state]) {
               stateCounts[state] = { count: 0, revenue: 0 };
@@ -196,9 +183,9 @@ export const BrazilStatesDistribution: React.FC<BrazilStatesDistributionProps> =
               className="w-full h-auto"
             >
               <Geographies geography={BRAZIL_TOPO_JSON}>
-                {({ geographies }: { geographies: Array<{ rsmKey: string; properties: { sigla?: string; SIGLA?: string } }> }) =>
+                {({ geographies }: { geographies: Array<{ rsmKey: string; id?: string; properties: { sigla?: string; SIGLA?: string; nome?: string } }> }) =>
                   geographies.map((geo) => {
-                    const stateCode = geo.properties.sigla || geo.properties.SIGLA;
+                    const stateCode = geo.id || geo.properties.sigla || geo.properties.SIGLA;
                     if (!stateCode) return null;
                     const isSelected = selectedState === stateCode;
                     const fillColor = getStateColor(stateCode);

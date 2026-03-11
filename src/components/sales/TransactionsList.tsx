@@ -26,6 +26,27 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState('this_month');
 
+  // Cores aleatórias para avatares
+  const avatarColors = [
+    '#4F46E5', // Indigo
+    '#10B981', // Green
+    '#F59E0B', // Amber
+    '#EF4444', // Red
+    '#8B5CF6', // Purple
+    '#EC4899', // Pink
+    '#06B6D4', // Cyan
+    '#F97316', // Orange
+  ];
+
+  const getAvatarColor = (name: string) => {
+    // Gerar cor baseada no nome para consistência
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return avatarColors[Math.abs(hash) % avatarColors.length];
+  };
+
   useEffect(() => {
     const fetchTransactions = async () => {
       if (!organizationId) return;
@@ -180,7 +201,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
                   name={transaction.customer_name}
                   size="48"
                   round={true}
-                  color="#4F46E5"
+                  color={getAvatarColor(transaction.customer_name)}
                   maxInitials={2}
                   textSizeRatio={2}
                 />

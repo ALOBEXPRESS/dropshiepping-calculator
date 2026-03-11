@@ -1,24 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
-import Chart from 'react-apexcharts';
-import type { ApexOptions } from 'apexcharts';
 import { supabase } from '@/lib/supabase';
-import { Loader2, TrendingUp } from 'lucide-react';
-import { format, subMonths } from 'date-fns';
+import { Loader2, Package } from 'lucide-react';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface RecentOrdersChartProps {
   organizationId: string;
 }
 
-interface MonthlyData {
-  month: string;
+interface OrderData {
+  id: string;
+  order_number: string;
+  order_date: string;
   total_amount: number;
-  order_count: number;
+  product_image?: string;
+  product_name?: string;
+  marketplace?: string;
 }
 
 export const RecentOrdersChart: React.FC<RecentOrdersChartProps> = ({ organizationId }) => {
-  const [data, setData] = useState<MonthlyData[]>([]);
+  const [data, setData] = useState<OrderData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,45 +32,51 @@ export const RecentOrdersChart: React.FC<RecentOrdersChartProps> = ({ organizati
       setError(null);
 
       try {
-        // Buscar dados dos últimos 6 meses
-        const sixMonthsAgo = subMonths(new Date(), 6);
-
+        // Buscar últimos 5 pedidos com informações de produtos
         const { data: ordersData, error: fetchError } = await supabase
           .from('orders')
-          .select('order_date, total_amount')
+          .select(`
+            id,
+            order_number,
+            order_date,
+            total_amount,
+            order_items (
+              product_id,
+              products (
+                name,
+                image_url
+              )
+            ),
+            sales_channels (
+              marketplace
+            )
+          `)
           .eq('organization_id', organizationId)
-          .gte('order_date', sixMonthsAgo.toISOString())
-          .order('order_date', { ascending: true });
+          .order('order_date', { ascending: false })
+          .limit(5);
 
         if (fetchError) throw fetchError;
 
-        // Agrupar por mês
-        const monthlyMap = new Map<string, { total: number; count: number }>();
-
-        ordersData?.forEach((order) => {
-          const date = new Date(order.order_date);
-          const monthKey = format(date, 'MMM', { locale: ptBR });
-
-          const existing = monthlyMap.get(monthKey) || { total: 0, count: 0 };
-          monthlyMap.set(monthKey, {
-            total: existing.total + Number(order.total_amount),
-            count: existing.count + 1,
-          });
+        // Formatar dados
+        const formattedData: OrderData[] = (ordersData || []).map((order: any) => {
+          const firstItem = order.order_items?.[0];
+          const product = firstItem?.products;
+          
+          return {
+            id: order.id,
+            order_number: order.order_number,
+            order_date: order.order_date,
+            total_amount: Number(order.total_amount),
+            product_image: product?.image_url,
+            product_name: product?.name,
+            marketplace: order.sales_channels?.marketplace || 'Mercado Livre',
+          };
         });
 
-        // Converter para array
-        const chartData: MonthlyData[] = Array.from(monthlyMap.entries()).map(
-          ([month, values]) => ({
-            month,
-            total_amount: values.total,
-            order_count: values.count,
-          })
-        );
-
-        setData(chartData);
+        setData(formattedData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erro ao carregar dados');
-        console.error('Error fetching recent orders chart:', err);
+        console.error('Error fetching recent orders:', err);
       } finally {
         setLoading(false);
       }
@@ -81,77 +89,16 @@ export const RecentOrdersChart: React.FC<RecentOrdersChartProps> = ({ organizati
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(value);
   };
 
-  const totalRevenue = data.reduce((sum, item) => sum + item.total_amount, 0);
-  const previousTotal = data.length > 1 ? data[data.length - 2].total_amount : 0;
-  const currentTotal = data.length > 0 ? data[data.length - 1].total_amount : 0;
-  const growthPercentage =
-    previousTotal > 0 ? ((currentTotal - previousTotal) / previousTotal) * 100 : 0;
-
-  const chartOptions: ApexOptions = {
-    chart: {
-      type: 'area',
-      toolbar: { show: false },
-      zoom: { enabled: false },
-      fontFamily: 'inherit',
-    },
-    dataLabels: { enabled: false },
-    stroke: {
-      curve: 'smooth',
-      width: 3,
-    },
-    fill: {
-      type: 'gradient',
-      gradient: {
-        shadeIntensity: 1,
-        opacityFrom: 0.4,
-        opacityTo: 0.1,
-        stops: [0, 90, 100],
-      },
-    },
-    colors: ['#487FFF'],
-    xaxis: {
-      categories: data.map((item) => item.month),
-      labels: {
-        style: {
-          colors: '#6b7280',
-          fontSize: '12px',
-        },
-      },
-      axisBorder: { show: false },
-      axisTicks: { show: false },
-    },
-    yaxis: {
-      labels: {
-        style: {
-          colors: '#6b7280',
-          fontSize: '12px',
-        },
-        formatter: (value) => formatCurrency(value),
-      },
-    },
-    grid: {
-      borderColor: '#e5e7eb',
-      strokeDashArray: 4,
-    },
-    tooltip: {
-      theme: 'light',
-      y: {
-        formatter: (value) => formatCurrency(value),
-      },
-    },
+  const formatDate = (dateString: string) => {
+    return format(new Date(dateString), "dd 'de' MMM, HH:mm", { locale: ptBR });
   };
 
-  const chartSeries = [
-    {
-      name: 'Receita',
-      data: data.map((item) => item.total_amount),
-    },
-  ];
+  const totalRevenue = data.reduce((sum, item) => sum + item.total_amount, 0);
 
   if (loading) {
     return (
@@ -177,39 +124,64 @@ export const RecentOrdersChart: React.FC<RecentOrdersChartProps> = ({ organizati
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
           Pedidos Recentes
         </h3>
-        <div className="flex items-center gap-4">
-          <div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {formatCurrency(totalRevenue)}
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Últimos 6 meses</p>
-          </div>
-          {growthPercentage !== 0 && (
-            <div className="flex items-center gap-1">
-              <TrendingUp
-                className={`w-4 h-4 ${
-                  growthPercentage >= 0 ? 'text-green-500' : 'text-red-500'
-                }`}
-              />
-              <span
-                className={`text-sm font-medium ${
-                  growthPercentage >= 0 ? 'text-green-500' : 'text-red-500'
-                }`}
-              >
-                {growthPercentage >= 0 ? '+' : ''}
-                {growthPercentage.toFixed(1)}%
-              </span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">vs mês anterior</span>
-            </div>
-          )}
+        <div>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            {formatCurrency(totalRevenue)}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Últimos {data.length} pedidos</p>
         </div>
       </div>
 
       {data.length > 0 ? (
-        <Chart options={chartOptions} series={chartSeries} type="area" height={200} />
+        <div className="space-y-3">
+          {data.map((order) => (
+            <div
+              key={order.id}
+              className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+            >
+              {/* Imagem do Produto */}
+              <div className="w-12 h-12 rounded-lg bg-white dark:bg-zinc-800 flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-200 dark:border-zinc-700">
+                {order.product_image ? (
+                  <img
+                    src={order.product_image}
+                    alt={order.product_name || 'Produto'}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg></div>';
+                    }}
+                  />
+                ) : (
+                  <Package className="w-6 h-6 text-gray-400" />
+                )}
+              </div>
+
+              {/* Informações do Pedido */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    Pedido #{order.order_number}
+                  </p>
+                  <p className="text-sm font-bold text-green-600">
+                    {formatCurrency(order.total_amount)}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    {order.product_name || 'Produto sem nome'}
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                    {formatDate(order.order_date)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
-        <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
-          Sem dados disponíveis
+        <div className="flex flex-col items-center justify-center h-48 text-gray-500 dark:text-gray-400">
+          <Package className="w-12 h-12 mb-2 opacity-50" />
+          <p>Nenhum pedido recente</p>
         </div>
       )}
     </Card>

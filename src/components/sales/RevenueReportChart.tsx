@@ -139,11 +139,17 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const dataPointIndex = Math.floor(adjustedX / pointWidth);
         
         if (dataPointIndex >= 0 && dataPointIndex < data.length) {
-          // Usar a posição do mouse diretamente (coordenadas da tela)
+          // Calcular a posição X do centro do ponto no gráfico
+          const pointCenterX = padding + (dataPointIndex * pointWidth) + (pointWidth / 2);
+          
+          // Converter para coordenadas da tela
+          const screenX = rect.left + pointCenterX;
+          const screenY = rect.top + chartHeight / 2 + 30; // Centro vertical do gráfico
+          
           setCustomTooltip({
             dataPointIndex,
-            x: mouseEvent.clientX, // Posição X do mouse na tela
-            y: mouseEvent.clientY, // Posição Y do mouse na tela
+            x: screenX, // Posição X fixa no centro do ponto
+            y: screenY, // Posição Y fixa no centro do gráfico
           });
         }
       });
@@ -223,30 +229,31 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     const tooltipHeight = 300; // altura aproximada
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
-    const offset = 15; // distância do cursor
+    const offset = 20; // distância do cursor
+    const padding = 10; // padding das bordas da tela
     
-    // Posicionar à direita e acima do cursor por padrão
+    // Posicionar à direita do cursor por padrão
     let left = customTooltip.x + offset;
     let top = customTooltip.y - tooltipHeight / 2;
     
     // Se o tooltip sair pela direita, posicionar à esquerda do cursor
-    if (left + tooltipWidth > windowWidth - 10) {
+    if (left + tooltipWidth > windowWidth - padding) {
       left = customTooltip.x - tooltipWidth - offset;
     }
     
+    // Se ainda sair pela esquerda, centralizar horizontalmente
+    if (left < padding) {
+      left = Math.max(padding, (windowWidth - tooltipWidth) / 2);
+    }
+    
     // Se o tooltip sair por baixo, ajustar para cima
-    if (top + tooltipHeight > windowHeight - 10) {
-      top = windowHeight - tooltipHeight - 10;
+    if (top + tooltipHeight > windowHeight - padding) {
+      top = windowHeight - tooltipHeight - padding;
     }
     
     // Se o tooltip sair por cima, ajustar para baixo
-    if (top < 10) {
-      top = 10;
-    }
-    
-    // Garantir que não saia pela esquerda
-    if (left < 10) {
-      left = 10;
+    if (top < padding) {
+      top = padding;
     }
 
     return (

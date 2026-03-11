@@ -100,7 +100,7 @@ export const StockReportTable: React.FC<StockReportTableProps> = ({ organization
 
       {sortedStock.length > 0 ? (
         <>
-          <div className="space-y-4 flex-1">
+          <div className="space-y-6 flex-1">
             {currentItems.map((item, index) => {
               const statusConfig = getStatusConfig(item.stock_status);
               const StatusIcon = statusConfig.icon;
@@ -108,34 +108,34 @@ export const StockReportTable: React.FC<StockReportTableProps> = ({ organization
               return (
                 <div
                   key={index}
-                  className="flex flex-col gap-2 py-3 border-b border-gray-100 dark:border-zinc-800 last:border-0"
+                  className="flex flex-col gap-4 p-5 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
                 >
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      <p className="text-base font-semibold text-gray-900 dark:text-white line-clamp-2 mb-2">
                         {item.product_name}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                         {formatCurrency(item.price)}
                       </p>
                     </div>
 
-                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium whitespace-nowrap flex-shrink-0 ${statusConfig.color}`}>
-                      <StatusIcon className="w-3 h-3" />
+                    <span className={`inline-flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium whitespace-nowrap flex-shrink-0 ${statusConfig.color}`}>
+                      <StatusIcon className="w-4 h-4" />
                       {statusConfig.label}
                     </span>
                   </div>
 
                   <div className="w-full">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-gray-600 dark:text-gray-400">
+                    <div className="flex items-center justify-between mb-2.5">
+                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                         {item.stock_quantity} un.
                       </span>
-                      <span className="text-xs text-gray-600 dark:text-gray-400">
+                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                         {item.stock_percentage}%
                       </span>
                     </div>
-                    <div className="w-full h-2 bg-gray-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                    <div className="w-full h-3 bg-gray-200 dark:bg-zinc-700 rounded-full overflow-hidden">
                       <div
                         className={`h-full ${statusConfig.barColor} transition-all duration-300`}
                         style={{ width: `${item.stock_percentage}%` }}
