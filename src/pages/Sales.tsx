@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSettings } from '@/contexts/SettingsContext';
 import {
   RevenueReportChart,
@@ -17,6 +17,7 @@ import gsap from 'gsap';
 const Sales: React.FC = () => {
   const { organizationId } = useSettings();
   const containerRef = useRef<HTMLDivElement>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -44,6 +45,12 @@ const Sales: React.FC = () => {
     );
   }, [organizationId]);
 
+  // Função para atualizar todos os componentes após processar um pedido
+  const handleOrderProcessed = () => {
+    console.log('🔄 Pedido processado! Atualizando todos os componentes...');
+    setRefreshKey(prev => prev + 1);
+  };
+
   if (!organizationId) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -66,50 +73,50 @@ const Sales: React.FC = () => {
 
       {/* Vendas a Processar */}
       <div className="mb-6 animate-on-load">
-        <PendingOrders />
+        <PendingOrders onOrderProcessed={handleOrderProcessed} />
       </div>
 
       {/* Revenue Report + Customer Statistics - Duas Colunas no Topo */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
         <div className="animate-on-load">
-          <RevenueReportChart organizationId={organizationId} />
+          <RevenueReportChart key={`revenue-${refreshKey}`} organizationId={organizationId} />
         </div>
         <div className="animate-on-load">
-          <CustomersStatistics organizationId={organizationId} />
+          <CustomersStatistics key={`customers-stats-${refreshKey}`} organizationId={organizationId} />
         </div>
       </div>
 
       {/* Statistics Cards - 4 columns */}
       <div className="mb-6 animate-on-load">
-        <StatisticsCards organizationId={organizationId} />
+        <StatisticsCards key={`stats-${refreshKey}`} organizationId={organizationId} />
       </div>
 
       {/* Recent Orders Chart + Transactions + Brazil States */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="animate-on-load">
-          <RecentOrdersChart organizationId={organizationId} />
+          <RecentOrdersChart key={`recent-orders-${refreshKey}`} organizationId={organizationId} />
         </div>
         <div className="animate-on-load">
-          <TransactionsList organizationId={organizationId} />
+          <TransactionsList key={`transactions-${refreshKey}`} organizationId={organizationId} />
         </div>
         <div className="lg:col-span-1 animate-on-load">
-          <BrazilStatesDistribution organizationId={organizationId} />
+          <BrazilStatesDistribution key={`states-${refreshKey}`} organizationId={organizationId} />
         </div>
       </div>
 
       {/* Top Products + Stock Report */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 lg:items-stretch">
         <div className="lg:col-span-2 animate-on-load flex">
-          <TopSellingProductsTable organizationId={organizationId} limit={6} />
+          <TopSellingProductsTable key={`top-products-${refreshKey}`} organizationId={organizationId} limit={6} />
         </div>
         <div className="lg:col-span-1 animate-on-load flex">
-          <StockReportTable organizationId={organizationId} />
+          <StockReportTable key={`stock-${refreshKey}`} organizationId={organizationId} />
         </div>
       </div>
 
       {/* Top Customers */}
       <div className="mb-6 animate-on-load">
-        <TopCustomersList organizationId={organizationId} limit={6} />
+        <TopCustomersList key={`top-customers-${refreshKey}`} organizationId={organizationId} limit={6} />
       </div>
     </div>
   );
