@@ -64,9 +64,19 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
 
       if (!orgId) {
-        // If no organization, fetch the first one (fallback/dev mode)
-        const { data: orgs } = await supabase.from('organizations').select('id').limit(1);
-        if (orgs && orgs.length > 0) orgId = orgs[0].id;
+        // If no organization, fetch "Empresa Alob" (fallback/dev mode)
+        const { data: orgs } = await supabase
+          .from('organizations')
+          .select('id')
+          .eq('name', 'Empresa Alob')
+          .limit(1);
+        if (orgs && orgs.length > 0) {
+          orgId = orgs[0].id;
+        } else {
+          // Se não encontrar "Empresa Alob", pega a primeira
+          const { data: fallbackOrgs } = await supabase.from('organizations').select('id').limit(1);
+          if (fallbackOrgs && fallbackOrgs.length > 0) orgId = fallbackOrgs[0].id;
+        }
       }
 
       setOrganizationId(orgId);

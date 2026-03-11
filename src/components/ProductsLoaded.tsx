@@ -19,15 +19,15 @@ type ProductsLoadedProps = {
 export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBlingIds, registeredSkus }: ProductsLoadedProps) => {
   const location = useLocation();
   const normalizeSku = (value?: string | null) => (value ?? '').trim().toLowerCase();
-  const [searchInput, setSearchInput] = useState('');
-  const debouncedSearch = useDebounce(searchInput, 300);
   
-  // Sync searchInput with URL query parameter
-  useEffect(() => {
+  // Initialize searchInput with URL query parameter
+  const getInitialSearch = () => {
     const params = new URLSearchParams(location.search);
-    const urlSearch = params.get('q') || '';
-    setSearchInput(urlSearch);
-  }, [location.search]);
+    return params.get('q') || '';
+  };
+  
+  const [searchInput, setSearchInput] = useState(getInitialSearch);
+  const debouncedSearch = useDebounce(searchInput, 300);
   
   const {
     items,
