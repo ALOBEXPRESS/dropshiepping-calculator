@@ -37,6 +37,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [deleting, setDeleting] = useState(false);
   const [customTooltip, setCustomTooltip] = useState<CustomTooltipData | null>(null);
 
+  // Forçar refetch quando o componente é montado (quando key muda)
+  React.useEffect(() => {
+    refetch();
+  }, []);
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',

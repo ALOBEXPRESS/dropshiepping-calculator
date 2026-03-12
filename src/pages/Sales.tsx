@@ -48,7 +48,11 @@ const Sales: React.FC = () => {
   // Função para atualizar todos os componentes após processar um pedido
   const handleOrderProcessed = () => {
     console.log('🔄 Pedido processado! Atualizando todos os componentes...');
-    setRefreshKey(prev => prev + 1);
+    console.log('🔄 refreshKey anterior:', refreshKey);
+    // Usar timestamp para garantir que o key seja sempre diferente
+    const newKey = Date.now();
+    console.log('🔄 Novo refreshKey:', newKey);
+    setRefreshKey(newKey);
   };
 
   if (!organizationId) {

@@ -185,8 +185,12 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed }
         await loadPendingOrders();
         
         // Notificar componente pai para atualizar pedidos recentes
+        console.log('📢 Notificando componente pai...');
         if (onOrderProcessed) {
+          console.log('✅ Callback onOrderProcessed existe, chamando...');
           onOrderProcessed();
+        } else {
+          console.warn('⚠️ Callback onOrderProcessed não foi fornecido!');
         }
       } else {
         console.error('❌ Falha no processamento:', result.message);
