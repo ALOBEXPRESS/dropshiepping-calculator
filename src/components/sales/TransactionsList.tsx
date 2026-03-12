@@ -9,6 +9,7 @@ import Avatar from 'react-avatar';
 
 interface TransactionsListProps {
   organizationId: string;
+  refreshTrigger?: number;
 }
 
 interface Transaction {
@@ -20,7 +21,7 @@ interface Transaction {
   status: string;
 }
 
-export const TransactionsList: React.FC<TransactionsListProps> = ({ organizationId }) => {
+export const TransactionsList: React.FC<TransactionsListProps> = ({ organizationId, refreshTrigger }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -112,8 +113,14 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
       }
     };
 
-    fetchTransactions();
-  }, [organizationId, period]);
+    // Só refetch se refreshTrigger for > 0 (ou seja, após processar pedido)
+    if (!refreshTrigger || refreshTrigger === 0) {
+      fetchTransactions();
+    } else if (refreshTrigger > 0) {
+      console.log('🔄 TransactionsList: refreshTrigger mudou, refazendo query...', refreshTrigger);
+      fetchTransactions();
+    }
+  }, [organizationId, period, refreshTrigger]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {

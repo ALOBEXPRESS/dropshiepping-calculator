@@ -181,10 +181,7 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed }
         setProcessResult(result);
         setShowModal(true);
 
-        // Recarregar dados
-        await loadPendingOrders();
-        
-        // Notificar componente pai para atualizar pedidos recentes
+        // Notificar componente pai ANTES de recarregar
         console.log('📢 Notificando componente pai...');
         if (onOrderProcessed) {
           console.log('✅ Callback onOrderProcessed existe, chamando...');
@@ -192,6 +189,9 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed }
         } else {
           console.warn('⚠️ Callback onOrderProcessed não foi fornecido!');
         }
+
+        // Recarregar dados após notificar
+        await loadPendingOrders();
       } else {
         console.error('❌ Falha no processamento:', result.message);
         throw new Error(result.message || 'Erro desconhecido ao processar pedido');

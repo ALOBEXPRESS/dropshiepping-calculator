@@ -5,10 +5,19 @@ import { Package, Users, ShoppingCart, DollarSign, ArrowUpRight, ArrowDownRight,
 
 interface StatisticsCardsProps {
   organizationId: string;
+  refreshTrigger?: number;
 }
 
-export const StatisticsCards: React.FC<StatisticsCardsProps> = ({ organizationId }) => {
-  const { stats, loading, error } = useStatisticsCards(organizationId);
+export const StatisticsCards: React.FC<StatisticsCardsProps> = ({ organizationId, refreshTrigger }) => {
+  const { stats, loading, error, refetch } = useStatisticsCards(organizationId);
+
+  // Refetch quando refreshTrigger mudar (apenas se for > 0)
+  React.useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      console.log('🔄 StatisticsCards: refreshTrigger mudou, refazendo query...', refreshTrigger);
+      refetch();
+    }
+  }, [refreshTrigger, refetch]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {

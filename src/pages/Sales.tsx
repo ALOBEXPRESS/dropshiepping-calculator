@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useSettings } from '@/contexts/SettingsContext';
 import {
   RevenueReportChart,
@@ -46,14 +46,13 @@ const Sales: React.FC = () => {
   }, [organizationId]);
 
   // Função para atualizar todos os componentes após processar um pedido
-  const handleOrderProcessed = () => {
+  const handleOrderProcessed = useCallback(() => {
     console.log('🔄 Pedido processado! Atualizando todos os componentes...');
-    console.log('🔄 refreshKey anterior:', refreshKey);
     // Usar timestamp para garantir que o key seja sempre diferente
     const newKey = Date.now();
     console.log('🔄 Novo refreshKey:', newKey);
     setRefreshKey(newKey);
-  };
+  }, []);
 
   if (!organizationId) {
     return (
@@ -83,44 +82,44 @@ const Sales: React.FC = () => {
       {/* Revenue Report + Customer Statistics - Duas Colunas no Topo */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
         <div className="animate-on-load">
-          <RevenueReportChart key={`revenue-${refreshKey}`} organizationId={organizationId} />
+          <RevenueReportChart organizationId={organizationId} refreshTrigger={refreshKey} />
         </div>
         <div className="animate-on-load">
-          <CustomersStatistics key={`customers-stats-${refreshKey}`} organizationId={organizationId} />
+          <CustomersStatistics organizationId={organizationId} refreshTrigger={refreshKey} />
         </div>
       </div>
 
       {/* Statistics Cards - 4 columns */}
       <div className="mb-6 animate-on-load">
-        <StatisticsCards key={`stats-${refreshKey}`} organizationId={organizationId} />
+        <StatisticsCards organizationId={organizationId} refreshTrigger={refreshKey} />
       </div>
 
       {/* Recent Orders Chart + Transactions + Brazil States */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="animate-on-load">
-          <RecentOrdersChart key={`recent-orders-${refreshKey}`} organizationId={organizationId} />
+          <RecentOrdersChart organizationId={organizationId} refreshTrigger={refreshKey} />
         </div>
         <div className="animate-on-load">
-          <TransactionsList key={`transactions-${refreshKey}`} organizationId={organizationId} />
+          <TransactionsList organizationId={organizationId} refreshTrigger={refreshKey} />
         </div>
         <div className="lg:col-span-1 animate-on-load">
-          <BrazilStatesDistribution key={`states-${refreshKey}`} organizationId={organizationId} />
+          <BrazilStatesDistribution organizationId={organizationId} refreshTrigger={refreshKey} />
         </div>
       </div>
 
       {/* Top Products + Stock Report */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 lg:items-stretch">
         <div className="lg:col-span-2 animate-on-load flex">
-          <TopSellingProductsTable key={`top-products-${refreshKey}`} organizationId={organizationId} limit={6} />
+          <TopSellingProductsTable organizationId={organizationId} limit={6} refreshTrigger={refreshKey} />
         </div>
         <div className="lg:col-span-1 animate-on-load flex">
-          <StockReportTable key={`stock-${refreshKey}`} organizationId={organizationId} />
+          <StockReportTable organizationId={organizationId} refreshTrigger={refreshKey} />
         </div>
       </div>
 
       {/* Top Customers */}
       <div className="mb-6 animate-on-load">
-        <TopCustomersList key={`top-customers-${refreshKey}`} organizationId={organizationId} limit={6} />
+        <TopCustomersList organizationId={organizationId} limit={6} refreshTrigger={refreshKey} />
       </div>
     </div>
   );

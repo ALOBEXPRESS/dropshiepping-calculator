@@ -7,6 +7,7 @@ import { Loader2, Users } from 'lucide-react';
 
 interface CustomersStatisticsProps {
   organizationId: string;
+  refreshTrigger?: number;
 }
 
 interface CustomerData {
@@ -16,7 +17,7 @@ interface CustomerData {
   color: string;
 }
 
-export const CustomersStatistics: React.FC<CustomersStatisticsProps> = ({ organizationId }) => {
+export const CustomersStatistics: React.FC<CustomersStatisticsProps> = ({ organizationId, refreshTrigger }) => {
   const [data, setData] = useState<CustomerData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -92,8 +93,14 @@ export const CustomersStatistics: React.FC<CustomersStatisticsProps> = ({ organi
       }
     };
 
-    fetchData();
-  }, [organizationId, period]);
+    // Só refetch se refreshTrigger for > 0 (ou seja, após processar pedido)
+    if (!refreshTrigger || refreshTrigger === 0) {
+      fetchData();
+    } else if (refreshTrigger > 0) {
+      console.log('🔄 CustomersStatistics: refreshTrigger mudou, refazendo query...', refreshTrigger);
+      fetchData();
+    }
+  }, [organizationId, period, refreshTrigger]);
 
   const totalCustomers = data.reduce((sum, item) => sum + item.value, 0);
 

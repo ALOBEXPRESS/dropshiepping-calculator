@@ -7,6 +7,7 @@ import { ptBR } from 'date-fns/locale';
 
 interface RecentOrdersChartProps {
   organizationId: string;
+  refreshTrigger?: number;
 }
 
 interface OrderData {
@@ -19,7 +20,7 @@ interface OrderData {
   marketplace?: string;
 }
 
-export const RecentOrdersChart: React.FC<RecentOrdersChartProps> = ({ organizationId }) => {
+export const RecentOrdersChart: React.FC<RecentOrdersChartProps> = ({ organizationId, refreshTrigger }) => {
   const [data, setData] = useState<OrderData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +59,7 @@ export const RecentOrdersChart: React.FC<RecentOrdersChartProps> = ({ organizati
         if (fetchError) throw fetchError;
 
         // Formatar dados
-        const formattedData: OrderData[] = (ordersData || []).map((order: any) => {
+        const formattedData: OrderData[] = (ordersData || []).map((order: { order_items?: Array<{ products?: { image_url?: string; name?: string } }>; id: string; order_number: string; order_date: string; total_amount: number; marketplace?: string }) => {
           const firstItem = order.order_items?.[0];
           const product = firstItem?.products;
           
@@ -82,8 +83,14 @@ export const RecentOrdersChart: React.FC<RecentOrdersChartProps> = ({ organizati
       }
     };
 
-    fetchData();
-  }, [organizationId]);
+    // Só refetch se refreshTrigger for > 0 (ou seja, após processar pedido)
+    if (!refreshTrigger || refreshTrigger === 0) {
+      fetchData();
+    } else if (refreshTrigger > 0) {
+      console.log('🔄 RecentOrdersChart: refreshTrigger mudou, refazendo query...', refreshTrigger);
+      fetchData();
+    }
+  }, [organizationId, refreshTrigger]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {

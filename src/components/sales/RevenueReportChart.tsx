@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 
 interface RevenueReportChartProps {
   organizationId: string;
+  refreshTrigger?: number;
 }
 
 interface CustomTooltipData {
@@ -29,7 +30,7 @@ interface CustomTooltipData {
   y: number;
 }
 
-export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organizationId }) => {
+export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organizationId, refreshTrigger }) => {
   const [period, setPeriod] = useState<PeriodFilter>('monthly');
   const { data, loading, error, refetch } = useRevenueReport(organizationId, period);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -37,10 +38,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [deleting, setDeleting] = useState(false);
   const [customTooltip, setCustomTooltip] = useState<CustomTooltipData | null>(null);
 
-  // Forçar refetch quando o componente é montado (quando key muda)
+  // Refetch quando refreshTrigger mudar (apenas se for > 0)
   React.useEffect(() => {
-    refetch();
-  }, []);
+    if (refreshTrigger && refreshTrigger > 0) {
+      console.log('🔄 RevenueReportChart: refreshTrigger mudou, refazendo query...', refreshTrigger);
+      refetch();
+    }
+  }, [refreshTrigger, refetch]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {

@@ -8,13 +8,23 @@ import { ptBR } from 'date-fns/locale';
 interface TopCustomersListProps {
   organizationId: string;
   limit?: number;
+  refreshTrigger?: number;
 }
 
 export const TopCustomersList: React.FC<TopCustomersListProps> = ({ 
   organizationId, 
-  limit = 6 
+  limit = 6,
+  refreshTrigger
 }) => {
-  const { customers, loading, error } = useTopCustomers(organizationId, limit);
+  const { customers, loading, error, refetch } = useTopCustomers(organizationId, limit);
+
+  // Refetch quando refreshTrigger mudar (apenas se for > 0)
+  React.useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      console.log('🔄 TopCustomersList: refreshTrigger mudou, refazendo query...', refreshTrigger);
+      refetch();
+    }
+  }, [refreshTrigger, refetch]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {

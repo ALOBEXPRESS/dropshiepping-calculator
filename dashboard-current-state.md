@@ -1,0 +1,356 @@
+- generic [ref=e2]:
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - img "Logo" [ref=e7]
+          - button [ref=e8] [cursor=pointer]:
+            - img [ref=e9]
+        - list [ref=e12]:
+          - listitem [ref=e13]:
+            - generic [ref=e14] [cursor=pointer]:
+              - img [ref=e15]
+              - generic [ref=e20]: Painel
+              - img [ref=e21]
+            - list [ref=e23]:
+              - listitem [ref=e24]:
+                - link "Calculadora" [ref=e25] [cursor=pointer]:
+                  - /url: /
+                  - text: Calculadora
+              - listitem [ref=e27]:
+                - link "Produtos" [ref=e28] [cursor=pointer]:
+                  - /url: /produtos
+                  - text: Produtos
+              - listitem [ref=e30]:
+                - link "Vendas" [ref=e31] [cursor=pointer]:
+                  - /url: /vendas
+                  - text: Vendas
+    - generic [ref=e33]:
+      - banner [ref=e34]:
+        - search [ref=e36]:
+          - generic:
+            - img
+          - textbox "Pesquisar produtos" [ref=e37]:
+            - /placeholder: Pesquisar produtos...
+        - generic [ref=e38]:
+          - button [ref=e39] [cursor=pointer]:
+            - img
+          - button [ref=e40] [cursor=pointer]:
+            - img
+          - button "Notificações" [ref=e41] [cursor=pointer]:
+            - img
+          - generic [ref=e42] [cursor=pointer]:
+            - img "@shadcn" [ref=e54]
+            - generic [ref=e45]:
+              - paragraph [ref=e46]: Admin User
+              - paragraph [ref=e47]: Admin
+      - generic [ref=e55]:
+        - generic [ref=e56]:
+          - heading "Dashboard de Vendas" [level=1] [ref=e57]
+          - paragraph [ref=e58]: Visão completa do desempenho de vendas e produtos
+        - generic [ref=e61]:
+          - img [ref=e63]
+          - heading "Tudo processado!" [level=3] [ref=e66]
+          - paragraph [ref=e67]: Não há vendas pendentes no momento. Todas as vendas do Bling foram processadas com sucesso.
+        - generic [ref=e68]:
+          - generic [ref=e70]:
+            - generic [ref=e71]:
+              - generic [ref=e72]:
+                - heading "Relatório de Receita" [level=3] [ref=e73]
+                - generic [ref=e74]:
+                  - generic [ref=e75]:
+                    - paragraph [ref=e76]: Receita
+                    - paragraph [ref=e77]: R$ 0,00
+                  - generic [ref=e78]:
+                    - paragraph [ref=e79]: Custo
+                    - paragraph [ref=e80]: R$ 0,00
+              - combobox [ref=e81] [cursor=pointer]:
+                - generic: Mensal
+                - img [ref=e82]
+            - generic [ref=e84]: Sem dados disponíveis para o período selecionado
+          - generic [ref=e86]:
+            - generic [ref=e87]:
+              - heading "Estatísticas de Clientes" [level=3] [ref=e88]
+              - combobox [ref=e89] [cursor=pointer]:
+                - generic: Este Mês
+                - img [ref=e90]
+            - generic [ref=e92]:
+              - application [ref=e96]
+              - generic [ref=e102]:
+                - paragraph [ref=e103]: "1"
+                - paragraph [ref=e104]: Total de Clientes
+              - generic [ref=e106]:
+                - generic [ref=e109]: Outros
+                - generic [ref=e110]:
+                  - generic [ref=e111]: 1 clientes
+                  - generic [ref=e112]: 100%
+        - generic [ref=e114]:
+          - generic [ref=e116] [cursor=pointer]:
+            - generic [ref=e117]:
+              - generic [ref=e118]:
+                - paragraph [ref=e119]: Total de Produtos
+                - heading "81" [level=3] [ref=e120]
+              - generic [ref=e121]:
+                - img [ref=e122]
+                - generic [ref=e125]: "+60"
+                - generic [ref=e126]: esta semana
+            - img [ref=e128]
+          - generic [ref=e133] [cursor=pointer]:
+            - generic [ref=e134]:
+              - generic [ref=e135]:
+                - paragraph [ref=e136]: Total de Clientes
+                - heading "1" [level=3] [ref=e137]
+              - generic [ref=e138]:
+                - img [ref=e139]
+                - generic [ref=e142]: "+1"
+                - generic [ref=e143]: esta semana
+            - img [ref=e145]
+          - generic [ref=e151] [cursor=pointer]:
+            - generic [ref=e152]:
+              - generic [ref=e153]:
+                - paragraph [ref=e154]: Total de Pedidos
+                - heading "0" [level=3] [ref=e155]
+              - generic [ref=e156]:
+                - img [ref=e157]
+                - generic [ref=e160]: "+0"
+                - generic [ref=e161]: esta semana
+            - img [ref=e163]
+          - generic [ref=e168] [cursor=pointer]:
+            - generic [ref=e169]:
+              - generic [ref=e170]:
+                - paragraph [ref=e171]: Total de Vendas
+                - heading "R$ 0" [level=3] [ref=e172]
+              - generic [ref=e173]:
+                - img [ref=e174]
+                - generic [ref=e177]: +R$ 0
+                - generic [ref=e178]: esta semana
+            - img [ref=e180]
+        - generic [ref=e182]:
+          - generic [ref=e184]:
+            - generic [ref=e185]:
+              - heading "Pedidos Recentes" [level=3] [ref=e186]
+              - generic [ref=e187]:
+                - paragraph [ref=e188]: R$ 0,00
+                - paragraph [ref=e189]: Últimos 0 pedidos
+            - generic [ref=e190]:
+              - img [ref=e191]
+              - paragraph [ref=e195]: Nenhum pedido recente
+          - generic [ref=e197]:
+            - generic [ref=e198]:
+              - heading "Transações" [level=3] [ref=e199]
+              - combobox [ref=e200] [cursor=pointer]:
+                - generic: Este Mês
+                - img [ref=e201]
+            - generic [ref=e203]:
+              - generic [ref=e205]: 💳
+              - paragraph [ref=e206]: Nenhuma transação encontrada
+          - generic [ref=e208]:
+            - generic [ref=e209]:
+              - heading "Distribuição por Estado" [level=3] [ref=e210]
+              - img [ref=e211]
+            - generic [ref=e214]:
+              - img [ref=e215]
+              - paragraph [ref=e218]: Nenhum dado de localização disponível
+        - generic [ref=e219]:
+          - generic [ref=e221]:
+            - generic [ref=e222]:
+              - heading "Produtos Mais Vendidos" [level=3] [ref=e223]
+              - button "Ver Todos" [ref=e224] [cursor=pointer]
+            - paragraph [ref=e226]: "Total de Vendas: 0 unidades"
+            - table [ref=e228]:
+              - rowgroup [ref=e229]:
+                - row "Produto Preço Vendidos Pedidos Receita" [ref=e230]:
+                  - columnheader "Produto" [ref=e231]
+                  - columnheader "Preço" [ref=e232]
+                  - columnheader "Vendidos" [ref=e233]
+                  - columnheader "Pedidos" [ref=e234]
+                  - columnheader "Receita" [ref=e235]
+              - rowgroup [ref=e236]:
+                - row "🥇 Camisa Feminina Baby Cherry Vibes Camisa Feminina Baby Cherry Vibes R$ 64,90 0 0 R$ 0,00" [ref=e237]:
+                  - cell "🥇 Camisa Feminina Baby Cherry Vibes Camisa Feminina Baby Cherry Vibes" [ref=e238]:
+                    - generic [ref=e239]:
+                      - generic [ref=e240]: 🥇
+                      - img "Camisa Feminina Baby Cherry Vibes" [ref=e242]
+                      - paragraph [ref=e244]: Camisa Feminina Baby Cherry Vibes
+                  - cell "R$ 64,90" [ref=e245]:
+                    - paragraph [ref=e246]: R$ 64,90
+                  - cell "0" [ref=e247]:
+                    - paragraph [ref=e248]: "0"
+                  - cell "0" [ref=e249]:
+                    - generic [ref=e250]: "0"
+                  - cell "R$ 0,00" [ref=e251]:
+                    - paragraph [ref=e252]: R$ 0,00
+                - row "🥈 Fone De Ouvido Headset Gamer Com Microfone P2 Fone De Ouvido Headset Gamer Com Microfone P2 R$ 75,90 0 0 R$ 0,00" [ref=e253]:
+                  - cell "🥈 Fone De Ouvido Headset Gamer Com Microfone P2 Fone De Ouvido Headset Gamer Com Microfone P2" [ref=e254]:
+                    - generic [ref=e255]:
+                      - generic [ref=e256]: 🥈
+                      - img "Fone De Ouvido Headset Gamer Com Microfone P2" [ref=e258]
+                      - paragraph [ref=e260]: Fone De Ouvido Headset Gamer Com Microfone P2
+                  - cell "R$ 75,90" [ref=e261]:
+                    - paragraph [ref=e262]: R$ 75,90
+                  - cell "0" [ref=e263]:
+                    - paragraph [ref=e264]: "0"
+                  - cell "0" [ref=e265]:
+                    - generic [ref=e266]: "0"
+                  - cell "R$ 0,00" [ref=e267]:
+                    - paragraph [ref=e268]: R$ 0,00
+                - row "🥉 Camisa Feminina Baby Look Lindinha Camisa Feminina Baby Look Lindinha R$ 55,90 0 0 R$ 0,00" [ref=e269]:
+                  - cell "🥉 Camisa Feminina Baby Look Lindinha Camisa Feminina Baby Look Lindinha" [ref=e270]:
+                    - generic [ref=e271]:
+                      - generic [ref=e272]: 🥉
+                      - img "Camisa Feminina Baby Look Lindinha" [ref=e274]
+                      - paragraph [ref=e276]: Camisa Feminina Baby Look Lindinha
+                  - cell "R$ 55,90" [ref=e277]:
+                    - paragraph [ref=e278]: R$ 55,90
+                  - cell "0" [ref=e279]:
+                    - paragraph [ref=e280]: "0"
+                  - cell "0" [ref=e281]:
+                    - generic [ref=e282]: "0"
+                  - cell "R$ 0,00" [ref=e283]:
+                    - paragraph [ref=e284]: R$ 0,00
+                - row "CORRENTE GROSSA AÇO 3 ELOS CORRENTE GROSSA AÇO 3 ELOS R$ 28,90 0 0 R$ 0,00" [ref=e285]:
+                  - cell "CORRENTE GROSSA AÇO 3 ELOS CORRENTE GROSSA AÇO 3 ELOS" [ref=e286]:
+                    - generic [ref=e287]:
+                      - img "CORRENTE GROSSA AÇO 3 ELOS" [ref=e289]
+                      - paragraph [ref=e291]: CORRENTE GROSSA AÇO 3 ELOS
+                  - cell "R$ 28,90" [ref=e292]:
+                    - paragraph [ref=e293]: R$ 28,90
+                  - cell "0" [ref=e294]:
+                    - paragraph [ref=e295]: "0"
+                  - cell "0" [ref=e296]:
+                    - generic [ref=e297]: "0"
+                  - cell "R$ 0,00" [ref=e298]:
+                    - paragraph [ref=e299]: R$ 0,00
+                - row "Camisa Metamask Crypto Camisa Metamask Crypto R$ 65,90 0 0 R$ 0,00" [ref=e300]:
+                  - cell "Camisa Metamask Crypto Camisa Metamask Crypto" [ref=e301]:
+                    - generic [ref=e302]:
+                      - img "Camisa Metamask Crypto" [ref=e304]
+                      - paragraph [ref=e306]: Camisa Metamask Crypto
+                  - cell "R$ 65,90" [ref=e307]:
+                    - paragraph [ref=e308]: R$ 65,90
+                  - cell "0" [ref=e309]:
+                    - paragraph [ref=e310]: "0"
+                  - cell "0" [ref=e311]:
+                    - generic [ref=e312]: "0"
+                  - cell "R$ 0,00" [ref=e313]:
+                    - paragraph [ref=e314]: R$ 0,00
+                - row "Chuveirinho Bico Arejador para Torneira lavatório cozinha Chuveirinho Bico Arejador para Torneira lavatório cozinha R$ 27,90 0 0 R$ 0,00" [ref=e315]:
+                  - cell "Chuveirinho Bico Arejador para Torneira lavatório cozinha Chuveirinho Bico Arejador para Torneira lavatório cozinha" [ref=e316]:
+                    - generic [ref=e317]:
+                      - img "Chuveirinho Bico Arejador para Torneira lavatório cozinha" [ref=e319]
+                      - paragraph [ref=e321]: Chuveirinho Bico Arejador para Torneira lavatório cozinha
+                  - cell "R$ 27,90" [ref=e322]:
+                    - paragraph [ref=e323]: R$ 27,90
+                  - cell "0" [ref=e324]:
+                    - paragraph [ref=e325]: "0"
+                  - cell "0" [ref=e326]:
+                    - generic [ref=e327]: "0"
+                  - cell "R$ 0,00" [ref=e328]:
+                    - paragraph [ref=e329]: R$ 0,00
+            - generic [ref=e330]:
+              - paragraph [ref=e331]: Página 1 de 10
+              - generic [ref=e332]:
+                - button "Anterior" [disabled]:
+                  - img
+                  - text: Anterior
+                - button "Próxima" [ref=e333] [cursor=pointer]:
+                  - text: Próxima
+                  - img
+          - generic [ref=e335]:
+            - generic [ref=e336]:
+              - heading "Relatório de Estoque" [level=3] [ref=e337]
+              - generic [ref=e338]: Página 1 de 14
+            - generic [ref=e339]:
+              - generic [ref=e340]:
+                - generic [ref=e341]:
+                  - generic [ref=e342]:
+                    - paragraph [ref=e343]: Fone bluetooth M10
+                    - paragraph [ref=e344]: R$ 41,90
+                  - generic [ref=e345]:
+                    - img [ref=e346]
+                    - text: Disponível
+                - generic [ref=e350]:
+                  - generic [ref=e351]: 287 un.
+                  - generic [ref=e352]: 100%
+              - generic [ref=e355]:
+                - generic [ref=e356]:
+                  - generic [ref=e357]:
+                    - paragraph [ref=e358]: Labubu
+                    - paragraph [ref=e359]: R$ 54,90
+                  - generic [ref=e360]:
+                    - img [ref=e361]
+                    - text: Disponível
+                - generic [ref=e365]:
+                  - generic [ref=e366]: 287 un.
+                  - generic [ref=e367]: 100%
+              - generic [ref=e370]:
+                - generic [ref=e371]:
+                  - generic [ref=e372]:
+                    - paragraph [ref=e373]: P9 Air Bluetooth Music Fone De Ouvido Estéreo Sem Fio Com Microfone HiFi max
+                    - paragraph [ref=e374]: R$ 69,90
+                  - generic [ref=e375]:
+                    - img [ref=e376]
+                    - text: Disponível
+                - generic [ref=e380]:
+                  - generic [ref=e381]: 275 un.
+                  - generic [ref=e382]: 100%
+              - generic [ref=e385]:
+                - generic [ref=e386]:
+                  - generic [ref=e387]:
+                    - paragraph [ref=e388]: Chaveiro Carregador Portátil Celular
+                    - paragraph [ref=e389]: R$ 39,90
+                  - generic [ref=e390]:
+                    - img [ref=e391]
+                    - text: Disponível
+                - generic [ref=e395]:
+                  - generic [ref=e396]: 265 un.
+                  - generic [ref=e397]: 100%
+              - generic [ref=e400]:
+                - generic [ref=e401]:
+                  - generic [ref=e402]:
+                    - paragraph [ref=e403]: Mouse sem Fio Wireless 2.4Ghz Usb Kapbom
+                    - paragraph [ref=e404]: R$ 50,90
+                  - generic [ref=e405]:
+                    - img [ref=e406]
+                    - text: Disponível
+                - generic [ref=e410]:
+                  - generic [ref=e411]: 243 un.
+                  - generic [ref=e412]: 100%
+              - generic [ref=e415]:
+                - generic [ref=e416]:
+                  - generic [ref=e417]:
+                    - paragraph [ref=e418]: Caneca Térmica Camada Dupla Em Inox Com Alça
+                    - paragraph [ref=e419]: R$ 64,90
+                  - generic [ref=e420]:
+                    - img [ref=e421]
+                    - text: Disponível
+                - generic [ref=e425]:
+                  - generic [ref=e426]: 222 un.
+                  - generic [ref=e427]: 100%
+            - generic [ref=e430]:
+              - button "Anterior" [disabled]:
+                - img
+                - text: Anterior
+              - generic [ref=e431]: 1-6 de 81
+              - button "Próxima" [ref=e432] [cursor=pointer]:
+                - text: Próxima
+                - img
+        - generic [ref=e434]:
+          - generic [ref=e435]:
+            - heading "Top Clientes" [level=3] [ref=e436]
+            - button "Ver Todos" [ref=e437] [cursor=pointer]
+          - generic [ref=e439]:
+            - generic [ref=e441]: J
+            - generic [ref=e442]:
+              - paragraph [ref=e443]: Jonatan Renan Vitoriano Da Silva
+              - generic [ref=e444]:
+                - generic [ref=e445]:
+                  - img [ref=e446]
+                  - generic [ref=e449]: jonatan_rvs@hotmail.com
+                - generic [ref=e450]:
+                  - img [ref=e451]
+                  - generic [ref=e453]: (11) 98765-4321
+            - generic [ref=e454]:
+              - paragraph [ref=e455]: 0 pedidos
+              - paragraph [ref=e456]: R$ 0,00

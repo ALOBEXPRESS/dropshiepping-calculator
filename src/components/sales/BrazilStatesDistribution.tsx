@@ -6,6 +6,7 @@ import { Loader2, MapPin } from 'lucide-react';
 
 interface BrazilStatesDistributionProps {
   organizationId: string;
+  refreshTrigger?: number;
 }
 
 interface StateData {
@@ -62,7 +63,7 @@ const getStateFlagUrl = (stateCode: string) => {
   return `https://raw.githubusercontent.com/mateusKoppe/brazilian-states-flags/master/flags/${stateCode.toLowerCase()}.svg`;
 };
 
-export const BrazilStatesDistribution: React.FC<BrazilStatesDistributionProps> = ({ organizationId }) => {
+export const BrazilStatesDistribution: React.FC<BrazilStatesDistributionProps> = ({ organizationId, refreshTrigger }) => {
   const [statesData, setStatesData] = useState<StateData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,40 +78,36 @@ export const BrazilStatesDistribution: React.FC<BrazilStatesDistributionProps> =
       setError(null);
 
       try {
-        // Buscar pedidos com dados de estado usando a view orders_with_location
+        // Buscar pedidos com dados de estado da tabela bling_orders
         const { data: ordersData, error: fetchError } = await supabase
-          .from('orders_with_location')
-          .select('id, total_amount, label_state')
+          .from('bling_orders')
+          .select('label_state')
           .eq('organization_id', organizationId)
-          .neq('status', 'cancelled');
+          .not('label_state', 'is', null);
 
         if (fetchError) throw fetchError;
 
-        // Contar pedidos e somar receita por estado
-        const stateCounts: Record<string, { count: number; revenue: number }> = {};
+        // Contar pedidos por estado
+        const stateCounts: Record<string, number> = {};
         let totalOrders = 0;
 
-        (ordersData || []).forEach((order: { label_state?: string; total_amount?: number }) => {
+        (ordersData || []).forEach((order: { label_state?: string }) => {
           const state = order.label_state?.toUpperCase().trim();
           if (state && state.length === 2) {
-            if (!stateCounts[state]) {
-              stateCounts[state] = { count: 0, revenue: 0 };
-            }
-            stateCounts[state].count++;
-            stateCounts[state].revenue += Number(order.total_amount || 0);
+            stateCounts[state] = (stateCounts[state] || 0) + 1;
             totalOrders++;
           }
         });
 
         // Criar array de dados com percentuais
         const formattedData: StateData[] = Object.entries(stateCounts)
-          .map(([code, data]) => {
+          .map(([code, count]) => {
             const stateInfo = brazilianStates.find(s => s.code === code);
             return {
               state: stateInfo?.name || code,
               state_code: code,
-              total_customers: data.count,
-              percentage: totalOrders > 0 ? (data.count / totalOrders) * 100 : 0,
+              total_customers: count,
+              percentage: totalOrders > 0 ? (count / totalOrders) * 100 : 0,
             };
           })
           .sort((a, b) => b.total_customers - a.total_customers)
@@ -125,8 +122,14 @@ export const BrazilStatesDistribution: React.FC<BrazilStatesDistributionProps> =
       }
     };
 
-    fetchStatesData();
-  }, [organizationId]);
+    // Só refetch se refreshTrigger for > 0 (ou seja, após processar pedido)
+    if (!refreshTrigger || refreshTrigger === 0) {
+      fetchStatesData();
+    } else if (refreshTrigger > 0) {
+      console.log('🔄 BrazilStatesDistribution: refreshTrigger mudou, refazendo query...', refreshTrigger);
+      fetchStatesData();
+    }
+  }, [organizationId, refreshTrigger]);
 
   if (loading) {
     return (

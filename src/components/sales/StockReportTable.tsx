@@ -6,12 +6,21 @@ import { Loader2, AlertTriangle, CheckCircle, XCircle, ChevronLeft, ChevronRight
 
 interface StockReportTableProps {
   organizationId: string;
+  refreshTrigger?: number;
 }
 
-export const StockReportTable: React.FC<StockReportTableProps> = ({ organizationId }) => {
-  const { stock, loading, error } = useStockReport(organizationId);
+export const StockReportTable: React.FC<StockReportTableProps> = ({ organizationId, refreshTrigger }) => {
+  const { stock, loading, error, refetch } = useStockReport(organizationId);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
+
+  // Refetch quando refreshTrigger mudar (apenas se for > 0)
+  React.useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      console.log('🔄 StockReportTable: refreshTrigger mudou, refazendo query...', refreshTrigger);
+      refetch();
+    }
+  }, [refreshTrigger, refetch]);
 
   // Ordenar por quantidade de estoque (maior primeiro)
   const sortedStock = [...stock].sort((a, b) => b.stock_quantity - a.stock_quantity);

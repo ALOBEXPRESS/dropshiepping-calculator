@@ -7,14 +7,24 @@ import { Loader2, Package, ChevronLeft, ChevronRight } from 'lucide-react';
 interface TopSellingProductsTableProps {
   organizationId: string;
   limit?: number;
+  refreshTrigger?: number;
 }
 
 export const TopSellingProductsTable: React.FC<TopSellingProductsTableProps> = ({ 
   organizationId, 
-  limit = 5 
+  limit = 5,
+  refreshTrigger
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
-  const { products, loading, error } = useTopProducts(organizationId, limit * 10); // Buscar mais produtos para paginação
+  const { products, loading, error, refetch } = useTopProducts(organizationId, limit * 10); // Buscar mais produtos para paginação
+
+  // Refetch quando refreshTrigger mudar (apenas se for > 0)
+  React.useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      console.log('🔄 TopSellingProductsTable: refreshTrigger mudou, refazendo query...', refreshTrigger);
+      refetch();
+    }
+  }, [refreshTrigger, refetch]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
