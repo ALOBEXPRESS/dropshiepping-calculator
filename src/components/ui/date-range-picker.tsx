@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, ChevronDown } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -9,8 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { useDateRange, DateRangePreset } from '@/contexts/DateRangeContext';
+import { useDateRange, type DateRangePreset } from '@/contexts/DateRangeContext';
 
 export const DateRangePicker: React.FC = () => {
   const { dateRange, preset, setPreset } = useDateRange();

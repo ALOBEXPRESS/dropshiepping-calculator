@@ -1,5 +1,5 @@
-import React, { ReactNode } from 'react';
-import { LucideIcon } from 'lucide-react';
+import React, { type ReactNode } from 'react';
+import { type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface EmptyStateProps {
