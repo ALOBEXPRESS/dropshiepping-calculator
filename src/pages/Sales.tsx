@@ -7,6 +7,8 @@ import {
   TopCustomersList,
   HeroSection,
   AnalyticsTabs,
+  ProfitAnalysisCard,
+  TopProfitableProductsTable,
 } from '@/components/sales';
 import { PendingOrders } from '@/components/PendingOrders';
 import { useHeroStats } from '@/hooks/sales/useHeroStats';
@@ -89,6 +91,16 @@ const Sales: React.FC = () => {
         </div>
         <div className="animate-on-load">
           <CustomersStatistics organizationId={organizationId} refreshTrigger={refreshKey} />
+        </div>
+      </div>
+
+      {/* Análise de Lucro e Produtos Lucrativos */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="animate-on-load">
+          <ProfitAnalysisCard organizationId={organizationId} refreshTrigger={refreshKey} />
+        </div>
+        <div className="animate-on-load">
+          <TopProfitableProductsTable organizationId={organizationId} limit={5} refreshTrigger={refreshKey} />
         </div>
       </div>
 

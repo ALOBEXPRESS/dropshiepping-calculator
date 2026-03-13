@@ -11,3 +11,5 @@ export { BrazilStatesDistribution } from './BrazilStatesDistribution';
 export { BrazilMap } from './BrazilMap';
 export { HeroSection } from './HeroSection';
 export { AnalyticsTabs } from './AnalyticsTabs';
+export { ProfitAnalysisCard } from './ProfitAnalysisCard';
+export { TopProfitableProductsTable } from './TopProfitableProductsTable';
