@@ -58,9 +58,9 @@ export const CustomerLTVDashboard: React.FC<CustomerLTVDashboardProps> = ({
   }
 
   return (
-    <Card className="p-6">
+    <Card className="p-6" role="article" aria-label="Customer Lifetime Value">
       <div className="flex items-center gap-2 mb-6">
-        <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600">
+        <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600" aria-hidden="true">
           <Users className="w-5 h-5 text-white" />
         </div>
         <div>
@@ -74,10 +74,15 @@ export const CustomerLTVDashboard: React.FC<CustomerLTVDashboardProps> = ({
       </div>
 
       {/* KPIs Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-blue-50/50 to-transparent dark:from-blue-900/10">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6" role="region" aria-label="Métricas de valor do cliente">
+        <div 
+          className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-blue-50/50 to-transparent dark:from-blue-900/10"
+          role="article"
+          aria-label={`LTV Médio: ${formatCurrency(data.avgLifetimeValue)}`}
+          tabIndex={0}
+        >
           <div className="flex items-center gap-2 mb-2">
-            <DollarSign className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <DollarSign className="w-4 h-4 text-blue-600 dark:text-blue-400" aria-hidden="true" />
             <p className="text-xs text-gray-600 dark:text-gray-400">LTV Médio</p>
           </div>
           <p className="text-xl font-bold text-gray-900 dark:text-white">
@@ -85,9 +90,14 @@ export const CustomerLTVDashboard: React.FC<CustomerLTVDashboardProps> = ({
           </p>
         </div>
 
-        <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-green-50/50 to-transparent dark:from-green-900/10">
+        <div 
+          className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-green-50/50 to-transparent dark:from-green-900/10"
+          role="article"
+          aria-label={`Ticket Médio: ${formatCurrency(data.avgOrderValue)}`}
+          tabIndex={0}
+        >
           <div className="flex items-center gap-2 mb-2">
-            <ShoppingCart className="w-4 h-4 text-green-600 dark:text-green-400" />
+            <ShoppingCart className="w-4 h-4 text-green-600 dark:text-green-400" aria-hidden="true" />
             <p className="text-xs text-gray-600 dark:text-gray-400">Ticket Médio</p>
           </div>
           <p className="text-xl font-bold text-gray-900 dark:text-white">
@@ -95,9 +105,14 @@ export const CustomerLTVDashboard: React.FC<CustomerLTVDashboardProps> = ({
           </p>
         </div>
 
-        <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-purple-50/50 to-transparent dark:from-purple-900/10">
+        <div 
+          className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-purple-50/50 to-transparent dark:from-purple-900/10"
+          role="article"
+          aria-label={`Pedidos por Cliente: ${data.avgOrdersPerCustomer.toFixed(1)}`}
+          tabIndex={0}
+        >
           <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <TrendingUp className="w-4 h-4 text-purple-600 dark:text-purple-400" aria-hidden="true" />
             <p className="text-xs text-gray-600 dark:text-gray-400">Pedidos/Cliente</p>
           </div>
           <p className="text-xl font-bold text-gray-900 dark:text-white">
@@ -105,9 +120,14 @@ export const CustomerLTVDashboard: React.FC<CustomerLTVDashboardProps> = ({
           </p>
         </div>
 
-        <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-orange-50/50 to-transparent dark:from-orange-900/10">
+        <div 
+          className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-orange-50/50 to-transparent dark:from-orange-900/10"
+          role="article"
+          aria-label={`Taxa de Recompra: ${formatPercentage(data.repeatCustomerRate)}`}
+          tabIndex={0}
+        >
           <div className="flex items-center gap-2 mb-2">
-            <Users className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+            <Users className="w-4 h-4 text-orange-600 dark:text-orange-400" aria-hidden="true" />
             <p className="text-xs text-gray-600 dark:text-gray-400">Taxa Recompra</p>
           </div>
           <p className="text-xl font-bold text-gray-900 dark:text-white">
@@ -121,10 +141,13 @@ export const CustomerLTVDashboard: React.FC<CustomerLTVDashboardProps> = ({
         <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
           Top 10 Clientes VIP
         </h4>
-        <div className="space-y-3">
+        <div className="space-y-3" role="list" aria-label="Lista de clientes VIP">
           {data.topCustomers.slice(0, 5).map((customer) => (
             <div
               key={customer.id}
+              role="listitem"
+              aria-label={`${customer.name}, total gasto: ${formatCurrency(customer.totalSpent)}, ${customer.totalOrders} pedidos`}
+              tabIndex={0}
               className="flex items-center gap-4 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
             >
               <div className="flex-shrink-0">
@@ -149,7 +172,11 @@ export const CustomerLTVDashboard: React.FC<CustomerLTVDashboardProps> = ({
                   {formatCurrency(customer.totalSpent)}
                 </p>
                 <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="outline" className="text-xs">
+                  <Badge 
+                    variant="outline" 
+                    className="text-xs"
+                    aria-label={`${customer.totalOrders} pedidos realizados`}
+                  >
                     {customer.totalOrders} pedidos
                   </Badge>
                   <span className="text-xs text-gray-500 dark:text-gray-400">

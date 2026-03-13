@@ -49,7 +49,7 @@ export function RevenueProfitTrendChart({ organizationId }: RevenueProfitTrendCh
   const maxProfit = Math.max(...data.map(d => d.profit), 1);
 
   return (
-    <Card>
+    <Card role="article" aria-label="Evolução de receita e lucro">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -57,7 +57,7 @@ export function RevenueProfitTrendChart({ organizationId }: RevenueProfitTrendCh
             <CardDescription>Últimos {period} dias</CardDescription>
           </div>
           <Select value={period.toString()} onValueChange={(v) => setPeriod(Number(v))}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-32" aria-label="Selecionar período de análise">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -69,10 +69,10 @@ export function RevenueProfitTrendChart({ organizationId }: RevenueProfitTrendCh
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="space-y-1">
+        <div className="grid grid-cols-3 gap-4 mb-6" role="region" aria-label="Resumo financeiro">
+          <div className="space-y-1" role="article" aria-label={`Receita total: ${totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}>
             <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-blue-500" />
+              <DollarSign className="h-4 w-4 text-blue-500" aria-hidden="true" />
               <p className="text-sm text-muted-foreground">Receita Total</p>
             </div>
             <p className="text-2xl font-bold">
@@ -80,19 +80,22 @@ export function RevenueProfitTrendChart({ organizationId }: RevenueProfitTrendCh
             </p>
             <div className="flex items-center gap-1">
               {revenueGrowth >= 0 ? (
-                <TrendingUp className="h-3 w-3 text-green-500" />
+                <TrendingUp className="h-3 w-3 text-green-500" aria-hidden="true" />
               ) : (
-                <TrendingDown className="h-3 w-3 text-red-500" />
+                <TrendingDown className="h-3 w-3 text-red-500" aria-hidden="true" />
               )}
-              <span className={`text-xs ${revenueGrowth >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              <span 
+                className={`text-xs ${revenueGrowth >= 0 ? 'text-green-500' : 'text-red-500'}`}
+                aria-label={`Crescimento de ${revenueGrowth.toFixed(1)}%`}
+              >
                 {revenueGrowth.toFixed(1)}%
               </span>
             </div>
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-1" role="article" aria-label={`Lucro total: ${totalProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}>
             <div className="flex items-center gap-2">
-              <Wallet className="h-4 w-4 text-green-500" />
+              <Wallet className="h-4 w-4 text-green-500" aria-hidden="true" />
               <p className="text-sm text-muted-foreground">Lucro Total</p>
             </div>
             <p className="text-2xl font-bold">
@@ -100,16 +103,19 @@ export function RevenueProfitTrendChart({ organizationId }: RevenueProfitTrendCh
             </p>
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-1" role="article" aria-label={`Margem média: ${avgMargin.toFixed(1)}%`}>
             <p className="text-sm text-muted-foreground">Margem Média</p>
             <p className="text-2xl font-bold">{avgMargin.toFixed(1)}%</p>
-            <Badge variant={avgMargin >= 20 ? 'default' : 'destructive'}>
+            <Badge 
+              variant={avgMargin >= 20 ? 'default' : 'destructive'}
+              aria-label={avgMargin >= 20 ? 'Margem saudável' : 'Margem requer atenção'}
+            >
               {avgMargin >= 20 ? 'Saudável' : 'Atenção'}
             </Badge>
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3" role="list" aria-label="Histórico diário de receita e lucro">
           {data.slice(-10).map((item, index) => {
             const revenueWidth = (item.revenue / maxRevenue) * 100;
             const profitWidth = (item.profit / maxProfit) * 100;
@@ -119,7 +125,12 @@ export function RevenueProfitTrendChart({ organizationId }: RevenueProfitTrendCh
             });
 
             return (
-              <div key={index} className="space-y-1">
+              <div 
+                key={index} 
+                className="space-y-1"
+                role="listitem"
+                aria-label={`${date}: Receita ${item.revenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}, Lucro ${item.profit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}
+              >
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">{date}</span>
                   <div className="flex items-center gap-4">

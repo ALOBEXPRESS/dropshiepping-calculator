@@ -34,11 +34,17 @@ const KPICard: React.FC<KPICardProps> = ({
   iconColor 
 }) => {
   const isPositive = trend !== undefined && trend >= 0;
+  const trendText = trend !== undefined ? `${isPositive ? 'Aumento' : 'Diminuição'} de ${Math.abs(trend)}%` : '';
   
   return (
-    <div className="group relative overflow-hidden rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5">
+    <div 
+      className="group relative overflow-hidden rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+      role="article"
+      aria-label={`${label}: ${value}${trend !== undefined ? `, ${trendText}` : ''}`}
+      tabIndex={0}
+    >
       <div className="flex items-start justify-between mb-3">
-        <div className={`p-3 rounded-lg bg-gradient-to-br ${iconColor} group-hover:scale-110 transition-transform duration-200`}>
+        <div className={`p-3 rounded-lg bg-gradient-to-br ${iconColor} group-hover:scale-110 transition-transform duration-200`} aria-hidden="true">
           {icon}
         </div>
         {trend !== undefined && (
@@ -52,11 +58,12 @@ const KPICard: React.FC<KPICardProps> = ({
                       ? 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/20' 
                       : 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20'
                   }`}
+                  aria-label={trendText}
                 >
                   {isPositive ? (
-                    <TrendingUp className="w-4 h-4" />
+                    <TrendingUp className="w-4 h-4" aria-hidden="true" />
                   ) : (
-                    <TrendingDown className="w-4 h-4" />
+                    <TrendingDown className="w-4 h-4" aria-hidden="true" />
                   )}
                   {isPositive ? '+' : ''}{Math.abs(trend)}%
                 </Badge>
@@ -126,25 +133,39 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               Visão completa do desempenho
             </p>
             {!hasPendingOrders && (
-              <Badge variant="default" className="gap-1.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30">
-                <CheckCircle className="w-3.5 h-3.5" />
+              <Badge 
+                variant="default" 
+                className="gap-1.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30"
+                aria-label="Status: Todos os pedidos foram processados"
+              >
+                <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />
                 Tudo processado
               </Badge>
             )}
           </div>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-col sm:flex-row gap-2" role="toolbar" aria-label="Ações do dashboard">
           <DateRangePicker />
           {onExport && (
-            <Button variant="outline" size="sm" onClick={onExport}>
-              <Download className="w-4 h-4 mr-2" />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onExport}
+              aria-label="Exportar dados do dashboard"
+            >
+              <Download className="w-4 h-4 mr-2" aria-hidden="true" />
               Exportar
             </Button>
           )}
           {onRefresh && (
-            <Button size="sm" onClick={onRefresh} variant="ghost">
-              <RefreshCw className="w-4 h-4 mr-2" />
+            <Button 
+              size="sm" 
+              onClick={onRefresh} 
+              variant="ghost"
+              aria-label="Atualizar dados do dashboard"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" aria-hidden="true" />
               Atualizar
             </Button>
           )}
@@ -152,7 +173,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       </div>
 
       {/* KPIs Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4" role="region" aria-label="Indicadores principais de desempenho">
         <KPICard
           label="Receita Total"
           value={formatCurrency(stats.totalRevenue)}

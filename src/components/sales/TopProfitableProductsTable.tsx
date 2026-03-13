@@ -55,10 +55,10 @@ export const TopProfitableProductsTable: React.FC<TopProfitableProductsTableProp
   }
 
   return (
-    <Card className="p-6">
+    <Card className="p-6" role="article" aria-label="Produtos mais lucrativos">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600">
+          <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600" aria-hidden="true">
             <TrendingUp className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -79,7 +79,7 @@ export const TopProfitableProductsTable: React.FC<TopProfitableProductsTableProp
           description="Quando você processar pedidos com lucro, os produtos mais rentáveis aparecerão aqui."
         />
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4" role="list" aria-label="Lista de produtos mais lucrativos">
           {products.map((product, index) => {
             const profitPercentage = maxProfit > 0 ? (product.totalProfit / maxProfit) * 100 : 0;
             const isTopThree = index < 3;
@@ -87,6 +87,9 @@ export const TopProfitableProductsTable: React.FC<TopProfitableProductsTableProp
             return (
               <div
                 key={index}
+                role="listitem"
+                aria-label={`Posição ${index + 1}: ${product.productName}, lucro de ${formatCurrency(product.totalProfit)}, margem de ${formatPercentage(product.avgMargin)}`}
+                tabIndex={0}
                 className={`group relative p-4 rounded-lg border transition-all duration-200 hover:shadow-md ${
                   isTopThree
                     ? 'border-purple-200 dark:border-purple-800 bg-gradient-to-r from-purple-50/50 to-transparent dark:from-purple-900/10'
@@ -96,6 +99,7 @@ export const TopProfitableProductsTable: React.FC<TopProfitableProductsTableProp
                 <div className="flex items-center gap-4">
                   {/* Ranking Badge */}
                   <div
+                    aria-label={`Posição ${index + 1} no ranking`}
                     className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg transition-transform group-hover:scale-110 ${
                       index === 0
                         ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-lg'
@@ -140,10 +144,17 @@ export const TopProfitableProductsTable: React.FC<TopProfitableProductsTableProp
                       </Tooltip>
                     </TooltipProvider>
                     <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="outline" className="text-xs">
+                      <Badge 
+                        variant="outline" 
+                        className="text-xs"
+                        aria-label={`${product.totalQuantity} unidades vendidas`}
+                      >
                         {product.totalQuantity} vendidos
                       </Badge>
-                      <Badge className={`text-xs ${getMarginColor(product.avgMargin)}`}>
+                      <Badge 
+                        className={`text-xs ${getMarginColor(product.avgMargin)}`}
+                        aria-label={`Margem de lucro: ${formatPercentage(product.avgMargin)}`}
+                      >
                         Margem: {formatPercentage(product.avgMargin)}
                       </Badge>
                     </div>
@@ -162,7 +173,11 @@ export const TopProfitableProductsTable: React.FC<TopProfitableProductsTableProp
 
                 {/* Progress Bar */}
                 <div className="mt-3">
-                  <Progress value={profitPercentage} className="h-1.5 bg-gray-200 dark:bg-gray-700">
+                  <Progress 
+                    value={profitPercentage} 
+                    className="h-1.5 bg-gray-200 dark:bg-gray-700"
+                    aria-label={`Lucro relativo: ${profitPercentage.toFixed(0)}% do produto mais lucrativo`}
+                  >
                     <div
                       className="h-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-full transition-all"
                       style={{ width: `${profitPercentage}%` }}

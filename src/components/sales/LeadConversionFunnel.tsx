@@ -35,10 +35,10 @@ export const LeadConversionFunnel: React.FC<LeadConversionFunnelProps> = ({
   }
 
   return (
-    <Card className="p-6">
+    <Card className="p-6" role="article" aria-label="Funil de conversão de leads">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600">
+          <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600" aria-hidden="true">
             <Filter className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -51,19 +51,27 @@ export const LeadConversionFunnel: React.FC<LeadConversionFunnelProps> = ({
           </div>
         </div>
 
-        <Badge className="gap-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30">
-          <TrendingUp className="w-3 h-3" />
+        <Badge 
+          className="gap-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30"
+          aria-label={`Taxa de conversão: ${formatPercentage(data.conversionRate)}`}
+        >
+          <TrendingUp className="w-3 h-3" aria-hidden="true" />
           {formatPercentage(data.conversionRate)} conversão
         </Badge>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-4" role="list" aria-label="Etapas do funil de conversão">
         {data.stages.map((stage, index) => {
           const maxCount = Math.max(...data.stages.map(s => s.count));
           const widthPercentage = maxCount > 0 ? (stage.count / maxCount) * 100 : 0;
 
           return (
-            <div key={index} className="relative">
+            <div 
+              key={index} 
+              className="relative"
+              role="listitem"
+              aria-label={`${stage.stage}: ${stage.count} leads, ${formatPercentage(stage.percentage)} do total`}
+            >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -79,7 +87,11 @@ export const LeadConversionFunnel: React.FC<LeadConversionFunnelProps> = ({
               </div>
 
               {/* Funnel Bar */}
-              <div className="relative h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+              <div 
+                className="relative h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800"
+                role="img"
+                aria-label={`Barra de progresso: ${stage.count} leads, ${formatPercentage(stage.percentage)}`}
+              >
                 <div
                   className={`h-full bg-gradient-to-r ${stage.color} transition-all duration-500 flex items-center justify-center`}
                   style={{ width: `${widthPercentage}%` }}

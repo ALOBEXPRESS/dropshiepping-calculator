@@ -50,10 +50,10 @@ export function MarketplacePerformanceCard({ organizationId }: MarketplacePerfor
   };
 
   return (
-    <Card>
+    <Card role="article" aria-label="Performance por marketplace">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Store className="h-5 w-5" />
+          <Store className="h-5 w-5" aria-hidden="true" />
           Performance por Marketplace
         </CardTitle>
         <CardDescription>
@@ -61,18 +61,18 @@ export function MarketplacePerformanceCard({ organizationId }: MarketplacePerfor
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-secondary/50 rounded-lg">
-          <div className="text-center">
+        <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-secondary/50 rounded-lg" role="region" aria-label="Resumo geral de marketplaces">
+          <div className="text-center" role="article" aria-label={`Total de pedidos: ${totalOrders}`}>
             <p className="text-sm text-muted-foreground">Total Pedidos</p>
             <p className="text-2xl font-bold">{totalOrders}</p>
           </div>
-          <div className="text-center">
+          <div className="text-center" role="article" aria-label={`Receita total: ${totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}>
             <p className="text-sm text-muted-foreground">Receita Total</p>
             <p className="text-2xl font-bold">
               {totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </p>
           </div>
-          <div className="text-center">
+          <div className="text-center" role="article" aria-label={`Lucro total: ${totalProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}>
             <p className="text-sm text-muted-foreground">Lucro Total</p>
             <p className="text-2xl font-bold">
               {totalProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
@@ -80,19 +80,28 @@ export function MarketplacePerformanceCard({ organizationId }: MarketplacePerfor
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4" role="list" aria-label="Lista de marketplaces">
           {data.map((marketplace, index) => {
             const revenueShare = totalRevenue > 0 ? (marketplace.revenue / totalRevenue) * 100 : 0;
             const profitShare = totalProfit > 0 ? (marketplace.profit / totalProfit) * 100 : 0;
 
             return (
-              <div key={marketplace.marketplace} className="space-y-2">
+              <div 
+                key={marketplace.marketplace} 
+                className="space-y-2"
+                role="listitem"
+                aria-label={`${getMarketplaceName(marketplace.marketplace)}: ${marketplace.orders_count} pedidos, receita ${marketplace.revenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}, margem ${marketplace.avg_margin.toFixed(1)}%`}
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${getMarketplaceColor(index)}`} />
                     <span className="font-medium">{getMarketplaceName(marketplace.marketplace)}</span>
                     {index === 0 && (
-                      <Badge variant="default" className="text-xs">
+                      <Badge 
+                        variant="default" 
+                        className="text-xs"
+                        aria-label="Marketplace com melhor desempenho"
+                      >
                         Top
                       </Badge>
                     )}
@@ -149,7 +158,11 @@ export function MarketplacePerformanceCard({ organizationId }: MarketplacePerfor
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{marketplace.avg_margin.toFixed(1)}%</span>
-                    <Badge variant={marketplace.avg_margin >= 20 ? 'default' : 'secondary'} className="text-xs">
+                    <Badge 
+                      variant={marketplace.avg_margin >= 20 ? 'default' : 'secondary'} 
+                      className="text-xs"
+                      aria-label={marketplace.avg_margin >= 20 ? 'Margem ótima' : 'Margem regular'}
+                    >
                       {marketplace.avg_margin >= 20 ? 'Ótimo' : 'Regular'}
                     </Badge>
                   </div>

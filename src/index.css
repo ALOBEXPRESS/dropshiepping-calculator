@@ -143,3 +143,376 @@
     @apply bg-background text-foreground;
   }
 }
+
+
+/* ========================================
+   ACCESSIBILITY IMPROVEMENTS - Sprint 4
+   ======================================== */
+
+/* Focus Visible Styles - WCAG 2.1 AA Compliant */
+@layer base {
+  /* Remove default outline and add custom focus ring */
+  *:focus {
+    outline: none;
+  }
+
+  *:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+    border-radius: 0.25rem;
+  }
+
+  /* Button focus states */
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+  }
+
+  /* Input focus states */
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 0;
+    border-color: hsl(var(--primary));
+  }
+}
+
+/* Skip to main content link */
+@layer components {
+  .skip-to-main {
+    position: absolute;
+    left: -9999px;
+    z-index: 999;
+    padding: 1rem 1.5rem;
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    text-decoration: none;
+    border-radius: 0.375rem;
+  }
+
+  .skip-to-main:focus {
+    left: 1rem;
+    top: 1rem;
+  }
+}
+
+/* Improved contrast for text */
+@layer utilities {
+  .text-high-contrast {
+    color: hsl(var(--foreground));
+    font-weight: 500;
+  }
+
+  .text-medium-contrast {
+    color: hsl(var(--muted-foreground));
+  }
+}
+
+/* Keyboard navigation indicators */
+@layer components {
+  .keyboard-nav-active *:focus-visible {
+    outline: 3px solid hsl(var(--primary));
+    outline-offset: 3px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  * {
+    border-width: 2px !important;
+  }
+
+  button,
+  a {
+    text-decoration: underline;
+  }
+}
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.sr-only-focusable:focus,
+.sr-only-focusable:active {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+
+/* ============================================
+   ACESSIBILIDADE - WCAG 2.1 AA Compliance
+   ============================================ */
+
+/* Focus Styles - Visível para navegação por teclado */
+*:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+  border-radius: 4px;
+  transition: outline 0.2s ease;
+}
+
+/* Remover outline padrão mas manter para teclado */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Focus para botões e links */
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* Focus para inputs */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 0;
+  border-color: hsl(var(--primary));
+}
+
+/* Screen Reader Only - Esconde visualmente mas mantém para leitores de tela */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Skip Link - Link para pular navegação */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  padding: 8px 16px;
+  text-decoration: none;
+  z-index: 100;
+  border-radius: 0 0 4px 0;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Respeitar preferência de movimento reduzido */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Melhorar contraste de texto secundário */
+.text-muted-foreground {
+  color: hsl(var(--muted-foreground));
+  /* Garantir contraste mínimo 4.5:1 */
+}
+
+/* Links com underline para não depender só de cor */
+a:not(.no-underline) {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* Melhorar visibilidade de elementos interativos */
+button:hover,
+[role="button"]:hover {
+  cursor: pointer;
+  opacity: 0.9;
+}
+
+button:active,
+[role="button"]:active {
+  transform: scale(0.98);
+}
+
+/* Garantir que ícones decorativos não sejam anunciados */
+[aria-hidden="true"] {
+  pointer-events: none;
+}
+
+/* Melhorar contraste de badges */
+.badge {
+  font-weight: 600;
+  /* Garantir contraste mínimo 4.5:1 com background */
+}
+
+/* Indicador de loading acessível */
+@keyframes spin-accessible {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-spinner[role="status"] {
+  animation: spin-accessible 1s linear infinite;
+}
+
+/* Tooltips acessíveis */
+[role="tooltip"] {
+  z-index: 50;
+  background: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+  border: 1px solid hsl(var(--border));
+}
+
+/* Melhorar contraste de placeholders */
+::placeholder {
+  color: hsl(var(--muted-foreground));
+  opacity: 0.7;
+}
+
+/* Dark mode - Ajustes de contraste */
+.dark {
+  /* Garantir contraste adequado em dark mode */
+}
+
+.dark .text-muted-foreground {
+  /* Aumentar contraste em dark mode */
+  opacity: 0.9;
+}
+
+/* Indicador visual de elementos desabilitados */
+:disabled,
+[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Melhorar visibilidade de checkboxes e radios */
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* Garantir que modais tenham foco correto */
+[role="dialog"] {
+  outline: none;
+}
+
+[role="dialog"]:focus {
+  outline: none;
+}
+
+/* Melhorar contraste de bordas */
+.border {
+  border-color: hsl(var(--border));
+  /* Garantir contraste mínimo 3:1 */
+}
+
+/* Indicador de estado ativo */
+[aria-current="page"],
+[aria-current="true"] {
+  font-weight: 600;
+  position: relative;
+}
+
+[aria-current="page"]::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: hsl(var(--primary));
+}
+
+/* Melhorar visibilidade de alertas */
+[role="alert"] {
+  padding: 12px 16px;
+  border-radius: 6px;
+  border-left: 4px solid;
+}
+
+[role="alert"][data-severity="error"] {
+  border-left-color: hsl(var(--destructive));
+  background: hsl(var(--destructive) / 0.1);
+}
+
+[role="alert"][data-severity="warning"] {
+  border-left-color: hsl(45 93% 47%);
+  background: hsl(45 93% 47% / 0.1);
+}
+
+[role="alert"][data-severity="success"] {
+  border-left-color: hsl(142 76% 36%);
+  background: hsl(142 76% 36% / 0.1);
+}
+
+/* Garantir que tabelas sejam acessíveis */
+table {
+  border-collapse: collapse;
+}
+
+th {
+  font-weight: 600;
+  text-align: left;
+}
+
+/* Melhorar contraste de seleção de texto */
+::selection {
+  background: hsl(var(--primary) / 0.3);
+  color: hsl(var(--foreground));
+}
+
+/* Indicador de progresso acessível */
+[role="progressbar"] {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Garantir que listas sejam anunciadas corretamente */
+[role="list"] {
+  list-style: none;
+  padding: 0;
+}
+
+[role="listitem"] {
+  position: relative;
+}

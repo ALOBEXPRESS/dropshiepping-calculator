@@ -43,10 +43,10 @@ export const ProfitAnalysisCard: React.FC<ProfitAnalysisCardProps> = ({
   const isPositiveMargin = data.profitMargin > 20;
 
   return (
-    <Card className="p-6 hover:shadow-lg transition-shadow duration-200">
+    <Card className="p-6 hover:shadow-lg transition-shadow duration-200" role="article" aria-label="Análise de Lucro">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-green-600">
+          <div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-green-600" aria-hidden="true">
             <DollarSign className="w-5 h-5 text-white" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -55,8 +55,8 @@ export const ProfitAnalysisCard: React.FC<ProfitAnalysisCardProps> = ({
         </div>
         <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger>
-              <Info className="w-4 h-4 text-gray-400" />
+            <TooltipTrigger aria-label="Informações sobre análise de lucro">
+              <Info className="w-4 h-4 text-gray-400" aria-hidden="true" />
             </TooltipTrigger>
             <TooltipContent>
               <p className="text-sm">Análise detalhada da estrutura de custos e lucro</p>
@@ -67,10 +67,10 @@ export const ProfitAnalysisCard: React.FC<ProfitAnalysisCardProps> = ({
 
       <div className="space-y-4">
         {/* Lucro Total */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between" role="region" aria-label="Lucro total e margem">
           <div>
             <p className="text-sm text-gray-600 dark:text-gray-400">Lucro Total</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            <p className="text-2xl font-bold text-gray-900 dark:text-white" aria-label={`Lucro total: ${formatCurrency(data.totalProfit)}`}>
               {formatCurrency(data.totalProfit)}
             </p>
           </div>
@@ -81,11 +81,12 @@ export const ProfitAnalysisCard: React.FC<ProfitAnalysisCardProps> = ({
                 ? 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/20'
                 : 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20'
             }`}
+            aria-label={`Margem de lucro: ${formatPercentage(data.profitMargin)}, ${isPositiveMargin ? 'positiva' : 'negativa'}`}
           >
             {isPositiveMargin ? (
-              <TrendingUp className="w-4 h-4" />
+              <TrendingUp className="w-4 h-4" aria-hidden="true" />
             ) : (
-              <TrendingDown className="w-4 h-4" />
+              <TrendingDown className="w-4 h-4" aria-hidden="true" />
             )}
             {formatPercentage(data.profitMargin)}
           </Badge>
@@ -98,7 +99,11 @@ export const ProfitAnalysisCard: React.FC<ProfitAnalysisCardProps> = ({
           </p>
 
           {/* Stacked Progress Bar */}
-          <div className="relative h-10 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+          <div 
+            className="relative h-10 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden"
+            role="img"
+            aria-label={`Distribuição de custos: ${data.costPercentage.toFixed(1)}% custo, ${data.commissionPercentage.toFixed(1)}% comissão, ${data.profitPercentage.toFixed(1)}% lucro`}
+          >
             {/* Custo */}
             <div 
               className="absolute h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-700 ease-out flex items-center justify-center"
@@ -185,12 +190,22 @@ export const ProfitAnalysisCard: React.FC<ProfitAnalysisCardProps> = ({
                 Sua margem está em {data.profitMargin.toFixed(1)}%, abaixo do mínimo recomendado (15%).
               </p>
               <div className="flex flex-col gap-2">
-                <Button variant="outline" size="sm" className="justify-start">
-                  <TrendingUp className="w-4 h-4 mr-2" />
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="justify-start"
+                  aria-label="Ver produtos com pior margem de lucro"
+                >
+                  <TrendingUp className="w-4 h-4 mr-2" aria-hidden="true" />
                   Ver produtos com pior margem
                 </Button>
-                <Button variant="outline" size="sm" className="justify-start">
-                  <DollarSign className="w-4 h-4 mr-2" />
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="justify-start"
+                  aria-label="Ver sugestões para aumentar lucro"
+                >
+                  <DollarSign className="w-4 h-4 mr-2" aria-hidden="true" />
                   Sugestões para aumentar lucro
                 </Button>
               </div>
