@@ -13,3 +13,5 @@ export { HeroSection } from './HeroSection';
 export { AnalyticsTabs } from './AnalyticsTabs';
 export { ProfitAnalysisCard } from './ProfitAnalysisCard';
 export { TopProfitableProductsTable } from './TopProfitableProductsTable';
+export { CustomerLTVDashboard } from './CustomerLTVDashboard';
+export { LeadConversionFunnel } from './LeadConversionFunnel';

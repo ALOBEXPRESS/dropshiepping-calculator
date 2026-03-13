@@ -9,6 +9,8 @@ import {
   AnalyticsTabs,
   ProfitAnalysisCard,
   TopProfitableProductsTable,
+  CustomerLTVDashboard,
+  LeadConversionFunnel,
 } from '@/components/sales';
 import { PendingOrders } from '@/components/PendingOrders';
 import { useHeroStats } from '@/hooks/sales/useHeroStats';
@@ -101,6 +103,16 @@ const Sales: React.FC = () => {
         </div>
         <div className="animate-on-load">
           <TopProfitableProductsTable organizationId={organizationId} limit={5} refreshTrigger={refreshKey} />
+        </div>
+      </div>
+
+      {/* Análise de Clientes - LTV e Funil de Conversão */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="animate-on-load">
+          <CustomerLTVDashboard organizationId={organizationId} refreshTrigger={refreshKey} />
+        </div>
+        <div className="animate-on-load">
+          <LeadConversionFunnel organizationId={organizationId} refreshTrigger={refreshKey} />
         </div>
       </div>
 
