@@ -89,7 +89,7 @@ Access Token: 012d14fe32dca77027b559838afd05f464f78a39
 
 **Key exposta:**
 ```
-[REDACTED]
+[REDACTED - chave removida por segurança]
 ```
 
 **Impacto:**
