@@ -336,6 +336,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onDelete, onE
   const displayName = currentSlide.kind === 'variation'
     ? `${product.name} - ${currentData?.name ?? ''}`.trim()
     : product.name;
+  const displaySku = currentSlide.kind === 'variation' && currentData?.sku
+    ? currentData.sku
+    : product.sku;
   
   // Check if we should show variation image instead of color swatch
   const shouldShowVariationImage = currentSlide.kind === 'variation' && currentData?.imageUrl;
@@ -966,6 +969,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onDelete, onE
                 <p className="text-base font-bold font-inter text-foreground text-center max-w-[160px] truncate uppercase mt-0 px-2">
                   {displayName || '-'}
                 </p>
+                {/* SKU do produto ou variação */}
+                {displaySku && (
+                  <p className="text-[10px] text-muted-foreground font-semibold leading-none">
+                    SKU: {displaySku}
+                  </p>
+                )}
                 <p className="text-[10px] text-muted-foreground font-semibold leading-none">
                   Vendas: {salesStats.totalQuantity}
                 </p>

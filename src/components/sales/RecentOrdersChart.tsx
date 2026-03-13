@@ -59,7 +59,8 @@ export const RecentOrdersChart: React.FC<RecentOrdersChartProps> = ({ organizati
         if (fetchError) throw fetchError;
 
         // Formatar dados
-        const formattedData: OrderData[] = (ordersData || []).map((order: { order_items?: Array<{ products?: { image_url?: string; name?: string } }>; id: string; order_number: string; order_date: string; total_amount: number; marketplace?: string }) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const formattedData: OrderData[] = (ordersData || []).map((order: any) => {
           const firstItem = order.order_items?.[0];
           const product = firstItem?.products;
           
@@ -70,7 +71,7 @@ export const RecentOrdersChart: React.FC<RecentOrdersChartProps> = ({ organizati
             total_amount: Number(order.total_amount),
             product_image: product?.image_url,
             product_name: product?.name,
-            marketplace: order.sales_channels?.marketplace || 'Mercado Livre',
+            marketplace: order.sales_channels?.marketplace || order.marketplace || 'Mercado Livre',
           };
         });
 
