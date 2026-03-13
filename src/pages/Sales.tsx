@@ -2,22 +2,21 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useSettings } from '@/contexts/SettingsContext';
 import {
   RevenueReportChart,
-  StatisticsCards,
-  TopSellingProductsTable,
+  CustomersStatistics,
   StockReportTable,
   TopCustomersList,
-  RecentOrdersChart,
-  TransactionsList,
-  CustomersStatistics,
-  BrazilStatesDistribution,
+  HeroSection,
+  AnalyticsTabs,
 } from '@/components/sales';
 import { PendingOrders } from '@/components/PendingOrders';
+import { useHeroStats } from '@/hooks/sales/useHeroStats';
 import gsap from 'gsap';
 
 const Sales: React.FC = () => {
   const { organizationId } = useSettings();
   const containerRef = useRef<HTMLDivElement>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const { stats } = useHeroStats(organizationId || '', refreshKey);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -54,6 +53,11 @@ const Sales: React.FC = () => {
     setRefreshKey(newKey);
   }, []);
 
+  const handleRefresh = useCallback(() => {
+    const newKey = Date.now();
+    setRefreshKey(newKey);
+  }, []);
+
   if (!organizationId) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -63,24 +67,23 @@ const Sales: React.FC = () => {
   }
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-gray-50 dark:bg-zinc-950 p-6">
-      {/* Header */}
-      <div className="mb-8 animate-on-load">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Dashboard de Vendas
-        </h1>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          Visão completa do desempenho de vendas e produtos
-        </p>
+    <div ref={containerRef} className="min-h-screen bg-gray-50 dark:bg-zinc-950 p-4 sm:p-6">
+      {/* Hero Section com KPIs */}
+      <div className="mb-6 animate-on-load">
+        <HeroSection 
+          stats={stats}
+          hasPendingOrders={false}
+          onRefresh={handleRefresh}
+        />
       </div>
 
-      {/* Vendas a Processar */}
+      {/* Vendas a Processar - Compacto */}
       <div className="mb-6 animate-on-load">
         <PendingOrders onOrderProcessed={handleOrderProcessed} />
       </div>
 
-      {/* Revenue Report + Customer Statistics - Duas Colunas no Topo */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+      {/* Métricas Primárias - Revenue + Customer Statistics */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="animate-on-load">
           <RevenueReportChart organizationId={organizationId} refreshTrigger={refreshKey} />
         </div>
@@ -89,37 +92,19 @@ const Sales: React.FC = () => {
         </div>
       </div>
 
-      {/* Statistics Cards - 4 columns */}
+      {/* Análises Detalhadas - Tabs */}
       <div className="mb-6 animate-on-load">
-        <StatisticsCards organizationId={organizationId} refreshTrigger={refreshKey} />
+        <AnalyticsTabs organizationId={organizationId} refreshTrigger={refreshKey} />
       </div>
 
-      {/* Recent Orders Chart + Transactions + Brazil States */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <div className="animate-on-load">
-          <RecentOrdersChart organizationId={organizationId} refreshTrigger={refreshKey} />
-        </div>
-        <div className="animate-on-load">
-          <TransactionsList organizationId={organizationId} refreshTrigger={refreshKey} />
-        </div>
-        <div className="lg:col-span-1 animate-on-load">
-          <BrazilStatesDistribution organizationId={organizationId} refreshTrigger={refreshKey} />
-        </div>
-      </div>
-
-      {/* Top Products + Stock Report */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 lg:items-stretch">
-        <div className="lg:col-span-2 animate-on-load flex">
-          <TopSellingProductsTable organizationId={organizationId} limit={6} refreshTrigger={refreshKey} />
-        </div>
-        <div className="lg:col-span-1 animate-on-load flex">
+      {/* Informações Secundárias - Stock + Customers */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+        <div className="lg:col-span-2 animate-on-load">
           <StockReportTable organizationId={organizationId} refreshTrigger={refreshKey} />
         </div>
-      </div>
-
-      {/* Top Customers */}
-      <div className="mb-6 animate-on-load">
-        <TopCustomersList organizationId={organizationId} limit={6} refreshTrigger={refreshKey} />
+        <div className="animate-on-load">
+          <TopCustomersList organizationId={organizationId} limit={6} refreshTrigger={refreshKey} />
+        </div>
       </div>
     </div>
   );
