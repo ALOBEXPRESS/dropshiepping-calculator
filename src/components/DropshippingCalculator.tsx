@@ -50,6 +50,7 @@ import { supabase } from '@/lib/supabase';
 import { useMultipleProductsSalesStats } from '../hooks/useMultipleProductsSalesStats';
 import { useProfitAnalysis } from '../hooks/sales/useProfitAnalysis';
 import { useTopProfitableProducts } from '../hooks/sales/useTopProfitableProducts';
+import { useCustomerLifetimeValue } from '../hooks/sales/useCustomerLifetimeValue';
 import { useGeneralFinancialSummary } from '../hooks/useSalesStats';
 import ElectricBorder from './ui/electric-border';
 import { toast } from 'sonner';
@@ -437,6 +438,8 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
   const { data: profitAnalysis } = useProfitAnalysis(organizationId ?? '');
   // Hook para produtos mais lucrativos
   const { products: topProducts, loading: topProductsLoading } = useTopProfitableProducts(organizationId ?? '', 5);
+  // Hook para Customer Lifetime Value (só KPIs, sem Top 10)
+  const { data: clvData, loading: clvLoading } = useCustomerLifetimeValue(organizationId ?? '');
 
   const handleNavigateToProducts = useCallback((event: MouseEvent<HTMLElement>) => {
     const target = event.target as HTMLElement;
@@ -1426,10 +1429,10 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
   }, [effectiveProducts, blingFinancialSummary]);
   const globalSummaryOverview = (
     <>
-      <div className="rounded-lg bg-white/15 p-4">
+      <div className="rounded-lg bg-black/20 border border-white/10 p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-[#FE6684] rounded-lg p-3 border border-white/5 dark:border-zinc-800/40">
+            <div className="bg-black/30 rounded-lg p-3 border border-white/5 dark:border-zinc-800/40">
               <p className="text-xs text-white/60 uppercase mb-1">Lucro</p>
               <p className="text-base font-bold text-white whitespace-nowrap">R$ {formatMoney(globalSummaryMetrics.totalProfit)}</p>
               {globalSummaryMetrics.inactivityFee > 0 && (
@@ -1439,12 +1442,12 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 </p>
               )}
             </div>
-            <div className="bg-[#FE6684] rounded-lg p-3 border border-white/5 dark:border-zinc-800/40">
+            <div className="bg-black/30 rounded-lg p-3 border border-white/5 dark:border-zinc-800/40">
               <p className="text-xs text-white/60 uppercase mb-1">Total de Vendas</p>
               <p className="text-base font-bold text-white whitespace-nowrap">{globalSummaryMetrics.totalSales}</p>
             </div>
           </div>
-          <div className="bg-[#FE6684] rounded-lg p-3 border border-white/5 dark:border-zinc-800/40">
+          <div className="bg-black/30 rounded-lg p-3 border border-white/5 dark:border-zinc-800/40">
             <p className="text-xs text-white/60 uppercase mb-1">Despesas Estimada</p>
             <p className="text-base font-bold text-white whitespace-nowrap">R$ {formatMoney(globalSummaryMetrics.totalExpenses)}</p>
           </div>
@@ -1624,10 +1627,70 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       </div>
       </div>{/* fim grid 2 colunas análise + produtos */}
 
+      {/* Customer Lifetime Value — KPIs */}
+      <div className="rounded-xl bg-black/25 border border-white/10 p-4 mb-6 backdrop-blur-sm">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="p-1.5 rounded-lg bg-blue-500/20 border border-blue-400/30">
+            <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-xs uppercase font-bold tracking-widest text-white">Customer Lifetime Value</p>
+            <p className="text-[10px] text-white/40">Análise de valor dos clientes</p>
+          </div>
+        </div>
+
+        {clvLoading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[...Array(4)].map((_, i) => <div key={i} className="h-16 rounded-lg bg-white/10 animate-pulse" />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-black/30 border border-blue-400/20 rounded-lg p-3">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <DollarSign className="w-3 h-3 text-blue-400" aria-hidden="true" />
+                <p className="text-[10px] text-white/50 uppercase tracking-wide">LTV Médio</p>
+              </div>
+              <p className="text-sm font-bold text-white">
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(clvData.avgLifetimeValue)}
+              </p>
+            </div>
+            <div className="bg-black/30 border border-green-400/20 rounded-lg p-3">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <p className="text-[10px] text-white/50 uppercase tracking-wide">Ticket Médio</p>
+              </div>
+              <p className="text-sm font-bold text-white">
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(clvData.avgOrderValue)}
+              </p>
+            </div>
+            <div className="bg-black/30 border border-purple-400/20 rounded-lg p-3">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <TrendingUp className="w-3 h-3 text-purple-400" aria-hidden="true" />
+                <p className="text-[10px] text-white/50 uppercase tracking-wide">Pedidos/Cliente</p>
+              </div>
+              <p className="text-sm font-bold text-white">{clvData.avgOrdersPerCustomer.toFixed(1)}</p>
+            </div>
+            <div className="bg-black/30 border border-orange-400/20 rounded-lg p-3">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <svg className="w-3 h-3 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <p className="text-[10px] text-white/50 uppercase tracking-wide">Taxa Recompra</p>
+              </div>
+              <p className="text-sm font-bold text-white">{clvData.repeatCustomerRate.toFixed(1)}%</p>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="grid gap-6 xl:grid-cols-2 mb-6">
-        <div className="rounded-lg bg-white/15 p-3 h-full flex flex-col">
+        <div className="rounded-lg bg-black/20 border border-white/10 p-3 h-full flex flex-col">
           <div className="space-y-3 flex-1">
-            <div className="rounded-lg bg-white/15 p-3">
+            <div className="rounded-lg bg-black/20 border border-white/10 p-3">
               <p className="text-xs uppercase font-semibold tracking-wide">Total de produtos por marketplace</p>
               <div className="mt-2 space-y-1 text-sm">
                 {Object.keys(marketplaceTotals).length === 0 ? (
@@ -1642,32 +1705,32 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 )}
               </div>
             </div>
-            <div className="rounded-lg bg-white/15 p-3">
+            <div className="rounded-lg bg-black/20 border border-white/10 p-3">
               <p className="text-xs uppercase font-semibold tracking-wide">Capital de giro disponível</p>
               <p className="mt-2 text-lg font-bold">R$ {formatMoney(parseCurrency(workingCapital || 0))}</p>
             </div>
-            <div className="rounded-lg bg-white/15 p-3">
+            <div className="rounded-lg bg-black/20 border border-white/10 p-3">
               <p className="text-xs uppercase font-semibold tracking-wide">Reserva de emergência</p>
               <p className="mt-2 text-lg font-bold">R$ {formatMoney(parseCurrency(emergencyReserve || 0))}</p>
             </div>
-            <div className="rounded-lg bg-white/15 p-3">
+            <div className="rounded-lg bg-black/20 border border-white/10 p-3">
               <p className="text-xs uppercase font-semibold tracking-wide">Capital de Marketing</p>
               <p className="mt-2 text-lg font-bold">R$ {formatMoney(remainingMarketingCapital)}</p>
               <p className="mt-1 text-[10px] text-white/80">Investimento total: R$ {formatMoney(totalMarketingInvestment)}</p>
             </div>
             <div className="my-6 border-t border-white/30" />
-            <div className="rounded-lg bg-white/15 p-3">
+            <div className="rounded-lg bg-black/20 border border-white/10 p-3">
               <p className="text-xs uppercase font-semibold tracking-wide">Investimento Bruto</p>
               <p className="mt-2 text-lg font-bold">R$ {formatMoney(parseCurrency(contextGrossInvestment || 0))}</p>
             </div>
-            <div className="rounded-lg bg-white/15 p-3">
+            <div className="rounded-lg bg-black/20 border border-white/10 p-3">
               <p className="text-xs uppercase font-semibold tracking-wide">Investimento Líquido</p>
               <p className="mt-2 text-lg font-bold">R$ {formatMoney(0)}</p>
             </div>
           </div>
         </div>
         <div className="flex flex-col gap-4 h-full">
-          <div className="rounded-lg bg-[#FE6684] p-3 flex-1">
+          <div className="rounded-lg bg-black/30 p-3 flex-1">
             <p className="text-xs uppercase font-semibold tracking-wide mb-3">Maior preço por marketplace</p>
             <div className="space-y-2 text-sm">
               {Object.keys(marketplaceMaxProducts).length === 0 ? (
@@ -1713,7 +1776,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-6 w-6 border-white/60 bg-white text-[#fe2c55] hover:bg-white/90"
+                  className="h-6 w-6 border-white/60 bg-white/10 text-white hover:bg-white/20 border-white/20"
                   disabled={maxPricePage === 1}
                   onClick={() => setMaxPricePage((page) => Math.max(1, page - 1))}
                 >
@@ -1725,7 +1788,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-6 w-6 border-white/60 bg-white text-[#fe2c55] hover:bg-white/90"
+                  className="h-6 w-6 border-white/60 bg-white/10 text-white hover:bg-white/20 border-white/20"
                   disabled={maxPricePage === marketplaceMaxProductsPages}
                   onClick={() => setMaxPricePage((page) => Math.min(marketplaceMaxProductsPages, page + 1))}
                 >
@@ -1734,7 +1797,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
               </div>
             )}
           </div>
-          <div className="rounded-lg bg-[#FE6684] p-3 flex-1">
+          <div className="rounded-lg bg-black/30 p-3 flex-1">
             <p className="text-xs uppercase font-semibold tracking-wide mb-3">Maior lucro por marketplace</p>
             <div className="space-y-2 text-sm">
               {Object.keys(marketplaceMaxProfitProducts).length === 0 ? (
@@ -1780,7 +1843,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-6 w-6 border-white/60 bg-white text-[#fe2c55] hover:bg-white/90"
+                  className="h-6 w-6 border-white/60 bg-white/10 text-white hover:bg-white/20 border-white/20"
                   disabled={maxProfitPage === 1}
                   onClick={() => setMaxProfitPage((page) => Math.max(1, page - 1))}
                 >
@@ -1792,7 +1855,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-6 w-6 border-white/60 bg-white text-[#fe2c55] hover:bg-white/90"
+                  className="h-6 w-6 border-white/60 bg-white/10 text-white hover:bg-white/20 border-white/20"
                   disabled={maxProfitPage === marketplaceMaxProfitPages}
                   onClick={() => setMaxProfitPage((page) => Math.min(marketplaceMaxProfitPages, page + 1))}
                 >
@@ -1983,7 +2046,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
   return (
     <div className="min-h-screen bg-black relative overflow-hidden font-sans" ref={container}>
       <Dialog open={isGlobalSummaryOpen} onOpenChange={setIsGlobalSummaryOpen}>
-        <DialogContent className="max-w-5xl bg-[#fe2c55] text-white border-none max-h-[90vh] flex flex-col p-0">
+        <DialogContent className="max-w-5xl bg-[#0d0d0d] text-white border border-white/10 max-h-[90vh] flex flex-col p-0">
           <DialogHeader className="px-6 pt-6 pb-0 flex-shrink-0">
             <DialogTitle>Resumo Financeiro Geral</DialogTitle>
           </DialogHeader>
@@ -2031,13 +2094,13 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
             onClick={handleNavigateToProductsButton}
             className="
               relative overflow-hidden
-              bg-[#fe2c55] hover:bg-[#d91c42] text-white font-semibold text-xs uppercase tracking-wide px-4 py-2 h-8
+              bg-black/80 hover:bg-black/90 text-white font-semibold text-xs uppercase tracking-wide px-4 py-2 h-8
               before:absolute before:inset-0
               before:bg-gradient-to-r before:from-transparent before:via-white/30 before:to-transparent
               before:translate-x-[-200%]
               hover:before:translate-x-[200%]
               before:transition-transform before:duration-700
-              hover:shadow-lg hover:shadow-[#fe2c55]/50
+              hover:shadow-lg hover:shadow-white/10
               transition-shadow duration-300
             "
           >
@@ -3408,9 +3471,9 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         )}
         {showOnlyProducts ? (
           <div className="grid gap-6 lg:grid-cols-2">
-            <div className="bg-[#fe2c55] text-white rounded-xl p-5 shadow-lg cursor-pointer" onClick={handleNavigateToProducts}>
-              <div className="rounded-lg bg-white/15 p-0 overflow-hidden mb-6">
-                <div className="flex items-center justify-between p-4 pb-0 bg-[#FF3366]">
+            <div className="bg-[#0d0d0d] text-white rounded-xl p-5 shadow-lg cursor-pointer border border-white/10" onClick={handleNavigateToProducts}>
+              <div className="rounded-lg bg-white/5 p-0 overflow-hidden mb-6">
+                <div className="flex items-center justify-between p-4 pb-0 bg-white/5">
                   <div className="w-full max-w-xs">
                     <Input
                       value={projectionSearch}
@@ -3419,7 +3482,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                         setSelectedProductIndex(0);
                       }}
                       placeholder="Buscar produtos"
-                      className="bg-[#CC2952] border-[#991B1B] text-white placeholder:text-white/70 h-8 text-xs font-medium focus-visible:ring-red-400"
+                      className="bg-black/40 border-white/10 text-white placeholder:text-white/70 h-8 text-xs font-medium focus-visible:ring-white/30"
                     />
                   </div>
                 </div>
@@ -3430,7 +3493,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                   onPrev={() => setSelectedProductIndex((safeSelectedProductIndex - 1 + filteredProjectionProducts.length) % filteredProjectionProducts.length)}
                 />
               </div>
-              <div className="rounded-lg bg-white/15 p-4">
+              <div className="rounded-lg bg-black/20 border border-white/10 p-4">
                 <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wide flex items-center gap-2">
                   <DollarSign className="w-4 h-4 text-[#4DFF6B]" />
                   Resumo Financeiro Geral
@@ -3440,7 +3503,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
             </div>
             {showProductsList ? (
               <ElectricBorder
-                color="#fe2c55"
+                color="#1a1a1a"
                 speed={0.8}
                 chaos={0.1}
                 borderRadius={16}
@@ -3465,7 +3528,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                           key={mp.value}
                           type="button"
                           onClick={() => handleProductFilterChange('marketplace', mp.value)}
-                          className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${isActive ? 'bg-[#fe2c55] text-white border-[#fe2c55]' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 dark:bg-zinc-900 dark:text-white dark:border-zinc-700 dark:hover:bg-zinc-800'}`}
+                          className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${isActive ? 'bg-white text-black border-white' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 dark:bg-zinc-900 dark:text-white dark:border-zinc-700 dark:hover:bg-zinc-800'}`}
                         >
                           {icon ? <img src={icon.src} alt={icon.alt} className="h-4 w-4 object-contain" /> : null}
                           <span>{mp.label}</span>
