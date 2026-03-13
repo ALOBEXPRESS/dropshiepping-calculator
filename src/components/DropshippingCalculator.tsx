@@ -48,6 +48,7 @@ import type { CalculationResult, ProductItem } from '../types/calculator';
 import { formatCurrency, handleCurrencyChange, parseCurrency } from '../utils/currency';
 import { supabase } from '@/lib/supabase';
 import { useMultipleProductsSalesStats } from '../hooks/useMultipleProductsSalesStats';
+import { useProfitAnalysis } from '../hooks/sales/useProfitAnalysis';
 import { useGeneralFinancialSummary } from '../hooks/useSalesStats';
 import ElectricBorder from './ui/electric-border';
 import { toast } from 'sonner';
@@ -430,6 +431,9 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
 
   // Hook para buscar resumo financeiro real do Bling
   const { summary: blingFinancialSummary } = useGeneralFinancialSummary();
+
+  // Hook para análise de lucro detalhada (breakdown de custos)
+  const { data: profitAnalysis } = useProfitAnalysis(organizationId ?? '');
 
   const handleNavigateToProducts = useCallback((event: MouseEvent<HTMLElement>) => {
     const target = event.target as HTMLElement;
@@ -1444,6 +1448,106 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         </div>
       </div>
       <div className="my-6 border-t border-white/30" />
+      {/* Análise de Lucro - Breakdown de Custos */}
+      <div className="rounded-lg bg-white/15 p-4 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs uppercase font-semibold tracking-wide flex items-center gap-2">
+            <DollarSign className="w-3.5 h-3.5 text-white" />
+            Análise de Lucro
+          </p>
+          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+            profitAnalysis.profitMargin >= 20
+              ? 'bg-green-500/30 text-green-300'
+              : profitAnalysis.profitMargin >= 15
+              ? 'bg-yellow-500/30 text-yellow-300'
+              : 'bg-red-500/30 text-red-300'
+          }`}>
+            {profitAnalysis.profitMargin.toFixed(1)}% margem
+          </span>
+        </div>
+
+        {/* Stacked progress bar */}
+        <div
+          className="relative h-8 rounded-full overflow-hidden bg-white/10 mb-2"
+          role="img"
+          aria-label={`Custo ${profitAnalysis.costPercentage.toFixed(1)}%, Comissão ${profitAnalysis.commissionPercentage.toFixed(1)}%, Lucro ${profitAnalysis.profitPercentage.toFixed(1)}%`}
+        >
+          <div
+            className="absolute h-full bg-blue-500 transition-all duration-700 flex items-center justify-center"
+            style={{ width: `${profitAnalysis.costPercentage}%` }}
+          >
+            {profitAnalysis.costPercentage > 12 && (
+              <span className="text-white text-[10px] font-bold">{profitAnalysis.costPercentage.toFixed(1)}%</span>
+            )}
+          </div>
+          <div
+            className="absolute h-full bg-orange-500 transition-all duration-700 flex items-center justify-center"
+            style={{ left: `${profitAnalysis.costPercentage}%`, width: `${profitAnalysis.commissionPercentage}%` }}
+          >
+            {profitAnalysis.commissionPercentage > 6 && (
+              <span className="text-white text-[10px] font-bold">{profitAnalysis.commissionPercentage.toFixed(1)}%</span>
+            )}
+          </div>
+          <div
+            className="absolute h-full bg-green-500 transition-all duration-700 flex items-center justify-center"
+            style={{ left: `${profitAnalysis.costPercentage + profitAnalysis.commissionPercentage}%`, width: `${profitAnalysis.profitPercentage}%` }}
+          >
+            {profitAnalysis.profitPercentage > 8 && (
+              <span className="text-white text-[10px] font-bold">{profitAnalysis.profitPercentage.toFixed(1)}%</span>
+            )}
+          </div>
+        </div>
+
+        {/* Legenda */}
+        <div className="flex items-center justify-center gap-4 text-[10px] mb-3">
+          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500" /><span className="text-white/70">Custo ({profitAnalysis.costPercentage.toFixed(1)}%)</span></div>
+          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-orange-500" /><span className="text-white/70">Comissão ({profitAnalysis.commissionPercentage.toFixed(1)}%)</span></div>
+          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-green-500" /><span className="text-white/70">Lucro ({profitAnalysis.profitPercentage.toFixed(1)}%)</span></div>
+        </div>
+
+        {/* Grid de valores */}
+        <div className="grid grid-cols-3 gap-2 text-xs">
+          <div className="bg-white/10 rounded-lg p-2 text-center">
+            <p className="text-white/60 mb-0.5">Custo</p>
+            <p className="font-bold text-white">R$ {formatMoney(profitAnalysis.totalCost)}</p>
+          </div>
+          <div className="bg-white/10 rounded-lg p-2 text-center">
+            <p className="text-white/60 mb-0.5">Comissão</p>
+            <p className="font-bold text-white">R$ {formatMoney(profitAnalysis.totalCommissions)}</p>
+          </div>
+          <div className="bg-white/10 rounded-lg p-2 text-center">
+            <p className="text-white/60 mb-0.5">Lucro</p>
+            <p className="font-bold text-green-300">R$ {formatMoney(profitAnalysis.totalProfit)}</p>
+          </div>
+        </div>
+
+        {/* Alerta de margem */}
+        {profitAnalysis.profitMargin < 20 && profitAnalysis.totalRevenue > 0 && (
+          <div className={`mt-3 rounded-lg p-2 text-[10px] flex items-start gap-2 ${
+            profitAnalysis.profitMargin < 15 ? 'bg-red-500/20 border border-red-400/30' : 'bg-yellow-500/20 border border-yellow-400/30'
+          }`}>
+            <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+            <span className="text-white/90">
+              {profitAnalysis.profitMargin < 15
+                ? `Margem crítica! ${profitAnalysis.profitMargin.toFixed(1)}% está abaixo do mínimo recomendado (15%).`
+                : `Margem de ${profitAnalysis.profitMargin.toFixed(1)}%. Ideal seria acima de 20% para maior sustentabilidade.`}
+            </span>
+          </div>
+        )}
+
+        {/* Frete e outras despesas */}
+        <div className="grid grid-cols-2 gap-2 mt-3 text-[10px]">
+          <div className="flex justify-between">
+            <span className="text-white/60">Frete Total</span>
+            <span className="font-semibold text-white">R$ {formatMoney(profitAnalysis.totalShipping)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-white/60">Outras Despesas</span>
+            <span className="font-semibold text-white">R$ {formatMoney(profitAnalysis.totalExpenses)}</span>
+          </div>
+        </div>
+      </div>
+
       <div className="grid gap-6 xl:grid-cols-2 mb-6">
         <div className="rounded-lg bg-white/15 p-3 h-full flex flex-col">
           <div className="space-y-3 flex-1">
@@ -1803,11 +1907,13 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
   return (
     <div className="min-h-screen bg-black relative overflow-hidden font-sans" ref={container}>
       <Dialog open={isGlobalSummaryOpen} onOpenChange={setIsGlobalSummaryOpen}>
-        <DialogContent className="max-w-5xl bg-[#fe2c55] text-white border-none">
-          <DialogHeader>
+        <DialogContent className="max-w-5xl bg-[#fe2c55] text-white border-none max-h-[90vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-0 flex-shrink-0">
             <DialogTitle>Resumo Financeiro Geral</DialogTitle>
           </DialogHeader>
-          {globalSummaryOverview}
+          <div className="overflow-y-auto flex-1 px-6 pb-6 scrollbar-thin scrollbar-thumb-white/30 scrollbar-track-white/10 hover:scrollbar-thumb-white/50">
+            {globalSummaryOverview}
+          </div>
         </DialogContent>
       </Dialog>
       {/* Video Background */}

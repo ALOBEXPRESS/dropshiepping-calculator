@@ -7,7 +7,6 @@ import {
   TopCustomersList,
   HeroSection,
   AnalyticsTabs,
-  ProfitAnalysisCard,
   TopProfitableProductsTable,
   CustomerLTVDashboard,
   LeadConversionFunnel,
@@ -143,14 +142,9 @@ const Sales: React.FC = () => {
         </div>
       </div>
 
-      {/* Análise de Lucro e Produtos Lucrativos */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="animate-on-load">
-          <ProfitAnalysisCard organizationId={organizationId} refreshTrigger={refreshKey} />
-        </div>
-        <div className="animate-on-load">
-          <TopProfitableProductsTable organizationId={organizationId} limit={5} refreshTrigger={refreshKey} />
-        </div>
+      {/* Produtos Lucrativos */}
+      <div className="mb-6 animate-on-load">
+        <TopProfitableProductsTable organizationId={organizationId} limit={5} refreshTrigger={refreshKey} />
       </div>
 
       {/* Análise de Clientes - LTV e Funil de Conversão */}
