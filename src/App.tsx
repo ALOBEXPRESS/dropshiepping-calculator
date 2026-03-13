@@ -1,10 +1,13 @@
 
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
+import { QueryClientProvider } from '@tanstack/react-query';
 import Layout from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { ThemeProvider } from './components/ThemeProvider';
 import { SettingsProvider } from './contexts/SettingsContext';
+import { DateRangeProvider } from './contexts/DateRangeContext';
+import { queryClient } from './lib/react-query';
 import { Toaster } from 'sonner';
 import { LoadingState } from './components/ui/LoadingState';
 
@@ -35,9 +38,11 @@ const SalesPage = () => (
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <SettingsProvider>
-        <BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <SettingsProvider>
+          <DateRangeProvider>
+            <BrowserRouter>
           <Toaster 
             position="top-right"
             toastOptions={{
@@ -67,9 +72,11 @@ function App() {
               <Route path="/vendas" element={<SalesPage />} />
             </Routes>
           </Suspense>
-        </BrowserRouter>
-      </SettingsProvider>
-    </ThemeProvider>
+            </BrowserRouter>
+          </DateRangeProvider>
+        </SettingsProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   )
 }
 

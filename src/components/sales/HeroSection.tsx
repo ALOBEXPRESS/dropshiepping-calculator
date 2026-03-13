@@ -2,6 +2,7 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { 
   DollarSign, 
   ShoppingCart, 
@@ -133,7 +134,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </div>
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <DateRangePicker />
           {onExport && (
             <Button variant="outline" size="sm" onClick={onExport}>
               <Download className="w-4 h-4 mr-2" />
@@ -141,7 +143,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             </Button>
           )}
           {onRefresh && (
-            <Button size="sm" onClick={onRefresh}>
+            <Button size="sm" onClick={onRefresh} variant="ghost">
               <RefreshCw className="w-4 h-4 mr-2" />
               Atualizar
             </Button>
