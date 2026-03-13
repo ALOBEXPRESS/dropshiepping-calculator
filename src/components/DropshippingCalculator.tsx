@@ -1449,18 +1449,18 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       </div>
       <div className="my-6 border-t border-white/30" />
       {/* Análise de Lucro - Breakdown de Custos */}
-      <div className="rounded-lg bg-white/15 p-4 mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-xs uppercase font-semibold tracking-wide flex items-center gap-2">
-            <DollarSign className="w-3.5 h-3.5 text-white" />
+      <div className="rounded-xl bg-black/25 border border-white/10 p-4 mb-6 backdrop-blur-sm">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-xs uppercase font-bold tracking-widest text-white flex items-center gap-2">
+            <DollarSign className="w-3.5 h-3.5 text-white/80" />
             Análise de Lucro
           </p>
-          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+          <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${
             profitAnalysis.profitMargin >= 20
-              ? 'bg-green-500/30 text-green-300'
+              ? 'bg-green-400/20 text-green-300 border-green-400/30'
               : profitAnalysis.profitMargin >= 15
-              ? 'bg-yellow-500/30 text-yellow-300'
-              : 'bg-red-500/30 text-red-300'
+              ? 'bg-yellow-400/20 text-yellow-200 border-yellow-400/30'
+              : 'bg-red-400/20 text-red-200 border-red-400/30'
           }`}>
             {profitAnalysis.profitMargin.toFixed(1)}% margem
           </span>
@@ -1468,7 +1468,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
 
         {/* Stacked progress bar */}
         <div
-          className="relative h-8 rounded-full overflow-hidden bg-white/10 mb-2"
+          className="relative h-9 rounded-full overflow-hidden bg-white/10 mb-2"
           role="img"
           aria-label={`Custo ${profitAnalysis.costPercentage.toFixed(1)}%, Comissão ${profitAnalysis.commissionPercentage.toFixed(1)}%, Lucro ${profitAnalysis.profitPercentage.toFixed(1)}%`}
         >
@@ -1477,7 +1477,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
             style={{ width: `${profitAnalysis.costPercentage}%` }}
           >
             {profitAnalysis.costPercentage > 12 && (
-              <span className="text-white text-[10px] font-bold">{profitAnalysis.costPercentage.toFixed(1)}%</span>
+              <span className="text-white text-[10px] font-bold drop-shadow">{profitAnalysis.costPercentage.toFixed(1)}%</span>
             )}
           </div>
           <div
@@ -1485,7 +1485,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
             style={{ left: `${profitAnalysis.costPercentage}%`, width: `${profitAnalysis.commissionPercentage}%` }}
           >
             {profitAnalysis.commissionPercentage > 6 && (
-              <span className="text-white text-[10px] font-bold">{profitAnalysis.commissionPercentage.toFixed(1)}%</span>
+              <span className="text-white text-[10px] font-bold drop-shadow">{profitAnalysis.commissionPercentage.toFixed(1)}%</span>
             )}
           </div>
           <div
@@ -1493,41 +1493,43 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
             style={{ left: `${profitAnalysis.costPercentage + profitAnalysis.commissionPercentage}%`, width: `${profitAnalysis.profitPercentage}%` }}
           >
             {profitAnalysis.profitPercentage > 8 && (
-              <span className="text-white text-[10px] font-bold">{profitAnalysis.profitPercentage.toFixed(1)}%</span>
+              <span className="text-white text-[10px] font-bold drop-shadow">{profitAnalysis.profitPercentage.toFixed(1)}%</span>
             )}
           </div>
         </div>
 
         {/* Legenda */}
-        <div className="flex items-center justify-center gap-4 text-[10px] mb-3">
-          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500" /><span className="text-white/70">Custo ({profitAnalysis.costPercentage.toFixed(1)}%)</span></div>
-          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-orange-500" /><span className="text-white/70">Comissão ({profitAnalysis.commissionPercentage.toFixed(1)}%)</span></div>
-          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-green-500" /><span className="text-white/70">Lucro ({profitAnalysis.profitPercentage.toFixed(1)}%)</span></div>
+        <div className="flex items-center justify-center gap-4 text-[10px] mb-4">
+          <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-blue-500" /><span className="text-white/80">Custo ({profitAnalysis.costPercentage.toFixed(1)}%)</span></div>
+          <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-orange-500" /><span className="text-white/80">Comissão ({profitAnalysis.commissionPercentage.toFixed(1)}%)</span></div>
+          <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-green-500" /><span className="text-white/80">Lucro ({profitAnalysis.profitPercentage.toFixed(1)}%)</span></div>
         </div>
 
-        {/* Grid de valores */}
-        <div className="grid grid-cols-3 gap-2 text-xs">
-          <div className="bg-white/10 rounded-lg p-2 text-center">
-            <p className="text-white/60 mb-0.5">Custo</p>
-            <p className="font-bold text-white">R$ {formatMoney(profitAnalysis.totalCost)}</p>
+        {/* Grid de valores — fundo escuro para contraste */}
+        <div className="grid grid-cols-3 gap-2 text-xs mb-3">
+          <div className="bg-black/30 border border-white/10 rounded-lg p-2.5 text-center">
+            <p className="text-white/50 mb-1 uppercase tracking-wide text-[9px]">Custo</p>
+            <p className="font-bold text-white text-sm">R$ {formatMoney(profitAnalysis.totalCost)}</p>
           </div>
-          <div className="bg-white/10 rounded-lg p-2 text-center">
-            <p className="text-white/60 mb-0.5">Comissão</p>
-            <p className="font-bold text-white">R$ {formatMoney(profitAnalysis.totalCommissions)}</p>
+          <div className="bg-black/30 border border-white/10 rounded-lg p-2.5 text-center">
+            <p className="text-white/50 mb-1 uppercase tracking-wide text-[9px]">Comissão</p>
+            <p className="font-bold text-white text-sm">R$ {formatMoney(profitAnalysis.totalCommissions)}</p>
           </div>
-          <div className="bg-white/10 rounded-lg p-2 text-center">
-            <p className="text-white/60 mb-0.5">Lucro</p>
-            <p className="font-bold text-green-300">R$ {formatMoney(profitAnalysis.totalProfit)}</p>
+          <div className="bg-black/30 border border-green-400/20 rounded-lg p-2.5 text-center">
+            <p className="text-white/50 mb-1 uppercase tracking-wide text-[9px]">Lucro</p>
+            <p className="font-bold text-green-300 text-sm">R$ {formatMoney(profitAnalysis.totalProfit)}</p>
           </div>
         </div>
 
         {/* Alerta de margem */}
         {profitAnalysis.profitMargin < 20 && profitAnalysis.totalRevenue > 0 && (
-          <div className={`mt-3 rounded-lg p-2 text-[10px] flex items-start gap-2 ${
-            profitAnalysis.profitMargin < 15 ? 'bg-red-500/20 border border-red-400/30' : 'bg-yellow-500/20 border border-yellow-400/30'
+          <div className={`rounded-lg p-2.5 text-[10px] flex items-start gap-2 mb-3 ${
+            profitAnalysis.profitMargin < 15
+              ? 'bg-red-900/40 border border-red-400/40 text-red-200'
+              : 'bg-yellow-900/40 border border-yellow-400/40 text-yellow-200'
           }`}>
             <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
-            <span className="text-white/90">
+            <span>
               {profitAnalysis.profitMargin < 15
                 ? `Margem crítica! ${profitAnalysis.profitMargin.toFixed(1)}% está abaixo do mínimo recomendado (15%).`
                 : `Margem de ${profitAnalysis.profitMargin.toFixed(1)}%. Ideal seria acima de 20% para maior sustentabilidade.`}
@@ -1536,13 +1538,13 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         )}
 
         {/* Frete e outras despesas */}
-        <div className="grid grid-cols-2 gap-2 mt-3 text-[10px]">
-          <div className="flex justify-between">
-            <span className="text-white/60">Frete Total</span>
+        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/10 text-[11px]">
+          <div className="flex justify-between items-center">
+            <span className="text-white/50">Frete Total</span>
             <span className="font-semibold text-white">R$ {formatMoney(profitAnalysis.totalShipping)}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-white/60">Outras Despesas</span>
+          <div className="flex justify-between items-center">
+            <span className="text-white/50">Outras Despesas</span>
             <span className="font-semibold text-white">R$ {formatMoney(profitAnalysis.totalExpenses)}</span>
           </div>
         </div>

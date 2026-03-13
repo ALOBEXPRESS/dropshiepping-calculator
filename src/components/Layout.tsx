@@ -129,22 +129,43 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <span className="ml-3">Painel</span>
                 <ChevronDown className="w-4 h-4 ml-auto" />
               </div>
-              <ul className="py-2 space-y-2 pl-8">
+              <ul className="py-2 space-y-1 pl-8">
                   <li>
-                      <Link to={{ pathname: '/', search: e2eSearch }} className="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-4 group hover:bg-gray-100 dark:text-white dark:hover:bg-zinc-800">
-                          <span className="w-2 h-2 mr-2 bg-blue-500 rounded-full"></span>
+                      <Link
+                        to={{ pathname: '/', search: e2eSearch }}
+                        className={`flex items-center w-full p-2 text-sm transition-all duration-150 rounded-lg pl-4 group no-underline
+                          ${location.pathname === '/'
+                            ? 'bg-blue-500/10 text-blue-400 font-semibold'
+                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white'
+                          }`}
+                      >
+                          <span className={`w-1.5 h-1.5 mr-2.5 rounded-full flex-shrink-0 ${location.pathname === '/' ? 'bg-blue-400' : 'bg-blue-500/60'}`} />
                           Calculadora
                       </Link>
                   </li>
                   <li>
-                      <Link to={{ pathname: '/produtos', search: e2eSearch }} className="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-4 group hover:bg-gray-100 dark:text-white dark:hover:bg-zinc-800">
-                          <span className="w-2 h-2 mr-2 bg-pink-500 rounded-full"></span>
+                      <Link
+                        to={{ pathname: '/produtos', search: e2eSearch }}
+                        className={`flex items-center w-full p-2 text-sm transition-all duration-150 rounded-lg pl-4 group no-underline
+                          ${location.pathname === '/produtos'
+                            ? 'bg-pink-500/10 text-pink-400 font-semibold'
+                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white'
+                          }`}
+                      >
+                          <span className={`w-1.5 h-1.5 mr-2.5 rounded-full flex-shrink-0 ${location.pathname === '/produtos' ? 'bg-pink-400' : 'bg-pink-500/60'}`} />
                           Produtos
                       </Link>
                   </li>
                   <li>
-                      <Link to={{ pathname: '/vendas', search: e2eSearch }} className="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-4 group hover:bg-gray-100 dark:text-white dark:hover:bg-zinc-800">
-                          <span className="w-2 h-2 mr-2 bg-green-500 rounded-full"></span>
+                      <Link
+                        to={{ pathname: '/vendas', search: e2eSearch }}
+                        className={`flex items-center w-full p-2 text-sm transition-all duration-150 rounded-lg pl-4 group no-underline
+                          ${location.pathname === '/vendas'
+                            ? 'bg-green-500/10 text-green-400 font-semibold'
+                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white'
+                          }`}
+                      >
+                          <span className={`w-1.5 h-1.5 mr-2.5 rounded-full flex-shrink-0 ${location.pathname === '/vendas' ? 'bg-green-400' : 'bg-green-500/60'}`} />
                           Vendas
                       </Link>
                   </li>
