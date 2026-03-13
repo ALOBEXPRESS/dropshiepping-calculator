@@ -20,7 +20,10 @@ secretsbling.md
 .kiro/security/
 src/hooks/n8n*
 tests/*
+test/screenshots
 scripts/*
+sql-scripts/*
+python-scripts/*
 # ============================================
 # LOGS
 # ============================================
@@ -98,9 +101,7 @@ desktop.ini
 # N8N Workflows (contain hardcoded secrets)
 src/hooks/n8n/workflows/*.json
 
-# Documentation (too large for repo)
-docs/
-Docs/
+# Large documentation files (keep essential docs)
 DOCUMENTATION.md
 DEPLOY.md
 

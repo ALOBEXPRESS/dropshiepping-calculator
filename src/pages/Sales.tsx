@@ -14,6 +14,7 @@ import {
   RevenueProfitTrendChart,
   MarketplacePerformanceCard,
   LowMarginProductsAlert,
+  EnhancedGeographicSales,
 } from '@/components/sales';
 import { PendingOrders } from '@/components/PendingOrders';
 import { useHeroStats } from '@/hooks/sales/useHeroStats';
@@ -132,6 +133,11 @@ const Sales: React.FC = () => {
       {/* Alertas de Margem Baixa */}
       <div className="mb-6 animate-on-load">
         <LowMarginProductsAlert organizationId={organizationId} />
+      </div>
+
+      {/* Análise Geográfica */}
+      <div className="mb-6 animate-on-load">
+        <EnhancedGeographicSales organizationId={organizationId} />
       </div>
 
       {/* Análises Detalhadas - Tabs */}
