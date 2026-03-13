@@ -11,6 +11,9 @@ import {
   TopProfitableProductsTable,
   CustomerLTVDashboard,
   LeadConversionFunnel,
+  RevenueProfitTrendChart,
+  MarketplacePerformanceCard,
+  LowMarginProductsAlert,
 } from '@/components/sales';
 import { PendingOrders } from '@/components/PendingOrders';
 import { useHeroStats } from '@/hooks/sales/useHeroStats';
@@ -114,6 +117,21 @@ const Sales: React.FC = () => {
         <div className="animate-on-load">
           <LeadConversionFunnel organizationId={organizationId} refreshTrigger={refreshKey} />
         </div>
+      </div>
+
+      {/* Análise de Performance - Tendência e Marketplace */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="animate-on-load">
+          <RevenueProfitTrendChart organizationId={organizationId} />
+        </div>
+        <div className="animate-on-load">
+          <MarketplacePerformanceCard organizationId={organizationId} />
+        </div>
+      </div>
+
+      {/* Alertas de Margem Baixa */}
+      <div className="mb-6 animate-on-load">
+        <LowMarginProductsAlert organizationId={organizationId} />
       </div>
 
       {/* Análises Detalhadas - Tabs */}

@@ -15,3 +15,6 @@ export { ProfitAnalysisCard } from './ProfitAnalysisCard';
 export { TopProfitableProductsTable } from './TopProfitableProductsTable';
 export { CustomerLTVDashboard } from './CustomerLTVDashboard';
 export { LeadConversionFunnel } from './LeadConversionFunnel';
+export { RevenueProfitTrendChart } from './RevenueProfitTrendChart';
+export { MarketplacePerformanceCard } from './MarketplacePerformanceCard';
+export { LowMarginProductsAlert } from './LowMarginProductsAlert';
