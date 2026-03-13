@@ -7,7 +7,6 @@ import {
   TopCustomersList,
   HeroSection,
   AnalyticsTabs,
-  TopProfitableProductsTable,
   CustomerLTVDashboard,
   LeadConversionFunnel,
   RevenueProfitTrendChart,
@@ -142,10 +141,7 @@ const Sales: React.FC = () => {
         </div>
       </div>
 
-      {/* Produtos Lucrativos */}
-      <div className="mb-6 animate-on-load">
-        <TopProfitableProductsTable organizationId={organizationId} limit={5} refreshTrigger={refreshKey} />
-      </div>
+      {/* Produtos Lucrativos removido — agora está no Resumo Financeiro Geral */}
 
       {/* Análise de Clientes - LTV e Funil de Conversão */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
