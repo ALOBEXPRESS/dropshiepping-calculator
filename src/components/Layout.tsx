@@ -169,6 +169,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                           Vendas
                       </Link>
                   </li>
+                  <li>
+                      <Link
+                        to={{ pathname: '/leads', search: e2eSearch }}
+                        className={`flex items-center w-full p-2 text-sm transition-all duration-150 rounded-lg pl-4 group no-underline
+                          ${location.pathname === '/leads'
+                            ? 'bg-purple-500/10 text-purple-400 font-semibold'
+                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white'
+                          }`}
+                      >
+                          <span className={`w-1.5 h-1.5 mr-2.5 rounded-full flex-shrink-0 ${location.pathname === '/leads' ? 'bg-purple-400' : 'bg-purple-500/60'}`} />
+                          Leads
+                      </Link>
+                  </li>
               </ul>
             </li>
           </ul>

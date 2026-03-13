@@ -4,13 +4,9 @@ import {
   RevenueReportChart,
   CustomersStatistics,
   StockReportTable,
-  TopCustomersList,
   HeroSection,
   AnalyticsTabs,
-  LeadConversionFunnel,
-  RevenueProfitTrendChart,
   LowMarginProductsAlert,
-  EnhancedGeographicSales,
   PaymentTransactions,
 } from '@/components/sales';
 import { PendingOrders } from '@/components/PendingOrders';
@@ -141,34 +137,14 @@ const Sales: React.FC = () => {
 
       {/* Produtos Lucrativos removido — agora está no Resumo Financeiro Geral */}
 
-      {/* Análise de Clientes - Funil de Conversão */}
-      <div className="mb-6 animate-on-load">
-        <LeadConversionFunnel organizationId={organizationId} refreshTrigger={refreshKey} />
-      </div>
-
-      {/* Análise de Performance - Tendência */}
-      <div className="mb-6 animate-on-load">
-        <RevenueProfitTrendChart organizationId={organizationId} />
-      </div>
-
       {/* Alertas de Margem Baixa */}
       <div className="mb-6 animate-on-load">
         <LowMarginProductsAlert organizationId={organizationId} />
       </div>
 
-      {/* Análise Geográfica */}
+      {/* Informações Secundárias - Stock */}
       <div className="mb-6 animate-on-load">
-        <EnhancedGeographicSales organizationId={organizationId} />
-      </div>
-
-      {/* Informações Secundárias - Stock + Customers */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-        <div className="lg:col-span-2 animate-on-load">
-          <StockReportTable organizationId={organizationId} refreshTrigger={refreshKey} />
-        </div>
-        <div className="animate-on-load">
-          <TopCustomersList organizationId={organizationId} limit={6} refreshTrigger={refreshKey} />
-        </div>
+        <StockReportTable organizationId={organizationId} refreshTrigger={refreshKey} />
       </div>
     </div>
   );

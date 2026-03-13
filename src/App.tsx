@@ -15,6 +15,7 @@ import { LoadingState } from './components/ui/LoadingState';
 const DropshippingCalculator = lazy(() => import('./components/DropshippingCalculator'));
 const LoginPremium = lazy(() => import('./components/LoginPremium'));
 const Sales = lazy(() => import('./pages/Sales'));
+const Leads = lazy(() => import('./pages/Leads'));
 
 const ProductsPage = () => (
   <ProtectedRoute>
@@ -31,6 +32,16 @@ const SalesPage = () => (
     <Layout>
       <Suspense fallback={<LoadingState />}>
         <Sales />
+      </Suspense>
+    </Layout>
+  </ProtectedRoute>
+);
+
+const LeadsPage = () => (
+  <ProtectedRoute>
+    <Layout>
+      <Suspense fallback={<LoadingState />}>
+        <Leads />
       </Suspense>
     </Layout>
   </ProtectedRoute>
@@ -70,6 +81,7 @@ function App() {
               />
               <Route path="/produtos" element={<ProductsPage />} />
               <Route path="/vendas" element={<SalesPage />} />
+              <Route path="/leads" element={<LeadsPage />} />
             </Routes>
           </Suspense>
             </BrowserRouter>
