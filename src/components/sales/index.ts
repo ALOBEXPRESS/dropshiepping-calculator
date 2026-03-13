@@ -19,3 +19,4 @@ export { RevenueProfitTrendChart } from './RevenueProfitTrendChart';
 export { MarketplacePerformanceCard } from './MarketplacePerformanceCard';
 export { LowMarginProductsAlert } from './LowMarginProductsAlert';
 export { EnhancedGeographicSales } from './EnhancedGeographicSales';
+export { PaymentTransactions } from './PaymentTransactions';

@@ -15,6 +15,7 @@ import {
   MarketplacePerformanceCard,
   LowMarginProductsAlert,
   EnhancedGeographicSales,
+  PaymentTransactions,
 } from '@/components/sales';
 import { PendingOrders } from '@/components/PendingOrders';
 import { useHeroStats } from '@/hooks/sales/useHeroStats';
@@ -130,6 +131,18 @@ const Sales: React.FC = () => {
         </div>
       </div>
 
+      {/* Análises Detalhadas (Tabs) + Transações — mesma grade 3 colunas do hero */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        {/* Coluna 1 - Tabs: Produtos / Pedidos / Distribuição (ocupa 2/3) */}
+        <div className="lg:col-span-2 animate-on-load">
+          <AnalyticsTabs organizationId={organizationId} refreshTrigger={refreshKey} />
+        </div>
+        {/* Coluna 2 - Transações com formas de pagamento (ocupa 1/3) */}
+        <div className="animate-on-load">
+          <PaymentTransactions organizationId={organizationId} refreshTrigger={refreshKey} />
+        </div>
+      </div>
+
       {/* Análise de Lucro e Produtos Lucrativos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="animate-on-load">
@@ -168,11 +181,6 @@ const Sales: React.FC = () => {
       {/* Análise Geográfica */}
       <div className="mb-6 animate-on-load">
         <EnhancedGeographicSales organizationId={organizationId} />
-      </div>
-
-      {/* Análises Detalhadas - Tabs */}
-      <div className="mb-6 animate-on-load">
-        <AnalyticsTabs organizationId={organizationId} refreshTrigger={refreshKey} />
       </div>
 
       {/* Informações Secundárias - Stock + Customers */}
