@@ -2094,13 +2094,13 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
             onClick={handleNavigateToProductsButton}
             className="
               relative overflow-hidden
-              bg-black/80 hover:bg-black/90 text-white font-semibold text-xs uppercase tracking-wide px-4 py-2 h-8
+              bg-[#fe2c55] hover:bg-[#d91c42] text-white font-semibold text-xs uppercase tracking-wide px-4 py-2 h-8
               before:absolute before:inset-0
               before:bg-gradient-to-r before:from-transparent before:via-white/30 before:to-transparent
               before:translate-x-[-200%]
               hover:before:translate-x-[200%]
               before:transition-transform before:duration-700
-              hover:shadow-lg hover:shadow-white/10
+              hover:shadow-lg hover:shadow-[#fe2c55]/50
               transition-shadow duration-300
             "
           >
@@ -3471,8 +3471,8 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         )}
         {showOnlyProducts ? (
           <div className="grid gap-6 lg:grid-cols-2">
-            <div className="bg-[#0d0d0d] text-white rounded-xl p-5 shadow-lg cursor-pointer border border-white/10" onClick={handleNavigateToProducts}>
-              <div className="rounded-lg bg-white/5 p-0 overflow-hidden mb-6">
+            <div className="bg-[#0d0d0d] text-white rounded-xl p-5 shadow-lg border border-white/10">
+              <div className="rounded-lg bg-white/5 p-0 mb-6">
                 <div className="flex items-center justify-between p-4 pb-0 bg-white/5">
                   <div className="w-full max-w-xs">
                     <Input
@@ -3488,7 +3488,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 </div>
 
                 <ProfitProjection
-                  product={selectedProduct}
+                  product={isProductsLoading && effectiveProducts.length === 0 ? null : (selectedProduct ?? null)}
                   onNext={() => setSelectedProductIndex((safeSelectedProductIndex + 1) % filteredProjectionProducts.length)}
                   onPrev={() => setSelectedProductIndex((safeSelectedProductIndex - 1 + filteredProjectionProducts.length) % filteredProjectionProducts.length)}
                 />
