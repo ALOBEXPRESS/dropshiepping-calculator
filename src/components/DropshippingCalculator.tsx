@@ -1454,6 +1454,62 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
           </div>
         </div>
       </div>
+
+      {/* Customer Lifetime Value — KPIs */}
+      <div className="rounded-xl bg-black/25 border border-white/10 p-4 mt-4 backdrop-blur-sm">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="p-1.5 rounded-lg bg-blue-500/20 border border-blue-400/30">
+            <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-xs uppercase font-bold tracking-widest text-white">Customer Lifetime Value</p>
+            <p className="text-[10px] text-white/40">Análise de valor dos clientes</p>
+          </div>
+        </div>
+        {clvLoading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[...Array(4)].map((_, i) => <div key={i} className="h-16 rounded-lg bg-white/10 animate-pulse" />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-black/30 border border-blue-400/20 rounded-lg p-3">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <DollarSign className="w-3 h-3 text-blue-400" aria-hidden="true" />
+                <p className="text-[10px] text-white/50 uppercase tracking-wide">LTV Médio</p>
+              </div>
+              <p className="text-sm font-bold text-white">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(clvData.avgLifetimeValue)}</p>
+            </div>
+            <div className="bg-black/30 border border-green-400/20 rounded-lg p-3">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <p className="text-[10px] text-white/50 uppercase tracking-wide">Ticket Médio</p>
+              </div>
+              <p className="text-sm font-bold text-white">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(clvData.avgOrderValue)}</p>
+            </div>
+            <div className="bg-black/30 border border-purple-400/20 rounded-lg p-3">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <TrendingUp className="w-3 h-3 text-purple-400" aria-hidden="true" />
+                <p className="text-[10px] text-white/50 uppercase tracking-wide">Pedidos/Cliente</p>
+              </div>
+              <p className="text-sm font-bold text-white">{clvData.avgOrdersPerCustomer.toFixed(1)}</p>
+            </div>
+            <div className="bg-black/30 border border-[#fe2c55]/20 rounded-lg p-3">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <svg className="w-3 h-3 text-[#fe2c55]" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <p className="text-[10px] text-white/50 uppercase tracking-wide">Taxa Recompra</p>
+              </div>
+              <p className="text-sm font-bold text-white">{clvData.repeatCustomerRate.toFixed(1)}%</p>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="my-6 border-t border-white/30" />
       {/* Análise de Lucro + Produtos Mais Lucrativos — grid 2 colunas */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-6">
@@ -1468,7 +1524,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
             profitAnalysis.profitMargin >= 20
               ? 'bg-green-400/20 text-green-300 border-green-400/30'
               : profitAnalysis.profitMargin >= 15
-              ? 'bg-yellow-400/20 text-yellow-200 border-yellow-400/30'
+              ? 'bg-[#fe2c55]/20 text-[#fe2c55] border-[#fe2c55]/30'
               : 'bg-red-400/20 text-red-200 border-red-400/30'
           }`}>
             {profitAnalysis.profitMargin.toFixed(1)}% margem
@@ -1535,7 +1591,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
           <div className={`rounded-lg p-2.5 text-[10px] flex items-start gap-2 mb-3 ${
             profitAnalysis.profitMargin < 15
               ? 'bg-red-900/40 border border-red-400/40 text-red-200'
-              : 'bg-yellow-900/40 border border-yellow-400/40 text-yellow-200'
+              : 'bg-[#fe2c55]/20 border border-[#fe2c55]/40 text-pink-200'
           }`}>
             <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
             <span>
@@ -1585,7 +1641,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
           <div className="space-y-2">
             {topProducts.map((product, index) => {
               const rankColors = [
-                { bg: 'bg-yellow-400/20', border: 'border-yellow-400/40', text: 'text-yellow-300', dot: 'bg-gradient-to-br from-yellow-300 to-yellow-500' },
+                { bg: 'bg-[#fe2c55]/20', border: 'border-[#fe2c55]/40', text: 'text-[#fe2c55]', dot: 'bg-gradient-to-br from-[#fe2c55] to-[#d91c42]' },
                 { bg: 'bg-zinc-400/15', border: 'border-zinc-400/30', text: 'text-zinc-300', dot: 'bg-gradient-to-br from-zinc-300 to-zinc-500' },
                 { bg: 'bg-orange-400/15', border: 'border-orange-400/30', text: 'text-orange-300', dot: 'bg-gradient-to-br from-orange-400 to-orange-600' },
                 { bg: 'bg-white/5', border: 'border-white/10', text: 'text-white/60', dot: 'bg-white/30' },
@@ -1633,66 +1689,6 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       </div>
       </div>{/* fim col2 flex */}
       </div>{/* fim grid 2 colunas análise + produtos */}
-
-      {/* Customer Lifetime Value — KPIs */}
-      <div className="rounded-xl bg-black/25 border border-white/10 p-4 mb-6 backdrop-blur-sm">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="p-1.5 rounded-lg bg-blue-500/20 border border-blue-400/30">
-            <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </div>
-          <div>
-            <p className="text-xs uppercase font-bold tracking-widest text-white">Customer Lifetime Value</p>
-            <p className="text-[10px] text-white/40">Análise de valor dos clientes</p>
-          </div>
-        </div>
-
-        {clvLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[...Array(4)].map((_, i) => <div key={i} className="h-16 rounded-lg bg-white/10 animate-pulse" />)}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-black/30 border border-blue-400/20 rounded-lg p-3">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <DollarSign className="w-3 h-3 text-blue-400" aria-hidden="true" />
-                <p className="text-[10px] text-white/50 uppercase tracking-wide">LTV Médio</p>
-              </div>
-              <p className="text-sm font-bold text-white">
-                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(clvData.avgLifetimeValue)}
-              </p>
-            </div>
-            <div className="bg-black/30 border border-green-400/20 rounded-lg p-3">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                <p className="text-[10px] text-white/50 uppercase tracking-wide">Ticket Médio</p>
-              </div>
-              <p className="text-sm font-bold text-white">
-                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(clvData.avgOrderValue)}
-              </p>
-            </div>
-            <div className="bg-black/30 border border-purple-400/20 rounded-lg p-3">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <TrendingUp className="w-3 h-3 text-purple-400" aria-hidden="true" />
-                <p className="text-[10px] text-white/50 uppercase tracking-wide">Pedidos/Cliente</p>
-              </div>
-              <p className="text-sm font-bold text-white">{clvData.avgOrdersPerCustomer.toFixed(1)}</p>
-            </div>
-            <div className="bg-black/30 border border-orange-400/20 rounded-lg p-3">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <svg className="w-3 h-3 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <p className="text-[10px] text-white/50 uppercase tracking-wide">Taxa Recompra</p>
-              </div>
-              <p className="text-sm font-bold text-white">{clvData.repeatCustomerRate.toFixed(1)}%</p>
-            </div>
-          </div>
-        )}
-      </div>
 
       <div className="grid gap-6 xl:grid-cols-2 mb-6">
         <div className="rounded-lg bg-black/20 border border-white/10 p-3 h-full flex flex-col">
