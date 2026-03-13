@@ -18,6 +18,9 @@ import {
 } from '@/components/sales';
 import { PendingOrders } from '@/components/PendingOrders';
 import { useHeroStats } from '@/hooks/sales/useHeroStats';
+import { Button } from '@/components/ui/button';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { RefreshCw } from 'lucide-react';
 import gsap from 'gsap';
 
 const Sales: React.FC = () => {
@@ -76,26 +79,53 @@ const Sales: React.FC = () => {
 
   return (
     <div ref={containerRef} className="min-h-screen bg-gray-50 dark:bg-zinc-950 p-4 sm:p-6">
-      {/* Hero Section com KPIs */}
-      <div className="mb-6 animate-on-load">
-        <HeroSection 
-          stats={stats}
-          hasPendingOrders={false}
-          onRefresh={handleRefresh}
-        />
+      {/* Header do Dashboard */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 animate-on-load">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Dashboard de Vendas
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+            Visão completa do desempenho
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <DateRangePicker />
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={handleRefresh}
+            aria-label="Atualizar dados do dashboard"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Atualizar
+          </Button>
+        </div>
       </div>
 
-      {/* Vendas a Processar - Compacto */}
+      {/* Vendas a Processar - Topo */}
       <div className="mb-6 animate-on-load">
         <PendingOrders onOrderProcessed={handleOrderProcessed} />
       </div>
 
-      {/* Métricas Primárias - Revenue + Customer Statistics */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="animate-on-load">
-          <RevenueReportChart organizationId={organizationId} refreshTrigger={refreshKey} />
+      {/* Layout principal: Coluna 1 (KPIs + Gráfico) | Coluna 2 (Estatísticas de Clientes) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        {/* Coluna 1 - KPIs + Revenue Chart (ocupa 2/3) */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          <div className="animate-on-load">
+            <HeroSection 
+              stats={stats}
+              hasPendingOrders={false}
+              compact={true}
+            />
+          </div>
+          <div className="animate-on-load">
+            <RevenueReportChart organizationId={organizationId} refreshTrigger={refreshKey} />
+          </div>
         </div>
-        <div className="animate-on-load">
+
+        {/* Coluna 2 - Estatísticas de Clientes (ocupa 1/3) */}
+        <div className="animate-on-load h-full">
           <CustomersStatistics organizationId={organizationId} refreshTrigger={refreshKey} />
         </div>
       </div>

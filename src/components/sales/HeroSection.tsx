@@ -1,7 +1,6 @@
 import React from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { 
   DollarSign, 
@@ -106,13 +105,15 @@ interface HeroSectionProps {
   hasPendingOrders?: boolean;
   onRefresh?: () => void;
   onExport?: () => void;
+  compact?: boolean;
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ 
   stats,
   hasPendingOrders = false,
   onRefresh,
-  onExport
+  onExport,
+  compact = false,
 }) => {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -122,55 +123,58 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   };
 
   return (
-    <Card className="p-6 bg-gradient-to-br from-blue-50/50 to-white dark:from-blue-950/10 dark:to-background border-gray-200 dark:border-zinc-800">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Dashboard de Vendas
-          </h1>
-          <div className="flex items-center gap-3">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Visão completa do desempenho
-            </p>
-            {!hasPendingOrders && (
-              <Badge 
-                variant="default" 
-                className="gap-1.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30"
-                aria-label="Status: Todos os pedidos foram processados"
+    <div className="space-y-4">
+      {/* Header - só aparece quando não é compact */}
+      {!compact && (
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              Dashboard de Vendas
+            </h1>
+            <div className="flex items-center gap-3">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Visão completa do desempenho
+              </p>
+              {!hasPendingOrders && (
+                <Badge 
+                  variant="default" 
+                  className="gap-1.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30"
+                  aria-label="Status: Todos os pedidos foram processados"
+                >
+                  <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                  Tudo processado
+                </Badge>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-2" role="toolbar" aria-label="Ações do dashboard">
+            <DateRangePicker />
+            {onExport && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={onExport}
+                aria-label="Exportar dados do dashboard"
               >
-                <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />
-                Tudo processado
-              </Badge>
+                <Download className="w-4 h-4 mr-2" aria-hidden="true" />
+                Exportar
+              </Button>
+            )}
+            {onRefresh && (
+              <Button 
+                size="sm" 
+                onClick={onRefresh} 
+                variant="ghost"
+                aria-label="Atualizar dados do dashboard"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" aria-hidden="true" />
+                Atualizar
+              </Button>
             )}
           </div>
         </div>
-        
-        <div className="flex flex-col sm:flex-row gap-2" role="toolbar" aria-label="Ações do dashboard">
-          <DateRangePicker />
-          {onExport && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={onExport}
-              aria-label="Exportar dados do dashboard"
-            >
-              <Download className="w-4 h-4 mr-2" aria-hidden="true" />
-              Exportar
-            </Button>
-          )}
-          {onRefresh && (
-            <Button 
-              size="sm" 
-              onClick={onRefresh} 
-              variant="ghost"
-              aria-label="Atualizar dados do dashboard"
-            >
-              <RefreshCw className="w-4 h-4 mr-2" aria-hidden="true" />
-              Atualizar
-            </Button>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* KPIs Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4" role="region" aria-label="Indicadores principais de desempenho">
@@ -210,6 +214,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           iconColor="from-orange-500 to-orange-600"
         />
       </div>
-    </Card>
+    </div>
   );
 };

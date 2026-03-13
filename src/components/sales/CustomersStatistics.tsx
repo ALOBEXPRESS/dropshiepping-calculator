@@ -123,7 +123,7 @@ export const CustomersStatistics: React.FC<CustomersStatisticsProps> = ({ organi
   }
 
   return (
-    <Card className="p-6 border-gray-100 dark:border-zinc-800">
+    <Card className="p-6 border-gray-100 dark:border-zinc-800 h-full">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           Estatísticas de Clientes
