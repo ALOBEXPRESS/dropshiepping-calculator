@@ -51,6 +51,7 @@ import { useMultipleProductsSalesStats } from '../hooks/useMultipleProductsSales
 import { useProfitAnalysis } from '../hooks/sales/useProfitAnalysis';
 import { useTopProfitableProducts } from '../hooks/sales/useTopProfitableProducts';
 import { useCustomerLifetimeValue } from '../hooks/sales/useCustomerLifetimeValue';
+import { MarketplacePerformanceCard } from './sales/MarketplacePerformanceCard';
 import { useGeneralFinancialSummary } from '../hooks/useSalesStats';
 import ElectricBorder from './ui/electric-border';
 import { toast } from 'sonner';
@@ -1559,6 +1560,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       </div>
 
       {/* Produtos Mais Lucrativos */}
+      <div className="flex flex-col gap-4">
       <div className="rounded-xl bg-black/25 border border-white/10 p-4 backdrop-blur-sm">
         <div className="flex items-center justify-between mb-4">
           <p className="text-xs uppercase font-bold tracking-widest text-white flex items-center gap-2">
@@ -1625,6 +1627,11 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
           </div>
         )}
       </div>
+      {/* Performance por Marketplace */}
+      <div className="rounded-xl overflow-hidden">
+        <MarketplacePerformanceCard organizationId={organizationId ?? ''} />
+      </div>
+      </div>{/* fim col2 flex */}
       </div>{/* fim grid 2 colunas análise + produtos */}
 
       {/* Customer Lifetime Value — KPIs */}
@@ -3492,13 +3499,6 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                   onNext={() => setSelectedProductIndex((safeSelectedProductIndex + 1) % filteredProjectionProducts.length)}
                   onPrev={() => setSelectedProductIndex((safeSelectedProductIndex - 1 + filteredProjectionProducts.length) % filteredProjectionProducts.length)}
                 />
-              </div>
-              <div className="rounded-lg bg-black/20 border border-white/10 p-4">
-                <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wide flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-[#4DFF6B]" />
-                  Resumo Financeiro Geral
-                </h3>
-                {globalSummaryOverview}
               </div>
             </div>
             {showProductsList ? (

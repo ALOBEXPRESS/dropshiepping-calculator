@@ -7,10 +7,8 @@ import {
   TopCustomersList,
   HeroSection,
   AnalyticsTabs,
-  CustomerLTVDashboard,
   LeadConversionFunnel,
   RevenueProfitTrendChart,
-  MarketplacePerformanceCard,
   LowMarginProductsAlert,
   EnhancedGeographicSales,
   PaymentTransactions,
@@ -143,24 +141,14 @@ const Sales: React.FC = () => {
 
       {/* Produtos Lucrativos removido — agora está no Resumo Financeiro Geral */}
 
-      {/* Análise de Clientes - LTV e Funil de Conversão */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="animate-on-load">
-          <CustomerLTVDashboard organizationId={organizationId} refreshTrigger={refreshKey} />
-        </div>
-        <div className="animate-on-load">
-          <LeadConversionFunnel organizationId={organizationId} refreshTrigger={refreshKey} />
-        </div>
+      {/* Análise de Clientes - Funil de Conversão */}
+      <div className="mb-6 animate-on-load">
+        <LeadConversionFunnel organizationId={organizationId} refreshTrigger={refreshKey} />
       </div>
 
-      {/* Análise de Performance - Tendência e Marketplace */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="animate-on-load">
-          <RevenueProfitTrendChart organizationId={organizationId} />
-        </div>
-        <div className="animate-on-load">
-          <MarketplacePerformanceCard organizationId={organizationId} />
-        </div>
+      {/* Análise de Performance - Tendência */}
+      <div className="mb-6 animate-on-load">
+        <RevenueProfitTrendChart organizationId={organizationId} />
       </div>
 
       {/* Alertas de Margem Baixa */}
