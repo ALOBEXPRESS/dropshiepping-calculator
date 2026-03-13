@@ -50,19 +50,19 @@ const Leads: React.FC = () => {
         </Button>
       </div>
 
-      {/* Funil de Conversão */}
-      <div className="mb-6 animate-on-load">
-        <LeadConversionFunnel organizationId={organizationId} refreshTrigger={refreshKey} />
-      </div>
-
-      {/* Top Clientes + Análise Geográfica */}
+      {/* Funil de Conversão + Top Clientes */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="lg:col-span-2 animate-on-load">
+          <LeadConversionFunnel organizationId={organizationId} refreshTrigger={refreshKey} />
+        </div>
         <div className="animate-on-load">
           <TopCustomersList organizationId={organizationId} limit={6} refreshTrigger={refreshKey} />
         </div>
-        <div className="lg:col-span-2 animate-on-load">
-          <EnhancedGeographicSales organizationId={organizationId} />
-        </div>
+      </div>
+
+      {/* Análise Geográfica */}
+      <div className="mb-6 animate-on-load">
+        <EnhancedGeographicSales organizationId={organizationId} />
       </div>
     </div>
   );
