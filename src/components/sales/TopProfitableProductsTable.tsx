@@ -2,7 +2,9 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { TrendingUp } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { EmptyState } from '@/components/ui/empty-state';
+import { TrendingUp, Package } from 'lucide-react';
 import { useTopProfitableProducts } from '@/hooks/sales/useTopProfitableProducts';
 
 interface TopProfitableProductsTableProps {
@@ -71,11 +73,11 @@ export const TopProfitableProductsTable: React.FC<TopProfitableProductsTableProp
       </div>
 
       {products.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-500 dark:text-gray-400">
-            Nenhum produto com lucro registrado ainda
-          </p>
-        </div>
+        <EmptyState
+          icon={Package}
+          title="Nenhum produto lucrativo ainda"
+          description="Quando você processar pedidos com lucro, os produtos mais rentáveis aparecerão aqui."
+        />
       ) : (
         <div className="space-y-4">
           {products.map((product, index) => {
@@ -109,20 +111,34 @@ export const TopProfitableProductsTable: React.FC<TopProfitableProductsTableProp
 
                   {/* Product Image */}
                   {product.productImageUrl && (
-                    <div className="flex-shrink-0">
+                    <div className="flex-shrink-0 relative">
                       <img
                         src={product.productImageUrl}
                         alt={product.productName}
-                        className="w-12 h-12 rounded-lg object-cover ring-2 ring-gray-200 dark:ring-gray-700 group-hover:ring-purple-400 transition-all"
+                        className="w-16 h-16 rounded-lg object-cover ring-2 ring-gray-200 dark:ring-gray-700 group-hover:ring-purple-400 transition-all"
                       />
+                      {index === 0 && (
+                        <div className="absolute -top-2 -right-2 bg-yellow-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">
+                          TOP
+                        </div>
+                      )}
                     </div>
                   )}
 
                   {/* Product Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 dark:text-white truncate">
-                      {product.productName}
-                    </p>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <p className="font-medium text-gray-900 dark:text-white truncate cursor-help">
+                            {product.productName}
+                          </p>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-sm">
+                          <p>{product.productName}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <div className="flex items-center gap-2 mt-1">
                       <Badge variant="outline" className="text-xs">
                         {product.totalQuantity} vendidos

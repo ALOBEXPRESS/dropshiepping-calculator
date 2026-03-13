@@ -13,6 +13,7 @@ import {
   TrendingDown,
   CheckCircle
 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface KPICardProps {
   label: string;
@@ -36,21 +37,34 @@ const KPICard: React.FC<KPICardProps> = ({
   return (
     <div className="group relative overflow-hidden rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5">
       <div className="flex items-start justify-between mb-3">
-        <div className={`p-2.5 rounded-lg bg-gradient-to-br ${iconColor}`}>
+        <div className={`p-3 rounded-lg bg-gradient-to-br ${iconColor} group-hover:scale-110 transition-transform duration-200`}>
           {icon}
         </div>
         {trend !== undefined && (
-          <Badge 
-            variant={isPositive ? "default" : "secondary"}
-            className="gap-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30"
-          >
-            {isPositive ? (
-              <TrendingUp className="w-3 h-3" />
-            ) : (
-              <TrendingDown className="w-3 h-3" />
-            )}
-            {Math.abs(trend)}
-          </Badge>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge 
+                  variant={isPositive ? "default" : "destructive"}
+                  className={`gap-1.5 text-sm font-bold shadow-lg cursor-help ${
+                    isPositive 
+                      ? 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/20' 
+                      : 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/20'
+                  }`}
+                >
+                  {isPositive ? (
+                    <TrendingUp className="w-4 h-4" />
+                  ) : (
+                    <TrendingDown className="w-4 h-4" />
+                  )}
+                  {isPositive ? '+' : ''}{Math.abs(trend)}%
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-sm">Comparado com os últimos 30 dias</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
       </div>
       
@@ -142,7 +156,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           value={formatCurrency(stats.totalRevenue)}
           trend={stats.revenueChange}
           trendLabel="vs. período anterior"
-          icon={<DollarSign className="w-5 h-5 text-white" />}
+          icon={<DollarSign className="w-6 h-6 text-white" />}
           iconColor="from-green-500 to-green-600"
         />
         
@@ -151,7 +165,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           value={stats.totalOrders}
           trend={stats.ordersChange}
           trendLabel="esta semana"
-          icon={<ShoppingCart className="w-5 h-5 text-white" />}
+          icon={<ShoppingCart className="w-6 h-6 text-white" />}
           iconColor="from-blue-500 to-blue-600"
         />
         
@@ -160,7 +174,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           value={stats.totalCustomers}
           trend={stats.customersChange}
           trendLabel="esta semana"
-          icon={<Users className="w-5 h-5 text-white" />}
+          icon={<Users className="w-6 h-6 text-white" />}
           iconColor="from-purple-500 to-purple-600"
         />
         
@@ -169,7 +183,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           value={stats.totalProducts}
           trend={stats.productsChange}
           trendLabel="esta semana"
-          icon={<Package className="w-5 h-5 text-white" />}
+          icon={<Package className="w-6 h-6 text-white" />}
           iconColor="from-orange-500 to-orange-600"
         />
       </div>
