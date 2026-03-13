@@ -22,7 +22,7 @@ export function useMarketplacePerformance(organizationId: string) {
         
         const { data: ordersData, error: ordersError } = await supabase
           .from('orders')
-          .select('marketplace_id, total_amount, total_profit, profit_margin, marketplace_commission')
+          .select('marketplace_id, marketplace, total_amount, total_profit, profit_margin, marketplace_commission')
           .eq('organization_id', organizationId)
           .eq('status', 'completed');
 
@@ -41,9 +41,10 @@ export function useMarketplacePerformance(organizationId: string) {
 
         const grouped = ordersData.reduce((acc, order) => {
           const key = order.marketplace_id || 'unknown';
+          const name = order.marketplace || key;
           if (!acc[key]) {
             acc[key] = {
-              marketplace: key,
+              marketplace: name,
               orders_count: 0,
               revenue: 0,
               profit: 0,

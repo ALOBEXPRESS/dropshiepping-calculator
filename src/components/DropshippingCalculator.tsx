@@ -1449,7 +1449,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
             </div>
           </div>
           <div className="bg-black/30 rounded-lg p-3 border border-white/5 dark:border-zinc-800/40">
-            <p className="text-xs text-white/60 uppercase mb-1">Despesas Estimada</p>
+            <p className="text-xs text-white/60 uppercase mb-1">Total de Despesas</p>
             <p className="text-base font-bold text-white whitespace-nowrap">R$ {formatMoney(globalSummaryMetrics.totalExpenses)}</p>
           </div>
         </div>
