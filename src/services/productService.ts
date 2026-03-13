@@ -640,7 +640,7 @@ const enrichVariationsWithImages = async (products: ProductItem[]): Promise<Prod
   
   blingData.forEach((item: { sku: string; name?: string; image_url1?: string; image_url2?: string; image_url3?: string; variacao_nome?: string; product_id: string }) => {
     const imageUrl = item.image_url1 || item.image_url2 || item.image_url3;
-    if (!imageUrl || !item.variacao_nome) return;
+    if (!item.variacao_nome) return;
     
     // Find parent SKU by looking up the product_id
     const parentSku = Array.from(skuToProductId.entries()).find(([, id]) => id === item.product_id)?.[0];
@@ -654,7 +654,7 @@ const enrichVariationsWithImages = async (products: ProductItem[]): Promise<Prod
     variationsByParentSku.get(parentSku)!.push({
       sku: item.sku,
       variacao_nome: item.variacao_nome,
-      imageUrl
+      imageUrl: imageUrl || ''
     });
   });
 
@@ -730,8 +730,9 @@ const enrichVariationsWithImages = async (products: ProductItem[]): Promise<Prod
 
     const enrichedVariations = product.variations.map(variation => {
       let imageUrl = variation.imageUrl as string | undefined;
+      let sku = variation.sku as string | undefined;
       
-      if (!imageUrl && variation.name) {
+      if (variation.name) {
         // Parse the variation name from products table (e.g., "P - Branco", "G - Preto", "Unico - Preto", "Preto")
         const parsed = parseVariationName(variation.name);
         
@@ -762,13 +763,19 @@ const enrichVariationsWithImages = async (products: ProductItem[]): Promise<Prod
         });
         
         if (match) {
-          imageUrl = match.imageUrl;
+          if (!imageUrl) {
+            imageUrl = match.imageUrl;
+          }
+          if (!sku) {
+            sku = match.sku;
+          }
         }
       }
 
       return {
         ...variation,
-        imageUrl: imageUrl || undefined
+        imageUrl: imageUrl || undefined,
+        sku: sku || undefined
       };
     });
 
