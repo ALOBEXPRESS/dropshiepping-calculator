@@ -1,4 +1,5 @@
-import React from 'react';
+﻿import React, { useRef, useEffect } from 'react';
+import gsap from 'gsap';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -91,15 +92,38 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
 }) => {
   console.log('[ProductInfo] Render - accountHoldersList:', accountHoldersList, 'accountType:', accountType);
   
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return;
+
+    const fields = containerRef.current.querySelectorAll<HTMLElement>('.product-field');
+    // set initial state
+    gsap.set(fields, { opacity: 0, y: 24, filter: 'blur(4px)' });
+
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+    tl.to(fields, {
+      opacity: 1,
+      y: 0,
+      filter: 'blur(0px)',
+      duration: 0.5,
+      stagger: 0.07,
+    });
+
+    return () => { tl.kill(); };
+  }, []);
+
   // Mostrar todos os titulares independente do tipo de conta selecionado
   const filteredHolders = accountHoldersList;
 
   console.log('[ProductInfo] Filtered holders:', filteredHolders);
 
   return (
-    <>
+    <div ref={containerRef} className="contents">
       {/* Nome do Produto */}
-      <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn">
+      <div className="grid w-full max-w-sm items-center gap-1.5 product-field">
         <Label htmlFor="productName" className="text-sm font-bold text-gray-900 dark:text-gray-100">
           Nome do Produto <span className="text-red-500">*</span>
         </Label>
@@ -111,7 +135,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
         />
       </div>
 
-      <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn">
+      <div className="grid w-full max-w-sm items-center gap-1.5 product-field">
         <Label htmlFor="productSku" className="text-sm font-bold text-gray-900 dark:text-gray-100">
           SKU do Produto <span className="text-red-500">*</span>
         </Label>
@@ -124,7 +148,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
       </div>
 
       {/* Fornecedor */}
-      <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn">
+      <div className="grid w-full max-w-sm items-center gap-1.5 product-field">
         <Label className="text-sm font-bold text-gray-900 dark:text-gray-100">
           Fornecedor <span className="text-red-500">*</span>
         </Label>
@@ -155,7 +179,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
       </div>
 
       {/* Tipo de Conta */}
-      <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn">
+      <div className="grid w-full max-w-sm items-center gap-1.5 product-field">
         <Label className="text-sm font-bold text-gray-900 dark:text-gray-100">
           Tipo de Conta
         </Label>
@@ -176,7 +200,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
       </div>
 
       {/* Titular */}
-      <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn">
+      <div className="grid w-full max-w-sm items-center gap-1.5 product-field">
         <Label className="text-sm font-bold text-gray-900 dark:text-gray-100">
           Titular
         </Label>
@@ -201,7 +225,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
         </Select>
       </div>
 
-      <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn">
+      <div className="grid w-full max-w-sm items-center gap-1.5 product-field">
         <Label htmlFor="stockQuantity" className="text-sm font-bold text-gray-900 dark:text-gray-100">
           Quantidade em estoque
         </Label>
@@ -216,7 +240,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
         />
       </div>
 
-      <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn">
+      <div className="grid w-full max-w-sm items-center gap-1.5 product-field">
         <Label className="text-sm font-bold text-gray-900 dark:text-gray-100">
           Dimensões (kg/g/cm/m)
         </Label>
@@ -257,7 +281,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
       </div>
 
       {/* Imagem do Produto */}
-      <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn">
+      <div className="grid w-full max-w-sm items-center gap-1.5 product-field">
         <Label htmlFor="productImage" className="text-sm font-bold text-gray-900 dark:text-gray-100">
           Imagem do Produto (URL)
         </Label>
@@ -272,7 +296,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
         </p>
       </div>
 
-      <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn">
+      <div className="grid w-full max-w-sm items-center gap-1.5 product-field">
         <Label htmlFor="productDescription" className="text-sm font-bold text-gray-900 dark:text-gray-100">
           Descrição
         </Label>
@@ -285,7 +309,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
       </div>
 
       {/* Modalidade */}
-      <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn">
+      <div className="grid w-full max-w-sm items-center gap-1.5 product-field">
         <Label className="text-sm font-bold text-gray-900 dark:text-gray-100">
           Modalidade
         </Label>
@@ -301,7 +325,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
       </div>
 
       {/* Chance de Devolução */}
-      <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn">
+      <div className="grid w-full max-w-sm items-center gap-1.5 product-field">
         <Label htmlFor="returnRate" className="text-sm font-bold text-gray-900 dark:text-gray-100">
           Chance de devolução (%)
         </Label>
@@ -322,7 +346,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
       {/* Campos Condicionais da Modalidade */}
       {operationMode === 'armazem_alob' && (
         <>
-          <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn">
+          <div className="grid w-full max-w-sm items-center gap-1.5 product-field">
             <Label className="text-sm font-bold text-gray-900 dark:text-gray-100">
               Estado do produto
             </Label>
@@ -337,7 +361,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
               </SelectContent>
             </Select>
           </div>
-          <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn">
+          <div className="grid w-full max-w-sm items-center gap-1.5 product-field">
             <Label className="text-sm font-bold text-gray-900 dark:text-gray-100">
               Modalidade de entrega
             </Label>
@@ -368,7 +392,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
             </Select>
           </div>
           {(deliveryMode === 'correios' || deliveryMode === 'mais_envios') && (
-            <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn">
+            <div className="grid w-full max-w-sm items-center gap-1.5 product-field">
               <Label className="text-sm font-bold text-gray-900 dark:text-gray-100">
                 Logística
               </Label>
@@ -386,6 +410,6 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
           )}
         </>
       )}
-    </>
+    </div>
   );
 };
