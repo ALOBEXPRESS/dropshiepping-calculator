@@ -627,7 +627,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
     const normalizedSku = productSku.trim();
     if (!productName) missingFields.push('Nome do Produto');
     if (!normalizedSku) missingFields.push('SKU do Produto');
-    if (!supplierName) missingFields.push('Fornecedor');
+    if (!supplierName && !supplier_id) missingFields.push('Fornecedor');
     if (!costPrice || parseCurrency(costPrice) <= 0) missingFields.push('Preço de Custo do Fornecedor');
     // Quantidade em estoque is optional now
     if (stockQuantity !== '' && (Number.isNaN(Number(stockQuantity)) || Number(stockQuantity) < 0)) {
@@ -696,8 +696,8 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       unitOfMeasure: unitOfMeasure || undefined,
       sellingPrice: resolvedSellingPrice,
       costPrice: parseCurrency(costPrice),
-      supplierName,
-      supplier_id: resolvedSupplierId,
+      supplierName: supplierName || suppliersList.find(s => s.id === supplier_id)?.name || '',
+      supplier_id: resolvedSupplierId || supplier_id,
       marketplace,
       marketplace_id: resolvedMarketplaceId,
       amazonPlan: marketplace === 'amazon' ? amazonPlan : undefined,
@@ -823,7 +823,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
   };
   const isSaveDisabled = !productName.trim()
     || !productSku.trim()
-    || !supplierName
+    || (!supplierName && !supplier_id)
     || !costPrice
     || parseCurrency(costPrice) <= 0;
 
