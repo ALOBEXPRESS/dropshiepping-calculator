@@ -55,7 +55,7 @@ interface DateRangeProviderProps {
 
 export const DateRangeProvider: React.FC<DateRangeProviderProps> = ({ children }) => {
   const [preset, setPresetState] = useState<DateRangePreset>('30');
-  const [dateRange, setDateRangeState] = useState<DateRange>(getDefaultDateRange());
+  const [dateRange, setDateRangeState] = useState<DateRange>(() => getDefaultDateRange());
 
   // Carregar do localStorage na inicialização
   useEffect(() => {

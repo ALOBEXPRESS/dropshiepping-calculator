@@ -80,7 +80,7 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed }
     checkScrollButtons();
     const container = scrollContainerRef.current;
     if (container) {
-      container.addEventListener('scroll', checkScrollButtons);
+      container.addEventListener('scroll', checkScrollButtons, { passive: true });
       window.addEventListener('resize', checkScrollButtons);
       return () => {
         container.removeEventListener('scroll', checkScrollButtons);

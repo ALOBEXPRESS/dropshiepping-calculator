@@ -15,9 +15,11 @@ type ProductCardProps = {
   isRegistered?: boolean;
 };
 
+const EMPTY_VARIATIONS: BlingProductItem[] = [];
+
 export const ProductCard = ({
   product,
-  variations = [],
+  variations = EMPTY_VARIATIONS,
   onFill,
   onUpdate,
   isRegistered = false

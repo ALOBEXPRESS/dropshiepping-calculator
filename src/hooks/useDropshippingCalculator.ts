@@ -269,7 +269,7 @@ export const useDropshippingCalculator = () => {
         setSupplierFixedFee('0');
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint_disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array - only run once on mount
   
   // Selected Influencer for Video Generation

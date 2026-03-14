@@ -352,7 +352,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         handleSupplierChange(found.name);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint_disable-next-line react-hooks/exhaustive-deps
   }, [suppliersList]);
 
   const handleResetProductDraft = useCallback((silent?: boolean) => {
@@ -419,7 +419,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
 
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [showProductsList, setShowProductsList] = useState(true);
-  const [showOnlyProducts, setShowOnlyProducts] = useState(viewMode === 'products');
+  const showOnlyProducts = viewMode === 'products';
   const [isProductsLoading, setIsProductsLoading] = useState(true);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -464,9 +464,6 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
     setIsGlobalSummaryOpen(true);
   }, []);
 
-  useEffect(() => {
-    setShowOnlyProducts(viewMode === 'products');
-  }, [viewMode]);
 
   useEffect(() => {
     localStorage.setItem('registeredBlingIds', JSON.stringify(Array.from(registeredBlingIds)));

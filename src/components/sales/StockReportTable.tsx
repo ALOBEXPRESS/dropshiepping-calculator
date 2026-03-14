@@ -83,15 +83,11 @@ export const StockReportTable: React.FC<StockReportTableProps> = ({ organization
   const currentItems = sortedStock.slice(startIndex, endIndex);
 
   const goToNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
+    setCurrentPage(prev => prev < totalPages ? prev + 1 : prev);
   };
 
   const goToPreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
+    setCurrentPage(prev => prev > 1 ? prev - 1 : prev);
   };
 
   return (

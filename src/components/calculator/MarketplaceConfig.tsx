@@ -9,10 +9,12 @@ interface MarketplaceConfigProps {
   marketplacesList?: Marketplace[];
 }
 
+const EMPTY_MARKETPLACES: Marketplace[] = [];
+
 export const MarketplaceConfig: React.FC<MarketplaceConfigProps> = ({
   marketplace,
   handleMarketplaceChange,
-  marketplacesList = []
+  marketplacesList = EMPTY_MARKETPLACES
 }) => {
   // Combine hardcoded system marketplaces with custom ones
   // We filter out custom ones that might duplicate system keys if necessary, 

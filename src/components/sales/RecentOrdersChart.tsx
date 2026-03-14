@@ -59,7 +59,7 @@ export const RecentOrdersChart: React.FC<RecentOrdersChartProps> = ({ organizati
         if (fetchError) throw fetchError;
 
         // Formatar dados
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint_disable-next-line @typescript-eslint/no-explicit-any
         const formattedData: OrderData[] = (ordersData || []).map((order: any) => {
           const firstItem = order.order_items?.[0];
           const product = firstItem?.products;

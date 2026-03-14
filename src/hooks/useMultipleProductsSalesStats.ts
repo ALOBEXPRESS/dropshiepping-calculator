@@ -56,7 +56,7 @@ export const useMultipleProductsSalesStats = (productIds: string[]) => {
     };
 
     fetchStats();
-  }, [JSON.stringify(productIds)]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(productIds)]); // eslint_disable-line react-hooks/exhaustive-deps
 
   return { salesCounts, loading, error };
 };
