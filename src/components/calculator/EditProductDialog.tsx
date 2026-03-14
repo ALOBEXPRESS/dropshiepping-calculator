@@ -651,9 +651,11 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     (mp) => mp.name.toLowerCase() === currentMarketplaceName.toLowerCase()
   );
   const marketplaceCommissionRate = marketplaceRecord?.commission_rate ?? 0;
+  const marketplaceFixedFee = marketplaceRecord?.fixed_fee ?? 0;
   const marketplaceCommissionDeduction = sellingPriceForFee * (marketplaceCommissionRate / 100);
+  const marketplaceTotalDeduction = marketplaceCommissionDeduction + marketplaceFixedFee;
 
-  const organicNetRevenue = baseNetRevenue - supplierFeeDeduction - supplierGatewayFeeDeduction - marketplaceCommissionDeduction;
+  const organicNetRevenue = baseNetRevenue - supplierFeeDeduction - supplierGatewayFeeDeduction - marketplaceTotalDeduction;
   const organicVideoCost = 0;
 
   const handleSave = async () => {
@@ -703,8 +705,9 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     const _mpName = marketplaceKeyToName[nextMarketplace] ?? nextMarketplace;
     const _mpRecord = marketplaces.find((mp) => mp.name.toLowerCase() === _mpName.toLowerCase());
     const _mpCommissionDeduction = _sellingForFee * ((_mpRecord?.commission_rate ?? 0) / 100);
+    const _mpFixedFee = _mpRecord?.fixed_fee ?? 0;
     const derivedNetRevenueWithFees = Number.isFinite(derivedNetRevenue ?? NaN)
-      ? (derivedNetRevenue as number) - _supplierDeduction - _supplierGwDeduction - _mpCommissionDeduction
+      ? (derivedNetRevenue as number) - _supplierDeduction - _supplierGwDeduction - _mpCommissionDeduction - _mpFixedFee
       : null;
     const isShopee = nextMarketplace === 'shopee';
     const isMercadoLivre = nextMarketplace === 'mercadolivre';
@@ -2846,9 +2849,9 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                         className="col-span-3"
                         disabled
                       />
-                      {marketplaceCommissionRate > 0 && (
+                      {(marketplaceCommissionRate > 0 || marketplaceFixedFee > 0) && (
                         <p className="text-xs text-muted-foreground">
-                          Comissão {currentMarketplaceName} ({marketplaceCommissionRate}%) já descontada: -{formatCurrency(marketplaceCommissionDeduction)}
+                          {currentMarketplaceName}: {marketplaceCommissionRate > 0 ? `comissão ${marketplaceCommissionRate}%` : ''}{marketplaceCommissionRate > 0 && marketplaceFixedFee > 0 ? ' + ' : ''}{marketplaceFixedFee > 0 ? `taxa fixa ${formatCurrency(marketplaceFixedFee)}` : ''} já descontado: -{formatCurrency(marketplaceTotalDeduction)}
                         </p>
                       )}
                     </div>

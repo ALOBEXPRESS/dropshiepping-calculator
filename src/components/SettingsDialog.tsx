@@ -572,7 +572,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           <div className="col-span-1 md:col-span-2 space-y-4 pt-4 border-t border-gray-100 dark:border-zinc-800">
             <Label className="text-base font-semibold">Marketplaces</Label>
             <div className="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-zinc-800 rounded-lg border border-gray-100 dark:border-zinc-700">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                  <div className="space-y-2">
                    <Label>Nome do Marketplace</Label>
                    <Input
@@ -583,12 +583,22 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                    />
                  </div>
                  <div className="space-y-2">
-                   <Label>Taxa de Comissão (%)</Label>
+                   <Label>Comissão (%)</Label>
                    <Input
                      type="number"
                      value={newMarketplace.commission_rate}
                      onChange={(e) => setNewMarketplace(prev => ({...prev, commission_rate: parseFloat(e.target.value) || 0}))}
                      placeholder="0"
+                     className="bg-white dark:bg-zinc-900"
+                   />
+                 </div>
+                 <div className="space-y-2">
+                   <Label>Taxa fixa (R$)</Label>
+                   <Input
+                     type="number"
+                     value={newMarketplace.fixed_fee}
+                     onChange={(e) => setNewMarketplace(prev => ({...prev, fixed_fee: parseFloat(e.target.value) || 0}))}
+                     placeholder="0.00"
                      className="bg-white dark:bg-zinc-900"
                    />
                  </div>
@@ -645,34 +655,34 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                     <div className="flex flex-col">
                         <span className="font-medium">{mp.name}</span>
                         <span className="text-xs text-gray-500">
-                            Comissão: {mp.commission_rate}% 
-                            {mp.fixed_fee ? ` + R$ ${mp.fixed_fee.toFixed(2)}` : ''}
+                            Comissão: {mp.commission_rate}%
+                            {mp.fixed_fee ? ` | Taxa fixa: R$ ${mp.fixed_fee.toFixed(2)}` : ''}
                             {mp.has_monthly_fee && ` | Mensalidade: R$ ${mp.monthly_fee_value.toFixed(2)}`}
                             {mp.is_system && ' (Padrão)'}
                         </span>
                     </div>
-                    {!mp.is_system && (
-                        <div className="flex gap-1">
-                          <Button 
-                            type="button" 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => startEditMarketplace(mp)}
-                            className="h-6 w-6 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                          <Button 
-                            type="button" 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleDeleteMarketplace(mp.id)}
-                            className="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                    )}
+                    <div className="flex gap-1">
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => startEditMarketplace(mp)}
+                        className="h-6 w-6 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                      {!mp.is_system && (
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleDeleteMarketplace(mp.id)}
+                          className="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ))
               )}
