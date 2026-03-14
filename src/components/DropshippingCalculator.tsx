@@ -1791,7 +1791,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-6 w-6 border-white/60 bg-white/10 text-white hover:bg-white/20 border-white/20"
+                  className="h-6 w-6 border-white/20 bg-white/10 text-white hover:bg-white/20"
                   disabled={maxPricePage === 1}
                   onClick={() => setMaxPricePage((page) => Math.max(1, page - 1))}
                 >
@@ -1803,7 +1803,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-6 w-6 border-white/60 bg-white/10 text-white hover:bg-white/20 border-white/20"
+                  className="h-6 w-6 border-white/20 bg-white/10 text-white hover:bg-white/20"
                   disabled={maxPricePage === marketplaceMaxProductsPages}
                   onClick={() => setMaxPricePage((page) => Math.min(marketplaceMaxProductsPages, page + 1))}
                 >
@@ -1858,7 +1858,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-6 w-6 border-white/60 bg-white/10 text-white hover:bg-white/20 border-white/20"
+                  className="h-6 w-6 border-white/20 bg-white/10 text-white hover:bg-white/20"
                   disabled={maxProfitPage === 1}
                   onClick={() => setMaxProfitPage((page) => Math.max(1, page - 1))}
                 >
@@ -1870,7 +1870,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-6 w-6 border-white/60 bg-white/10 text-white hover:bg-white/20 border-white/20"
+                  className="h-6 w-6 border-white/20 bg-white/10 text-white hover:bg-white/20"
                   disabled={maxProfitPage === marketplaceMaxProfitPages}
                   onClick={() => setMaxProfitPage((page) => Math.min(marketplaceMaxProfitPages, page + 1))}
                 >
@@ -3486,8 +3486,8 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         )}
         {showOnlyProducts ? (
           <div className="grid gap-6 lg:grid-cols-2">
-            <div className="bg-[#0d0d0d] text-white rounded-xl p-5 shadow-lg border border-white/10">
-              <div className="rounded-lg bg-white/5 p-0 mb-6">
+            <div className="bg-[#0d0d0d] text-white rounded-xl p-5 shadow-lg border border-white/10 flex flex-col">
+              <div className="rounded-lg bg-white/5 p-0 mb-6 flex flex-col flex-1">
                 <div className="flex items-center justify-between p-4 pb-0 bg-white/5">
                   <div className="w-full max-w-xs">
                     <Input

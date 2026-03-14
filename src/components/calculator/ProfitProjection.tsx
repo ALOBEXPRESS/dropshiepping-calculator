@@ -308,8 +308,9 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
       speed={0.8}
       chaos={0.1}
       borderRadius={16}
+      className="h-full"
     >
-    <div ref={containerRef} className="rounded-b-2xl rounded-t-none bg-[#FF3366] p-6 text-white shadow-lg">
+    <div ref={containerRef} className="h-full rounded-b-2xl rounded-t-none bg-[#FF3366] p-6 text-white shadow-lg">
       <div className="flex items-center justify-between mb-6">
         <span className="text-xs font-bold uppercase tracking-wider opacity-90">PROJEÇÃO DE LUCROS</span>
         <div className="flex items-center gap-2">
