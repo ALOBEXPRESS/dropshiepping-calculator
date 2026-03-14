@@ -3487,27 +3487,29 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         {showOnlyProducts ? (
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="bg-[#0d0d0d] text-white rounded-xl p-5 shadow-lg border border-white/10 flex flex-col">
-              <div className="rounded-lg bg-white/5 p-0 mb-6 flex flex-col flex-1">
-                <div className="flex items-center justify-between p-4 pb-0 bg-white/5">
-                  <div className="w-full max-w-xs">
-                    <Input
-                      value={projectionSearch}
-                      onChange={(event) => {
-                        setProjectionSearch(event.target.value);
-                        setSelectedProductIndex(0);
-                      }}
-                      placeholder="Buscar produtos"
-                      className="bg-black/40 border-white/10 text-white placeholder:text-white/70 h-8 text-xs font-medium focus-visible:ring-white/30"
-                    />
+              <ElectricBorder color="#fe2c55" speed={0.8} chaos={0.1} borderRadius={16} className="flex flex-col flex-1">
+                <div className="rounded-lg p-0 flex flex-col flex-1 h-full">
+                  <div className="flex items-center justify-between p-4 bg-[#FF3366]/80 rounded-t-2xl">
+                    <div className="w-full">
+                      <Input
+                        value={projectionSearch}
+                        onChange={(event) => {
+                          setProjectionSearch(event.target.value);
+                          setSelectedProductIndex(0);
+                        }}
+                        placeholder="🔍 Buscar produtos"
+                        className="bg-white/20 border-white/30 text-white placeholder:text-white/80 h-9 text-sm font-medium focus-visible:ring-white/50 focus-visible:border-white/60"
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <ProfitProjection
-                  product={isProductsLoading && effectiveProducts.length === 0 ? null : (selectedProduct ?? null)}
-                  onNext={() => setSelectedProductIndex((safeSelectedProductIndex + 1) % filteredProjectionProducts.length)}
-                  onPrev={() => setSelectedProductIndex((safeSelectedProductIndex - 1 + filteredProjectionProducts.length) % filteredProjectionProducts.length)}
-                />
-              </div>
+                  <ProfitProjection
+                    product={isProductsLoading && effectiveProducts.length === 0 ? null : (selectedProduct ?? null)}
+                    onNext={() => setSelectedProductIndex((safeSelectedProductIndex + 1) % filteredProjectionProducts.length)}
+                    onPrev={() => setSelectedProductIndex((safeSelectedProductIndex - 1 + filteredProjectionProducts.length) % filteredProjectionProducts.length)}
+                  />
+                </div>
+              </ElectricBorder>
             </div>
             {showProductsList ? (
               <ElectricBorder

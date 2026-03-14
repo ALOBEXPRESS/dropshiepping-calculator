@@ -27,6 +27,7 @@ type ProductRow = {
   stock_quantity?: number | null;
   amazon_plan?: string | null;
   amazon_category?: string | null;
+  ml_category?: string | null;
   ad_type?: string | null;
   has_reputation?: boolean | null;
   reputation_level?: string | null;
@@ -222,6 +223,7 @@ type ProductPayload = {
   stock_quantity?: number | null;
   amazon_plan?: string | null;
   amazon_category?: string | null;
+  ml_category?: string | null;
   ad_type?: string | null;
   has_reputation?: boolean | null;
   reputation_level?: string | null;
@@ -818,6 +820,7 @@ const mapProductRow = (item: ProductRow): ProductItem => ({
   meliPlus: false,
   amazonPlan: item.amazon_plan ?? '',
   amazonCategory: item.amazon_category ?? '',
+  mlCategory: item.ml_category ?? '',
   adType: (item.ad_type ?? '') as ProductItem['adType'],
   hasReputation: item.has_reputation ?? false,
   reputationLevel: (item.reputation_level ?? undefined) as ProductItem['reputationLevel'] | undefined,
@@ -1010,6 +1013,7 @@ const productSelectColumnList = [
   'stock_quantity',
   'amazon_plan',
   'amazon_category',
+  'ml_category',
   'ad_type',
   'has_reputation',
   'reputation_level',
@@ -1464,6 +1468,7 @@ export const ProductService = {
       stock_quantity: product.stockQuantity,
       amazon_plan: product.amazonPlan,
       amazon_category: product.amazonCategory,
+      ml_category: product.mlCategory ?? null,
       ad_type: product.adType,
       has_reputation: product.hasReputation ?? false,
       reputation_level: product.hasReputation ? product.reputationLevel ?? null : null,
@@ -1700,6 +1705,7 @@ export const ProductService = {
       stock_quantity: product.stockQuantity,
       amazon_plan: product.amazonPlan,
       amazon_category: product.amazonCategory,
+      ml_category: product.mlCategory ?? null,
       ad_type: product.adType,
       has_reputation: product.hasReputation ?? false,
       reputation_level: product.hasReputation ? product.reputationLevel ?? null : null,

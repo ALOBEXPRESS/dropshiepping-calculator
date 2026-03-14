@@ -18,6 +18,7 @@ import { ReferenceService, type Supplier, type AccountHolder, type Marketplace }
 import { productPromotionalContentService } from '@/services/productPromotionalContentService';
 import { useSettings } from '@/contexts/SettingsContext';
 import { calculateMetrics } from '@/services/pricingService';
+import { mercadoLivreTaxes } from '@/services/pricingService';
 import { formatCurrency, handleCurrencyChange, parseCurrency } from '@/utils/currency';
 import type { ProductItem } from '../../types/calculator';
 import { AlertCircle, TrendingUp, X, Instagram, Music, Twitter } from "lucide-react";
@@ -43,6 +44,7 @@ type EditProductFormData = {
   adType: ProductItem['adType'];
   enjoeiAdType: ProductItem['enjoeiAdType'];
   supplierName: string;
+  mlCategory: string;
   weight: string;
   width: string;
   height: string;
@@ -242,6 +244,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     adType: source?.adType || 'classico',
     enjoeiAdType: source?.enjoeiAdType || 'classico',
     supplierName: source?.supplierName || '',
+    mlCategory: source?.mlCategory || '',
     weight: source?.weight !== undefined && source?.weight !== null ? String(source.weight) : '',
     width: source?.width !== undefined && source?.width !== null ? String(source.width) : '',
     height: source?.height !== undefined && source?.height !== null ? String(source.height) : '',
@@ -630,7 +633,27 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
   const supplierGatewayFeeDeduction = formData.supplierGatewayFeeType === 'percent'
     ? sellingPriceForFee * (supplierGatewayFeeVal / 100)
     : supplierGatewayFeeVal;
-  const organicNetRevenue = baseNetRevenue - supplierFeeDeduction - supplierGatewayFeeDeduction;
+
+  // Abatimento da comissão do marketplace (configurada em Settings)
+  const marketplaceKeyToName: Record<string, string> = {
+    mercadolivre: 'Mercado Livre',
+    shopee: 'Shopee',
+    tiktok: 'TikTok',
+    shein: 'Shein',
+    amazon: 'Amazon',
+    enjoei: 'Enjoei',
+    wordpress: 'Site Próprio',
+    facebook: 'Facebook',
+    olx: 'OLX',
+  };
+  const currentMarketplaceName = marketplaceKeyToName[formData.marketplace] ?? formData.marketplace;
+  const marketplaceRecord = marketplaces.find(
+    (mp) => mp.name.toLowerCase() === currentMarketplaceName.toLowerCase()
+  );
+  const marketplaceCommissionRate = marketplaceRecord?.commission_rate ?? 0;
+  const marketplaceCommissionDeduction = sellingPriceForFee * (marketplaceCommissionRate / 100);
+
+  const organicNetRevenue = baseNetRevenue - supplierFeeDeduction - supplierGatewayFeeDeduction - marketplaceCommissionDeduction;
   const organicVideoCost = 0;
 
   const handleSave = async () => {
@@ -677,8 +700,11 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     const _supplierGwFeeVal = parseFloat(formData.supplierGatewayFeeValue || '0') || 0;
     const _supplierDeduction = formData.supplierFeeType === 'percent' ? _sellingForFee * (_supplierFeeVal / 100) : _supplierFeeVal;
     const _supplierGwDeduction = formData.supplierGatewayFeeType === 'percent' ? _sellingForFee * (_supplierGwFeeVal / 100) : _supplierGwFeeVal;
+    const _mpName = marketplaceKeyToName[nextMarketplace] ?? nextMarketplace;
+    const _mpRecord = marketplaces.find((mp) => mp.name.toLowerCase() === _mpName.toLowerCase());
+    const _mpCommissionDeduction = _sellingForFee * ((_mpRecord?.commission_rate ?? 0) / 100);
     const derivedNetRevenueWithFees = Number.isFinite(derivedNetRevenue ?? NaN)
-      ? (derivedNetRevenue as number) - _supplierDeduction - _supplierGwDeduction
+      ? (derivedNetRevenue as number) - _supplierDeduction - _supplierGwDeduction - _mpCommissionDeduction
       : null;
     const isShopee = nextMarketplace === 'shopee';
     const isMercadoLivre = nextMarketplace === 'mercadolivre';
@@ -706,6 +732,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       videoGenerationLlm: formData.videoGenerationLlm || product.videoGenerationLlm,
       marketplace: nextMarketplace,
       supplierName: formData.supplierName || product.supplierName,
+      mlCategory: formData.mlCategory || undefined,
       adType: isMercadoLivre ? formData.adType : undefined,
       hasReputation: isMercadoLivre ? formData.hasReputation : undefined,
       reputationLevel: isMercadoLivre && formData.hasReputation ? (formData.reputationLevel || 'positive') : undefined,
@@ -1124,10 +1151,30 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                     </div>
 
                     <div className="space-y-2">
+                      <Label htmlFor="mlCategory" className="text-sm font-medium dark:text-white">
+                        Categoria do produto
+                      </Label>
+                      <Select
+                        value={formData.mlCategory || ''}
+                        onValueChange={(val) => handleChange('mlCategory', val)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Selecione a categoria" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(mercadoLivreTaxes.classico).map(([key, tax]) => (
+                            <SelectItem key={key} value={key}>
+                              {tax.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
                       <Label className="text-sm font-medium dark:text-white">
                         Dimensões
-                      </Label>
-                      <div className="grid grid-cols-4 gap-3">
+                      </Label>                      <div className="grid grid-cols-4 gap-3">
                         <Input
                           type="text"
                           inputMode="decimal"
@@ -2791,13 +2838,20 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="profit" className="text-right dark:text-white">Lucro</Label>
-                    <Input
-                      id="profit"
-                      type="text"
-                      value={formatCurrency(Number.isFinite(organicNetRevenue) ? organicNetRevenue : 0)}
-                      className="col-span-3"
-                      disabled
-                    />
+                    <div className="col-span-3 space-y-1">
+                      <Input
+                        id="profit"
+                        type="text"
+                        value={formatCurrency(Number.isFinite(organicNetRevenue) ? organicNetRevenue : 0)}
+                        className="col-span-3"
+                        disabled
+                      />
+                      {marketplaceCommissionRate > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          Comissão {currentMarketplaceName} ({marketplaceCommissionRate}%) já descontada: -{formatCurrency(marketplaceCommissionDeduction)}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   {formData.marketplace === 'mercadolivre' && (
                     <div className="grid grid-cols-4 items-center gap-4">

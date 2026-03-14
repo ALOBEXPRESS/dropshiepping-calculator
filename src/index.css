@@ -535,3 +535,8 @@ th {
 [role="listitem"] {
   position: relative;
 }
+
+/* GSAP initial state — prevents flash before animation runs */
+.product-field {
+  opacity: 0;
+}

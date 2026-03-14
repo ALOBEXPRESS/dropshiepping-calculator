@@ -97,20 +97,27 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
   useEffect(() => {
     if (!containerRef.current) return;
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) return;
+    if (prefersReducedMotion) {
+      // Se preferir sem animação, apenas mostrar os campos
+      const fields = containerRef.current.querySelectorAll<HTMLElement>('.product-field');
+      gsap.set(fields, { opacity: 1, y: 0, filter: 'blur(0px)' });
+      return;
+    }
 
     const fields = containerRef.current.querySelectorAll<HTMLElement>('.product-field');
-    // set initial state
-    gsap.set(fields, { opacity: 0, y: 24, filter: 'blur(4px)' });
 
     const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-    tl.to(fields, {
-      opacity: 1,
-      y: 0,
-      filter: 'blur(0px)',
-      duration: 0.5,
-      stagger: 0.07,
-    });
+    tl.fromTo(fields,
+      { opacity: 0, y: 28, filter: 'blur(6px)', scale: 0.97 },
+      {
+        opacity: 1,
+        y: 0,
+        filter: 'blur(0px)',
+        scale: 1,
+        duration: 0.55,
+        stagger: 0.07,
+      }
+    );
 
     return () => { tl.kill(); };
   }, []);

@@ -80,6 +80,7 @@ export interface ProductItem {
   stockQuantity?: number;
   amazonPlan?: string;
   amazonCategory?: string;
+  mlCategory?: string;
   adType?: 'gratis' | 'classico' | 'premium';
   mlShippingCost?: string;
   shippingOption?: 'with' | 'without';

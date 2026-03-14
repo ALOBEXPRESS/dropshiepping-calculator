@@ -3,7 +3,6 @@ import { formatCompactCurrency, formatCurrency, parseCurrency } from '@/utils/cu
 import type { ProductItem } from '@/types/calculator';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import ElectricBorder from '@/components/ui/electric-border';
 import marketplaceWordpressLogo from '@/imgs/free-woocommerce-icon-svg-download-png-226060.webp';
 import marketplaceMercadoLivreLogo from '@/imgs/mercadolivre.svg';
 import marketplaceTiktokLogo from '@/imgs/tiktok-shop-seller-cent-icon-filled-256.png';
@@ -303,13 +302,6 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
   const marketingTitle = product.name ? `Marketing - ${product.name}` : 'Marketing';
 
   return (
-    <ElectricBorder
-      color="#fe2c55"
-      speed={0.8}
-      chaos={0.1}
-      borderRadius={16}
-      className="h-full"
-    >
     <div ref={containerRef} className="h-full rounded-b-2xl rounded-t-none bg-[#FF3366] p-6 text-white shadow-lg">
       <div className="flex items-center justify-between mb-6">
         <span className="text-xs font-bold uppercase tracking-wider opacity-90">PROJEÇÃO DE LUCROS</span>
@@ -602,6 +594,5 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
         )}
       </div>
     </div>
-    </ElectricBorder>
   );
 }

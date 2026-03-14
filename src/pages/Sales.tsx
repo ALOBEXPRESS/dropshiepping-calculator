@@ -9,8 +9,12 @@ import {
   LowMarginProductsAlert,
   PaymentTransactions,
 } from '@/components/sales';
+import { RealtimeStatusBadge } from '@/components/sales/RealtimeStatusBadge';
 import { PendingOrders } from '@/components/PendingOrders';
 import { useHeroStats } from '@/hooks/sales/useHeroStats';
+import { useRealtimeSync } from '@/hooks/useRealtimeSync';
+import { useFilterPersistence } from '@/hooks/useFilterPersistence';
+import { SalesFiltersBar } from '@/components/sales/SalesFiltersBar';
 import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { RefreshCw } from 'lucide-react';
@@ -58,9 +62,11 @@ const Sales: React.FC = () => {
   }, []);
 
   const handleRefresh = useCallback(() => {
-    const newKey = Date.now();
-    setRefreshKey(newKey);
+    setRefreshKey(Date.now());
   }, []);
+
+  const { isConnected, lastUpdate } = useRealtimeSync({ onUpdate: handleRefresh });
+  const { filters, setFilters, resetFilters } = useFilterPersistence('sales-filters');
 
   if (!organizationId) {
     return (
@@ -83,6 +89,7 @@ const Sales: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <RealtimeStatusBadge isConnected={isConnected} lastUpdate={lastUpdate} />
           <DateRangePicker />
           <Button
             size="sm"
@@ -94,6 +101,15 @@ const Sales: React.FC = () => {
             Atualizar
           </Button>
         </div>
+      </div>
+
+      {/* Filtros */}
+      <div className="mb-4 animate-on-load">
+        <SalesFiltersBar
+          filters={filters}
+          onFiltersChange={setFilters}
+          onReset={resetFilters}
+        />
       </div>
 
       {/* Vendas a Processar - Topo */}
