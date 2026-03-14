@@ -630,9 +630,6 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
   );
   const marketplaceCommissionRate = marketplaceRecord?.commission_rate ?? 0;
   const marketplaceFixedFee = marketplaceRecord?.fixed_fee ?? 0;
-  const sellingPriceForFee = parseCurrency(formData.sellingPrice);
-  const marketplaceCommissionDeduction = sellingPriceForFee * (marketplaceCommissionRate / 100);
-  const marketplaceTotalDeduction = marketplaceCommissionDeduction + marketplaceFixedFee;
 
   const organicVideoCost = 0;
 
