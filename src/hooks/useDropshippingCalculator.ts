@@ -258,10 +258,11 @@ export const useDropshippingCalculator = () => {
         setSupplierFeePercent('0');
         setSupplierFixedFee('0');
       } else if (normalized === 'dogama') {
+        setSupplierFeeType('percent');
         setSupplierFeePercent('6');
-        setSupplierFixedFee('1,00');
+        setSupplierFixedFee('0');
         setSupplierGatewayFeeType('fixed');
-        setSupplierGatewayFixedFee('1,00');
+        setSupplierGatewayFixedFee('2,00');
         setSupplierGatewayFee('0');
       } else if (normalized === 'yeizidrop' || normalized === 'dsers') {
         setSupplierFeePercent('0');

@@ -344,6 +344,17 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
     }
   }, [organizationId, lastUpdated]);
 
+  // When suppliersList loads, apply supplier defaults if supplier_id is already set
+  useEffect(() => {
+    if (suppliersList.length > 0 && supplier_id) {
+      const found = suppliersList.find(s => s.id === supplier_id);
+      if (found) {
+        handleSupplierChange(found.name);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suppliersList]);
+
   const handleResetProductDraft = useCallback((silent?: boolean) => {
     resetProductDraft(silent);
     setLastFilledBlingIds([]);
