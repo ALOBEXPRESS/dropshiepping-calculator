@@ -514,9 +514,11 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
   }, []);
 
   const loadProducts = useCallback(async () => {
+    console.log('[DEBUG Products Page] loadProducts called, organizationId:', organizationId);
     setIsProductsLoading(true);
     try {
       const list = await ProductService.getAll(organizationId ?? undefined);
+      console.log('[DEBUG Products Page] Products fetched:', list.length, 'products');
       handleProductsResponse(list);
       
       // Sincronizar registeredBlingBySku com produtos reais
@@ -1966,8 +1968,13 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
 
   useEffect(() => {
     // if (!effectiveAccessToken) return;
-    if (!organizationId) return;
+    console.log('[DEBUG Products Page] useEffect triggered, organizationId:', organizationId);
+    if (!organizationId) {
+      console.log('[DEBUG Products Page] No organizationId, skipping loadProducts');
+      return;
+    }
     const timeoutId = window.setTimeout(() => {
+      console.log('[DEBUG Products Page] Calling loadProducts...');
       void loadProducts();
     }, 0);
     return () => window.clearTimeout(timeoutId);
@@ -3487,6 +3494,21 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         </div>
         )}
         {showOnlyProducts ? (
+          <>
+            {/* Debug logs for products page */}
+            {console.log('[DEBUG Products Page] Rendering products page:', {
+              showOnlyProducts,
+              isProductsLoading,
+              productsLength: products.length,
+              effectiveProductsLength: effectiveProducts.length,
+              filteredProductsLength: filteredProducts.length,
+              pagedProductsLength: pagedProducts.length,
+              shouldShowProductsLoading,
+              currentPage,
+              totalPages,
+              productFilters,
+              organizationId
+            })}
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="bg-[#0d0d0d] text-white rounded-xl p-5 shadow-lg border border-white/10 flex flex-col">
               <ElectricBorder color="#fe2c55" speed={0.8} chaos={0.1} borderRadius={16} className="flex flex-col flex-1">

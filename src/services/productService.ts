@@ -710,7 +710,7 @@ const enrichVariationsWithImages = async (products: ProductItem[]): Promise<Prod
       if (/^(p|m|g|gg|xg|xxg|pp|pequeno|medio|grande|unico|\d+\/\d+)$/i.test(trimmed)) {
         size = trimmed;
       } else if (trimmed.length > 0) {
-        // Everything else is considered color (can be multi-word like "Verde Água e Preto")
+        // Everything else is considered color (can be multi-word like "Verde ï¿½gua e Preto")
         if (color) {
           // If we already have a color, append this part (handles multi-word colors)
           color = color + ' ' + trimmed;
@@ -954,7 +954,7 @@ const mapBlingProductRow = (item: BlingProductRow): BlingProduct => ({
   categoryId: item.id_categoria ?? null,
   supplierId: item.id_fornecedor ?? null,
   description: item.descricao ?? null,
-  variationName: null, // Removido: agora só temos produtos pai
+  variationName: null, // Removido: agora sï¿½ temos produtos pai
   supplierSku: item.sku_fornecedor ?? null,
   status: item.situacao ?? null
 });
@@ -1205,6 +1205,7 @@ const stripDimensionFields = (payload: ProductPayload): ProductPayload => {
 
 export const ProductService = {
   async getAll(organizationId?: string): Promise<ProductItem[]> {
+    console.log('[DEBUG ProductService] getAll called with organizationId:', organizationId);
     await probeDimensionColumns(organizationId);
     const selectColumns = supportsReputationColumns === false && supportsDimensionColumns === false
       ? productSelectColumnsWithoutReputationOrDimensions
@@ -1216,7 +1217,9 @@ export const ProductService = {
     // Order by updated_at first (most recently updated products appear first)
     const base = supabase.from('products').select(selectColumns).order('updated_at', { ascending: false });
     const primary = organizationId ? base.eq('organization_id', organizationId) : base;
+    console.log('[DEBUG ProductService] Executing query...');
     const { data, error } = await primary;
+    console.log('[DEBUG ProductService] Query result:', { dataLength: data?.length, error });
     if (!error) {
       if (supportsReputationColumns === null && selectColumns === productSelectColumns) {
         supportsReputationColumns = true;
