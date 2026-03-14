@@ -56,6 +56,10 @@ type EditProductFormData = {
   operationMode: ProductItem['operationMode'] | '';
   gatewayMethod: ProductItem['gatewayMethod'] | '';
   gatewayBank: ProductItem['gatewayBank'] | '';
+  supplierFeeType: 'percent' | 'fixed';
+  supplierFeeValue: string;
+  supplierGatewayFeeType: 'percent' | 'fixed';
+  supplierGatewayFeeValue: string;
   videoGenerationLlm: ProductItem['videoGenerationLlm'] | '';
   targetAudienceAge: string;
   targetAudienceLocation: string;
@@ -251,6 +255,10 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     operationMode: source?.operationMode || '',
     gatewayMethod: source?.gatewayMethod || '',
     gatewayBank: source?.gatewayBank || '',
+    supplierFeeType: source?.supplierFeeType || 'percent',
+    supplierFeeValue: source?.supplierFeeValue !== undefined && source?.supplierFeeValue !== null ? String(source.supplierFeeValue) : '',
+    supplierGatewayFeeType: source?.supplierGatewayFeeType || 'percent',
+    supplierGatewayFeeValue: source?.supplierGatewayFeeValue !== undefined && source?.supplierGatewayFeeValue !== null ? String(source.supplierGatewayFeeValue) : '',
     videoGenerationLlm: source?.videoGenerationLlm || '',
     targetAudienceAge: source?.targetAudienceAge || '',
     targetAudienceLocation: source?.targetAudienceLocation || '',
@@ -608,9 +616,21 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
   const organicSuggestedPrice = parseFloat(organicMetrics?.suggestedPrice ?? '0');
   const organicAdsCostPerSale = parseFloat(organicMetrics?.adsCostPerSale ?? '0');
   const adjustedNetRevenue = getAdjustedNetRevenue();
-  const organicNetRevenue = Number.isFinite(adjustedNetRevenue ?? NaN)
+  const baseNetRevenue = Number.isFinite(adjustedNetRevenue ?? NaN)
     ? (adjustedNetRevenue as number)
     : parseFloat(String(organicMetrics?.netRevenue ?? (product?.netRevenue ?? '0')));
+
+  // Abatimento das taxas do fornecedor
+  const sellingPriceForFee = parseCurrency(formData.sellingPrice);
+  const supplierFeeVal = parseFloat(formData.supplierFeeValue || '0') || 0;
+  const supplierGatewayFeeVal = parseFloat(formData.supplierGatewayFeeValue || '0') || 0;
+  const supplierFeeDeduction = formData.supplierFeeType === 'percent'
+    ? sellingPriceForFee * (supplierFeeVal / 100)
+    : supplierFeeVal;
+  const supplierGatewayFeeDeduction = formData.supplierGatewayFeeType === 'percent'
+    ? sellingPriceForFee * (supplierGatewayFeeVal / 100)
+    : supplierGatewayFeeVal;
+  const organicNetRevenue = baseNetRevenue - supplierFeeDeduction - supplierGatewayFeeDeduction;
   const organicVideoCost = 0;
 
   const handleSave = async () => {
@@ -651,6 +671,15 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     const shouldPreserveMetrics = sameMarketplace && nextSelling === originalSelling && nextCost === originalCost && nextShipping === originalShipping && sameAdType && sameEnjoeiAdType;
     const metrics = shouldPreserveMetrics ? null : getUpdatedMetrics();
     const derivedNetRevenue = getAdjustedNetRevenue();
+    // Aplicar abatimento das taxas do fornecedor no netRevenue salvo
+    const _sellingForFee = parseCurrency(formData.sellingPrice);
+    const _supplierFeeVal = parseFloat(formData.supplierFeeValue || '0') || 0;
+    const _supplierGwFeeVal = parseFloat(formData.supplierGatewayFeeValue || '0') || 0;
+    const _supplierDeduction = formData.supplierFeeType === 'percent' ? _sellingForFee * (_supplierFeeVal / 100) : _supplierFeeVal;
+    const _supplierGwDeduction = formData.supplierGatewayFeeType === 'percent' ? _sellingForFee * (_supplierGwFeeVal / 100) : _supplierGwFeeVal;
+    const derivedNetRevenueWithFees = Number.isFinite(derivedNetRevenue ?? NaN)
+      ? (derivedNetRevenue as number) - _supplierDeduction - _supplierGwDeduction
+      : null;
     const isShopee = nextMarketplace === 'shopee';
     const isMercadoLivre = nextMarketplace === 'mercadolivre';
     const shopeeStartDateIso = formatDateToIso(formData.shopeeStartDate);
@@ -684,7 +713,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       facebookDelivery: nextMarketplace === 'facebook' ? formData.facebookDelivery : undefined,
       netRevenue: shouldPreserveMetrics
         ? product.netRevenue
-        : (Number.isFinite(derivedNetRevenue ?? NaN) ? (derivedNetRevenue as number) : (metrics?.netRevenue ?? product.netRevenue)),
+        : (Number.isFinite(derivedNetRevenueWithFees ?? NaN) ? (derivedNetRevenueWithFees as number) : (metrics?.netRevenue ?? product.netRevenue)),
       marginStatus: shouldPreserveMetrics ? product.marginStatus : (metrics?.marginStatus ?? product.marginStatus),
       adPlacement: formData.adPlacement || undefined,
       adFormat: formData.adFormat || undefined,
@@ -2835,6 +2864,64 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                         <SelectItem value="bradesco">Bradesco</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  {/* Taxa do Fornecedor */}
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right dark:text-white">
+                      Taxa do Fornecedor
+                    </Label>
+                    <div className="col-span-3 flex gap-2">
+                      <div className="flex rounded-md overflow-hidden border border-input">
+                        <button
+                          type="button"
+                          className={`px-3 py-2 text-sm font-medium transition-colors ${formData.supplierFeeType === 'percent' ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground hover:bg-muted'}`}
+                          onClick={() => handleChange('supplierFeeType', 'percent')}
+                        >%</button>
+                        <button
+                          type="button"
+                          className={`px-3 py-2 text-sm font-medium transition-colors ${formData.supplierFeeType === 'fixed' ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground hover:bg-muted'}`}
+                          onClick={() => handleChange('supplierFeeType', 'fixed')}
+                        >R$</button>
+                      </div>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder={formData.supplierFeeType === 'percent' ? 'Ex: 5' : 'Ex: 10.00'}
+                        value={formData.supplierFeeValue}
+                        onChange={(e) => handleChange('supplierFeeValue', e.target.value)}
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                  {/* Taxa de Gateway Fornecedor */}
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right dark:text-white">
+                      Taxa de Gateway Fornecedor
+                    </Label>
+                    <div className="col-span-3 flex gap-2">
+                      <div className="flex rounded-md overflow-hidden border border-input">
+                        <button
+                          type="button"
+                          className={`px-3 py-2 text-sm font-medium transition-colors ${formData.supplierGatewayFeeType === 'percent' ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground hover:bg-muted'}`}
+                          onClick={() => handleChange('supplierGatewayFeeType', 'percent')}
+                        >%</button>
+                        <button
+                          type="button"
+                          className={`px-3 py-2 text-sm font-medium transition-colors ${formData.supplierGatewayFeeType === 'fixed' ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground hover:bg-muted'}`}
+                          onClick={() => handleChange('supplierGatewayFeeType', 'fixed')}
+                        >R$</button>
+                      </div>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder={formData.supplierGatewayFeeType === 'percent' ? 'Ex: 2' : 'Ex: 5.00'}
+                        value={formData.supplierGatewayFeeValue}
+                        onChange={(e) => handleChange('supplierGatewayFeeValue', e.target.value)}
+                        className="flex-1"
+                      />
+                    </div>
                   </div>
                 </>
               )}

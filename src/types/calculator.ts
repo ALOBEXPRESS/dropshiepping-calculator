@@ -101,6 +101,10 @@ export interface ProductItem {
   operationMode?: 'dropshipping' | 'armazem_alob';
   gatewayMethod?: 'pix' | 'credit' | 'debit';
   gatewayBank?: string;
+  supplierFeeType?: 'percent' | 'fixed';
+  supplierFeeValue?: string | number;
+  supplierGatewayFeeType?: 'percent' | 'fixed';
+  supplierGatewayFeeValue?: string | number;
   meliPlus?: boolean;
   hasReputation?: boolean;
   reputationLevel?: 'negative' | 'average' | 'positive' | 'excellent';
