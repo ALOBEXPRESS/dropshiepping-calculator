@@ -225,9 +225,9 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed }
 
   if (loading) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800">
-        <div className="flex flex-col items-center justify-center py-12">
-          <Loader2 className="w-10 h-10 animate-spin text-blue-600 mb-3" />
+      <Card className="p-6 border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+        <div className="flex flex-col items-center justify-center py-8">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-3" />
           <p className="text-sm text-gray-500 dark:text-gray-400">Carregando vendas pendentes...</p>
         </div>
       </Card>
@@ -236,7 +236,7 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed }
 
   if (pendingOrders.length === 0) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20">
+      <Card className="p-6 border-green-200 dark:border-green-900/50 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-zinc-900 dark:to-zinc-800">
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
             <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
