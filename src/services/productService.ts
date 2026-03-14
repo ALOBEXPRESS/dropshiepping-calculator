@@ -1,4 +1,4 @@
-
+﻿
 import { supabase } from '@/lib/supabase';
 import type { ProductItem, ProductVariationRecord } from '@/types/calculator';
 import { parseCurrency } from '@/utils/currency';
@@ -43,6 +43,10 @@ type ProductRow = {
   operation_mode?: string | null;
   gateway_method?: string | null;
   gateway_bank?: string | null;
+  supplier_fee_type?: string | null;
+  supplier_fee_value?: number | null;
+  supplier_gateway_fee_type?: string | null;
+  supplier_gateway_fee_value?: number | null;
   video_generation_llm?: string | null;
   is_new_product?: string | null;
   defective_product?: string | null;
@@ -234,6 +238,10 @@ type ProductPayload = {
   operation_mode?: string | null;
   gateway_method?: string | null;
   gateway_bank?: string | null;
+  supplier_fee_type?: string | null;
+  supplier_fee_value?: number | null;
+  supplier_gateway_fee_type?: string | null;
+  supplier_gateway_fee_value?: number | null;
   video_generation_llm?: string | null;
   is_new_product?: string | null;
   defective_product?: string | null;
@@ -826,6 +834,10 @@ const mapProductRow = (item: ProductRow): ProductItem => ({
   operationMode: (item.operation_mode ?? '') as ProductItem['operationMode'],
   gatewayMethod: (item.gateway_method ?? '') as ProductItem['gatewayMethod'],
   gatewayBank: item.gateway_bank ?? '',
+  supplierFeeType: (item.supplier_fee_type ?? 'percent') as 'percent' | 'fixed',
+  supplierFeeValue: item.supplier_fee_value != null ? String(item.supplier_fee_value) : '',
+  supplierGatewayFeeType: (item.supplier_gateway_fee_type ?? 'fixed') as 'percent' | 'fixed',
+  supplierGatewayFeeValue: item.supplier_gateway_fee_value != null ? String(item.supplier_gateway_fee_value) : '',
   videoGenerationLlm: (item.video_generation_llm ?? '') as ProductItem['videoGenerationLlm'],
   isNewProduct: (item.is_new_product ?? undefined) as ProductItem['isNewProduct'] | undefined,
   defectiveProduct: (item.defective_product ?? undefined) as ProductItem['defectiveProduct'] | undefined,
@@ -1010,6 +1022,10 @@ const productSelectColumnList = [
   'operation_mode',
   'gateway_method',
   'gateway_bank',
+  'supplier_fee_type',
+  'supplier_fee_value',
+  'supplier_gateway_fee_type',
+  'supplier_gateway_fee_value',
   'video_generation_llm',
   'is_new_product',
   'defective_product',
@@ -1476,6 +1492,10 @@ export const ProductService = {
       operation_mode: product.operationMode,
       gateway_method: product.gatewayMethod,
       gateway_bank: product.gatewayBank,
+      supplier_fee_type: product.supplierFeeType ?? null,
+      supplier_fee_value: (product.supplierFeeValue !== undefined && product.supplierFeeValue !== null && product.supplierFeeValue !== "") ? Number(product.supplierFeeValue) : null,
+      supplier_gateway_fee_type: product.supplierGatewayFeeType ?? null,
+      supplier_gateway_fee_value: (product.supplierGatewayFeeValue !== undefined && product.supplierGatewayFeeValue !== null && product.supplierGatewayFeeValue !== "") ? Number(product.supplierGatewayFeeValue) : null,
       video_generation_llm: product.videoGenerationLlm,
       organic_channels: product.organicChannels ?? null,
       organic_channel_links: product.organicChannelLinks ?? null,
@@ -1708,6 +1728,10 @@ export const ProductService = {
       operation_mode: product.operationMode,
       gateway_method: product.gatewayMethod,
       gateway_bank: product.gatewayBank,
+      supplier_fee_type: product.supplierFeeType ?? null,
+      supplier_fee_value: (product.supplierFeeValue !== undefined && product.supplierFeeValue !== null && product.supplierFeeValue !== "") ? Number(product.supplierFeeValue) : null,
+      supplier_gateway_fee_type: product.supplierGatewayFeeType ?? null,
+      supplier_gateway_fee_value: (product.supplierGatewayFeeValue !== undefined && product.supplierGatewayFeeValue !== null && product.supplierGatewayFeeValue !== "") ? Number(product.supplierGatewayFeeValue) : null,
       video_generation_llm: product.videoGenerationLlm,
       organic_channels: product.organicChannels ?? null,
       organic_channel_links: product.organicChannelLinks ?? null,
