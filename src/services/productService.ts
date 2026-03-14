@@ -1,7 +1,24 @@
-ï»¿
+
 import { supabase } from '@/lib/supabase';
 import type { ProductItem, ProductVariationRecord } from '@/types/calculator';
 import { parseCurrency } from '@/utils/currency';
+
+// Batch IDs into chunks to avoid URL length limits (PostgREST IN clause)
+async function batchInQuery<T>(
+  table: string,
+  column: string,
+  ids: string[],
+  selectCols: string,
+  chunkSize = 50
+): Promise<T[]> {
+  const results: T[] = [];
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    const chunk = ids.slice(i, i + chunkSize);
+    const { data } = await supabase.from(table).select(selectCols).in(column, chunk);
+    if (data) results.push(...(data as T[]));
+  }
+  return results;
+}
 
 type ProductRow = {
   id: string;
@@ -693,7 +710,7 @@ const enrichVariationsWithImages = async (products: ProductItem[]): Promise<Prod
       if (/^(p|m|g|gg|xg|xxg|pp|pequeno|medio|grande|unico|\d+\/\d+)$/i.test(trimmed)) {
         size = trimmed;
       } else if (trimmed.length > 0) {
-        // Everything else is considered color (can be multi-word like "Verde Ãgua e Preto")
+        // Everything else is considered color (can be multi-word like "Verde Água e Preto")
         if (color) {
           // If we already have a color, append this part (handles multi-word colors)
           color = color + ' ' + trimmed;
@@ -937,7 +954,7 @@ const mapBlingProductRow = (item: BlingProductRow): BlingProduct => ({
   categoryId: item.id_categoria ?? null,
   supplierId: item.id_fornecedor ?? null,
   description: item.descricao ?? null,
-  variationName: null, // Removido: agora sÃ³ temos produtos pai
+  variationName: null, // Removido: agora só temos produtos pai
   supplierSku: item.sku_fornecedor ?? null,
   status: item.situacao ?? null
 });
@@ -1213,33 +1230,27 @@ export const ProductService = {
       
       // Buscar contagem de vendas para cada produto
       const productIds = withMeliPlus.map(p => p.id);
-      const productSkus = withMeliPlus.map(p => p.sku).filter(Boolean);
+      const productSkus = withMeliPlus.map(p => p.sku).filter((s): s is string => Boolean(s));
       const salesCountMap = new Map<string, number>();
       
       if (productIds.length > 0 || productSkus.length > 0) {
         // Query by product_id FK
-        const { data: salesByIdData } = await supabase
-          .from('bling_order_items')
-          .select('product_id, quantity')
-          .in('product_id', productIds);
-        
-        if (salesByIdData) {
-          salesByIdData.forEach((item: { product_id: string; quantity: number }) => {
+        const salesByIdData = await batchInQuery<{ product_id: string; quantity: number }>(
+          'bling_order_items', 'product_id', productIds, 'product_id, quantity'
+        );
+        salesByIdData.forEach((item: { product_id: string; quantity: number }) => {
             if (item.product_id) {
               const currentCount = salesCountMap.get(item.product_id) || 0;
               salesCountMap.set(item.product_id, currentCount + (item.quantity || 0));
             }
           });
-        }
 
         // Query by code/SKU field as fallback (only for products not found by FK)
         if (productSkus.length > 0) {
-          const { data: salesBySkuData } = await supabase
-            .from('bling_order_items')
-            .select('code, quantity, product_id')
-            .in('code', productSkus);
-
-          if (salesBySkuData) {
+          const salesBySkuData = await batchInQuery<{ code: string; quantity: number; product_id: string | null }>(
+            'bling_order_items', 'code', productSkus, 'code, quantity, product_id'
+          );
+          {
             // Map SKU back to product ID
             const skuToIdMap = new Map<string, string>();
             withMeliPlus.forEach((product) => {
@@ -1302,33 +1313,27 @@ export const ProductService = {
         
         // Buscar contagem de vendas para cada produto (fallback)
         const productIds = withMeliPlus.map(p => p.id);
-        const productSkus = withMeliPlus.map(p => p.sku).filter(Boolean);
+        const productSkus = withMeliPlus.map(p => p.sku).filter((s): s is string => Boolean(s));
         const salesCountMap = new Map<string, number>();
         
         if (productIds.length > 0 || productSkus.length > 0) {
           // Query by product_id FK
-          const { data: salesByIdData } = await supabase
-            .from('bling_order_items')
-            .select('product_id, quantity')
-            .in('product_id', productIds);
-          
-          if (salesByIdData) {
-            salesByIdData.forEach((item: { product_id: string; quantity: number }) => {
+          const salesByIdData = await batchInQuery<{ product_id: string; quantity: number }>(
+            'bling_order_items', 'product_id', productIds, 'product_id, quantity'
+          );
+          salesByIdData.forEach((item: { product_id: string; quantity: number }) => {
               if (item.product_id) {
                 const currentCount = salesCountMap.get(item.product_id) || 0;
                 salesCountMap.set(item.product_id, currentCount + (item.quantity || 0));
               }
             });
-          }
 
           // Query by code/SKU field as fallback (only for products not found by FK)
           if (productSkus.length > 0) {
-            const { data: salesBySkuData } = await supabase
-              .from('bling_order_items')
-              .select('code, quantity, product_id')
-              .in('code', productSkus);
-
-            if (salesBySkuData) {
+            const salesBySkuData = await batchInQuery<{ code: string; quantity: number; product_id: string | null }>(
+              'bling_order_items', 'code', productSkus, 'code, quantity, product_id'
+            );
+            {
               // Map SKU back to product ID
               const skuToIdMap = new Map<string, string>();
               withMeliPlus.forEach((product) => {
@@ -1375,33 +1380,27 @@ export const ProductService = {
     
     // Buscar contagem de vendas para cada produto (legacy)
     const productIds = withMeliPlus.map(p => p.id);
-    const productSkus = withMeliPlus.map(p => p.sku).filter(Boolean);
+    const productSkus = withMeliPlus.map(p => p.sku).filter((s): s is string => Boolean(s));
     const salesCountMap = new Map<string, number>();
     
     if (productIds.length > 0 || productSkus.length > 0) {
       // Query by product_id FK
-      const { data: salesByIdData } = await supabase
-        .from('bling_order_items')
-        .select('product_id, quantity')
-        .in('product_id', productIds);
-      
-      if (salesByIdData) {
-        salesByIdData.forEach((item: { product_id: string; quantity: number }) => {
+      const salesByIdData = await batchInQuery<{ product_id: string; quantity: number }>(
+        'bling_order_items', 'product_id', productIds, 'product_id, quantity'
+      );
+      salesByIdData.forEach((item: { product_id: string; quantity: number }) => {
           if (item.product_id) {
             const currentCount = salesCountMap.get(item.product_id) || 0;
             salesCountMap.set(item.product_id, currentCount + (item.quantity || 0));
           }
         });
-      }
 
       // Query by code/SKU field as fallback (only for products not found by FK)
       if (productSkus.length > 0) {
-        const { data: salesBySkuData } = await supabase
-          .from('bling_order_items')
-          .select('code, quantity, product_id')
-          .in('code', productSkus);
-
-        if (salesBySkuData) {
+        const salesBySkuData = await batchInQuery<{ code: string; quantity: number; product_id: string | null }>(
+          'bling_order_items', 'code', productSkus, 'code, quantity, product_id'
+        );
+        {
           // Map SKU back to product ID
           const skuToIdMap = new Map<string, string>();
           withMeliPlus.forEach((product) => {

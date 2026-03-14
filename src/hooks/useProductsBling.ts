@@ -1,6 +1,23 @@
 import { useCallback, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
+// Batch IDs into chunks to avoid URL length limits (PostgREST IN clause)
+async function batchInQuery<T>(
+  table: string,
+  column: string,
+  ids: string[],
+  selectCols: string,
+  chunkSize = 50
+): Promise<T[]> {
+  const results: T[] = [];
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    const chunk = ids.slice(i, i + chunkSize);
+    const { data } = await supabase.from(table).select(selectCols).in(column, chunk);
+    if (data) results.push(...(data as T[]));
+  }
+  return results;
+}
+
 export type BlingProductItem = {
   id: string;
   name: string;
@@ -177,28 +194,24 @@ export const useProductsBling = (organizationId?: string | null) => {
 
       if (productIds.length > 0 || productSkus.length > 0) {
         // Query by product_bling_id FK
-        const { data: salesByIdData } = await supabase
-          .from('bling_order_items')
-          .select('product_bling_id, quantity')
-          .in('product_bling_id', productIds);
+        const salesByIdData = await batchInQuery<{ product_bling_id: string; quantity: number }>(
+          'bling_order_items', 'product_bling_id', productIds, 'product_bling_id, quantity'
+        );
 
-        if (salesByIdData) {
-          salesByIdData.forEach((item) => {
+        salesByIdData.forEach((item) => {
             if (item.product_bling_id) {
               const currentCount = salesCountMap.get(item.product_bling_id) || 0;
               salesCountMap.set(item.product_bling_id, currentCount + (item.quantity || 0));
             }
           });
-        }
 
         // Query by code/SKU field as fallback (only for products not found by FK)
         if (productSkus.length > 0) {
-          const { data: salesBySkuData } = await supabase
-            .from('bling_order_items')
-            .select('code, quantity, product_bling_id')
-            .in('code', productSkus);
+          const salesBySkuData = await batchInQuery<{ code: string; quantity: number; product_bling_id: string | null }>(
+            'bling_order_items', 'code', productSkus, 'code, quantity, product_bling_id'
+          );
 
-          if (salesBySkuData) {
+          {
             // Map SKU back to product ID
             const skuToIdMap = new Map<string, string>();
             (data ?? []).forEach((row) => {
@@ -266,28 +279,24 @@ export const useProductsBling = (organizationId?: string | null) => {
 
           if (variationIds.length > 0 || variationSkus.length > 0) {
             // Query by product_variation_id FK
-            const { data: varSalesByIdData } = await supabase
-              .from('bling_order_items')
-              .select('product_variation_id, quantity')
-              .in('product_variation_id', variationIds);
+            const varSalesByIdData = await batchInQuery<{ product_variation_id: string; quantity: number }>(
+              'bling_order_items', 'product_variation_id', variationIds, 'product_variation_id, quantity'
+            );
 
-            if (varSalesByIdData) {
-              varSalesByIdData.forEach((item: { product_variation_id: string; quantity: number }) => {
+            varSalesByIdData.forEach((item: { product_variation_id: string; quantity: number }) => {
                 if (item.product_variation_id) {
                   const currentCount = variationSalesMap.get(item.product_variation_id) || 0;
                   variationSalesMap.set(item.product_variation_id, currentCount + (item.quantity || 0));
                 }
               });
-            }
 
             // Query by code/SKU field as fallback
             if (variationSkus.length > 0) {
-              const { data: varSalesBySkuData } = await supabase
-                .from('bling_order_items')
-                .select('code, quantity, product_variation_id')
-                .in('code', variationSkus);
+              const varSalesBySkuData = await batchInQuery<{ code: string; quantity: number; product_variation_id: string | null }>(
+                'bling_order_items', 'code', variationSkus, 'code, quantity, product_variation_id'
+              );
 
-              if (varSalesBySkuData) {
+              {
                 const skuToIdMap = new Map<string, string>();
                 variationsData.forEach((row) => {
                   if (row.sku) {

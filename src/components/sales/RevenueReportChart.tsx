@@ -94,11 +94,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const totalCost = data.reduce((sum, item) => sum + Number(item.total_cost), 0);
 
 
-  const handleDeleteClick = (orderId: string, orderNumber: string, orderStore: string) => {
-    setOrderToDelete({ id: orderId, number: orderNumber, store: orderStore });
-    setDeleteDialogOpen(true);
-  };
-
   const chartOptions: ApexOptions = {
     chart: {
       type: 'area',
