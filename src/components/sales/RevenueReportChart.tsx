@@ -24,11 +24,6 @@ interface RevenueReportChartProps {
   refreshTrigger?: number;
 }
 
-interface CustomTooltipData {
-  dataPointIndex: number;
-  x: number;
-  y: number;
-}
 
 export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organizationId, refreshTrigger }) => {
   const [period, setPeriod] = useState<PeriodFilter>('monthly');
@@ -36,7 +31,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<{ id: string; number: string; store: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [customTooltip, setCustomTooltip] = useState<CustomTooltipData | null>(null);
 
   // Refetch quando refreshTrigger mudar (apenas se for > 0)
   React.useEffect(() => {
@@ -77,7 +71,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       // Fechar modal e tooltip
       setDeleteDialogOpen(false);
       setOrderToDelete(null);
-      setCustomTooltip(null);
       
       // Mostrar toast de sucesso
       toast.success('Métrica excluída com sucesso!', {
@@ -100,252 +93,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const totalRevenue = data.reduce((sum, item) => sum + Number(item.total_revenue), 0);
   const totalCost = data.reduce((sum, item) => sum + Number(item.total_cost), 0);
 
-  // Adicionar event listeners na linha do gráfico após renderização
-  React.useEffect(() => {
-    // Adicionar CSS para tornar a linha interativa
-    const style = document.createElement('style');
-    style.textContent = `
-      .apexcharts-series path {
-        cursor: pointer !important;
-        pointer-events: auto !important;
-      }
-      .apexcharts-series-markers {
-        pointer-events: none !important;
-      }
-      .apexcharts-marker {
-        pointer-events: none !important;
-      }
-    `;
-    document.head.appendChild(style);
-
-    const addLineListeners = () => {
-      // Adicionar listener na área do gráfico inteiro para capturar hover
-      const chartElement = document.querySelector('.apexcharts-canvas');
-      if (!chartElement || chartElement.hasAttribute('data-listener-added')) return;
-      
-      chartElement.setAttribute('data-listener-added', 'true');
-      
-      // Listener para mousemove na área do gráfico
-      chartElement.addEventListener('mousemove', (e) => {
-        const mouseEvent = e as MouseEvent;
-        
-        const rect = chartElement.getBoundingClientRect();
-        const x = mouseEvent.clientX - rect.left;
-        const y = mouseEvent.clientY - rect.top;
-        
-        // Calcular qual ponto está mais próximo baseado na posição X
-        // Considerar padding do gráfico (aproximadamente 30px de cada lado)
-        const padding = 30;
-        const chartWidth = rect.width - (padding * 2);
-        const chartHeight = rect.height - 60; // 30px top + 30px bottom
-        const adjustedX = x - padding;
-        const adjustedY = y - 30;
-        
-        // Verificar se está dentro da área do gráfico
-        if (adjustedX < 0 || adjustedX > chartWidth || adjustedY < 0 || adjustedY > chartHeight) return;
-        
-        const pointWidth = chartWidth / data.length;
-        const dataPointIndex = Math.floor(adjustedX / pointWidth);
-        
-        if (dataPointIndex >= 0 && dataPointIndex < data.length) {
-          // Calcular a posição X do centro do ponto no gráfico
-          const pointCenterX = padding + (dataPointIndex * pointWidth) + (pointWidth / 2);
-          
-          // Converter para coordenadas da tela
-          const screenX = rect.left + pointCenterX;
-          const screenY = rect.top + chartHeight / 2 + 30; // Centro vertical do gráfico
-          
-          setCustomTooltip({
-            dataPointIndex,
-            x: screenX, // Posição X fixa no centro do ponto
-            y: screenY, // Posição Y fixa no centro do gráfico
-          });
-        }
-      });
-      
-      // Listener para mouseleave - fechar tooltip quando sair do gráfico
-      chartElement.addEventListener('mouseleave', () => {
-        // Pequeno delay para permitir mover para o tooltip
-        setTimeout(() => {
-          const tooltipElement = document.querySelector('[data-custom-tooltip]');
-          if (tooltipElement && !tooltipElement.matches(':hover')) {
-            setCustomTooltip(null);
-          }
-        }, 100);
-      });
-    };
-
-    // Executar após um pequeno delay para garantir que o gráfico foi renderizado
-    const timer = setTimeout(addLineListeners, 500);
-    
-    // Também observar mudanças no DOM para adicionar listeners quando o gráfico for recriado
-    const observer = new MutationObserver(addLineListeners);
-    const chartContainer = document.querySelector('.apexcharts-canvas');
-    if (chartContainer?.parentElement) {
-      observer.observe(chartContainer.parentElement, { childList: true, subtree: true });
-    }
-
-    return () => {
-      clearTimeout(timer);
-      observer.disconnect();
-      document.head.removeChild(style);
-    };
-  }, [data]);
-
-  // Fechar tooltip customizado ao rolar a página
-  React.useEffect(() => {
-    const handleScroll = () => {
-      setCustomTooltip(null);
-    };
-    
-    window.addEventListener('scroll', handleScroll, true);
-    
-    return () => {
-      window.removeEventListener('scroll', handleScroll, true);
-    };
-  }, []);
 
   const handleDeleteClick = (orderId: string, orderNumber: string, orderStore: string) => {
     setOrderToDelete({ id: orderId, number: orderNumber, store: orderStore });
     setDeleteDialogOpen(true);
-    setCustomTooltip(null);
-  };
-
-  const truncateProduct = (name: string, maxLength = 35) => {
-    if (name.length <= maxLength) return name;
-    return name.substring(0, maxLength) + '...';
-  };
-
-  const renderCustomTooltip = () => {
-    if (!customTooltip || !data[customTooltip.dataPointIndex]) return null;
-
-    const periodData = data[customTooltip.dataPointIndex];
-    const revenue = Number(periodData.total_revenue);
-    const cost = Number(periodData.total_cost);
-    const profit = revenue - cost;
-
-    // Pegar produtos únicos
-    const allProducts = periodData.orders_data?.flatMap(order => 
-      order.products?.map(p => p.name) || []
-    ) || [];
-    const uniqueProducts = [...new Set(allProducts)];
-
-    // Pegar primeiro pedido para o botão de excluir
-    const firstOrder = periodData.orders_data?.[0];
-
-    // Ajustar posição para não sair da tela
-    const tooltipWidth = 280;
-    const tooltipHeight = 300; // altura aproximada
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
-    const offset = 20; // distância do cursor
-    const padding = 10; // padding das bordas da tela
-    
-    // Posicionar à direita do cursor por padrão
-    let left = customTooltip.x + offset;
-    let top = customTooltip.y - tooltipHeight / 2;
-    
-    // Se o tooltip sair pela direita, posicionar à esquerda do cursor
-    if (left + tooltipWidth > windowWidth - padding) {
-      left = customTooltip.x - tooltipWidth - offset;
-    }
-    
-    // Se ainda sair pela esquerda, centralizar horizontalmente
-    if (left < padding) {
-      left = Math.max(padding, (windowWidth - tooltipWidth) / 2);
-    }
-    
-    // Se o tooltip sair por baixo, ajustar para cima
-    if (top + tooltipHeight > windowHeight - padding) {
-      top = windowHeight - tooltipHeight - padding;
-    }
-    
-    // Se o tooltip sair por cima, ajustar para baixo
-    if (top < padding) {
-      top = padding;
-    }
-
-    return (
-      <div
-        data-custom-tooltip
-        className="fixed bg-white rounded-lg shadow-xl border border-gray-200 px-3 py-2.5 z-[9999]"
-        style={{
-          left: `${left}px`,
-          top: `${top}px`,
-          maxWidth: '280px',
-          pointerEvents: 'auto',
-        }}
-        onMouseLeave={() => {
-          // Fechar tooltip quando o mouse sair dele
-          setCustomTooltip(null);
-        }}
-      >
-        <div className="font-semibold text-gray-900 mb-2 text-sm">{periodData.period_label}</div>
-        <div className="mb-2.5 space-y-0.5">
-          {uniqueProducts.length > 0 ? (
-            <>
-              {uniqueProducts.slice(0, 2).map((product, idx) => (
-                <div key={idx} className="text-xs text-gray-600 truncate" title={product}>
-                  {truncateProduct(product)}
-                </div>
-              ))}
-              {uniqueProducts.length > 2 && (
-                <div className="text-xs text-gray-400">...</div>
-              )}
-            </>
-          ) : (
-            <div className="text-xs text-gray-500">Sem produtos</div>
-          )}
-        </div>
-        <div className="space-y-1">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-green-500"></div>
-              <span className="text-sm text-gray-600">Receita:</span>
-            </div>
-            <span className="text-sm font-semibold text-gray-900">{formatCurrency(revenue)}</span>
-          </div>
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-              <span className="text-sm text-gray-600">Custo:</span>
-            </div>
-            <span className="text-sm font-semibold text-gray-900">{formatCurrency(cost)}</span>
-          </div>
-          <div className="flex items-center justify-between gap-4 pt-1 border-t border-gray-200">
-            <span className="text-sm font-medium text-gray-700">Lucro:</span>
-            <span className={`text-sm font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(profit)}
-            </span>
-          </div>
-        </div>
-        {firstOrder && (
-          <button
-            onClick={() => {
-              // Garantir que sempre temos um nome de loja válido
-              let storeName = 'Mercado Livre'; // Default
-              
-              if (firstOrder.marketplace_name) {
-                const trimmed = firstOrder.marketplace_name.trim();
-                if (trimmed !== '' && trimmed !== 'Sem loja') {
-                  storeName = trimmed;
-                }
-              }
-              
-              handleDeleteClick(
-                firstOrder.order_id,
-                firstOrder.order_number,
-                storeName
-              );
-            }}
-            className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-md text-sm font-medium transition-colors"
-          >
-            <Trash2 className="w-4 h-4" />
-            Excluir Métrica
-          </button>
-        )}
-      </div>
-    );
   };
 
   const chartOptions: ApexOptions = {
@@ -404,7 +155,51 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       strokeDashArray: 4,
     },
     tooltip: {
-      enabled: false, // Desabilitar tooltip padrão do ApexCharts
+      enabled: true,
+      custom: ({ dataPointIndex }: { dataPointIndex: number }) => {
+        if (!data[dataPointIndex]) return '';
+        const periodData = data[dataPointIndex];
+        const revenue = Number(periodData.total_revenue);
+        const cost = Number(periodData.total_cost);
+        const profit = revenue - cost;
+
+        const allProducts = periodData.orders_data?.flatMap(order =>
+          order.products?.map((p: { name: string }) => p.name) || []
+        ) || [];
+        const uniqueProducts = [...new Set(allProducts)] as string[];
+
+        const profitColor = profit >= 0 ? '#16a34a' : '#dc2626';
+
+        const productLines = uniqueProducts.length > 0
+          ? uniqueProducts.slice(0, 2).map(p =>
+              `<div style="font-size:11px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px">${p.length > 35 ? p.substring(0, 35) + '...' : p}</div>`
+            ).join('') + (uniqueProducts.length > 2 ? '<div style="font-size:11px;color:#9ca3af">...</div>' : '')
+          : '<div style="font-size:11px;color:#9ca3af">Sem produtos</div>';
+
+        return `
+          <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,0.12);min-width:220px;max-width:280px">
+            <div style="font-weight:600;color:#111827;margin-bottom:6px;font-size:13px">${periodData.period_label}</div>
+            <div style="margin-bottom:8px">${productLines}</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <div style="display:flex;align-items:center;gap:6px">
+                <div style="width:10px;height:10px;border-radius:50%;background:#45B369"></div>
+                <span style="font-size:12px;color:#6b7280">Receita:</span>
+              </div>
+              <span style="font-size:12px;font-weight:600;color:#111827">${formatCurrency(revenue)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <div style="display:flex;align-items:center;gap:6px">
+                <div style="width:10px;height:10px;border-radius:50%;background:#EF4A00"></div>
+                <span style="font-size:12px;color:#6b7280">Custo:</span>
+              </div>
+              <span style="font-size:12px;font-weight:600;color:#111827">${formatCurrency(cost)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding-top:6px;border-top:1px solid #e5e7eb">
+              <span style="font-size:12px;font-weight:500;color:#374151">Lucro:</span>
+              <span style="font-size:12px;font-weight:700;color:${profitColor}">${formatCurrency(profit)}</span>
+            </div>
+          </div>`;
+      },
     },
     legend: {
       position: 'top',
@@ -510,7 +305,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       {data.length > 0 ? (
         <div className="relative">
           <Chart options={chartOptions} series={chartSeries} type="area" height={300} />
-          {renderCustomTooltip()}
         </div>
       ) : (
         <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
