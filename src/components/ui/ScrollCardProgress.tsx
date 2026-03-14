@@ -50,7 +50,7 @@ export const ScrollCardProgress: React.FC<ScrollCardProgressProps> = ({
 
     const scrollElement = scrollRef.current;
     if (scrollElement) {
-      scrollElement.addEventListener('scroll', handleScroll);
+      scrollElement.addEventListener('scroll', handleScroll, { passive: true });
       // Calcular progresso inicial
       handleScroll();
     }

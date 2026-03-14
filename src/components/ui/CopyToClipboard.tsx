@@ -72,7 +72,6 @@ export const CopyToClipboard: React.FC<CopyToClipboardProps> = ({
         copied && 'bg-green-100 dark:bg-green-900/30',
         className
       )}
-      role="button"
       aria-label={`Copiar ${text}`}
     >
       {children || text}

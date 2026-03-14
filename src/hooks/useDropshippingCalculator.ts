@@ -249,28 +249,7 @@ export const useDropshippingCalculator = () => {
   const [currentCredits, setCurrentCredits] = useState('1000');
   const [videoDuration, setVideoDuration] = useState('10');
 
-  // Apply supplier fee when component mounts with a supplier already selected
-  useEffect(() => {
-    if (supplierName && supplierName.trim() !== '') {
-      const normalized = supplierName.trim().toLowerCase();
-      if (normalized === 'tyr' || normalized === 'tyr (yeizidrop)') {
-        setSupplierFeeType('percent');
-        setSupplierFeePercent('0');
-        setSupplierFixedFee('0');
-      } else if (normalized === 'dogama') {
-        setSupplierFeeType('percent');
-        setSupplierFeePercent('6');
-        setSupplierFixedFee('0');
-        setSupplierGatewayFeeType('fixed');
-        setSupplierGatewayFixedFee('2,00');
-        setSupplierGatewayFee('0');
-      } else if (normalized === 'yeizidrop' || normalized === 'dsers') {
-        setSupplierFeePercent('0');
-        setSupplierFixedFee('0');
-      }
-    }
-    // eslint_disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array - only run once on mount
+  // Supplier fee defaults are applied at initialization time via useState initializers above
   
   // Selected Influencer for Video Generation
   const [selectedInfluencerId, setSelectedInfluencerId] = useState<string | null>(null);

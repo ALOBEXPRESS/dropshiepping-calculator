@@ -53,31 +53,31 @@ interface DateRangeProviderProps {
   children: ReactNode;
 }
 
-export const DateRangeProvider: React.FC<DateRangeProviderProps> = ({ children }) => {
-  const [preset, setPresetState] = useState<DateRangePreset>('30');
-  const [dateRange, setDateRangeState] = useState<DateRange>(() => getDefaultDateRange());
-
-  // Carregar do localStorage na inicialização
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const { preset: storedPreset, dateRange: storedRange } = JSON.parse(stored);
-        setPresetState(storedPreset);
-        
-        if (storedPreset === 'custom' && storedRange) {
-          setDateRangeState({
-            from: new Date(storedRange.from),
-            to: new Date(storedRange.to),
-          });
-        } else {
-          setDateRangeState(getDateRangeFromPreset(storedPreset));
-        }
+const loadInitialState = (): { preset: DateRangePreset; dateRange: DateRange } => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const { preset: storedPreset, dateRange: storedRange } = JSON.parse(stored) as {
+        preset: DateRangePreset;
+        dateRange?: { from: string; to: string };
+      };
+      if (storedPreset === 'custom' && storedRange) {
+        return {
+          preset: storedPreset,
+          dateRange: { from: new Date(storedRange.from), to: new Date(storedRange.to) },
+        };
       }
-    } catch (error) {
-      console.error('Error loading date range from localStorage:', error);
+      return { preset: storedPreset, dateRange: getDateRangeFromPreset(storedPreset) };
     }
-  }, []);
+  } catch {
+    // ignore parse errors
+  }
+  return { preset: '30', dateRange: getDefaultDateRange() };
+};
+
+export const DateRangeProvider: React.FC<DateRangeProviderProps> = ({ children }) => {
+  const [preset, setPresetState] = useState<DateRangePreset>(() => loadInitialState().preset);
+  const [dateRange, setDateRangeState] = useState<DateRange>(() => loadInitialState().dateRange);
 
   // Salvar no localStorage quando mudar
   useEffect(() => {
@@ -129,6 +129,7 @@ export const DateRangeProvider: React.FC<DateRangeProviderProps> = ({ children }
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components -- context file exports both provider and hook by design
 export const useDateRange = (): DateRangeContextType => {
   const context = useContext(DateRangeContext);
   if (!context) {

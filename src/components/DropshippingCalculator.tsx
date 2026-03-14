@@ -352,7 +352,9 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         handleSupplierChange(found.name);
       }
     }
-  // eslint_disable-next-line react-hooks/exhaustive-deps
+  // handleSupplierChange and supplier_id are intentionally omitted: we only want
+  // this to run when the suppliers list first loads, not on every supplier change.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [suppliersList]);
 
   const handleResetProductDraft = useCallback((silent?: boolean) => {

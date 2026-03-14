@@ -457,5 +457,3 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed }
     </>
   );
 };
-
-export default PendingOrders;

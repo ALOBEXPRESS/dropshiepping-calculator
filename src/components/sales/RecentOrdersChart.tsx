@@ -59,10 +59,23 @@ export const RecentOrdersChart: React.FC<RecentOrdersChartProps> = ({ organizati
         if (fetchError) throw fetchError;
 
         // Formatar dados
-        // eslint_disable-next-line @typescript-eslint/no-explicit-any
-        const formattedData: OrderData[] = (ordersData || []).map((order: any) => {
+        type RawOrder = {
+          id: string;
+          order_number: string;
+          order_date: string;
+          total_amount: number | string;
+          order_items?: Array<{ product_id: string; products?: Array<{ name?: string; image_url?: string }> | { name?: string; image_url?: string } | null }>;
+          sales_channels?: Array<{ marketplace?: string }> | { marketplace?: string } | null;
+          marketplace?: string;
+        };
+        const formattedData: OrderData[] = (ordersData || []).map((order: RawOrder) => {
           const firstItem = order.order_items?.[0];
-          const product = firstItem?.products;
+          // Supabase may return products as array or object depending on relation type
+          const rawProducts = firstItem?.products;
+          const product = Array.isArray(rawProducts) ? rawProducts[0] : rawProducts;
+          // Same for sales_channels
+          const rawChannels = order.sales_channels;
+          const channel = Array.isArray(rawChannels) ? rawChannels[0] : rawChannels;
           
           return {
             id: order.id,
@@ -71,7 +84,7 @@ export const RecentOrdersChart: React.FC<RecentOrdersChartProps> = ({ organizati
             total_amount: Number(order.total_amount),
             product_image: product?.image_url,
             product_name: product?.name,
-            marketplace: order.sales_channels?.marketplace || order.marketplace || 'Mercado Livre',
+            marketplace: channel?.marketplace || order.marketplace || 'Mercado Livre',
           };
         });
 
@@ -84,13 +97,7 @@ export const RecentOrdersChart: React.FC<RecentOrdersChartProps> = ({ organizati
       }
     };
 
-    // Só refetch se refreshTrigger for > 0 (ou seja, após processar pedido)
-    if (!refreshTrigger || refreshTrigger === 0) {
-      fetchData();
-    } else if (refreshTrigger > 0) {
-      console.log('🔄 RecentOrdersChart: refreshTrigger mudou, refazendo query...', refreshTrigger);
-      fetchData();
-    }
+    fetchData();
   }, [organizationId, refreshTrigger]);
 
   const formatCurrency = (value: number) => {
