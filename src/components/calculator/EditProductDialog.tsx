@@ -594,47 +594,25 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     );
   };
 
-  const getInferredFeeRate = () => {
-    if (!product) return null;
-    const baseSelling = parseCurrency(product.sellingPrice ?? 0);
-    if (baseSelling <= 0) return null;
-    const baseCost = parseCurrency(product.costPrice ?? 0);
-    const baseNetRevenue = parseCurrency(product.netRevenue ?? 0);
-    const inferredRate = (baseSelling - baseCost - baseNetRevenue) / baseSelling;
-    if (!Number.isFinite(inferredRate)) return null;
-    return inferredRate;
-  };
-
-  const getAdjustedNetRevenue = () => {
-    const sellingPrice = parseCurrency(formData.sellingPrice);
-    const costPrice = parseCurrency(formData.costPrice);
-    if (sellingPrice <= 0 && costPrice <= 0) return null;
-    const inferredRate = getInferredFeeRate();
-    if (inferredRate === null) return null;
-    const netRevenue = sellingPrice - costPrice - (sellingPrice * inferredRate);
-    return Number.isFinite(netRevenue) ? netRevenue : null;
-  };
-
   const organicMetrics = getUpdatedMetrics();
   const organicSuggestedPrice = parseFloat(organicMetrics?.suggestedPrice ?? '0');
   const organicAdsCostPerSale = parseFloat(organicMetrics?.adsCostPerSale ?? '0');
-  const adjustedNetRevenue = getAdjustedNetRevenue();
-  const baseNetRevenue = Number.isFinite(adjustedNetRevenue ?? NaN)
-    ? (adjustedNetRevenue as number)
-    : parseFloat(String(organicMetrics?.netRevenue ?? (product?.netRevenue ?? '0')));
 
-  // Abatimento das taxas do fornecedor
-  const sellingPriceForFee = parseCurrency(formData.sellingPrice);
-  const supplierFeeVal = parseFloat(formData.supplierFeeValue || '0') || 0;
-  const supplierGatewayFeeVal = parseFloat(formData.supplierGatewayFeeValue || '0') || 0;
-  const supplierFeeDeduction = formData.supplierFeeType === 'percent'
-    ? sellingPriceForFee * (supplierFeeVal / 100)
-    : supplierFeeVal;
-  const supplierGatewayFeeDeduction = formData.supplierGatewayFeeType === 'percent'
-    ? sellingPriceForFee * (supplierGatewayFeeVal / 100)
-    : supplierGatewayFeeVal;
+  // Detect if user changed price/cost/marketplace from original saved values
+  const originalSelling = parseCurrency(product?.sellingPrice ?? 0);
+  const originalCost = parseCurrency(product?.costPrice ?? 0);
+  const currentSelling = parseCurrency(formData.sellingPrice);
+  const currentCost = parseCurrency(formData.costPrice);
+  const originalMarketplace = normalizeMarketplaceValue(product?.marketplace);
+  const pricesChanged = currentSelling !== originalSelling || currentCost !== originalCost || formData.marketplace !== originalMarketplace;
 
-  // Abatimento da comissão do marketplace (configurada em Settings)
+  // When prices haven't changed, use the stored netRevenue (Lucro Líquido from calculator).
+  // When prices change, recompute from organicMetrics which already includes all fees.
+  const organicNetRevenue = pricesChanged
+    ? parseFloat(String(organicMetrics?.netRevenue ?? (product?.netRevenue ?? '0')))
+    : parseFloat(String(product?.netRevenue ?? '0'));
+
+  // marketplace key→name map (used in handleSave and hint text)
   const marketplaceKeyToName: Record<string, string> = {
     mercadolivre: 'Mercado Livre',
     shopee: 'Shopee',
@@ -652,10 +630,10 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
   );
   const marketplaceCommissionRate = marketplaceRecord?.commission_rate ?? 0;
   const marketplaceFixedFee = marketplaceRecord?.fixed_fee ?? 0;
+  const sellingPriceForFee = parseCurrency(formData.sellingPrice);
   const marketplaceCommissionDeduction = sellingPriceForFee * (marketplaceCommissionRate / 100);
   const marketplaceTotalDeduction = marketplaceCommissionDeduction + marketplaceFixedFee;
 
-  const organicNetRevenue = baseNetRevenue - supplierFeeDeduction - supplierGatewayFeeDeduction - marketplaceTotalDeduction;
   const organicVideoCost = 0;
 
   const handleSave = async () => {
@@ -695,20 +673,9 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     }
     const shouldPreserveMetrics = sameMarketplace && nextSelling === originalSelling && nextCost === originalCost && nextShipping === originalShipping && sameAdType && sameEnjoeiAdType;
     const metrics = shouldPreserveMetrics ? null : getUpdatedMetrics();
-    const derivedNetRevenue = getAdjustedNetRevenue();
-    // Aplicar abatimento das taxas do fornecedor no netRevenue salvo
-    const _sellingForFee = parseCurrency(formData.sellingPrice);
-    const _supplierFeeVal = parseFloat(formData.supplierFeeValue || '0') || 0;
-    const _supplierGwFeeVal = parseFloat(formData.supplierGatewayFeeValue || '0') || 0;
-    const _supplierDeduction = formData.supplierFeeType === 'percent' ? _sellingForFee * (_supplierFeeVal / 100) : _supplierFeeVal;
-    const _supplierGwDeduction = formData.supplierGatewayFeeType === 'percent' ? _sellingForFee * (_supplierGwFeeVal / 100) : _supplierGwFeeVal;
-    const _mpName = marketplaceKeyToName[nextMarketplace] ?? nextMarketplace;
-    const _mpRecord = marketplaces.find((mp) => mp.name.toLowerCase() === _mpName.toLowerCase());
-    const _mpCommissionDeduction = _sellingForFee * ((_mpRecord?.commission_rate ?? 0) / 100);
-    const _mpFixedFee = _mpRecord?.fixed_fee ?? 0;
-    const derivedNetRevenueWithFees = Number.isFinite(derivedNetRevenue ?? NaN)
-      ? (derivedNetRevenue as number) - _supplierDeduction - _supplierGwDeduction - _mpCommissionDeduction - _mpFixedFee
-      : null;
+    const savedNetRevenue = shouldPreserveMetrics
+      ? product.netRevenue
+      : (parseFloat(String(metrics?.netRevenue ?? product.netRevenue)));
     const isShopee = nextMarketplace === 'shopee';
     const isMercadoLivre = nextMarketplace === 'mercadolivre';
     const shopeeStartDateIso = formatDateToIso(formData.shopeeStartDate);
@@ -741,9 +708,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       reputationLevel: isMercadoLivre && formData.hasReputation ? (formData.reputationLevel || 'positive') : undefined,
       enjoeiAdType: nextMarketplace === 'enjoei' ? formData.enjoeiAdType : undefined,
       facebookDelivery: nextMarketplace === 'facebook' ? formData.facebookDelivery : undefined,
-      netRevenue: shouldPreserveMetrics
-        ? product.netRevenue
-        : (Number.isFinite(derivedNetRevenueWithFees ?? NaN) ? (derivedNetRevenueWithFees as number) : (metrics?.netRevenue ?? product.netRevenue)),
+      netRevenue: savedNetRevenue,
       marginStatus: shouldPreserveMetrics ? product.marginStatus : (metrics?.marginStatus ?? product.marginStatus),
       adPlacement: formData.adPlacement || undefined,
       adFormat: formData.adFormat || undefined,
@@ -2851,7 +2816,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                       />
                       {(marketplaceCommissionRate > 0 || marketplaceFixedFee > 0) && (
                         <p className="text-xs text-muted-foreground">
-                          {currentMarketplaceName}: {marketplaceCommissionRate > 0 ? `comissão ${marketplaceCommissionRate}%` : ''}{marketplaceCommissionRate > 0 && marketplaceFixedFee > 0 ? ' + ' : ''}{marketplaceFixedFee > 0 ? `taxa fixa ${formatCurrency(marketplaceFixedFee)}` : ''} já descontado: -{formatCurrency(marketplaceTotalDeduction)}
+                          {currentMarketplaceName}: {marketplaceCommissionRate > 0 ? `comissão ${marketplaceCommissionRate}%` : ''}{marketplaceCommissionRate > 0 && marketplaceFixedFee > 0 ? ' + ' : ''}{marketplaceFixedFee > 0 ? `taxa fixa ${formatCurrency(marketplaceFixedFee)}` : ''}
                         </p>
                       )}
                     </div>
