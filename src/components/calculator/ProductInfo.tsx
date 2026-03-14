@@ -135,6 +135,9 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
             const selectedSupplier = suppliersList.find(s => s.id === value);
             if (selectedSupplier) {
               handleSupplierChange(selectedSupplier.name);
+            } else {
+              // fallback: value pode ser o nome direto
+              handleSupplierChange(value);
             }
           }}
         >
