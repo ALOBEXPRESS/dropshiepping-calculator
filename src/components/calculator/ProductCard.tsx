@@ -39,6 +39,7 @@ import seedanceLogo from '../../imgs/seedance.png';
 import shopeeAdsMoney from '../../imgs/3d-render-realistic-currency-money-brazil-200-reais.png';
 import dollarImage from '../../imgs/dólar.png';
 import { parseCurrency } from '../../utils/currency';
+import { calculateMetrics } from '../../services/pricingService';
 import { AnimatedCard } from '../ui/AnimatedCard';
 import gsap from 'gsap';
 import { useProductSalesStats } from '../../hooks/useProductSalesStats';
@@ -352,7 +353,49 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   const stockQuantity = typeof product.stockQuantity === 'number' && Number.isFinite(product.stockQuantity)
     ? product.stockQuantity
     : 0;
-  const profitValue = typeof netRevenue === 'number' ? netRevenue : parseFloat(netRevenue as string);
+
+  // Recalculate profit in real-time for the main product to avoid stale DB values
+  const calculatedNetRevenue = (() => {
+    if (currentSlide.kind === 'variation') {
+      return typeof netRevenue === 'number' ? netRevenue : parseFloat(netRevenue as string);
+    }
+    const mp = product.marketplace || '';
+    const sp = parseCurrency(product.sellingPrice ?? 0);
+    const cp = parseCurrency(product.costPrice ?? 0);
+    if (!mp || (sp <= 0 && cp <= 0)) {
+      return typeof netRevenue === 'number' ? netRevenue : parseFloat(netRevenue as string);
+    }
+    const supplierFeeType = product.supplierFeeType || 'percent';
+    const supplierFeeValue = parseCurrency(product.supplierFeeValue ?? 0);
+    const supplierGatewayFeeType = product.supplierGatewayFeeType || 'fixed';
+    const supplierGatewayFeeValue = parseCurrency(product.supplierGatewayFeeValue ?? 0);
+    const supplierGatewayFeePercent = supplierGatewayFeeType === 'percent' ? supplierGatewayFeeValue : 0;
+    const supplierGatewayFixedFee = supplierGatewayFeeType === 'fixed' ? supplierGatewayFeeValue : 0;
+    const adType = product.adType || 'classico';
+    const enjoeiAdType = product.enjoeiAdType || 'classico';
+    const category = product.mlCategory || (product as { category?: string }).category || 'eletronicos';
+    const accountType = (product.accountType || 'cnpj') as 'cpf' | 'cnpj';
+    const shippingOption = product.shippingOption || 'with';
+    const mlShipping = parseCurrency(product.mlShippingCost ?? 0);
+    const marketplaceShipping = parseCurrency(product.marketplaceShippingCost ?? 0);
+    const amazonPlan = product.amazonPlan === 'profissional' ? 'profissional' : 'individual';
+    try {
+      const metrics = calculateMetrics(
+        cp, 0, supplierFeeValue, 0, mp, category, adType, shippingOption, accountType,
+        0, false, 0, 0, 0, 0, sp, 0, 0, 0, marketplaceShipping, 0, 0, 0, mlShipping,
+        'percent', 0, 0, 0, enjoeiAdType, 0,
+        product.gatewayBank || '', product.gatewayMethod || '', '', '',
+        product.meliPlus ?? false, supplierFeeType, supplierGatewayFeePercent, supplierGatewayFixedFee,
+        supplierGatewayFeeType, amazonPlan, category, 0,
+        0, 0, 0, 0, 'fixed', 'fixed', 'fixed', 'fixed', 0
+      );
+      return parseFloat(String(metrics.netRevenue ?? '0'));
+    } catch {
+      return typeof netRevenue === 'number' ? netRevenue : parseFloat(netRevenue as string);
+    }
+  })();
+
+  const profitValue = Number.isFinite(calculatedNetRevenue) ? calculatedNetRevenue : 0;
   const profitBadgeClass = Number.isFinite(profitValue)
     ? profitValue < 3
       ? 'bg-red-600'
@@ -478,8 +521,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
       || Boolean(product.shopeeEndDate)
     );
   const shopeeAdsBudget = hasShopeeAdsInvestment ? parseCurrency(product.shopeeTotalBudget ?? 0) : 0;
-  const netRevenueValue = parseCurrency(netRevenue ?? 0);
-  const netRevenueAdjusted = netRevenueValue - shopeeAdsBudget;
+  const netRevenueAdjusted = calculatedNetRevenue - shopeeAdsBudget;
   const marketplaceIcons: Record<string, string> = {
     wordpress: wooCommerceLogo,
     shopee: shopeeLogo,

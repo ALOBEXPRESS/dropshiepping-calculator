@@ -471,6 +471,21 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       if (field === 'sellingPrice' || field === 'marketplace') {
         setSellingPriceWarning('');
       }
+      // Auto-fill supplier fee defaults when supplier changes
+      if (field === 'supplierName') {
+        const normalized = (value as string).trim().toLowerCase();
+        if (normalized === 'dogama') {
+          next.supplierFeeType = 'percent';
+          next.supplierFeeValue = '6';
+          next.supplierGatewayFeeType = 'fixed';
+          next.supplierGatewayFeeValue = '2';
+        } else if (normalized === 'tyr' || normalized === 'tyr (yeizidrop)') {
+          next.supplierFeeType = 'percent';
+          next.supplierFeeValue = '0';
+          next.supplierGatewayFeeType = 'fixed';
+          next.supplierGatewayFeeValue = '0';
+        }
+      }
       return next;
     });
   };
@@ -512,7 +527,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     const amazonPlan = product?.amazonPlan === 'profissional' ? 'profissional' : 'individual';
     const mlShippingCost = parseCurrency(formData.mlShippingCost);
     const marketplaceShippingCost = parseCurrency(formData.marketplaceShippingCost);
-    const categoryValue = (product as { category?: string })?.category || 'eletronicos';
+    const categoryValue = formData.mlCategory || (product as { category?: string })?.category || 'eletronicos';
     const accountTypeValue = (formData.accountType || product?.accountType || 'cnpj') as 'cpf' | 'cnpj';
     const shippingOption = product?.shippingOption || 'with';
     const isMercadoLivre = formData.marketplace === 'mercadolivre';
@@ -539,10 +554,17 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     const shopeeProductCoupon = formData.shopeeProductCouponEnabled ? parseCurrency(formData.shopeeProductCouponValue ?? 0) : 0;
     const shopeeFollowerCoupon = formData.shopeeFollowerCouponEnabled ? parseCurrency(formData.shopeeFollowerCouponValue ?? 0) : 0;
     const shopeeSellerVoucher = formData.shopeeSellerVoucherEnabled ? parseCurrency(formData.shopeeSellerVoucherValue ?? 0) : 0;
+    const supplierFeeType = formData.supplierFeeType || 'percent';
+    const supplierFeeValue = parseCurrency(formData.supplierFeeValue ?? 0);
+    const supplierGatewayFeeType = formData.supplierGatewayFeeType || 'fixed';
+    const supplierGatewayFeeValue = parseCurrency(formData.supplierGatewayFeeValue ?? 0);
+    const supplierGatewayFeePercent = supplierGatewayFeeType === 'percent' ? supplierGatewayFeeValue : 0;
+    const supplierGatewayFixedFee = supplierGatewayFeeType === 'fixed' ? supplierGatewayFeeValue : 0;
+
     return calculateMetrics(
       costPrice,
       0,
-      0,
+      supplierFeeValue,
       0,
       formData.marketplace,
       categoryValue,
@@ -575,10 +597,10 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       '',
       '',
       product?.meliPlus ?? false,
-      'percent',
-      0,
-      0,
-      'fixed',
+      supplierFeeType,
+      supplierGatewayFeePercent,
+      supplierGatewayFixedFee,
+      supplierGatewayFeeType,
       amazonPlan,
       categoryValue,
       0,
@@ -606,10 +628,11 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
   const originalMarketplace = normalizeMarketplaceValue(product?.marketplace);
   const pricesChanged = currentSelling !== originalSelling || currentCost !== originalCost || formData.marketplace !== originalMarketplace;
 
-  // When prices haven't changed, use the stored netRevenue (Lucro Líquido from calculator).
-  // When prices change, recompute from organicMetrics which already includes all fees.
-  const organicNetRevenue = pricesChanged
-    ? parseFloat(String(organicMetrics?.netRevenue ?? (product?.netRevenue ?? '0')))
+  // Always prefer organicMetrics (recalculated from pricingService) which correctly
+  // deducts cost, commissions and fees. Fall back to stored netRevenue only when
+  // organicMetrics is unavailable (no marketplace/price set yet).
+  const organicNetRevenue = organicMetrics
+    ? parseFloat(String(organicMetrics.netRevenue ?? '0'))
     : parseFloat(String(product?.netRevenue ?? '0'));
 
   // marketplace key→name map (used in handleSave and hint text)
