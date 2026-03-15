@@ -13,6 +13,8 @@ import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 import logo from '../imgs/Logonome-alobexpress.png';
 import videoBackground from '../video/dollar-animate-real.mp4?url';
 import wooCommerceLogo from '../imgs/free-woocommerce-icon-svg-download-png-226060.webp';
@@ -3780,7 +3782,24 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                     </Select>
                   </div>
                   {shouldShowProductsLoading ? (
-                    <div className="text-sm text-gray-500">Carregando produtos...</div>
+                    <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                      {Array.from({ length: 6 }).map((_, index) => (
+                        <div key={index} className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                          <div className="flex gap-4">
+                            <Skeleton width={120} height={120} className="rounded-lg" baseColor="#1f2937" highlightColor="#374151" />
+                            <div className="flex-1 space-y-3">
+                              <Skeleton width="80%" height={20} baseColor="#1f2937" highlightColor="#374151" />
+                              <Skeleton width="40%" height={16} baseColor="#1f2937" highlightColor="#374151" />
+                              <Skeleton width="60%" height={16} baseColor="#1f2937" highlightColor="#374151" />
+                              <div className="flex gap-2 mt-4">
+                                <Skeleton width={80} height={32} baseColor="#1f2937" highlightColor="#374151" />
+                                <Skeleton width={80} height={32} baseColor="#1f2937" highlightColor="#374151" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   ) : effectiveProducts.length === 0 ? (
                     <div className="text-sm text-gray-500">Nenhum produto adicionado ainda.</div>
                   ) : filteredProducts.length === 0 ? (
