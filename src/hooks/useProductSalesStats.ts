@@ -41,6 +41,7 @@ export const useProductSalesStats = (productId?: string) => {
 
       try {
         // Buscar estatísticas de vendas do produto
+        // Usar inner join para filtrar apenas pedidos não cancelados
         const { data, error: fetchError } = await supabase
           .from('order_items')
           .select(`
@@ -48,12 +49,12 @@ export const useProductSalesStats = (productId?: string) => {
             total_price,
             profit,
             cost,
-            order:orders!inner(
+            orders!inner(
               status
             )
           `)
           .eq('product_id', productId)
-          .neq('order.status', 'cancelled');
+          .neq('orders.status', 'cancelled');
 
         if (fetchError) throw fetchError;
 
