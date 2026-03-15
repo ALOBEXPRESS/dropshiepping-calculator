@@ -23,7 +23,6 @@ export const useProductSalesStats = (productId?: string) => {
   useEffect(() => {
     const fetchStats = async () => {
       if (!productId) {
-        console.log('[useProductSalesStats] No productId provided');
         setStats({
           totalSales: 0,
           totalQuantity: 0,
@@ -35,45 +34,62 @@ export const useProductSalesStats = (productId?: string) => {
         return;
       }
 
-      console.log('[useProductSalesStats] Fetching stats for productId:', productId);
       setLoading(true);
       setError(null);
 
       try {
         // Buscar estatísticas de vendas do produto
-        // Usar inner join para filtrar apenas pedidos não cancelados
-        const { data, error: fetchError } = await supabase
+        // Primeiro buscar todos os order_items do produto
+        const { data: orderItems, error: fetchError } = await supabase
           .from('order_items')
           .select(`
             quantity,
             total_price,
             profit,
-            cost,
-            orders!inner(
-              status
-            )
+            unit_cost,
+            total_cost,
+            order_id
           `)
-          .eq('product_id', productId)
-          .neq('orders.status', 'cancelled');
+          .eq('product_id', productId);
 
         if (fetchError) throw fetchError;
 
-        console.log('[useProductSalesStats] Raw data:', data);
+        if (!orderItems || orderItems.length === 0) {
+          setStats({
+            totalSales: 0,
+            totalQuantity: 0,
+            totalProfit: 0,
+            totalRevenue: 0,
+            totalCost: 0
+          });
+          setLoading(false);
+          return;
+        }
+
+        // Buscar os status dos pedidos
+        const orderIds = orderItems.map(item => item.order_id);
+        const { data: orders, error: ordersError } = await supabase
+          .from('orders')
+          .select('id, status')
+          .in('id', orderIds);
+
+        if (ordersError) throw ordersError;
+
+        // Criar um map de order_id para status
+        const orderStatusMap = new Map(orders?.map(o => [o.id, o.status]) || []);
+
+        // Filtrar apenas order_items de pedidos não cancelados
+        const validOrderItems = orderItems.filter(item => {
+          const status = orderStatusMap.get(item.order_id);
+          return status && status !== 'cancelled';
+        });
 
         // Calcular estatísticas
-        const totalSales = data?.length || 0;
-        const totalQuantity = data?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
-        const totalProfit = data?.reduce((sum, item) => sum + (Number(item.profit) || 0), 0) || 0;
-        const totalRevenue = data?.reduce((sum, item) => sum + (Number(item.total_price) || 0), 0) || 0;
-        const totalCost = data?.reduce((sum, item) => sum + (Number(item.cost) || 0), 0) || 0;
-
-        console.log('[useProductSalesStats] Calculated stats:', {
-          totalSales,
-          totalQuantity,
-          totalProfit,
-          totalRevenue,
-          totalCost
-        });
+        const totalSales = validOrderItems.length;
+        const totalQuantity = validOrderItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+        const totalProfit = validOrderItems.reduce((sum, item) => sum + (Number(item.profit) || 0), 0);
+        const totalRevenue = validOrderItems.reduce((sum, item) => sum + (Number(item.total_price) || 0), 0);
+        const totalCost = validOrderItems.reduce((sum, item) => sum + (Number(item.total_cost) || 0), 0);
 
         setStats({
           totalSales,

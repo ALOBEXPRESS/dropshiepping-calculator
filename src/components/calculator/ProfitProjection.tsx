@@ -48,12 +48,6 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
   // Buscar estatísticas de vendas do produto
   const { stats: salesStats } = useProductSalesStats(product?.id);
   
-  // Debug: verificar se o product.id está sendo passado
-  useEffect(() => {
-    console.log('[ProfitProjection] Product ID:', product?.id);
-    console.log('[ProfitProjection] Sales Stats:', salesStats);
-  }, [product?.id, salesStats]);
-  
   useEffect(() => {
     if (!product?.id) return;
     const container = containerRef.current;
