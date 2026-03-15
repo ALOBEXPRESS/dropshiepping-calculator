@@ -230,7 +230,7 @@ interface ProductCardProps {
   onInvestSave: (product: ProductItem) => void;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, onDelete, onEdit, onDuplicate, onInvestSave }) => {
+export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onDelete, onEdit, onDuplicate, onInvestSave }) => {
   const [currentVarIndex, setCurrentVarIndex] = useState(0);
   const [isInvestOpen, setIsInvestOpen] = useState(false);
   const [investStep, setInvestStep] = useState(0);
@@ -1675,4 +1675,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onDelete, onE
     </Dialog>
     </>
   );
-};
+}, (prevProps, nextProps) => {
+  // Comparação customizada: só re-renderizar se o produto.id mudou ou se as funções mudaram
+  return prevProps.product.id === nextProps.product.id &&
+         prevProps.onDelete === nextProps.onDelete &&
+         prevProps.onEdit === nextProps.onEdit &&
+         prevProps.onDuplicate === nextProps.onDuplicate &&
+         prevProps.onInvestSave === nextProps.onInvestSave;
+});
