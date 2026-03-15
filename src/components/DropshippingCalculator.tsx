@@ -1224,6 +1224,9 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       animatedPagesRef.current = new Set(keysArray.slice(-25));
     }
     
+    // Only animate if there are product cards to animate
+    if (productCards.length === 0) return;
+    
     gsap.fromTo(
       productCards,
       {
@@ -1981,18 +1984,23 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       .map((product) => `[data-product-id="${product.id}"]`);
 
     if (newIds.length > 0) {
-      gsap.fromTo(newIds, {
-        opacity: 0,
-        y: 16,
-        scale: 0.97
-      }, {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        duration: 0.35,
-        ease: "back.out(1.7)",
-        clearProps: "all"
-      });
+      // Check if elements actually exist in DOM before animating
+      const existingElements = newIds.filter(selector => document.querySelector(selector));
+      
+      if (existingElements.length > 0) {
+        gsap.fromTo(existingElements, {
+          opacity: 0,
+          y: 16,
+          scale: 0.97
+        }, {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.35,
+          ease: "back.out(1.7)",
+          clearProps: "all"
+        });
+      }
     }
 
     prevProductIds.current = currentIds;
@@ -2039,15 +2047,15 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       ease: "power3.out"
     });
 
-    // Animate Main Cards and Sections
-    gsap.from(".animate-on-scroll", {
-      y: 50,
-      opacity: 0,
-      duration: 0.8,
-      stagger: 0.2,
-      ease: "power3.out",
-      delay: 0.2
-    });
+    // Animate Main Cards and Sections - DISABLED: removed animate-on-scroll class to fix visibility issues
+    // gsap.from(".animate-on-scroll", {
+    //   y: 50,
+    //   opacity: 0,
+    //   duration: 0.8,
+    //   stagger: 0.2,
+    //   ease: "power3.out",
+    //   delay: 0.2
+    // });
 
     // Animate Form Elements with Fade In
     gsap.from(".animate-fadeIn", {
