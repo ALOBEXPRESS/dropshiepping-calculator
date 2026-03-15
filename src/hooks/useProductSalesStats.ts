@@ -23,6 +23,7 @@ export const useProductSalesStats = (productId?: string) => {
   useEffect(() => {
     const fetchStats = async () => {
       if (!productId) {
+        console.log('[useProductSalesStats] No productId provided');
         setStats({
           totalSales: 0,
           totalQuantity: 0,
@@ -34,6 +35,7 @@ export const useProductSalesStats = (productId?: string) => {
         return;
       }
 
+      console.log('[useProductSalesStats] Fetching stats for productId:', productId);
       setLoading(true);
       setError(null);
 
@@ -55,12 +57,22 @@ export const useProductSalesStats = (productId?: string) => {
 
         if (fetchError) throw fetchError;
 
+        console.log('[useProductSalesStats] Raw data:', data);
+
         // Calcular estatísticas
         const totalSales = data?.length || 0;
         const totalQuantity = data?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
         const totalProfit = data?.reduce((sum, item) => sum + (Number(item.profit) || 0), 0) || 0;
         const totalRevenue = data?.reduce((sum, item) => sum + (Number(item.total_price) || 0), 0) || 0;
         const totalCost = data?.reduce((sum, item) => sum + (Number(item.cost) || 0), 0) || 0;
+
+        console.log('[useProductSalesStats] Calculated stats:', {
+          totalSales,
+          totalQuantity,
+          totalProfit,
+          totalRevenue,
+          totalCost
+        });
 
         setStats({
           totalSales,
