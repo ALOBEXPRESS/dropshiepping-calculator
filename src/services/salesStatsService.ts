@@ -90,25 +90,71 @@ export async function getProductSalesStats(productId: string): Promise<ProductSa
  */
 export async function getGeneralFinancialSummary(): Promise<GeneralFinancialSummary> {
   try {
-    // Buscar todos os pedidos sincronizados
-    const { data: orders, error: ordersError } = await supabase
-      .from('bling_orders')
-      .select('id, total_amount, commission_tax, shipping_cost, other_expenses');
+    // Buscar usuário autenticado
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('Erro ao buscar usuário:', userError);
+      return {
+        total_profit: 0,
+        total_sales: 0,
+        estimated_expenses: 0
+      };
+    }
 
-    if (ordersError) throw ordersError;
+    // Usar o user.id como organization_id (assumindo que cada usuário tem sua própria organização)
+    const organizationId = user.id;
 
-    // Total de vendas = número de pedidos
-    const totalSales = orders?.length || 0;
+    // Usar get_revenue_report para obter dados com custos dinâmicos
+    const { data: revenueData, error: revenueError } = await supabase
+      .rpc('get_revenue_report', { 
+        p_organization_id: organizationId,
+        p_period: 'monthly'
+      });
+
+    if (revenueError) {
+      console.error('Erro ao buscar revenue report:', revenueError);
+      return {
+        total_profit: 0,
+        total_sales: 0,
+        estimated_expenses: 0
+      };
+    }
+
+    if (!revenueData || revenueData.length === 0) {
+      return {
+        total_profit: 0,
+        total_sales: 0,
+        estimated_expenses: 0
+      };
+    }
+
+    // Somar total_profit de todos os períodos
+    interface PeriodData {
+      total_profit?: number;
+      orders_count?: number;
+    }
+    const totalProfit = revenueData.reduce((sum: number, period: PeriodData) => 
+      sum + (Number(period.total_profit) || 0), 0);
+
+    // Total de vendas = soma de orders_count de todos os períodos
+    const totalSales = revenueData.reduce((sum: number, period: PeriodData) => 
+      sum + (Number(period.orders_count) || 0), 0);
     
-    // Lucro = soma de todos os total_amount dos pedidos
-    const totalProfit = orders?.reduce((sum, order) => 
-      sum + (Number(order.total_amount) || 0), 0) || 0;
-    
-    // Despesas estimadas = taxas + frete + outras despesas
-    const totalExpenses = orders?.reduce((sum, order) => 
-      sum + (Number(order.commission_tax) || 0) + 
-      (Number(order.shipping_cost) || 0) + 
-      (Number(order.other_expenses) || 0), 0) || 0;
+    // Buscar despesas (comissões, frete, outras) da tabela orders
+    const { data: ordersData, error: ordersError } = await supabase
+      .from('orders')
+      .select('marketplace_commission, shipping_cost, other_expenses')
+      .eq('organization_id', organizationId)
+      .not('processed_at', 'is', null);
+
+    if (ordersError) {
+      console.error('Erro ao buscar orders:', ordersError);
+    }
+
+    const totalExpenses = ordersData?.reduce((sum, o) => 
+      sum + (Number(o.marketplace_commission) || 0) + 
+      (Number(o.shipping_cost) || 0) + 
+      (Number(o.other_expenses) || 0), 0) || 0;
 
     return {
       total_profit: totalProfit,

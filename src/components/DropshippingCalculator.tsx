@@ -2,7 +2,7 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import type { MouseEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Calculator, TrendingUp, Package, DollarSign, AlertCircle, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calculator, TrendingUp, Package, DollarSign, AlertCircle, Plus, Trash2, ChevronLeft, ChevronRight, Loader2, Store } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -23,6 +23,14 @@ import enjoeiLogo from '../imgs/enjoei.svg';
 import tiktokLogo from '../imgs/tiktok-shop-seller-cent-icon-filled-256.png';
 import mercadoLivreLogo from '../imgs/mercadolivre.svg';
 import olxLogo from '../imgs/olx.png';
+// Marketplace logos for carousel
+import mercadoLivreImg from '../imgs/mercadolivre.svg';
+import shopeeImg from '../imgs/18790-256x256x32.png';
+import amazonImg from '../imgs/amazon.jpg';
+import tiktokImg from '../imgs/tiktok-shop-seller-cent-icon-filled-256.png';
+import sheinImg from '../imgs/shein.svg';
+import enjoeiImg from '../imgs/enjoei.svg';
+import olxImg from '../imgs/olx.png';
 import { CollapsibleSection } from './ui/CollapsibleSection';
 import { GradientButton } from './ui/GradientButton';
 import { TrafficConfig } from './calculator/TrafficConfig';
@@ -51,7 +59,7 @@ import { useMultipleProductsSalesStats } from '../hooks/useMultipleProductsSales
 import { useProfitAnalysis } from '../hooks/sales/useProfitAnalysis';
 import { useTopProfitableProducts } from '../hooks/sales/useTopProfitableProducts';
 import { useCustomerLifetimeValue } from '../hooks/sales/useCustomerLifetimeValue';
-import { MarketplacePerformanceCard } from './sales/MarketplacePerformanceCard';
+import { useMarketplacePerformance } from '../hooks/sales/useMarketplacePerformance';
 import { useGeneralFinancialSummary } from '../hooks/useSalesStats';
 import ElectricBorder from './ui/electric-border';
 import { toast } from 'sonner';
@@ -454,6 +462,10 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
   const { products: topProducts, loading: topProductsLoading } = useTopProfitableProducts(organizationId ?? '', 5);
   // Hook para Customer Lifetime Value (só KPIs, sem Top 10)
   const { data: clvData, loading: clvLoading } = useCustomerLifetimeValue(organizationId ?? '');
+  // Hook para Performance por Marketplace
+  const { data: marketplacePerformanceData, loading: marketplacePerformanceLoading } = useMarketplacePerformance(organizationId ?? '');
+  // Estado para controlar o carrossel de marketplaces
+  const [marketplaceCarouselIndex, setMarketplaceCarouselIndex] = useState(0);
 
   const handleNavigateToProducts = useCallback((event: MouseEvent<HTMLElement>) => {
     const target = event.target as HTMLElement;
@@ -1700,9 +1712,138 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
           </div>
         )}
       </div>
-      {/* Performance por Marketplace */}
-      <div className="rounded-xl overflow-hidden">
-        <MarketplacePerformanceCard organizationId={organizationId ?? ''} />
+      {/* Performance por Marketplace - Redesigned */}
+      <div className="rounded-xl bg-black/25 border border-white/10 p-4 backdrop-blur-sm">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="p-1.5 rounded-lg bg-purple-500/20 border border-purple-400/30">
+            <Store className="w-4 h-4 text-purple-400" />
+          </div>
+          <div>
+            <p className="text-xs uppercase font-bold tracking-widest text-white">Performance por Marketplace</p>
+            <p className="text-[10px] text-white/40">Comparação entre plataformas</p>
+          </div>
+        </div>
+
+        {marketplacePerformanceLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
+          </div>
+        ) : marketplacePerformanceData.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 text-white/40">
+            <Store className="w-8 h-8 mb-2" />
+            <p className="text-xs">Nenhum dado disponível</p>
+          </div>
+        ) : (
+          <>
+            {/* Marketplace atual */}
+            <div className="mb-4">
+              {(() => {
+                const current = marketplacePerformanceData[marketplaceCarouselIndex];
+                const logo = (() => {
+                  const key = current.marketplace_id.toLowerCase();
+                  const nameKey = current.marketplace.toLowerCase();
+                  const logos: Record<string, string> = {
+                    'mercadolivre': mercadoLivreImg,
+                    'mercado-livre': mercadoLivreImg,
+                    'mercado livre': mercadoLivreImg,
+                    'shopee': shopeeImg,
+                    'amazon': amazonImg,
+                    'tiktok': tiktokImg,
+                    'tiktok-shop': tiktokImg,
+                    'shein': sheinImg,
+                    'enjoei': enjoeiImg,
+                    'olx': olxImg,
+                  };
+                  return logos[key] || logos[nameKey] || null;
+                })();
+
+                return (
+                  <div className="space-y-4">
+                    {/* Logo e nome */}
+                    <div className="flex items-center gap-4">
+                      {logo ? (
+                        <div className="w-16 h-16 rounded-lg overflow-hidden flex items-center justify-center bg-white border border-white/20 shadow-lg flex-shrink-0">
+                          <img src={logo} alt={current.marketplace} className="w-14 h-14 object-contain" />
+                        </div>
+                      ) : (
+                        <div className="w-16 h-16 rounded-lg flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600 shadow-lg flex-shrink-0">
+                          <Store className="w-8 h-8 text-white" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <h4 className="text-lg font-bold text-white">{current.marketplace}</h4>
+                        <p className="text-xs text-white/50">{current.orders_count} pedidos processados</p>
+                      </div>
+                    </div>
+
+                    {/* Métricas */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-black/30 border border-blue-400/20 rounded-lg p-3">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <svg className="w-3 h-3 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                          </svg>
+                          <p className="text-[10px] text-white/50 uppercase tracking-wide">Pedidos</p>
+                        </div>
+                        <p className="text-lg font-bold text-white">{current.orders_count}</p>
+                      </div>
+                      <div className="bg-black/30 border border-green-400/20 rounded-lg p-3">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <DollarSign className="w-3 h-3 text-green-400" />
+                          <p className="text-[10px] text-white/50 uppercase tracking-wide">Receita</p>
+                        </div>
+                        <p className="text-sm font-bold text-white">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(current.revenue)}</p>
+                      </div>
+                      <div className="bg-black/30 border border-[#fe2c55]/20 rounded-lg p-3">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <TrendingUp className="w-3 h-3 text-[#fe2c55]" />
+                          <p className="text-[10px] text-white/50 uppercase tracking-wide">Lucro</p>
+                        </div>
+                        <p className="text-sm font-bold text-green-300">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(current.profit)}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Navegação */}
+            {marketplacePerformanceData.length > 1 && (
+              <div className="flex items-center justify-between pt-3 border-t border-white/10">
+                <button
+                  onClick={() => setMarketplaceCarouselIndex((prev) => (prev === 0 ? marketplacePerformanceData.length - 1 : prev - 1))}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-colors text-xs text-white"
+                >
+                  <ChevronLeft className="w-3 h-3" />
+                  Anterior
+                </button>
+
+                <div className="flex items-center gap-2">
+                  {marketplacePerformanceData.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setMarketplaceCarouselIndex(index)}
+                      className={`h-1.5 rounded-full transition-all ${
+                        index === marketplaceCarouselIndex
+                          ? 'bg-purple-400 w-6'
+                          : 'bg-white/20 w-1.5'
+                      }`}
+                      aria-label={`Ir para marketplace ${index + 1}`}
+                    />
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setMarketplaceCarouselIndex((prev) => (prev === marketplacePerformanceData.length - 1 ? 0 : prev + 1))}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-colors text-xs text-white"
+                >
+                  Próximo
+                  <ChevronRight className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+          </>
+        )}
       </div>
       </div>{/* fim col2 flex */}
       </div>{/* fim grid 2 colunas análise + produtos */}

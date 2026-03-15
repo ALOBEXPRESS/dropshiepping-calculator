@@ -10,14 +10,6 @@ interface MarketplacePerformance {
   avg_margin: number;
 }
 
-interface RevenueReportItem {
-  marketplace_id: string;
-  marketplace: string;
-  revenue: number;
-  cost: number;
-  profit: number;
-}
-
 export function useMarketplacePerformance(organizationId: string, refreshTrigger?: number) {
   const [data, setData] = useState<MarketplacePerformance[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +29,20 @@ export function useMarketplacePerformance(organizationId: string, refreshTrigger
 
         if (revenueError) throw revenueError;
 
-        // Agrupar por marketplace
+        if (!revenueData || revenueData.length === 0) {
+          setData([]);
+          return;
+        }
+
+        // Flatten orders_data from all periods
+        interface OrderData {
+          marketplace_id: string;
+          marketplace: string;
+          total_amount: number;
+          total_cost: number;
+          total_profit: number;
+        }
+
         interface GroupedMarketplace {
           marketplace: string;
           marketplace_id: string;
@@ -47,9 +52,20 @@ export function useMarketplacePerformance(organizationId: string, refreshTrigger
           cost: number;
         }
 
-        const grouped = revenueData.reduce((acc: Record<string, GroupedMarketplace>, item: RevenueReportItem) => {
-          const key = item.marketplace_id || 'unknown';
-          const name = item.marketplace || 'Sem marketplace';
+        const allOrders: OrderData[] = [];
+        interface PeriodData {
+          orders_data?: OrderData[];
+        }
+        revenueData.forEach((period: PeriodData) => {
+          if (period.orders_data && Array.isArray(period.orders_data)) {
+            allOrders.push(...period.orders_data);
+          }
+        });
+
+        // Agrupar por marketplace
+        const grouped = allOrders.reduce((acc: Record<string, GroupedMarketplace>, order: OrderData) => {
+          const key = order.marketplace_id || 'unknown';
+          const name = order.marketplace || 'Sem marketplace';
           
           if (!acc[key]) {
             acc[key] = {
@@ -63,9 +79,9 @@ export function useMarketplacePerformance(organizationId: string, refreshTrigger
           }
           
           acc[key].orders_count += 1;
-          acc[key].revenue += Number(item.revenue) || 0;
-          acc[key].profit += Number(item.profit) || 0;
-          acc[key].cost += Number(item.cost) || 0;
+          acc[key].revenue += Number(order.total_amount) || 0;
+          acc[key].profit += Number(order.total_profit) || 0;
+          acc[key].cost += Number(order.total_cost) || 0;
           
           return acc;
         }, {});

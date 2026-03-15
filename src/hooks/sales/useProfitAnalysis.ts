@@ -14,12 +14,6 @@ interface ProfitAnalysis {
   profitPercentage: number;
 }
 
-interface RevenueReportItem {
-  revenue: number;
-  cost: number;
-  profit: number;
-}
-
 export const useProfitAnalysis = (organizationId: string, refreshTrigger?: number) => {
   const [data, setData] = useState<ProfitAnalysis>({
     totalRevenue: 0,
@@ -54,16 +48,22 @@ export const useProfitAnalysis = (organizationId: string, refreshTrigger?: numbe
         if (revenueError) throw revenueError;
 
         if (revenueData && revenueData.length > 0) {
-          // Somar todos os valores do revenue report
-          const totalRevenue = revenueData.reduce((sum: number, item: RevenueReportItem) => sum + (Number(item.revenue) || 0), 0);
-          const totalCost = revenueData.reduce((sum: number, item: RevenueReportItem) => sum + (Number(item.cost) || 0), 0);
-          const totalProfit = revenueData.reduce((sum: number, item: RevenueReportItem) => sum + (Number(item.profit) || 0), 0);
+          // Somar total_revenue, total_cost, total_profit de todos os períodos
+          interface RevenueDataItem {
+            total_revenue?: number;
+            total_cost?: number;
+            total_profit?: number;
+          }
+          const totalRevenue = revenueData.reduce((sum: number, period: RevenueDataItem) => sum + (Number(period.total_revenue) || 0), 0);
+          const totalCost = revenueData.reduce((sum: number, period: RevenueDataItem) => sum + (Number(period.total_cost) || 0), 0);
+          const totalProfit = revenueData.reduce((sum: number, period: RevenueDataItem) => sum + (Number(period.total_profit) || 0), 0);
           
           // Buscar comissões, frete e outras despesas da tabela orders
           const { data: ordersData, error: ordersError } = await supabase
             .from('orders')
             .select('marketplace_commission, shipping_cost, other_expenses')
-            .eq('organization_id', organizationId);
+            .eq('organization_id', organizationId)
+            .not('processed_at', 'is', null);
 
           if (ordersError) throw ordersError;
 
