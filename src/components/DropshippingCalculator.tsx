@@ -3509,6 +3509,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
               productFilters,
               organizationId
             })}
+          {console.log('[DEBUG Products Page] showProductsList:', showProductsList)}
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="bg-[#0d0d0d] text-white rounded-xl p-5 shadow-lg border border-white/10 flex flex-col">
               <ElectricBorder color="#fe2c55" speed={0.8} chaos={0.1} borderRadius={16} className="flex flex-col flex-1">
@@ -3650,17 +3651,21 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                     <div className="text-sm text-gray-500">Nenhum produto encontrado com os filtros atuais.</div>
                   ) : (
                     <>
+                      {console.log('[DEBUG Products Page] Rendering ProductCards, count:', pagedProducts.length)}
                       <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-                        {pagedProducts.map((product) => (
-                          <ProductCard
-                            key={product.id}
-                            product={product}
-                            onDelete={handleDeleteProductAnimated}
-                            onEdit={handleEditProductClick}
-                            onDuplicate={handleDuplicateProductClick}
-                            onInvestSave={handleInvestSaveProduct}
-                          />
-                        ))}
+                        {pagedProducts.map((product) => {
+                          console.log('[DEBUG Products Page] Rendering ProductCard for:', product.id, product.name);
+                          return (
+                            <ProductCard
+                              key={product.id}
+                              product={product}
+                              onDelete={handleDeleteProductAnimated}
+                              onEdit={handleEditProductClick}
+                              onDuplicate={handleDuplicateProductClick}
+                              onInvestSave={handleInvestSaveProduct}
+                            />
+                          );
+                        })}
                       </div>
                       {totalPages > 1 && (
                         <div className="flex items-center justify-center gap-2 pt-6">
