@@ -33,6 +33,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [deleting, setDeleting] = useState(false);
   
   const chartRef = useRef<HTMLDivElement>(null);
+  const dataRef = useRef(data);
+  dataRef.current = data;
 
   // Adicionar CSS global para manter tooltip visível ao passar mouse sobre ele
   useEffect(() => {
@@ -146,6 +148,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
   const totalRevenue = data.reduce((sum, item) => sum + Number(item.total_revenue), 0);
   const totalCost = data.reduce((sum, item) => sum + Number(item.total_cost), 0);
+  const totalProfit = totalRevenue - totalCost;
 
 
   const chartOptions: ApexOptions = {
@@ -212,8 +215,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         enabled: false,
       },
       custom: ({ dataPointIndex }: { dataPointIndex: number }) => {
-        if (!data[dataPointIndex]) return '';
-        const periodData = data[dataPointIndex];
+        const currentData = dataRef.current;
+        if (!currentData[dataPointIndex]) return '';
+        const periodData = currentData[dataPointIndex];
         const revenue = Number(periodData.total_revenue);
         const cost = Number(periodData.total_cost);
         const profit = revenue - cost;
@@ -233,10 +237,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
         // Criar lista de pedidos com botão excluir
         const ordersHtml = periodData.orders_data?.map((order: { order_id: string; order_number: string; marketplace_name: string }) => {
-          const marketplaceName = order.marketplace_name && order.marketplace_name !== 'null' 
+          const marketplaceName = order.marketplace_name && order.marketplace_name !== 'null' && order.marketplace_name !== 'undefined'
             ? order.marketplace_name 
             : 'Sem marketplace';
           const displayText = `${marketplaceName} - #${order.order_number || 'S/N'}`;
+          const safeStore = order.marketplace_name && order.marketplace_name !== 'null' && order.marketplace_name !== 'undefined'
+            ? order.marketplace_name
+            : 'Sem marketplace';
           
           return `
             <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-top:1px solid #f3f4f6;gap:8px;">
@@ -245,7 +252,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 data-delete-order-btn
                 data-order-id="${order.order_id}"
                 data-order-number="${order.order_number}"
-                data-order-store="${order.marketplace_name || 'Sem marketplace'}"
+                data-order-store="${safeStore}"
                 style="background:#ef4444;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer;flex-shrink:0;font-weight:500;transition:background 0.2s;"
                 onmouseover="this.style.background='#dc2626'"
                 onmouseout="this.style.background='#ef4444'"
@@ -328,7 +335,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           <AlertDialogHeader>
             <AlertDialogTitle>
               Você tem certeza que quer excluir o pedido #{orderToDelete?.number}
-              {orderToDelete?.store && orderToDelete.store !== 'null' ? ` do marketplace ${orderToDelete.store}` : ''}?
+              {orderToDelete?.store && orderToDelete.store !== 'null' && orderToDelete.store !== 'Sem marketplace' ? ` do marketplace ${orderToDelete.store}` : ''}?
             </AlertDialogTitle>
             <AlertDialogDescription>
               Essa ação é irreversível. O pedido será permanentemente excluído do sistema, incluindo todos os itens relacionados.
@@ -372,6 +379,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               <p className="text-xs text-gray-500 dark:text-gray-400">Custo</p>
               <p className="text-xl font-bold text-red-600">{formatCurrency(totalCost)}</p>
             </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Lucro</p>
+              <p className={`text-xl font-bold ${totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(totalProfit)}</p>
+            </div>
           </div>
         </div>
         <Select value={period} onValueChange={(value) => setPeriod(value as PeriodFilter)}>
@@ -389,7 +400,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
       {data.length > 0 ? (
         <div ref={chartRef} className="relative">
-          <Chart options={chartOptions} series={chartSeries} type="area" height={300} />
+          <Chart key={JSON.stringify(data.map(d => d.period_label + d.total_cost))} options={chartOptions} series={chartSeries} type="area" height={300} />
         </div>
       ) : (
         <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">

@@ -67,10 +67,7 @@ export function useGeneralFinancialSummary() {
 
     fetchSummary();
     
-    // Atualizar a cada 30 segundos
-    const interval = setInterval(fetchSummary, 30000);
-    
-    return () => clearInterval(interval);
+    return () => {};
   }, []);
 
   return { summary, loading, error, refresh: () => getGeneralFinancialSummary().then(setSummary) };
@@ -104,10 +101,7 @@ export function useTopProductsByMarketplace(limit = 5) {
 
     fetchTopProducts();
     
-    // Atualizar a cada 30 segundos
-    const interval = setInterval(fetchTopProducts, 30000);
-    
-    return () => clearInterval(interval);
+    return () => {};
   }, [limit]);
 
   return { topPriceProducts, topProfitProducts, loading, error };
@@ -135,10 +129,7 @@ export function useProductCountByMarketplace() {
 
     fetchCounts();
     
-    // Atualizar a cada 30 segundos
-    const interval = setInterval(fetchCounts, 30000);
-    
-    return () => clearInterval(interval);
+    return () => {};
   }, []);
 
   return { counts, loading, error };

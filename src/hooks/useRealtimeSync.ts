@@ -27,16 +27,14 @@ export function useRealtimeSync({
 
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const onUpdateRef = useRef(onUpdate);
-  onUpdateRef.current = onUpdate;
+
+  useEffect(() => {
+    onUpdateRef.current = onUpdate;
+  });
 
   const handleUpdate = () => {
     setLastUpdate(new Date());
     onUpdateRef.current();
-  };
-
-  const startPolling = () => {
-    if (pollingRef.current) return;
-    pollingRef.current = setInterval(handleUpdate, pollingInterval);
   };
 
   const stopPolling = () => {
@@ -68,8 +66,8 @@ export function useRealtimeSync({
       handleUpdate();
     });
 
-    // Start polling as fallback; cancel it once Realtime connects
-    startPolling();
+    // Start polling as fallback only if realtime is not available
+    // startPolling(); // Disabled: polling causes unwanted auto-refresh every 30s
 
     // Give Realtime a moment to connect before assuming it failed
     const connectionTimeout = setTimeout(() => {
@@ -84,7 +82,6 @@ export function useRealtimeSync({
       stopPolling();
       clearTimeout(connectionTimeout);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, pollingInterval]);
 
   return { isConnected, lastUpdate };
