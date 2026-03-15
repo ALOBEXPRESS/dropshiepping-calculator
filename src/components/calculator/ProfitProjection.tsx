@@ -416,7 +416,7 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
         </div>
         <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
           <p className="text-xs font-bold opacity-70 mb-2 uppercase text-white">Total de custo</p>
-          <p className="text-2xl font-bold text-white">R$ {formatCompactCurrency(salesStats.totalRevenue - salesStats.totalProfit)}</p>
+          <p className="text-2xl font-bold text-white">R$ {formatCompactCurrency(salesStats.totalCost)}</p>
           <p className="text-xs opacity-70 mt-1 text-white">Custo real dos produtos vendidos</p>
         </div>
       </div>

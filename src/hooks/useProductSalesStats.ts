@@ -6,6 +6,7 @@ export interface ProductSalesStats {
   totalQuantity: number;
   totalProfit: number;
   totalRevenue: number;
+  totalCost: number;
 }
 
 export const useProductSalesStats = (productId?: string) => {
@@ -13,7 +14,8 @@ export const useProductSalesStats = (productId?: string) => {
     totalSales: 0,
     totalQuantity: 0,
     totalProfit: 0,
-    totalRevenue: 0
+    totalRevenue: 0,
+    totalCost: 0
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +27,8 @@ export const useProductSalesStats = (productId?: string) => {
           totalSales: 0,
           totalQuantity: 0,
           totalProfit: 0,
-          totalRevenue: 0
+          totalRevenue: 0,
+          totalCost: 0
         });
         setLoading(false);
         return;
@@ -42,6 +45,7 @@ export const useProductSalesStats = (productId?: string) => {
             quantity,
             total_price,
             profit,
+            cost,
             order:orders!inner(
               status
             )
@@ -56,12 +60,14 @@ export const useProductSalesStats = (productId?: string) => {
         const totalQuantity = data?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
         const totalProfit = data?.reduce((sum, item) => sum + (Number(item.profit) || 0), 0) || 0;
         const totalRevenue = data?.reduce((sum, item) => sum + (Number(item.total_price) || 0), 0) || 0;
+        const totalCost = data?.reduce((sum, item) => sum + (Number(item.cost) || 0), 0) || 0;
 
         setStats({
           totalSales,
           totalQuantity,
           totalProfit,
-          totalRevenue
+          totalRevenue,
+          totalCost
         });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erro ao carregar estatísticas');
