@@ -1540,10 +1540,14 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       </div>
 
       <div className="my-6 border-t border-white/30" />
-      {/* Análise de Lucro + Produtos Mais Lucrativos — grid 2 colunas */}
+      
+      {/* Grid 2 colunas: Coluna 1 (Análise de Lucro com Produtos) | Coluna 2 (Performance + Total produtos) */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-6">
-      {/* Análise de Lucro - Breakdown de Custos */}
-      <div className="rounded-xl bg-black/25 border border-white/10 p-4 backdrop-blur-sm">
+        
+        {/* COLUNA 1: Análise de Lucro com Produtos Mais Lucrativos integrado */}
+        <div className="flex flex-col gap-4">
+          {/* Análise de Lucro - Breakdown de Custos */}
+          <div className="rounded-xl bg-black/25 border border-white/10 p-4 backdrop-blur-sm">
         <div className="flex items-center justify-between mb-4">
           <p className="text-xs uppercase font-bold tracking-widest text-white flex items-center gap-2">
             <DollarSign className="w-3.5 h-3.5 text-white/80" />
@@ -1642,78 +1646,81 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
             <span className="font-semibold text-white">R$ {formatMoney(profitAnalysis.totalExpenses)}</span>
           </div>
         </div>
-      </div>
-
-      {/* Produtos Mais Lucrativos */}
-      <div className="flex flex-col gap-4">
-      <div className="rounded-xl bg-black/25 border border-white/10 p-4 backdrop-blur-sm">
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-xs uppercase font-bold tracking-widest text-white flex items-center gap-2">
-            <TrendingUp className="w-3.5 h-3.5 text-white/80" />
-            Produtos Mais Lucrativos
-          </p>
-          <span className="text-xs text-white/50">Top 5</span>
         </div>
 
-        {topProductsLoading ? (
-          <div className="space-y-2">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-12 rounded-lg bg-white/10 animate-pulse" />
-            ))}
+        {/* Produtos Mais Lucrativos - Agora dentro da região marcada */}
+        <div className="rounded-xl bg-black/25 border border-white/10 p-4 backdrop-blur-sm">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs uppercase font-bold tracking-widest text-white flex items-center gap-2">
+              <TrendingUp className="w-3.5 h-3.5 text-white/80" />
+              Produtos Mais Lucrativos
+            </p>
+            <span className="text-xs text-white/50">Top 5</span>
           </div>
-        ) : topProducts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-white/40">
-            <Package className="w-8 h-8 mb-2" />
-            <p className="text-xs">Nenhum dado disponível</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {topProducts.map((product, index) => {
-              const rankColors = [
-                { bg: 'bg-[#fe2c55]/20', border: 'border-[#fe2c55]/40', text: 'text-[#fe2c55]', dot: 'bg-gradient-to-br from-[#fe2c55] to-[#d91c42]' },
-                { bg: 'bg-zinc-400/15', border: 'border-zinc-400/30', text: 'text-zinc-300', dot: 'bg-gradient-to-br from-zinc-300 to-zinc-500' },
-                { bg: 'bg-orange-400/15', border: 'border-orange-400/30', text: 'text-orange-300', dot: 'bg-gradient-to-br from-orange-400 to-orange-600' },
-                { bg: 'bg-white/5', border: 'border-white/10', text: 'text-white/60', dot: 'bg-white/30' },
-                { bg: 'bg-white/5', border: 'border-white/10', text: 'text-white/60', dot: 'bg-white/30' },
-              ];
-              const rank = rankColors[index] ?? rankColors[4];
-              return (
-                <div key={product.productName} className={`flex items-center gap-3 rounded-lg p-2.5 border ${rank.bg} ${rank.border}`}>
-                  {/* Rank badge */}
-                  <div className={`w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-black text-white ${rank.dot}`}>
-                    {index + 1}
-                  </div>
-                  {/* Imagem ou placeholder */}
-                  {product.productImageUrl ? (
-                    <img src={product.productImageUrl} alt={product.productName} className="w-8 h-8 rounded object-cover flex-shrink-0 border border-white/10" />
-                  ) : (
-                    <div className="w-8 h-8 rounded bg-white/10 flex-shrink-0 flex items-center justify-center">
-                      <Package className="w-4 h-4 text-white/30" />
+
+          {topProductsLoading ? (
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-12 rounded-lg bg-white/10 animate-pulse" />
+              ))}
+            </div>
+          ) : topProducts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-white/40">
+              <Package className="w-8 h-8 mb-2" />
+              <p className="text-xs">Nenhum dado disponível</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {topProducts.map((product, index) => {
+                const rankColors = [
+                  { bg: 'bg-[#fe2c55]/20', border: 'border-[#fe2c55]/40', text: 'text-[#fe2c55]', dot: 'bg-gradient-to-br from-[#fe2c55] to-[#d91c42]' },
+                  { bg: 'bg-zinc-400/15', border: 'border-zinc-400/30', text: 'text-zinc-300', dot: 'bg-gradient-to-br from-zinc-300 to-zinc-500' },
+                  { bg: 'bg-orange-400/15', border: 'border-orange-400/30', text: 'text-orange-300', dot: 'bg-gradient-to-br from-orange-400 to-orange-600' },
+                  { bg: 'bg-white/5', border: 'border-white/10', text: 'text-white/60', dot: 'bg-white/30' },
+                  { bg: 'bg-white/5', border: 'border-white/10', text: 'text-white/60', dot: 'bg-white/30' },
+                ];
+                const rank = rankColors[index] ?? rankColors[4];
+                return (
+                  <div key={product.productName} className={`flex items-center gap-3 rounded-lg p-2.5 border ${rank.bg} ${rank.border}`}>
+                    {/* Rank badge */}
+                    <div className={`w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-black text-white ${rank.dot}`}>
+                      {index + 1}
                     </div>
-                  )}
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-white truncate">{product.productName}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] text-white/50">{product.totalQuantity} vendas</span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${rank.bg} ${rank.border} ${rank.text}`}>
-                        {product.avgMargin.toFixed(1)}%
-                      </span>
+                    {/* Imagem ou placeholder */}
+                    {product.productImageUrl ? (
+                      <img src={product.productImageUrl} alt={product.productName} className="w-8 h-8 rounded object-cover flex-shrink-0 border border-white/10" />
+                    ) : (
+                      <div className="w-8 h-8 rounded bg-white/10 flex-shrink-0 flex items-center justify-center">
+                        <Package className="w-4 h-4 text-white/30" />
+                      </div>
+                    )}
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-white truncate">{product.productName}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] text-white/50">{product.totalQuantity} vendas</span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${rank.bg} ${rank.border} ${rank.text}`}>
+                          {product.avgMargin.toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                    {/* Lucro */}
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-xs font-bold text-green-300">R$ {formatMoney(product.totalProfit)}</p>
+                      <p className="text-[10px] text-white/40">lucro</p>
                     </div>
                   </div>
-                  {/* Lucro */}
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-xs font-bold text-green-300">R$ {formatMoney(product.totalProfit)}</p>
-                    <p className="text-[10px] text-white/40">lucro</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
-      {/* Performance por Marketplace - Redesigned */}
-      <div className="rounded-xl bg-black/25 border border-white/10 p-4 backdrop-blur-sm">
+
+      {/* COLUNA 2: Performance por Marketplace + Total de produtos */}
+      <div className="flex flex-col gap-4">
+        {/* Performance por Marketplace - Redesigned */}
+        <div className="rounded-xl bg-black/25 border border-white/10 p-4 backdrop-blur-sm">
         <div className="flex items-center gap-2 mb-4">
           <div className="p-1.5 rounded-lg bg-purple-500/20 border border-purple-400/30">
             <Store className="w-4 h-4 text-purple-400" />
@@ -1845,27 +1852,29 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
           </>
         )}
       </div>
+
+      {/* Total de produtos por marketplace - Movido para baixo do Performance */}
+      <div className="rounded-xl bg-black/25 border border-white/10 p-4 backdrop-blur-sm">
+        <p className="text-xs uppercase font-bold tracking-widest text-white mb-3">Total de produtos por marketplace</p>
+        <div className="space-y-2 text-sm">
+          {Object.keys(marketplaceTotals).length === 0 ? (
+            <span className="text-white/80">Nenhum produto cadastrado</span>
+          ) : (
+            Object.entries(marketplaceTotals).map(([label, total]) => (
+              <div key={label} className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-black/20 border border-white/5">
+                <span className="text-white/80">{label}</span>
+                <span className="font-bold text-white">{total}</span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
       </div>{/* fim col2 flex */}
-      </div>{/* fim grid 2 colunas análise + produtos */}
+      </div>{/* fim grid 2 colunas */}
 
       <div className="grid gap-6 xl:grid-cols-2 mb-6">
         <div className="rounded-lg bg-black/20 border border-white/10 p-3 h-full flex flex-col">
           <div className="space-y-3 flex-1">
-            <div className="rounded-lg bg-black/20 border border-white/10 p-3">
-              <p className="text-xs uppercase font-semibold tracking-wide">Total de produtos por marketplace</p>
-              <div className="mt-2 space-y-1 text-sm">
-                {Object.keys(marketplaceTotals).length === 0 ? (
-                  <span className="text-white/80">Nenhum produto cadastrado</span>
-                ) : (
-                  Object.entries(marketplaceTotals).map(([label, total]) => (
-                    <div key={label} className="flex items-center justify-between">
-                      <span>{label}</span>
-                      <span className="font-bold">{total}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
             <div className="rounded-lg bg-black/20 border border-white/10 p-3">
               <p className="text-xs uppercase font-semibold tracking-wide">Capital de giro disponível</p>
               <p className="mt-2 text-lg font-bold">R$ {formatMoney(parseCurrency(workingCapital || 0))}</p>

@@ -48,6 +48,7 @@
     "react-avatar": "^5.0.4",
     "react-dom": "^19.2.0",
     "react-is": "^19.2.4",
+    "react-loading-skeleton": "^3.5.0",
     "react-router-dom": "^7.13.0",
     "react-simple-maps": "^3.0.0",
     "recharts": "^3.7.0",
