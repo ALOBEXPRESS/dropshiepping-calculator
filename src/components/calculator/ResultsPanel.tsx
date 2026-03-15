@@ -136,7 +136,7 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
   };
 
   return (
-    <Card ref={cardRef} className="bg-transparent border-none shadow-xl relative overflow-hidden animate-on-scroll">
+    <Card ref={cardRef} className="bg-transparent border-none shadow-xl relative overflow-hidden" style={{ opacity: 1, visibility: 'visible' }}>
         <div className="absolute inset-0 z-0">
             <img src={contactBg} alt="Background" className="w-full h-full object-cover opacity-20" />
             <div className="absolute inset-0 bg-black/10" />

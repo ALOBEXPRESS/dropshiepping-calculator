@@ -31,7 +31,7 @@ export const CollapsibleSection = ({ title, icon, children, defaultOpen = false,
   };
 
   return (
-    <Card className={`mt-8 shadow-xl overflow-hidden backdrop-blur-xl bg-white/95 dark:bg-gray-900/95 border border-white/20 dark:border-gray-700/20 will-change-transform ${className}`}>
+    <Card className={`mt-8 shadow-xl overflow-hidden backdrop-blur-xl bg-white dark:bg-gray-900 border border-white/20 dark:border-gray-700/20 ${className}`} style={{ opacity: 1, visibility: 'visible' }}>
       <CardHeader 
         className="cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors select-none"
         onClick={toggle}

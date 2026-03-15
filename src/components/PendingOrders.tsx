@@ -350,7 +350,7 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed }
               {(() => {
                 const icon = getMarketplaceIcon(order.marketplace_name);
                 return (
-                  <div className="absolute top-3 right-3 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm px-2 py-2 rounded-lg shadow-lg border border-gray-200 dark:border-zinc-700">
+                  <div className="absolute top-3 right-3 bg-white dark:bg-zinc-900 backdrop-blur-sm px-2 py-2 rounded-lg shadow-lg border border-gray-200 dark:border-zinc-700" style={{ opacity: 1, visibility: 'visible' }}>
                     {icon ? (
                       <img 
                         src={icon} 

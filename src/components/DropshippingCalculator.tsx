@@ -3141,11 +3141,11 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                     }`}>- R$ {formatMoney(calculations.totalFees)}</span>
                   </div>
 
-                  <div className={`flex justify-between items-center py-4 rounded-lg px-4 mt-2 border shadow-lg animate-on-scroll ${
+                  <div className={`flex justify-between items-center py-4 rounded-lg px-4 mt-2 border shadow-lg ${
                      calculations.marginStatus === 'negative' ? 'bg-red-600 border-red-500' :
                      calculations.marginStatus === 'excellent' ? 'bg-[#16A34A] border-green-600' :
                      'bg-[#DCFCE7] border-green-200'
-                   }`}>
+                   }`} style={{ opacity: 1, visibility: 'visible' }}>
                      <span className={`font-bold font-iceland text-xl ${
                          calculations.marginStatus === 'negative' || calculations.marginStatus === 'excellent' ? 'text-white' : 'text-black'
                      }`}>Lucro Líquido</span>
@@ -3167,11 +3167,11 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                             : 'Lucro dentro do recomendado.'}
                    </p>
 
-                   <div className={`flex justify-between items-center py-4 rounded-lg px-4 border shadow-lg animate-on-scroll ${
+                   <div className={`flex justify-between items-center py-4 rounded-lg px-4 border shadow-lg ${
                      calculations.marginStatus === 'negative' ? 'bg-red-600 border-red-500' :
                      calculations.marginStatus === 'excellent' ? 'bg-[#16A34A] border-green-600' :
                      'bg-[#DCFCE7] border-green-200'
-                   }`}>
+                   }`} style={{ opacity: 1, visibility: 'visible' }}>
                      <span className={`font-bold font-iceland text-xl ${
                          calculations.marginStatus === 'negative' || calculations.marginStatus === 'excellent' ? 'text-white' : 'text-black'
                      }`}>Margem de Lucro</span>

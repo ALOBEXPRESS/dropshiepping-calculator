@@ -839,7 +839,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onDelete, onE
         object-fit: cover !important;
       }
     `}</style>
-    <AnimatedCard className="rounded-xl p-4 shadow-sm relative group h-full flex flex-col justify-between min-w-0 backdrop-blur-xl bg-white/95 dark:bg-gray-900/95 border border-white/20 dark:border-gray-700/20" data-product-id={product.id}>
+    <div style={{ opacity: 1, visibility: 'visible' }}>
+      <AnimatedCard className="rounded-xl p-4 shadow-sm relative group h-full flex flex-col justify-between min-w-0 backdrop-blur-xl bg-white dark:bg-gray-900 border border-white/20 dark:border-gray-700/20" data-product-id={product.id}>
       {(promoVideoChannelsWithLinks.length > 0 || hasCompleteInvestData) && (
         <div className="absolute left-2 right-2 top-1/2 z-10 flex -translate-y-1/2 items-center justify-between pointer-events-none">
           <button
@@ -1359,6 +1360,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onDelete, onE
         </button>
       </div>
     </AnimatedCard>
+    </div>
     <Dialog open={isInvestOpen} onOpenChange={(open) => {
       setIsInvestOpen(open);
       if (!open) {
