@@ -12,6 +12,12 @@ interface HeroStats {
   productsChange?: number;
 }
 
+interface RevenueReportItem {
+  revenue: number;
+  cost: number;
+  profit: number;
+}
+
 export const useHeroStats = (organizationId: string, refreshTrigger?: number) => {
   const [stats, setStats] = useState<HeroStats>({
     totalRevenue: 0,
@@ -30,10 +36,16 @@ export const useHeroStats = (organizationId: string, refreshTrigger?: number) =>
       setError(null);
 
       try {
-        // Buscar estatísticas de pedidos
+        // Usar get_revenue_report para obter lucro total com custos dinâmicos
+        const { data: revenueData, error: revenueError } = await supabase
+          .rpc('get_revenue_report', { org_id: organizationId });
+
+        if (revenueError) throw revenueError;
+
+        // Buscar estatísticas de pedidos para contagem
         const { data: ordersData, error: ordersError } = await supabase
           .from('orders')
-          .select('total_amount, customer_id')
+          .select('customer_id')
           .eq('organization_id', organizationId);
 
         if (ordersError) throw ordersError;
@@ -46,20 +58,23 @@ export const useHeroStats = (organizationId: string, refreshTrigger?: number) =>
 
         if (productsError) throw productsError;
 
-        // Calcular estatísticas
-        const totalRevenue = ordersData?.reduce((sum, order) => sum + (Number(order.total_amount) || 0), 0) || 0;
+        // Calcular lucro total somando todos os pedidos do revenue report
+        const totalProfit = revenueData?.reduce((sum: number, item: RevenueReportItem) => {
+          return sum + (Number(item.profit) || 0);
+        }, 0) || 0;
+
         const totalOrders = ordersData?.length || 0;
         const uniqueCustomers = new Set(ordersData?.map(order => order.customer_id).filter(Boolean));
         const totalCustomers = uniqueCustomers.size;
 
         setStats({
-          totalRevenue,
+          totalRevenue: totalProfit, // Agora é lucro, não receita
           totalOrders,
           totalCustomers,
           totalProducts: productsCount || 0,
-          ordersChange: totalOrders, // Simplificado - pode ser melhorado com comparação de períodos
+          ordersChange: totalOrders,
           customersChange: totalCustomers,
-          productsChange: 61, // Baseado nos dados atuais
+          productsChange: productsCount || 0,
         });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erro ao carregar estatísticas');
