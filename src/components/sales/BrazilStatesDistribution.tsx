@@ -58,11 +58,6 @@ const brazilianStates = [
 // TopoJSON do Brasil
 const BRAZIL_TOPO_JSON = 'https://gist.githubusercontent.com/ruliana/1ccaaab05ea113b0dff3b22be3b4d637/raw/br-states.json';
 
-// URLs das bandeiras dos estados
-const getStateFlagUrl = (stateCode: string) => {
-  return `https://raw.githubusercontent.com/mateusKoppe/brazilian-states-flags/master/flags/${stateCode.toLowerCase()}.svg`;
-};
-
 export const BrazilStatesDistribution: React.FC<BrazilStatesDistributionProps> = ({ organizationId, refreshTrigger }) => {
   const [statesData, setStatesData] = useState<StateData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -241,14 +236,14 @@ export const BrazilStatesDistribution: React.FC<BrazilStatesDistributionProps> =
             {selectedStateData ? (
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
-                  <img
-                    src={getStateFlagUrl(selectedStateData.state_code)}
-                    alt={`Bandeira ${selectedStateData.state}`}
-                    className="w-20 h-14 object-cover rounded border border-gray-200 dark:border-zinc-700"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
+                  <div className="w-20 h-14 rounded border border-gray-200 dark:border-zinc-700 overflow-hidden flex items-center justify-center bg-white dark:bg-zinc-800">
+                    <img 
+                      src={`/flags/br/${selectedStateData.state_code.toLowerCase()}.svg`} 
+                      width={80} 
+                      alt={`Bandeira ${selectedStateData.state}`}
+                      className="object-contain"
+                    />
+                  </div>
                   <div>
                     <h4 className="text-xl font-bold text-gray-900 dark:text-white">
                       {selectedStateData.state}
@@ -298,10 +293,13 @@ export const BrazilStatesDistribution: React.FC<BrazilStatesDistributionProps> =
                       className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800/50 p-2 rounded-lg transition-colors"
                       onClick={() => setSelectedState(state.state_code)}
                     >
-                      <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${colors.primary} ${colors.secondary} flex items-center justify-center flex-shrink-0 shadow-md`}>
-                        <span className="text-sm font-bold text-white">
-                          {state.state_code}
-                        </span>
+                      <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 shadow-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800">
+                        <img 
+                          src={`/flags/br/${state.state_code.toLowerCase()}.svg`} 
+                          width={48} 
+                          alt={`Bandeira ${state.state}`}
+                          className="object-contain"
+                        />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">

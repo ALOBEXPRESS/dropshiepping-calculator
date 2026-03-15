@@ -179,7 +179,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       {/* KPIs Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4" role="region" aria-label="Indicadores principais de desempenho">
         <KPICard
-          label="Receita Total"
+          label="Lucro Total"
           value={formatCurrency(stats.totalRevenue)}
           trend={stats.revenueChange}
           trendLabel="vs. período anterior"
