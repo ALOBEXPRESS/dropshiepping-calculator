@@ -1,177 +1,195 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState } from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { useMarketplacePerformance } from '@/hooks/sales/useMarketplacePerformance';
-import { Store, TrendingUp, DollarSign, Percent } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Store, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+
+// Importar logos dos marketplaces
+import mercadoLivreImg from '@/imgs/mercadolivre.svg';
+import shopeeImg from '@/imgs/18790-256x256x32.png';
+import amazonImg from '@/imgs/amazon.jpg';
+import tiktokImg from '@/imgs/tiktok-shop-seller-cent-icon-filled-256.png';
+import sheinImg from '@/imgs/shein.svg';
+import enjoeiImg from '@/imgs/enjoei.svg';
+import olxImg from '@/imgs/olx.png';
 
 interface MarketplacePerformanceCardProps {
   organizationId: string;
+  refreshTrigger?: number;
 }
 
-export function MarketplacePerformanceCard({ organizationId }: MarketplacePerformanceCardProps) {
-  const { data, loading } = useMarketplacePerformance(organizationId);
+// Mapeamento de marketplace_id para logo
+const marketplaceLogos: Record<string, string> = {
+  'mercadolivre': mercadoLivreImg,
+  'mercado-livre': mercadoLivreImg,
+  'mercado livre': mercadoLivreImg,
+  'shopee': shopeeImg,
+  'amazon': amazonImg,
+  'tiktok': tiktokImg,
+  'tiktok-shop': tiktokImg,
+  'shein': sheinImg,
+  'enjoei': enjoeiImg,
+  'olx': olxImg,
+};
+
+export function MarketplacePerformanceCard({ organizationId, refreshTrigger }: MarketplacePerformanceCardProps) {
+  const { data, loading } = useMarketplacePerformance(organizationId, refreshTrigger);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
+
+  const getMarketplaceLogo = (marketplaceId: string, marketplaceName: string) => {
+    // Tentar encontrar logo pelo ID ou nome (case insensitive)
+    const key = marketplaceId.toLowerCase();
+    const nameKey = marketplaceName.toLowerCase();
+    
+    return marketplaceLogos[key] || marketplaceLogos[nameKey] || null;
+  };
+
+  const handlePrevious = () => {
+    setCurrentIndex((prev) => (prev === 0 ? data.length - 1 : prev - 1));
+  };
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev === data.length - 1 ? 0 : prev + 1));
+  };
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Performance por Marketplace</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground">Carregando...</p>
-          </div>
-        </CardContent>
+      <Card className="p-6 border-gray-100 dark:border-zinc-800">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
       </Card>
     );
   }
 
-  const totalRevenue = data.reduce((sum, item) => sum + item.revenue, 0);
-  const totalProfit = data.reduce((sum, item) => sum + item.profit, 0);
-  const totalOrders = data.reduce((sum, item) => sum + item.orders_count, 0);
+  if (data.length === 0) {
+    return (
+      <Card className="p-6 border-gray-100 dark:border-zinc-800">
+        <div className="flex items-center gap-2 mb-4">
+          <Store className="w-5 h-5 text-gray-400" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Performance por Marketplace
+          </h3>
+        </div>
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <Store className="w-12 h-12 text-gray-400 mb-3" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Nenhum dado de marketplace disponível
+          </p>
+        </div>
+      </Card>
+    );
+  }
 
-  const getMarketplaceName = (id: string) => {
-    const names: Record<string, string> = {
-      'shopee': 'Shopee',
-      'mercadolivre': 'Mercado Livre',
-      'amazon': 'Amazon',
-      'unknown': 'Outros'
-    };
-    return names[id] || id;
-  };
-
-  const getMarketplaceColor = (index: number) => {
-    const colors = [
-      'from-orange-500 to-orange-600',
-      'from-yellow-500 to-yellow-600',
-      'from-blue-500 to-blue-600',
-      'from-purple-500 to-purple-600'
-    ];
-    return colors[index % colors.length];
-  };
+  const currentMarketplace = data[currentIndex];
+  const logo = getMarketplaceLogo(currentMarketplace.marketplace_id, currentMarketplace.marketplace);
 
   return (
-    <Card role="article" aria-label="Performance por marketplace">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Store className="h-5 w-5" aria-hidden="true" />
+    <Card className="p-6 border-gray-100 dark:border-zinc-800 hover:shadow-lg transition-shadow duration-200">
+      <div className="flex items-center gap-2 mb-6">
+        <Store className="w-5 h-5 text-gray-400" />
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           Performance por Marketplace
-        </CardTitle>
-        <CardDescription>
-          Comparação de desempenho entre plataformas
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-secondary/50 rounded-lg" role="region" aria-label="Resumo geral de marketplaces">
-          <div className="text-center" role="article" aria-label={`Total de pedidos: ${totalOrders}`}>
-            <p className="text-sm text-muted-foreground">Total Pedidos</p>
-            <p className="text-2xl font-bold">{totalOrders}</p>
-          </div>
-          <div className="text-center" role="article" aria-label={`Receita total: ${totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}>
-            <p className="text-sm text-muted-foreground">Receita Total</p>
-            <p className="text-2xl font-bold">
-              {totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+        </h3>
+      </div>
+
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+        Comparação de desempenho entre plataformas
+      </p>
+
+      {/* Carrossel de Marketplace */}
+      <div className="relative">
+        {/* Logo e Nome do Marketplace */}
+        <div className="flex flex-col items-center mb-6">
+          {logo ? (
+            <div className="w-24 h-24 rounded-lg overflow-hidden flex items-center justify-center bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 shadow-md mb-4">
+              <img 
+                src={logo} 
+                alt={currentMarketplace.marketplace}
+                className="w-20 h-20 object-contain"
+              />
+            </div>
+          ) : (
+            <div className="w-24 h-24 rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600 shadow-md mb-4">
+              <Store className="w-12 h-12 text-white" />
+            </div>
+          )}
+          <h4 className="text-xl font-bold text-gray-900 dark:text-white text-center">
+            {currentMarketplace.marketplace}
+          </h4>
+        </div>
+
+        {/* Estatísticas */}
+        <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg mb-6">
+          <div className="text-center">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Pedidos</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {currentMarketplace.orders_count}
             </p>
           </div>
-          <div className="text-center" role="article" aria-label={`Lucro total: ${totalProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}>
-            <p className="text-sm text-muted-foreground">Lucro Total</p>
-            <p className="text-2xl font-bold">
-              {totalProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+          <div className="text-center">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Receita Total</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {formatCurrency(currentMarketplace.revenue)}
+            </p>
+          </div>
+          <div className="text-center">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Lucro Total</p>
+            <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+              {formatCurrency(currentMarketplace.profit)}
             </p>
           </div>
         </div>
 
-        <div className="space-y-4" role="list" aria-label="Lista de marketplaces">
-          {data.map((marketplace, index) => {
-            const revenueShare = totalRevenue > 0 ? (marketplace.revenue / totalRevenue) * 100 : 0;
-            const profitShare = totalProfit > 0 ? (marketplace.profit / totalProfit) * 100 : 0;
+        {/* Navegação */}
+        {data.length > 1 && (
+          <div className="flex items-center justify-between">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePrevious}
+              className="flex items-center gap-1"
+              aria-label="Marketplace anterior"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Anterior
+            </Button>
 
-            return (
-              <div 
-                key={marketplace.marketplace} 
-                className="space-y-2"
-                role="listitem"
-                aria-label={`${getMarketplaceName(marketplace.marketplace)}: ${marketplace.orders_count} pedidos, receita ${marketplace.revenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}, margem ${marketplace.avg_margin.toFixed(1)}%`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${getMarketplaceColor(index)}`} />
-                    <span className="font-medium">{getMarketplaceName(marketplace.marketplace)}</span>
-                    {index === 0 && (
-                      <Badge 
-                        variant="default" 
-                        className="text-xs"
-                        aria-label="Marketplace com melhor desempenho"
-                      >
-                        Top
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className="text-muted-foreground">{marketplace.orders_count} pedidos</span>
-                  </div>
-                </div>
+            <div className="flex items-center gap-2">
+              {data.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentIndex(index)}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    index === currentIndex
+                      ? 'bg-blue-600 w-6'
+                      : 'bg-gray-300 dark:bg-gray-600'
+                  }`}
+                  aria-label={`Ir para marketplace ${index + 1}`}
+                />
+              ))}
+            </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="h-3 w-3 text-blue-500" />
-                        <span className="text-muted-foreground">Receita</span>
-                      </div>
-                      <span className="font-medium">
-                        {marketplace.revenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                      </span>
-                    </div>
-                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full bg-gradient-to-r ${getMarketplaceColor(index)} transition-all`}
-                        style={{ width: `${revenueShare}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground text-right">{revenueShare.toFixed(1)}% do total</p>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-1">
-                        <TrendingUp className="h-3 w-3 text-green-500" />
-                        <span className="text-muted-foreground">Lucro</span>
-                      </div>
-                      <span className="font-medium">
-                        {marketplace.profit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                      </span>
-                    </div>
-                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-green-500 transition-all"
-                        style={{ width: `${profitShare}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground text-right">{profitShare.toFixed(1)}% do total</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-sm pt-1">
-                  <div className="flex items-center gap-1">
-                    <Percent className="h-3 w-3 text-purple-500" />
-                    <span className="text-muted-foreground">Margem Média</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{marketplace.avg_margin.toFixed(1)}%</span>
-                    <Badge 
-                      variant={marketplace.avg_margin >= 20 ? 'default' : 'secondary'} 
-                      className="text-xs"
-                      aria-label={marketplace.avg_margin >= 20 ? 'Margem ótima' : 'Margem regular'}
-                    >
-                      {marketplace.avg_margin >= 20 ? 'Ótimo' : 'Regular'}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </CardContent>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleNext}
+              className="flex items-center gap-1"
+              aria-label="Próximo marketplace"
+            >
+              Próximo
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
+      </div>
     </Card>
   );
 }

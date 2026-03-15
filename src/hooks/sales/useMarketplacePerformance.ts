@@ -3,14 +3,22 @@ import { supabase } from '@/lib/supabase';
 
 interface MarketplacePerformance {
   marketplace: string;
+  marketplace_id: string;
   orders_count: number;
   revenue: number;
   profit: number;
   avg_margin: number;
-  total_commission: number;
 }
 
-export function useMarketplacePerformance(organizationId: string) {
+interface RevenueReportItem {
+  marketplace_id: string;
+  marketplace: string;
+  revenue: number;
+  cost: number;
+  profit: number;
+}
+
+export function useMarketplacePerformance(organizationId: string, refreshTrigger?: number) {
   const [data, setData] = useState<MarketplacePerformance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -20,55 +28,53 @@ export function useMarketplacePerformance(organizationId: string) {
       try {
         setLoading(true);
         
-        const { data: ordersData, error: ordersError } = await supabase
-          .from('orders')
-          .select('marketplace_id, marketplace, total_amount, total_profit, profit_margin, marketplace_commission')
-          .eq('organization_id', organizationId)
-          .eq('status', 'completed');
+        // Usar get_revenue_report para obter dados com custos dinâmicos
+        const { data: revenueData, error: revenueError } = await supabase
+          .rpc('get_revenue_report', { org_id: organizationId });
 
-        if (ordersError) throw ordersError;
+        if (revenueError) throw revenueError;
 
-        // Group by marketplace_id
+        // Agrupar por marketplace
         interface GroupedMarketplace {
           marketplace: string;
+          marketplace_id: string;
           orders_count: number;
           revenue: number;
           profit: number;
-          avg_margin: number;
-          total_commission: number;
-          margin_sum: number;
+          cost: number;
         }
 
-        const grouped = ordersData.reduce((acc, order) => {
-          const key = order.marketplace_id || 'unknown';
-          const name = order.marketplace || key;
+        const grouped = revenueData.reduce((acc: Record<string, GroupedMarketplace>, item: RevenueReportItem) => {
+          const key = item.marketplace_id || 'unknown';
+          const name = item.marketplace || 'Sem marketplace';
+          
           if (!acc[key]) {
             acc[key] = {
               marketplace: name,
+              marketplace_id: key,
               orders_count: 0,
               revenue: 0,
               profit: 0,
-              avg_margin: 0,
-              total_commission: 0,
-              margin_sum: 0
+              cost: 0,
             };
           }
+          
           acc[key].orders_count += 1;
-          acc[key].revenue += order.total_amount || 0;
-          acc[key].profit += order.total_profit || 0;
-          acc[key].margin_sum += order.profit_margin || 0;
-          acc[key].total_commission += order.marketplace_commission || 0;
+          acc[key].revenue += Number(item.revenue) || 0;
+          acc[key].profit += Number(item.profit) || 0;
+          acc[key].cost += Number(item.cost) || 0;
+          
           return acc;
-        }, {} as Record<string, GroupedMarketplace>);
+        }, {});
 
-        // Calculate averages and format
-        const result = Object.values(grouped).map((item: GroupedMarketplace) => ({
+        // Calcular margem média e formatar
+        const result = (Object.values(grouped) as GroupedMarketplace[]).map((item) => ({
           marketplace: item.marketplace,
+          marketplace_id: item.marketplace_id,
           orders_count: item.orders_count,
           revenue: item.revenue,
           profit: item.profit,
-          avg_margin: item.orders_count > 0 ? item.margin_sum / item.orders_count : 0,
-          total_commission: item.total_commission
+          avg_margin: item.revenue > 0 ? (item.profit / item.revenue) * 100 : 0,
         })).sort((a, b) => b.profit - a.profit);
 
         setData(result);
@@ -82,7 +88,7 @@ export function useMarketplacePerformance(organizationId: string) {
     if (organizationId) {
       fetchData();
     }
-  }, [organizationId]);
+  }, [organizationId, refreshTrigger]);
 
   return { data, loading, error };
 }
