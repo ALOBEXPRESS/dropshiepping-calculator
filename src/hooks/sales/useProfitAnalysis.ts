@@ -46,7 +46,10 @@ export const useProfitAnalysis = (organizationId: string, refreshTrigger?: numbe
       try {
         // Usar get_revenue_report para obter dados com custos dinâmicos
         const { data: revenueData, error: revenueError } = await supabase
-          .rpc('get_revenue_report', { org_id: organizationId });
+          .rpc('get_revenue_report', { 
+            p_organization_id: organizationId,
+            p_period: 'monthly'
+          });
 
         if (revenueError) throw revenueError;
 

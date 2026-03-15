@@ -38,7 +38,10 @@ export const useHeroStats = (organizationId: string, refreshTrigger?: number) =>
       try {
         // Usar get_revenue_report para obter lucro total com custos dinâmicos
         const { data: revenueData, error: revenueError } = await supabase
-          .rpc('get_revenue_report', { org_id: organizationId });
+          .rpc('get_revenue_report', { 
+            p_organization_id: organizationId,
+            p_period: 'monthly'
+          });
 
         if (revenueError) throw revenueError;
 
