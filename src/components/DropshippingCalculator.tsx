@@ -3723,6 +3723,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
             </div>
           )}
         </div>
+        </>
         ) : null}
 
               {!showOnlyProducts && (
