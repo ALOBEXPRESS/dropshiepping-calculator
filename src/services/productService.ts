@@ -1205,7 +1205,6 @@ const stripDimensionFields = (payload: ProductPayload): ProductPayload => {
 
 export const ProductService = {
   async getAll(organizationId?: string): Promise<ProductItem[]> {
-    console.log('[DEBUG ProductService] getAll called with organizationId:', organizationId);
     await probeDimensionColumns(organizationId);
     const selectColumns = supportsReputationColumns === false && supportsDimensionColumns === false
       ? productSelectColumnsWithoutReputationOrDimensions
@@ -1217,9 +1216,7 @@ export const ProductService = {
     // Order by updated_at first (most recently updated products appear first)
     const base = supabase.from('products').select(selectColumns).order('updated_at', { ascending: false });
     const primary = organizationId ? base.eq('organization_id', organizationId) : base;
-    console.log('[DEBUG ProductService] Executing query...');
     const { data, error } = await primary;
-    console.log('[DEBUG ProductService] Query result:', { dataLength: data?.length, error });
     if (!error) {
       if (supportsReputationColumns === null && selectColumns === productSelectColumns) {
         supportsReputationColumns = true;

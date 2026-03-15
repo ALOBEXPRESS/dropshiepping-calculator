@@ -514,11 +514,9 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
   }, []);
 
   const loadProducts = useCallback(async () => {
-    console.log('[DEBUG Products Page] loadProducts called, organizationId:', organizationId);
     setIsProductsLoading(true);
     try {
       const list = await ProductService.getAll(organizationId ?? undefined);
-      console.log('[DEBUG Products Page] Products fetched:', list.length, 'products');
       handleProductsResponse(list);
       
       // Sincronizar registeredBlingBySku com produtos reais
@@ -1968,13 +1966,8 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
 
   useEffect(() => {
     // if (!effectiveAccessToken) return;
-    console.log('[DEBUG Products Page] useEffect triggered, organizationId:', organizationId);
-    if (!organizationId) {
-      console.log('[DEBUG Products Page] No organizationId, skipping loadProducts');
-      return;
-    }
+    if (!organizationId) return;
     const timeoutId = window.setTimeout(() => {
-      console.log('[DEBUG Products Page] Calling loadProducts...');
       void loadProducts();
     }, 0);
     return () => window.clearTimeout(timeoutId);
@@ -2135,7 +2128,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         {!showOnlyProducts && (
         <div className="grid md:grid-cols-2 gap-6">
           {/* Painel de Entrada */}
-            <Card className="shadow-xl animate-on-scroll backdrop-blur-xl bg-white/95 dark:bg-gray-900/95 border border-white/20 dark:border-gray-700/20 will-change-transform">
+            <Card className="shadow-xl backdrop-blur-xl bg-white dark:bg-gray-900 border border-white/20 dark:border-gray-700/20" style={{ opacity: 1, visibility: 'visible' }}>
               <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
                 <div className="flex flex-row items-center gap-2">
                    <Calculator className="w-6 h-6 text-blue-600" />
@@ -2161,7 +2154,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 </GradientButton>
               </div>
             </CardHeader>
-            <CardContent className="space-y-5 pt-4">
+            <CardContent className="space-y-5 pt-4" style={{ opacity: 1, visibility: 'visible' }}>
               {/* Feedback Messages - Agora usando Toasts (Sonner) */}
               <ProductInfo 
                 productName={productName}
@@ -3495,21 +3488,6 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         )}
         {showOnlyProducts ? (
           <>
-            {/* Debug logs for products page */}
-            {console.log('[DEBUG Products Page] Rendering products page:', {
-              showOnlyProducts,
-              isProductsLoading,
-              productsLength: products.length,
-              effectiveProductsLength: effectiveProducts.length,
-              filteredProductsLength: filteredProducts.length,
-              pagedProductsLength: pagedProducts.length,
-              shouldShowProductsLoading,
-              currentPage,
-              totalPages,
-              productFilters,
-              organizationId
-            })}
-          {console.log('[DEBUG Products Page] showProductsList:', showProductsList)}
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="bg-[#0d0d0d] text-white rounded-xl p-5 shadow-lg border border-white/10 flex flex-col">
               <ElectricBorder color="#fe2c55" speed={0.8} chaos={0.1} borderRadius={16} className="flex flex-col flex-1">
@@ -3651,22 +3629,18 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                     <div className="text-sm text-gray-500">Nenhum produto encontrado com os filtros atuais.</div>
                   ) : (
                     <>
-                      {console.log('[DEBUG Products Page] Rendering ProductCards, count:', pagedProducts.length)}
                       <div className="grid gap-4 grid-cols-1 md:grid-cols-2" style={{ opacity: 1, visibility: 'visible', display: 'grid' }}>
-                        {pagedProducts.map((product) => {
-                          console.log('[DEBUG Products Page] Rendering ProductCard for:', product.id, product.name);
-                          return (
-                            <div key={product.id} style={{ opacity: 1, visibility: 'visible' }}>
-                              <ProductCard
-                                product={product}
-                                onDelete={handleDeleteProductAnimated}
-                                onEdit={handleEditProductClick}
-                                onDuplicate={handleDuplicateProductClick}
-                                onInvestSave={handleInvestSaveProduct}
-                              />
-                            </div>
-                          );
-                        })}
+                        {pagedProducts.map((product) => (
+                          <div key={product.id} style={{ opacity: 1, visibility: 'visible' }}>
+                            <ProductCard
+                              product={product}
+                              onDelete={handleDeleteProductAnimated}
+                              onEdit={handleEditProductClick}
+                              onDuplicate={handleDuplicateProductClick}
+                              onInvestSave={handleInvestSaveProduct}
+                            />
+                          </div>
+                        ))}
                       </div>
                       {totalPages > 1 && (
                         <div className="flex items-center justify-center gap-2 pt-6">
