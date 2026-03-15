@@ -3543,14 +3543,14 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 chaos={0.1}
                 borderRadius={16}
               >
-                <Card id="produtos" className="shadow-xl animate-on-scroll backdrop-blur-xl bg-white/95 dark:bg-gray-900/95 border border-white/20 dark:border-gray-700/20 will-change-transform">
+                <Card id="produtos" className="shadow-xl backdrop-blur-xl bg-white dark:bg-gray-900 border border-white/20 dark:border-gray-700/20" style={{ opacity: 1, visibility: 'visible' }}>
                   <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2 cursor-pointer" onClick={handleNavigateToProducts}>
                     <div className="flex flex-row items-center gap-2">
                       <Package className="w-6 h-6 text-[#fe2c55]" />
                       <CardTitle className="tracking-tight text-2xl font-bold text-gray-800 dark:text-white font-iceland">Produtos adicionados</CardTitle>
                     </div>
                   </CardHeader>
-                <CardContent className="space-y-4 pt-4">
+                <CardContent className="space-y-4 pt-4" style={{ opacity: 1, visibility: 'visible' }}>
                   <div className="flex flex-wrap gap-2">
                     {[
                       { value: 'all', label: 'Todos' },
@@ -3652,18 +3652,19 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                   ) : (
                     <>
                       {console.log('[DEBUG Products Page] Rendering ProductCards, count:', pagedProducts.length)}
-                      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                      <div className="grid gap-4 grid-cols-1 md:grid-cols-2" style={{ opacity: 1, visibility: 'visible', display: 'grid' }}>
                         {pagedProducts.map((product) => {
                           console.log('[DEBUG Products Page] Rendering ProductCard for:', product.id, product.name);
                           return (
-                            <ProductCard
-                              key={product.id}
-                              product={product}
-                              onDelete={handleDeleteProductAnimated}
-                              onEdit={handleEditProductClick}
-                              onDuplicate={handleDuplicateProductClick}
-                              onInvestSave={handleInvestSaveProduct}
-                            />
+                            <div key={product.id} style={{ opacity: 1, visibility: 'visible' }}>
+                              <ProductCard
+                                product={product}
+                                onDelete={handleDeleteProductAnimated}
+                                onEdit={handleEditProductClick}
+                                onDuplicate={handleDuplicateProductClick}
+                                onInvestSave={handleInvestSaveProduct}
+                              />
+                            </div>
                           );
                         })}
                       </div>
