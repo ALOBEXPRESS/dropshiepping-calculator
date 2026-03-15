@@ -2057,15 +2057,15 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
     //   delay: 0.2
     // });
 
-    // Animate Form Elements with Fade In
-    gsap.from(".animate-fadeIn", {
-        opacity: 0,
-        x: -20,
-        duration: 0.5,
-        stagger: 0.1,
-        ease: "power2.out",
-        delay: 0.5
-    });
+    // Animate Form Elements with Fade In - DISABLED: removed to fix visibility issues in production
+    // gsap.from(".animate-fadeIn", {
+    //     opacity: 0,
+    //     x: -20,
+    //     duration: 0.5,
+    //     stagger: 0.1,
+    //     ease: "power2.out",
+    //     delay: 0.5
+    // });
   }, { scope: container });
 
   return (
