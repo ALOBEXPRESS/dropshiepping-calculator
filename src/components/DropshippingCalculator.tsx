@@ -517,7 +517,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
   const [editingProduct, setEditingProduct] = useState<ProductItem | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editSessionId, setEditSessionId] = useState(0);
-  const [editMode, setEditMode] = useState<'edit' | 'duplicate'>('edit');
+  const [updatingBlingId, setUpdatingBlingId] = useState<string | null>(null);
 
   const paidTrafficInvestment = Number(calculations?.paidTrafficCost || 0);
   const shopeeTotalBudgetValue = useShopeeAds ? parseCurrency(shopeeTotalBudget || 0) : 0;
@@ -577,29 +577,56 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
 
   const handleEditProductClick = (product: ProductItem) => {
       setEditingProduct(product);
-      setEditMode('edit');
       setEditSessionId(Date.now());
       setIsEditModalOpen(true);
   };
 
   const handleSaveEditProduct = (updatedProduct: ProductItem) => {
-    if (editMode === 'duplicate') {
-      const payload = { ...updatedProduct };
-      delete (payload as Partial<ProductItem>).id;
-      void handleUpsertProduct(payload);
-      return;
-    }
     void handleUpsertProduct(updatedProduct);
   };
   const handleInvestSaveProduct = (updatedProduct: ProductItem) => {
     void handleUpsertProduct(updatedProduct);
   };
 
-  const handleDuplicateProductClick = (product: ProductItem) => {
-      setEditingProduct(product);
-      setEditMode('duplicate');
-      setEditSessionId(Date.now());
-      setIsEditModalOpen(true);
+  const handleBlingUpdate = async (product: ProductItem) => {
+    const webhookUrl = import.meta.env.VITE_N8N_BLING_UPDATE_WEBHOOK_URL;
+    if (!webhookUrl) {
+      toast.error('Webhook de atualização não configurado');
+      return;
+    }
+    setUpdatingBlingId(product.id);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30_000);
+    try {
+      const res = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sku: product.sku,
+          organizationId: product.organizationId,
+          productId: product.id,
+          sellingPrice: product.sellingPrice ? Number(product.sellingPrice) : null,
+          costPrice: product.costPrice ? Number(product.costPrice) : null,
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Produto atualizado com sucesso');
+      } else {
+        toast.error(data.error ?? 'Erro ao atualizar produto');
+      }
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if ((err as Error).name === 'AbortError') {
+        toast.warning('A atualização está demorando mais que o esperado. Verifique o n8n.');
+      } else {
+        toast.error('Erro ao conectar com o webhook');
+      }
+    } finally {
+      setUpdatingBlingId(null);
+    }
   };
 
   // New state for Profit Pricing Overlay
@@ -3808,7 +3835,8 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                               product={product}
                               onDelete={handleDeleteProductAnimated}
                               onEdit={handleEditProductClick}
-                              onDuplicate={handleDuplicateProductClick}
+                              onBlingUpdate={handleBlingUpdate}
+                              isUpdatingBling={updatingBlingId === product.id}
                               onInvestSave={handleInvestSaveProduct}
                             />
                           </div>
@@ -3960,10 +3988,8 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         isOpen={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);
-          setEditMode('edit');
         }}
         onSave={handleSaveEditProduct}
-        mode={editMode}
       />
     </div>
   );

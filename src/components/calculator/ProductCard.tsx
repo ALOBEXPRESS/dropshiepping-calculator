@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Trash2, Edit2, ChevronLeft, ChevronRight, Copy, DollarSign } from 'lucide-react';
+import { Trash2, Edit2, ChevronLeft, ChevronRight, RefreshCw, Loader2, DollarSign } from 'lucide-react';
 import ElectricBorder from '@/components/ui/ElectricBorder';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -227,11 +227,12 @@ interface ProductCardProps {
   product: ProductItem;
   onDelete: (id: string) => void;
   onEdit: (product: ProductItem) => void;
-  onDuplicate: (product: ProductItem) => void;
+  onBlingUpdate: (product: ProductItem) => void;
+  isUpdatingBling?: boolean;
   onInvestSave: (product: ProductItem) => void;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onDelete, onEdit, onDuplicate, onInvestSave }) => {
+export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onDelete, onEdit, onBlingUpdate, isUpdatingBling, onInvestSave }) => {
   const [currentVarIndex, setCurrentVarIndex] = useState(0);
   const [isInvestOpen, setIsInvestOpen] = useState(false);
   const [investStep, setInvestStep] = useState(0);
@@ -883,6 +884,12 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     `}</style>
     <div style={{ opacity: 1, visibility: 'visible' }}>
       <AnimatedCard className="rounded-xl p-4 shadow-sm relative group h-full flex flex-col justify-between min-w-0 backdrop-blur-xl bg-white dark:bg-gray-900 border border-white/20 dark:border-gray-700/20" data-product-id={product.id}>
+      {isUpdatingBling && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-2 rounded-xl bg-background/80 backdrop-blur-sm">
+          <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+          <span className="text-xs text-muted-foreground">Atualizando no Bling...</span>
+        </div>
+      )}
       {(promoVideoChannelsWithLinks.length > 0 || hasCompleteInvestData) && (
         <div className="absolute left-2 right-2 top-1/2 z-10 flex -translate-y-1/2 items-center justify-between pointer-events-none">
           <button
@@ -1383,11 +1390,21 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
           Excluir
         </button>
         <button
-          onClick={() => onDuplicate(product)}
-          className="inline-flex items-center justify-center gap-1 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-3.5 [&_svg]:shrink-0 border bg-background shadow-sm rounded-md px-2 h-8 w-full text-xs text-purple-600 hover:text-purple-700 hover:bg-purple-50 border-purple-100 dark:bg-white dark:border-gray-200 dark:hover:bg-gray-50"
+          onClick={() => onBlingUpdate(product)}
+          disabled={!product.sku || isUpdatingBling || hasVariations}
+          title={
+            !product.sku 
+              ? 'SKU necessário para atualizar' 
+              : hasVariations
+                ? 'Atualização desabilitada para produtos com variações (risco de desvincular variações no Bling)'
+                : 'Atualizar dados do Bling'
+          }
+          className="inline-flex items-center justify-center gap-1 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-3.5 [&_svg]:shrink-0 border bg-background shadow-sm rounded-md px-2 h-8 w-full text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-100 dark:bg-white dark:border-gray-200 dark:hover:bg-gray-50"
         >
-          <Copy className="w-3.5 h-3.5 mr-1" />
-          Duplicar
+          {isUpdatingBling
+            ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+            : <RefreshCw className="w-3.5 h-3.5 mr-1" />}
+          Atualizar
         </button>
         <button
           onClick={() => {
@@ -1722,6 +1739,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   return prevProps.product.id === nextProps.product.id &&
          prevProps.onDelete === nextProps.onDelete &&
          prevProps.onEdit === nextProps.onEdit &&
-         prevProps.onDuplicate === nextProps.onDuplicate &&
+         prevProps.onBlingUpdate === nextProps.onBlingUpdate &&
+         prevProps.isUpdatingBling === nextProps.isUpdatingBling &&
          prevProps.onInvestSave === nextProps.onInvestSave;
 });

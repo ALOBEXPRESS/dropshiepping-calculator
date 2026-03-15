@@ -620,13 +620,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
   const organicSuggestedPrice = parseFloat(organicMetrics?.suggestedPrice ?? '0');
   const organicAdsCostPerSale = parseFloat(organicMetrics?.adsCostPerSale ?? '0');
 
-  // Detect if user changed price/cost/marketplace from original saved values
-  const originalSelling = parseCurrency(product?.sellingPrice ?? 0);
-  const originalCost = parseCurrency(product?.costPrice ?? 0);
-  const currentSelling = parseCurrency(formData.sellingPrice);
-  const currentCost = parseCurrency(formData.costPrice);
-  const originalMarketplace = normalizeMarketplaceValue(product?.marketplace);
-  const pricesChanged = currentSelling !== originalSelling || currentCost !== originalCost || formData.marketplace !== originalMarketplace;
+
 
   // Always prefer organicMetrics (recalculated from pricingService) which correctly
   // deducts cost, commissions and fees. Fall back to stored netRevenue only when

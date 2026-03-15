@@ -7,7 +7,8 @@ interface VirtualizedProductGridProps {
   products: ProductItem[];
   onDelete: (id: string) => void;
   onEdit: (product: ProductItem) => void;
-  onDuplicate: (product: ProductItem) => void;
+  onBlingUpdate: (product: ProductItem) => void;
+  updatingBlingId: string | null;
   onInvestSave: (product: ProductItem) => void;
 }
 
@@ -15,7 +16,8 @@ export const VirtualizedProductGrid: React.FC<VirtualizedProductGridProps> = ({
   products,
   onDelete,
   onEdit,
-  onDuplicate,
+  onBlingUpdate,
+  updatingBlingId,
   onInvestSave,
 }) => {
   const parentRef = useRef<HTMLDivElement>(null);
@@ -64,7 +66,8 @@ export const VirtualizedProductGrid: React.FC<VirtualizedProductGridProps> = ({
                     product={product}
                     onDelete={onDelete}
                     onEdit={onEdit}
-                    onDuplicate={onDuplicate}
+                    onBlingUpdate={onBlingUpdate}
+                    isUpdatingBling={updatingBlingId === product.id}
                     onInvestSave={onInvestSave}
                   />
                 ))}
