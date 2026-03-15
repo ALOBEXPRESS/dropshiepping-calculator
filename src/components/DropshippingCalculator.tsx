@@ -13,8 +13,7 @@ import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
-import Skeleton from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
+import { MoonLoader } from 'react-spinners';
 import logo from '../imgs/Logonome-alobexpress.png';
 import videoBackground from '../video/dollar-animate-real.mp4?url';
 import wooCommerceLogo from '../imgs/free-woocommerce-icon-svg-download-png-226060.webp';
@@ -456,18 +455,28 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
   const [lastFilledBlingSku, setLastFilledBlingSku] = useState('');
 
   // Hook para buscar resumo financeiro real do Bling
-  const { summary: blingFinancialSummary } = useGeneralFinancialSummary();
+  const { summary: blingFinancialSummary, refresh: refreshFinancialSummary } = useGeneralFinancialSummary();
 
   // Hook para análise de lucro detalhada (breakdown de custos)
   const { data: profitAnalysis } = useProfitAnalysis(organizationId ?? '');
   // Hook para produtos mais lucrativos
-  const { products: topProducts, loading: topProductsLoading } = useTopProfitableProducts(organizationId ?? '', 5);
+  const { products: topProducts, loading: topProductsLoading, refetch: refetchTopProducts } = useTopProfitableProducts(organizationId ?? '', 5);
   // Hook para Customer Lifetime Value (só KPIs, sem Top 10)
-  const { data: clvData, loading: clvLoading } = useCustomerLifetimeValue(organizationId ?? '');
+  const { data: clvData, loading: clvLoading, refetch: refetchClvData } = useCustomerLifetimeValue(organizationId ?? '');
   // Hook para Performance por Marketplace
-  const { data: marketplacePerformanceData, loading: marketplacePerformanceLoading } = useMarketplacePerformance(organizationId ?? '');
+  const { data: marketplacePerformanceData, loading: marketplacePerformanceLoading, refetch: refetchMarketplacePerformance } = useMarketplacePerformance(organizationId ?? '');
   // Estado para controlar o carrossel de marketplaces
   const [marketplaceCarouselIndex, setMarketplaceCarouselIndex] = useState(0);
+  
+  // Atualizar dados quando o modal abre
+  useEffect(() => {
+    if (isGlobalSummaryOpen) {
+      refreshFinancialSummary();
+      refetchTopProducts();
+      refetchClvData();
+      refetchMarketplacePerformance();
+    }
+  }, [isGlobalSummaryOpen, refreshFinancialSummary, refetchTopProducts, refetchClvData, refetchMarketplacePerformance]);
 
   const handleNavigateToProducts = useCallback((event: MouseEvent<HTMLElement>) => {
     const target = event.target as HTMLElement;
@@ -3782,23 +3791,8 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                     </Select>
                   </div>
                   {shouldShowProductsLoading ? (
-                    <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-                      {Array.from({ length: 6 }).map((_, index) => (
-                        <div key={index} className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                          <div className="flex gap-4">
-                            <Skeleton width={120} height={120} className="rounded-lg" baseColor="#1f2937" highlightColor="#374151" />
-                            <div className="flex-1 space-y-3">
-                              <Skeleton width="80%" height={20} baseColor="#1f2937" highlightColor="#374151" />
-                              <Skeleton width="40%" height={16} baseColor="#1f2937" highlightColor="#374151" />
-                              <Skeleton width="60%" height={16} baseColor="#1f2937" highlightColor="#374151" />
-                              <div className="flex gap-2 mt-4">
-                                <Skeleton width={80} height={32} baseColor="#1f2937" highlightColor="#374151" />
-                                <Skeleton width={80} height={32} baseColor="#1f2937" highlightColor="#374151" />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="flex items-center justify-center py-20">
+                      <MoonLoader color="#ff2a6d" size={40} />
                     </div>
                   ) : effectiveProducts.length === 0 ? (
                     <div className="text-sm text-gray-500">Nenhum produto adicionado ainda.</div>

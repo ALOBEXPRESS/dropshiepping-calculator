@@ -211,7 +211,11 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
   const cost = parseCurrency(product.costPrice || 0);
   const hasNetRevenue = product.netRevenue !== undefined && product.netRevenue !== null && product.netRevenue !== '';
   const netRevenue = hasNetRevenue ? parseCurrency(product.netRevenue!) : (price - cost);
-  const estimatedProfitPerUnit = netRevenue;
+  
+  // Use lucro real das vendas se disponível, senão use netRevenue estimado
+  const estimatedProfitPerUnit = salesStats.totalSales > 0 
+    ? (salesStats.totalProfit / salesStats.totalSales) 
+    : netRevenue;
 
   const scenarios = [
     { units: 50, label: 'VENDER 50 UN' },

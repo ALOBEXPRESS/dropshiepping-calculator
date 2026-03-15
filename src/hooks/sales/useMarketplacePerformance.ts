@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 
 interface MarketplacePerformance {
@@ -15,8 +15,7 @@ export function useMarketplacePerformance(organizationId: string, refreshTrigger
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
-    async function fetchData() {
+  const fetchData = useCallback(async () => {
       try {
         setLoading(true);
         
@@ -102,12 +101,13 @@ export function useMarketplacePerformance(organizationId: string, refreshTrigger
       } finally {
         setLoading(false);
       }
-    }
+    }, [organizationId]);
 
+  useEffect(() => {
     if (organizationId) {
       fetchData();
     }
-  }, [organizationId, refreshTrigger]);
+  }, [organizationId, refreshTrigger, fetchData]);
 
-  return { data, loading, error };
+  return { data, loading, error, refetch: fetchData };
 }
