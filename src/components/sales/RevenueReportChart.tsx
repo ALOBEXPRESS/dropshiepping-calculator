@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -31,6 +31,60 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<{ id: string; number: string; store: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  // Adicionar CSS global para manter tooltip visível ao passar mouse sobre ele
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .apexcharts-tooltip-custom {
+        pointer-events: auto !important;
+      }
+      .apexcharts-tooltip.apexcharts-active {
+        pointer-events: auto !important;
+      }
+      .apexcharts-tooltip:hover {
+        display: block !important;
+        opacity: 1 !important;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
+  // Adicionar event listeners para os botões de excluir no tooltip
+  useEffect(() => {
+    const handleTooltipClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const button = target.closest('[data-delete-order-btn]') as HTMLElement;
+      
+      if (button) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const orderId = button.getAttribute('data-order-id');
+        const orderNumber = button.getAttribute('data-order-number');
+        const orderStore = button.getAttribute('data-order-store');
+        
+        if (orderId && orderNumber && orderStore) {
+          setOrderToDelete({ id: orderId, number: orderNumber, store: orderStore });
+          setDeleteDialogOpen(true);
+        }
+      }
+    };
+
+    // Adicionar listener no documento para capturar cliques nos botões do tooltip
+    document.addEventListener('click', handleTooltipClick, true);
+    document.addEventListener('mousedown', handleTooltipClick, true);
+
+    return () => {
+      document.removeEventListener('click', handleTooltipClick, true);
+      document.removeEventListener('mousedown', handleTooltipClick, true);
+    };
+  }, []);
 
   // Refetch quando refreshTrigger mudar (apenas se for > 0)
   React.useEffect(() => {
@@ -151,6 +205,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     },
     tooltip: {
       enabled: true,
+      followCursor: false,
+      intersect: false,
+      shared: false,
+      fixed: {
+        enabled: false,
+      },
       custom: ({ dataPointIndex }: { dataPointIndex: number }) => {
         if (!data[dataPointIndex]) return '';
         const periodData = data[dataPointIndex];
@@ -158,7 +218,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const cost = Number(periodData.total_cost);
         const profit = revenue - cost;
 
-        const allProducts = periodData.orders_data?.flatMap(order =>
+        const allProducts = periodData.orders_data?.flatMap((order: any) =>
           order.products?.map((p: { name: string }) => p.name) || []
         ) || [];
         const uniqueProducts = [...new Set(allProducts)] as string[];
@@ -171,8 +231,33 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             ).join('') + (uniqueProducts.length > 2 ? '<div style="font-size:11px;color:#9ca3af">...</div>' : '')
           : '<div style="font-size:11px;color:#9ca3af">Sem produtos</div>';
 
+        // Criar lista de pedidos com botão excluir
+        const ordersHtml = periodData.orders_data?.map((order: { order_id: string; order_number: string; marketplace_name: string }) => {
+          const marketplaceName = order.marketplace_name && order.marketplace_name !== 'null' 
+            ? order.marketplace_name 
+            : 'Sem marketplace';
+          const displayText = `${marketplaceName} - #${order.order_number || 'S/N'}`;
+          
+          return `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-top:1px solid #f3f4f6;gap:8px;">
+              <span style="font-size:11px;color:#6b7280;flex:1;">${displayText}</span>
+              <button 
+                data-delete-order-btn
+                data-order-id="${order.order_id}"
+                data-order-number="${order.order_number}"
+                data-order-store="${order.marketplace_name || 'Sem marketplace'}"
+                style="background:#ef4444;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer;flex-shrink:0;font-weight:500;transition:background 0.2s;"
+                onmouseover="this.style.background='#dc2626'"
+                onmouseout="this.style.background='#ef4444'"
+              >
+                Excluir
+              </button>
+            </div>
+          `;
+        }).join('') || '';
+
         return `
-          <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,0.12);min-width:220px;max-width:280px">
+          <div class="apexcharts-tooltip-custom" style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,0.12);min-width:220px;max-width:320px;pointer-events:auto;">
             <div style="font-weight:600;color:#111827;margin-bottom:6px;font-size:13px">${periodData.period_label}</div>
             <div style="margin-bottom:8px">${productLines}</div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
@@ -189,10 +274,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               </div>
               <span style="font-size:12px;font-weight:600;color:#111827">${formatCurrency(cost)}</span>
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;padding-top:6px;border-top:1px solid #e5e7eb">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding-top:6px;border-top:1px solid #e5e7eb;margin-bottom:6px">
               <span style="font-size:12px;font-weight:500;color:#374151">Lucro:</span>
               <span style="font-size:12px;font-weight:700;color:${profitColor}">${formatCurrency(profit)}</span>
             </div>
+            ${ordersHtml}
           </div>`;
       },
     },
@@ -236,12 +322,16 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
   return (
     <>
+      {/* Dialog de confirmação de exclusão */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Tem certeza de que você quer excluir essa métrica?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Você tem certeza que quer excluir o pedido #{orderToDelete?.number}
+              {orderToDelete?.store && orderToDelete.store !== 'null' ? ` do marketplace ${orderToDelete.store}` : ''}?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Essa ação é irreversível. O pedido {orderToDelete?.number} da loja {orderToDelete?.store} será permanentemente excluído do sistema.
+              Essa ação é irreversível. O pedido será permanentemente excluído do sistema, incluindo todos os itens relacionados.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -298,7 +388,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       </div>
 
       {data.length > 0 ? (
-        <div className="relative">
+        <div ref={chartRef} className="relative">
           <Chart options={chartOptions} series={chartSeries} type="area" height={300} />
         </div>
       ) : (

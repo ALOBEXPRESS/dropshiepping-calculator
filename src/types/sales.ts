@@ -63,6 +63,7 @@ export interface TopCustomer {
 
 export interface StockReport {
   product_name: string;
+  product_image: string;
   price: number;
   stock_quantity: number;
   stock_status: 'Out of Stock' | 'Low Stock' | 'High Stock';

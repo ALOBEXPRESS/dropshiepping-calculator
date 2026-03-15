@@ -153,14 +153,16 @@ const Sales: React.FC = () => {
 
       {/* Produtos Lucrativos removido — agora está no Resumo Financeiro Geral */}
 
-      {/* Alertas de Margem Baixa */}
-      <div className="mb-6 animate-on-load">
-        <LowMarginProductsAlert organizationId={organizationId} />
-      </div>
-
-      {/* Informações Secundárias - Stock */}
-      <div className="mb-6 animate-on-load">
-        <StockReportTable organizationId={organizationId} refreshTrigger={refreshKey} />
+      {/* Alertas de Margem Baixa + Relatório de Estoque */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        {/* Coluna 1 - Alertas de Margem Baixa (ocupa 2/3) */}
+        <div className="lg:col-span-2 animate-on-load">
+          <LowMarginProductsAlert organizationId={organizationId} />
+        </div>
+        {/* Coluna 2 - Relatório de Estoque (ocupa 1/3) */}
+        <div className="animate-on-load">
+          <StockReportTable organizationId={organizationId} refreshTrigger={refreshKey} />
+        </div>
       </div>
     </div>
   );

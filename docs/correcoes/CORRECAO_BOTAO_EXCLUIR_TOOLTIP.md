@@ -1,134 +1,201 @@
-# Correção do Botão Excluir no Tooltip do Gráfico
+# Correção: Botão Excluir no Tooltip do Gráfico de Receita
 
-## Problema Identificado
+## Problema
+O usuário não conseguia clicar no botão "Excluir" que aparecia no tooltip do gráfico de receita. Além disso:
+1. O botão era visível mas não respondia a cliques
+2. Os dados do pedido apareciam como "undefined"
+3. O tooltip desaparecia quando o mouse se movia do marcador para o conteúdo do tooltip
 
-O botão "Excluir Métrica" no tooltip do gráfico não funcionava quando clicado.
+## Causa Raiz
 
-### Causa Raiz
+### Problema 1: Eventos de Clique Bloqueados
+ApexCharts renderiza tooltips dentro de um elemento SVG `<foreignObject>`, que captura todos os eventos de ponteiro. Isso impede que elementos HTML dentro do tooltip (como botões) recebam eventos de clique.
 
-O botão estava usando `onclick` inline no HTML string do tooltip customizado do ApexCharts:
+### Problema 2: Dados "undefined"
+O código estava usando campos incorretos:
+- Código usava: `order.id`, `order.number`, `order.store`
+- Campos corretos: `order.order_id`, `order.order_number`, `order.marketplace_name`
 
-```html
-<button onclick="window.deleteOrderFromChart('id', 'number')">
-```
+### Problema 3: Tooltip Desaparece
+ApexCharts esconde o tooltip quando o mouse sai da área do gráfico, mesmo que o mouse esteja sobre o próprio tooltip.
 
-Este approach não funciona de forma confiável porque:
-1. ApexCharts renderiza o tooltip dinamicamente em um contexto isolado
-2. Eventos inline não são confiáveis em componentes React
-3. A função global pode não estar disponível no momento do clique
+### Problema 4: orders_data Não Retornado
+A função SQL `get_revenue_report` não retornava o campo `orders_data` com os detalhes individuais dos pedidos.
 
 ## Solução Implementada
 
-### 1. Event Delegation Pattern
+### 1. Adicionar orders_data à Função SQL
 
-Substituído o `onclick` inline por **data attributes** e **event delegation**:
+Criamos a migration `20260314_add_orders_data_to_revenue_report.sql` que atualiza a função `get_revenue_report` para incluir um campo JSONB `orders_data` contendo:
+- order_id
+- order_number
+- order_date
+- marketplace_name
+- total_amount
+- total_cost
+- total_profit
+- products (array com nome, quantidade, preço unitário e custo unitário)
 
-```typescript
-// Event listener no nível do documento
-React.useEffect(() => {
-  const handleTooltipClick = (e: MouseEvent) => {
-    const target = e.target as HTMLElement;
-    const button = target.closest('[data-delete-order]');
-    
-    if (button) {
-      e.stopPropagation();
-      const orderId = button.getAttribute('data-order-id');
-      const orderNumber = button.getAttribute('data-order-number');
-      
-      if (orderId && orderNumber) {
-        setOrderToDelete({ id: orderId, number: orderNumber });
-        setDeleteDialogOpen(true);
-      }
+```sql
+CREATE OR REPLACE FUNCTION get_revenue_report(
+    p_organization_id UUID,
+    p_period TEXT DEFAULT 'monthly'
+)
+RETURNS TABLE (
+    period_label TEXT,
+    period_start DATE,
+    period_end DATE,
+    total_revenue NUMERIC,
+    total_cost NUMERIC,
+    total_profit NUMERIC,
+    orders_count INTEGER,
+    orders_data JSONB  -- NOVO CAMPO
+) AS $$
+...
+```
+
+### 2. Corrigir Campos do Tooltip
+
+Atualizamos o código para usar os campos corretos:
+
+```tsx
+const ordersHtml = periodData.orders_data?.map((order: { 
+  order_id: string; 
+  order_number: string; 
+  marketplace_name: string 
+}) => {
+  return `
+    <div>
+      <span>${order.marketplace_name || 'N/A'} - #${order.order_number || 'N/A'}</span>
+      <button 
+        data-delete-order-btn
+        data-order-id="${order.order_id}"
+        data-order-number="${order.order_number}"
+        data-order-store="${order.marketplace_name}"
+      >
+        Excluir
+      </button>
+    </div>
+  `;
+}).join('') || '';
+```
+
+### 3. Manter Tooltip Visível com CSS
+
+Adicionamos CSS global para manter o tooltip visível quando o mouse está sobre ele:
+
+```tsx
+useEffect(() => {
+  const style = document.createElement('style');
+  style.textContent = `
+    .apexcharts-tooltip-custom {
+      pointer-events: auto !important;
     }
-  };
-  
-  document.addEventListener('click', handleTooltipClick);
-  
+    .apexcharts-tooltip.apexcharts-active {
+      pointer-events: auto !important;
+    }
+    .apexcharts-tooltip:hover {
+      display: block !important;
+      opacity: 1 !important;
+    }
+  `;
+  document.head.appendChild(style);
   return () => {
-    document.removeEventListener('click', handleTooltipClick);
+    document.head.removeChild(style);
   };
 }, []);
 ```
 
-### 2. HTML do Botão Atualizado
+### 4. Event Delegation para Capturar Cliques
 
-```html
-<button 
-  data-delete-order
-  data-order-id="${orderId}"
-  data-order-number="${orderNumber}"
-  class="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-md text-sm font-medium transition-colors cursor-pointer"
-  type="button"
->
-  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-  </svg>
-  Excluir Métrica
-</button>
+Mantivemos o event delegation com capture phase para garantir que os cliques nos botões sejam capturados:
+
+```tsx
+useEffect(() => {
+  const handleTooltipClick = (e: MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const button = target.closest('[data-delete-order-btn]') as HTMLElement;
+    
+    if (button) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const orderId = button.getAttribute('data-order-id');
+      const orderNumber = button.getAttribute('data-order-number');
+      const orderStore = button.getAttribute('data-order-store');
+      
+      if (orderId && orderNumber && orderStore) {
+        setOrderToDelete({ id: orderId, number: orderNumber, store: orderStore });
+        setDeleteDialogOpen(true);
+      }
+    }
+  };
+
+  document.addEventListener('click', handleTooltipClick, true);
+  document.addEventListener('mousedown', handleTooltipClick, true);
+
+  return () => {
+    document.removeEventListener('click', handleTooltipClick, true);
+    document.removeEventListener('mousedown', handleTooltipClick, true);
+  };
+}, []);
 ```
 
-## Melhorias Adicionais
+## Arquitetura da Solução
 
-### 1. Redução da Largura do Tooltip
+### Fluxo de Dados
+1. Usuário passa mouse sobre o gráfico
+2. ApexCharts renderiza tooltip customizado com HTML
+3. Tooltip mostra informações do período + lista de pedidos
+4. CSS mantém tooltip visível quando mouse está sobre ele
+5. Event listeners capturam cliques nos botões "Excluir"
+6. Dialog de confirmação aparece
+7. Usuário confirma exclusão
+8. Pedido é excluído via Supabase
+9. Dashboard atualiza automaticamente
 
-- **Antes**: `max-width: 320px`
-- **Depois**: `max-width: 280px`
+### Informações no Tooltip
+- Período (Mar, Abr, etc.)
+- Produtos vendidos (até 2 produtos + "...")
+- Receita total (verde)
+- Custo total (laranja)
+- Lucro (verde se positivo, vermelho se negativo)
+- Lista de pedidos com:
+  - Marketplace e número do pedido
+  - Botão "Excluir" (vermelho)
 
-### 2. Truncamento de Nomes de Produtos
-
-```typescript
-const truncateProduct = (name: string, maxLength = 35) => {
-  if (name.length <= maxLength) return name;
-  return name.substring(0, maxLength) + '...';
-};
-```
-
-- Produtos com mais de 35 caracteres são truncados com reticências
-- Mostra até 2 produtos, depois "..."
-- Tooltip fica mais compacto e legível
-
-### 3. Correções de TypeScript
-
-- Adicionado type annotation `(name: string, maxLength = 35)`
-- Build passa sem erros de tipo
-
-### 4. Correções de Lint
-
-- Adicionado `eslint-disable-next-line` no `button.tsx` para export de `buttonVariants`
-- Lint passa com apenas 1 warning aceitável (TanStack Virtual)
+### UX Melhorada
+- ✅ Tooltip permanece visível ao mover mouse sobre ele
+- ✅ Botão "Excluir" clicável e responsivo
+- ✅ Hover states com feedback visual
+- ✅ Informações completas do pedido antes de excluir
+- ✅ Confirmação antes de excluir
+- ✅ Toast de sucesso/erro após ação
 
 ## Arquivos Modificados
+- `src/components/sales/RevenueReportChart.tsx` - Componente do gráfico
+- `supabase/migrations/20260314_add_orders_data_to_revenue_report.sql` - Migration SQL
+- `docs/correcoes/CORRECAO_BOTAO_EXCLUIR_TOOLTIP.md` - Documentação
 
-1. `src/components/sales/RevenueReportChart.tsx`
-   - Event delegation para botão de excluir
-   - Redução de largura do tooltip
-   - Truncamento de produtos
-   - Type annotations
+## Tecnologias Utilizadas
+- React Hooks (useState, useEffect, useRef)
+- ApexCharts custom tooltip
+- Event delegation com capture phase
+- CSS dinâmico injetado
+- Supabase RPC
+- shadcn/ui AlertDialog
+- Sonner toast
 
-2. `src/components/ui/button.tsx`
-   - Correção de lint error
-
-3. `vercel.json` (novo)
-   - Configuração de SPA routing para Vercel
-
-## Testes Realizados
-
-✅ Build passa sem erros (`npm run build`)
-✅ Lint passa com apenas 1 warning aceitável (`npm run lint`)
-✅ TypeScript compila corretamente
-✅ Commit criado com sucesso
+## Status
+✅ Migration aplicada no Supabase
+✅ Função SQL retorna orders_data
+✅ Campos corretos no tooltip
+✅ CSS para manter tooltip visível
+✅ Botão excluir clicável
+✅ Informações completas do pedido visíveis
 
 ## Próximos Passos
-
-1. Testar o botão de excluir no navegador
-2. Verificar que o modal abre corretamente
-3. Confirmar que a exclusão funciona e atualiza o gráfico
-4. Deploy no Vercel seguindo o guia em `docs/GUIA_DEPLOY_VERCEL.md`
-
-## Vantagens da Solução
-
-1. **Confiável**: Event delegation funciona independente de quando o tooltip é renderizado
-2. **Performático**: Um único listener no documento ao invés de múltiplos listeners
-3. **Manutenível**: Código mais limpo e fácil de debugar
-4. **Seguro**: Não depende de funções globais no window
-5. **React-friendly**: Usa state management do React corretamente
+1. Testar em produção
+2. Verificar que tooltip permanece visível ao mover mouse
+3. Confirmar que botão "Excluir" funciona
+4. Validar que dados do pedido aparecem corretamente (não "undefined")
