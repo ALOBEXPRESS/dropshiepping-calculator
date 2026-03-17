@@ -1085,6 +1085,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
   };
 
   const handleUpdateFromBlingProduct = async (blingProduct: BlingProductItem, blingVariations: BlingProductItem[]) => {
+    console.log('[handleUpdateFromBlingProduct] blingProduct.sku:', blingProduct.sku, '| blingVariations.length:', blingVariations.length);
     try {
       // Encontrar o produto na tabela products pelo SKU
       const productSku = blingProduct.sku?.trim();
@@ -1185,6 +1186,10 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
 
         if (varError) {
           console.error('Erro ao atualizar variações:', varError);
+          toast.error('Erro ao atualizar variações', {
+            description: varError.message || 'Não foi possível salvar as variações.',
+          });
+          return;
         }
       }
 
