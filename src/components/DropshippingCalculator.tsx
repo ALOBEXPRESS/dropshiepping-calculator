@@ -353,15 +353,22 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
     }
   }, [organizationId, lastUpdated]);
 
-  // When suppliersList loads, apply supplier defaults if supplier_id is already set
+  // When suppliersList loads, apply supplier defaults if supplier_id or supplierName is already set
   useEffect(() => {
-    if (suppliersList.length > 0 && supplier_id) {
-      const found = suppliersList.find(s => s.id === supplier_id);
-      if (found) {
-        handleSupplierChange(found.name);
+    if (suppliersList.length > 0) {
+      if (supplier_id) {
+        const found = suppliersList.find(s => s.id === supplier_id);
+        if (found) {
+          handleSupplierChange(found.name);
+          return;
+        }
+      }
+      // Fallback: match by name (e.g. draft saved supplierName but not supplier_id)
+      if (supplierName) {
+        handleSupplierChange(supplierName);
       }
     }
-  // handleSupplierChange and supplier_id are intentionally omitted: we only want
+  // handleSupplierChange, supplier_id, and supplierName are intentionally omitted: we only want
   // this to run when the suppliers list first loads, not on every supplier change.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [suppliersList]);
@@ -437,7 +444,8 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
   const [maxPricePage, setMaxPricePage] = useState(1);
   const [maxProfitPage, setMaxProfitPage] = useState(1);
   const [selectedProductIndex, setSelectedProductIndex] = useState(0);
-  const [projectionSearch, setProjectionSearch] = useState('');
+  const [projectionSearch] = useState('');
+  const [productSearch, setProductSearch] = useState('');
   const [isGlobalSummaryOpen, setIsGlobalSummaryOpen] = useState(false);
   /*
   const [productFilters, setProductFilters] = useState({
@@ -1244,7 +1252,13 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         || normalizeText(skuValue).includes(normalizedGlobalSearch)
         || normalizeText(supplierValue).includes(normalizedGlobalSearch)
         || normalizeText(holderValue).includes(normalizedGlobalSearch);
-      return matchesMarketplace && matchesSupplier && matchesHolder && matchesAccountType && matchesCnpj && matchesVideoModel && matchesStock && matchesSearch;
+      const normalizedProductSearch = normalizeText(productSearch);
+      const matchesLocalSearch = !normalizedProductSearch
+        || normalizeText(productNameValue).includes(normalizedProductSearch)
+        || normalizeText(skuValue).includes(normalizedProductSearch)
+        || normalizeText(supplierValue).includes(normalizedProductSearch)
+        || normalizeText(holderValue).includes(normalizedProductSearch);
+      return matchesMarketplace && matchesSupplier && matchesHolder && matchesAccountType && matchesCnpj && matchesVideoModel && matchesStock && matchesSearch && matchesLocalSearch;
     }).sort((a, b) => {
         if (productFilters.priceSort === 'all') return 0;
         
@@ -1261,7 +1275,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
             default: return 0;
         }
     });
-  }, [effectiveProducts, productFilters, normalizedGlobalSearch]);
+  }, [effectiveProducts, productFilters, normalizedGlobalSearch, productSearch]);
   const registeredProductSkus = useMemo(() => {
     const next = new Set<string>();
     products.forEach((product) => {
@@ -3723,17 +3737,6 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
               <ElectricBorder color="#fe2c55" speed={0.8} chaos={0.1} borderRadius={16} className="flex flex-col flex-1">
                 <div className="rounded-lg p-0 flex flex-col flex-1 h-full">
                   <div className="flex items-center justify-between p-4 bg-[#FF3366]/80 rounded-t-2xl">
-                    <div className="w-full">
-                      <Input
-                        value={projectionSearch}
-                        onChange={(event) => {
-                          setProjectionSearch(event.target.value);
-                          setSelectedProductIndex(0);
-                        }}
-                        placeholder="🔍 Buscar produtos"
-                        className="bg-white/20 border-white/30 text-white placeholder:text-white/80 h-9 text-sm font-medium focus-visible:ring-white/50 focus-visible:border-white/60"
-                      />
-                    </div>
                   </div>
 
                   <ProfitProjection
@@ -3759,6 +3762,12 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                     </div>
                   </CardHeader>
                 <CardContent className="space-y-4 pt-4" style={{ opacity: 1, visibility: 'visible' }}>
+                  <Input
+                    value={productSearch}
+                    onChange={(e) => { setProductSearch(e.target.value); setCurrentPage(1); }}
+                    placeholder="🔍 Buscar por nome, SKU, fornecedor ou titular"
+                    className="h-9 text-sm"
+                  />
                   <div className="flex flex-wrap gap-2">
                     {[
                       { value: 'all', label: 'Todos' },
