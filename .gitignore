@@ -73,9 +73,8 @@ yarn.lock
 # ============================================
 # EDITOR & IDE
 # ============================================
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
+# Editor & IDE
+.vscode/
 .idea/
 *.suo
 *.ntvs*
@@ -99,16 +98,14 @@ desktop.ini
 # PROJECT SPECIFIC
 # ============================================
 # N8N Workflows (contain hardcoded secrets)
-src/hooks/n8n/workflows/*.json
+src/hooks/n8n/
 
-# Large documentation files (keep essential docs)
-DOCUMENTATION.md
-DEPLOY.md
+# Large documentation files
+docs/
 
 # Kiro & Trae configs (local only)
-.kiro/*
-!.kiro/steering/
-.trae/*
+.kiro/
+.trae/
 
 # Database migrations (managed separately)
 supabase/
