@@ -1132,26 +1132,51 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         return;
       }
 
-      // Atualizar variações se existirem
-      if (blingVariations.length > 0 && existingProduct.variations && existingProduct.variations.length > 0) {
-        const updatedVariations = existingProduct.variations.map((existingVar) => {
-          // Encontrar variação correspondente no Bling pelo SKU
-          const blingVar = blingVariations.find(bv => bv.sku?.trim() === existingVar.sku?.toString().trim());
-          if (blingVar) {
+      // Atualizar variações se o Bling tiver variações
+      if (blingVariations.length > 0) {
+        const existingVars = existingProduct.variations || [];
+
+        // Merge: para cada variação do Bling, atualizar existente (por SKU) ou adicionar nova
+        const mergedVariations: ProductVariationRecord[] = blingVariations.map((bv) => {
+          const existingVar = existingVars.find(ev => ev.sku?.toString().trim() === bv.sku?.trim());
+          if (existingVar) {
+            // Atualizar campos do Bling, preservar dados extras (markup, manualPrice, etc.)
             return {
               ...existingVar,
-              stockQuantity: blingVar.stockQuantity ?? existingVar.stockQuantity,
-              cost: blingVar.costPrice ?? existingVar.cost,
-              imageUrl: blingVar.imageUrl || existingVar.imageUrl,
+              name: bv.variationName || bv.name || existingVar.name,
+              stockQuantity: bv.stockQuantity ?? existingVar.stockQuantity,
+              cost: bv.costPrice ?? existingVar.cost,
+              imageUrl: bv.imageUrl || existingVar.imageUrl,
+              weight: bv.weight ?? existingVar.weight,
+              width: bv.width ?? existingVar.width,
+              height: bv.height ?? existingVar.height,
+              depth: bv.depth ?? existingVar.depth,
             };
           }
-          return existingVar;
+          // Nova variação vinda do Bling
+          return {
+            id: bv.id ? String(bv.id) : undefined,
+            name: bv.variationName || bv.name || '',
+            sku: bv.sku || '',
+            stockQuantity: bv.stockQuantity ?? 0,
+            cost: bv.costPrice ?? 0,
+            imageUrl: bv.imageUrl || '',
+            weight: bv.weight,
+            width: bv.width,
+            height: bv.height,
+            depth: bv.depth,
+          } as ProductVariationRecord;
         });
+
+        // Preservar variações existentes que não estão no Bling
+        const blingSkus = new Set(blingVariations.map(bv => bv.sku?.trim()).filter(Boolean));
+        const orphanVars = existingVars.filter(ev => !blingSkus.has(ev.sku?.toString().trim()));
+        const finalVariations = [...mergedVariations, ...orphanVars];
 
         // Atualizar variações no banco
         const { error: varError } = await supabase
           .from('products')
-          .update({ variations: updatedVariations })
+          .update({ variations: finalVariations })
           .eq('id', existingProduct.id);
 
         if (varError) {
