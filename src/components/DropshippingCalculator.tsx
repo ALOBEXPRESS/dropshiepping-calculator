@@ -1168,9 +1168,13 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
           } as ProductVariationRecord;
         });
 
-        // Preservar variações existentes que não estão no Bling
+        // Preservar variações existentes que não estão no Bling, mas APENAS se tiverem SKU válido
+        // (variações sem SKU são lixo de versões antigas e devem ser descartadas)
         const blingSkus = new Set(blingVariations.map(bv => bv.sku?.trim()).filter(Boolean));
-        const orphanVars = existingVars.filter(ev => !blingSkus.has(ev.sku?.toString().trim()));
+        const orphanVars = existingVars.filter(ev => {
+          const evSku = ev.sku?.toString().trim();
+          return evSku && !blingSkus.has(evSku);
+        });
         const finalVariations = [...mergedVariations, ...orphanVars];
 
         // Atualizar variações no banco
