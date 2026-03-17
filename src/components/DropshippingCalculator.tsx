@@ -53,7 +53,7 @@ import { ProductService } from '../services/productService';
 import type { BlingProductItem } from '@/hooks/useProductsBling';
 import { ReferenceService, type Supplier, type AccountHolder, type Marketplace } from '../services/referenceService';
 import { useSettings } from '../contexts/SettingsContext';
-import type { CalculationResult, ProductItem } from '../types/calculator';
+import type { CalculationResult, ProductItem, ProductVariationRecord } from '../types/calculator';
 import { formatCurrency, handleCurrencyChange, parseCurrency } from '../utils/currency';
 import { supabase } from '@/lib/supabase';
 import { useMultipleProductsSalesStats } from '../hooks/useMultipleProductsSalesStats';
