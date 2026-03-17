@@ -1085,7 +1085,6 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
   };
 
   const handleUpdateFromBlingProduct = async (blingProduct: BlingProductItem, blingVariations: BlingProductItem[]) => {
-    console.log('[handleUpdateFromBlingProduct] blingProduct.sku:', blingProduct.sku, '| blingVariations.length:', blingVariations.length);
     try {
       // Encontrar o produto na tabela products pelo SKU
       const productSku = blingProduct.sku?.trim();
