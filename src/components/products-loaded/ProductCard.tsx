@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/utils/currency';
@@ -50,6 +50,18 @@ export const ProductCard = ({
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const [isHovering, setIsHovering] = useState(false);
   const [badgeErrors, setBadgeErrors] = useState<Record<string, boolean>>({});
+  const [imgVisible, setImgVisible] = useState(true);
+
+  // Preload all variation images so navigation feels instant
+  useEffect(() => {
+    slides.forEach((slide) => {
+      const url = slide.imageUrl;
+      if (url && url.trim() && url !== '[]') {
+        const img = new Image();
+        img.src = url;
+      }
+    });
+  }, [slides]);
 
   const isValidImageUrl = (value?: string | null) => {
     const normalized = (value ?? '').trim();
@@ -99,7 +111,8 @@ export const ProductCard = ({
             <img
               src={displayImage}
               alt={displayName || 'Produto Bling'}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-cover transition-opacity duration-150"
+              style={{ opacity: imgVisible ? 1 : 0 }}
               onError={() => setImageErrors((prev) => ({ ...prev, [displayImage]: true }))}
             />
           ) : (
@@ -113,7 +126,13 @@ export const ProductCard = ({
                 type="button"
                 aria-label="Variação anterior"
                 className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-1 text-gray-700 shadow-sm transition-opacity dark:bg-zinc-900/90 dark:text-zinc-200"
-                onClick={() => setCurrentIndex((index) => (index - 1 + slides.length) % slides.length)}
+                onClick={() => {
+                  setImgVisible(false);
+                  setTimeout(() => {
+                    setCurrentIndex((index) => (index - 1 + slides.length) % slides.length);
+                    setImgVisible(true);
+                  }, 80);
+                }}
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -124,7 +143,13 @@ export const ProductCard = ({
                 type="button"
                 aria-label="Próxima variação"
                 className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-1 text-gray-700 shadow-sm transition-opacity dark:bg-zinc-900/90 dark:text-zinc-200"
-                onClick={() => setCurrentIndex((index) => (index + 1) % slides.length)}
+                onClick={() => {
+                  setImgVisible(false);
+                  setTimeout(() => {
+                    setCurrentIndex((index) => (index + 1) % slides.length);
+                    setImgVisible(true);
+                  }, 80);
+                }}
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
