@@ -117,6 +117,9 @@ export const ProductCard = ({
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-semibold text-white">
+                {currentIndex + 1}/{slides.length}
+              </div>
               <button
                 type="button"
                 aria-label="Próxima variação"
