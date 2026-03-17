@@ -12,7 +12,7 @@ async function batchInQuery<T>(
   const results: T[] = [];
   for (let i = 0; i < ids.length; i += chunkSize) {
     const chunk = ids.slice(i, i + chunkSize);
-    const { data } = await supabase.from(table).select(selectCols).in(column, chunk);
+    const { data } = await supabase.from(table).select(selectCols).in(column, chunk).limit(1000);
     if (data) results.push(...(data as T[]));
   }
   return results;
@@ -243,6 +243,7 @@ export const useProductsBling = (organizationId?: string | null) => {
               .from('products_variations_bling')
               .select('id,product_id,bling_id,name,descricao,sku,sale_price,cost_price,stock_quantity,image_url1,situacao,sku_fornecedor,variacao_nome,created_at,updated_at,peso,largura,altura,profundidade,unidade_medida')
               .in('product_id', productIds)
+              .limit(5000)
           : Promise.resolve({ data: [], error: null })
       ]);
 
