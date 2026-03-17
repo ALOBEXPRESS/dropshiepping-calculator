@@ -236,15 +236,26 @@ export const useProductsBling = (organizationId?: string | null) => {
       rows.forEach((row) => { if (row.sku) skuToIdMap.set(row.sku, String(row.id)); });
 
       // Fetch products sales and variations in parallel
-      const [salesCountMap, variationsResult] = await Promise.all([
+      // Variations use batchInQuery to avoid PostgREST URL length limits with many UUIDs
+      const [salesCountMap, variationsData] = await Promise.all([
         fetchSalesCounts(productIds, productSkus, 'product_bling_id', skuToIdMap),
         productIds.length > 0
-          ? supabase
-              .from('products_variations_bling')
-              .select('id,product_id,bling_id,name,descricao,sku,sale_price,cost_price,stock_quantity,image_url1,situacao,sku_fornecedor,variacao_nome,created_at,updated_at,peso,largura,altura,profundidade,unidade_medida')
-              .in('product_id', productIds)
-              .limit(5000)
-          : Promise.resolve({ data: [], error: null })
+          ? batchInQuery<{
+              id: string; product_id: string; bling_id: number | null;
+              name: string | null; descricao: string | null; sku: string | null;
+              sale_price: number | null; cost_price: number | null; stock_quantity: number | null;
+              image_url1: string | null; situacao: string | null; sku_fornecedor: string | null;
+              variacao_nome: string | null; created_at: string | null; updated_at: string | null;
+              peso: number | null; largura: number | null; altura: number | null;
+              profundidade: number | null; unidade_medida: string | null;
+            }>(
+              'products_variations_bling',
+              'product_id',
+              productIds,
+              'id,product_id,bling_id,name,descricao,sku,sale_price,cost_price,stock_quantity,image_url1,situacao,sku_fornecedor,variacao_nome,created_at,updated_at,peso,largura,altura,profundidade,unidade_medida',
+              50
+            )
+          : Promise.resolve([])
       ]);
 
       if (fetchId !== fetchIdRef.current) return; // Stale fetch, discard
@@ -276,7 +287,7 @@ export const useProductsBling = (organizationId?: string | null) => {
         updatedAt: row.updated_at ?? null
       }));
 
-      const variationsData = variationsResult.data ?? [];
+      // variationsData already resolved from batchInQuery above
 
       // Map variations (without sales counts yet — those load in background)
       const variationsMapped: BlingProductItem[] = variationsData.map((row) => {
