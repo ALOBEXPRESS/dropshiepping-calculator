@@ -3733,7 +3733,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         {showOnlyProducts ? (
           <>
           <div className="grid gap-6 lg:grid-cols-2">
-            <div className="bg-[#0d0d0d] text-white rounded-xl p-5 shadow-lg border border-white/10 flex flex-col">
+            <div className="bg-[#FF3366]/80 text-white rounded-xl p-5 shadow-lg border border-white/10 flex flex-col">
               <ElectricBorder color="#fe2c55" speed={0.8} chaos={0.1} borderRadius={16} className="flex flex-col flex-1">
                 <div className="rounded-lg p-0 flex flex-col flex-1 h-full">
                   <div className="flex items-center justify-between p-4 bg-[#FF3366]/80 rounded-t-2xl">

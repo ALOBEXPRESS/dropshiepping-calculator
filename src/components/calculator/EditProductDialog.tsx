@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -622,7 +622,17 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     );
   };
 
-  const organicMetrics = getUpdatedMetrics();
+  const organicMetrics = useMemo(() => getUpdatedMetrics(), [
+    formData.marketplace, formData.sellingPrice, formData.costPrice,
+    formData.shopeeFreeShipping, formData.shippingFee, formData.mlShippingCost,
+    formData.marketplaceShippingCost, formData.supplierFeeType, formData.supplierFeeValue,
+    formData.supplierGatewayFeeType, formData.supplierGatewayFeeValue,
+    formData.gatewayBank, formData.gatewayMethod, formData.shopeeUseAds,
+    formData.shopeeStoreCouponEnabled, formData.shopeeStoreCouponValue,
+    formData.shopeeProductCouponEnabled, formData.shopeeProductCouponValue,
+    formData.shopeeFollowerCouponEnabled, formData.shopeeFollowerCouponValue,
+    formData.shopeeSellerVoucherEnabled, formData.shopeeSellerVoucherValue,
+  ]); // eslint-disable-line react-hooks/exhaustive-deps
   const organicSuggestedPrice = parseFloat(organicMetrics?.suggestedPrice ?? '0');
   const organicAdsCostPerSale = parseFloat(organicMetrics?.adsCostPerSale ?? '0');
 
@@ -2838,7 +2848,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                       />
                       {(marketplaceCommissionRate > 0 || marketplaceFixedFee > 0) && (
                         <p className="text-xs text-muted-foreground">
-                          {currentMarketplaceName}: {marketplaceCommissionRate > 0 ? `comissão ${marketplaceCommissionRate}%` : ''}{marketplaceCommissionRate > 0 && marketplaceFixedFee > 0 ? ' + ' : ''}{marketplaceFixedFee > 0 ? `taxa fixa ${formatCurrency(marketplaceFixedFee)}` : ''}
+                          {currentMarketplaceName}: {marketplaceCommissionRate > 0 ? `comissão ${marketplaceCommissionRate}%` : ''}{marketplaceCommissionRate > 0 && marketplaceFixedFee > 0 ? ' + ' : ''}{marketplaceFixedFee > 0 ? `taxa fixa ${formatCurrency(marketplaceFixedFee)}` : ''}{formData.marketplace === 'shopee' && formData.shopeeFreeShipping ? ' + 6% (Frete Grátis)' : ''}
                         </p>
                       )}
                     </div>
