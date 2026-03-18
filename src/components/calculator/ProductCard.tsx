@@ -1391,12 +1391,8 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
         </button>
         <button
           onClick={() => onBlingUpdate(product)}
-          disabled={!product.sku || isUpdatingBling}
-          title={
-            !product.sku 
-              ? 'SKU necessário para atualizar' 
-              : 'Atualizar dados do Bling'
-          }
+          disabled={true}
+          title="Atualização temporariamente desabilitada"
           className="inline-flex items-center justify-center gap-1 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-3.5 [&_svg]:shrink-0 border bg-background shadow-sm rounded-md px-2 h-8 w-full text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-100 dark:bg-white dark:border-gray-200 dark:hover:bg-gray-50"
         >
           {isUpdatingBling

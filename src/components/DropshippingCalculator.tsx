@@ -444,7 +444,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
   const [maxPricePage, setMaxPricePage] = useState(1);
   const [maxProfitPage, setMaxProfitPage] = useState(1);
   const [selectedProductIndex, setSelectedProductIndex] = useState(0);
-  const [projectionSearch] = useState('');
+  const [projectionSearch, setProjectionSearch] = useState('');
   const [productSearch, setProductSearch] = useState('');
   const [isGlobalSummaryOpen, setIsGlobalSummaryOpen] = useState(false);
   /*
@@ -3737,6 +3737,16 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
               <ElectricBorder color="#fe2c55" speed={0.8} chaos={0.1} borderRadius={16} className="flex flex-col flex-1">
                 <div className="rounded-lg p-0 flex flex-col flex-1 h-full">
                   <div className="flex items-center justify-between p-4 bg-[#FF3366]/80 rounded-t-2xl">
+                  </div>
+
+                  <div className="px-4 pt-3 pb-1">
+                    <input
+                      type="text"
+                      value={projectionSearch}
+                      onChange={e => { setProjectionSearch(e.target.value); setSelectedProductIndex(0); }}
+                      placeholder="Pesquisar produto..."
+                      className="w-full rounded-lg px-3 py-2 text-sm bg-white/10 text-white placeholder-white/50 border border-white/20 focus:outline-none focus:border-white/50"
+                    />
                   </div>
 
                   <ProfitProjection
