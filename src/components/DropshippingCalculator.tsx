@@ -3745,7 +3745,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                       value={projectionSearch}
                       onChange={e => { setProjectionSearch(e.target.value); setSelectedProductIndex(0); }}
                       placeholder="Pesquisar produto..."
-                      className="w-full rounded-lg px-3 py-2 text-sm bg-white/10 text-white placeholder-white/50 border border-white/20 focus:outline-none focus:border-white/50"
+                      className="w-full rounded-lg px-3 py-2 text-sm bg-[#FF3366]/40 text-white placeholder-white/70 border border-white/30 focus:outline-none focus:border-white/70"
                     />
                   </div>
 

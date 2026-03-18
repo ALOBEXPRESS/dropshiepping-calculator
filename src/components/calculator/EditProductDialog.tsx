@@ -808,7 +808,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       promoVideoChannelNames: formData.promoVideoChannelNames,
       promoVideoChannelCopies: formData.promoVideoChannelCopies,
       additionalVideos: formData.additionalVideos,
-      shippingOption: formData.shopeeFreeShipping ? 'with' : 'without',
+      shippingOption: (formData.shopeeFreeShipping ? 'with' : 'without') as 'with' | 'without',
       marketplaceShippingCost: formData.marketplace === 'shopee' ? undefined : formData.shippingFee,
     };
     
