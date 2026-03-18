@@ -62,6 +62,8 @@ type EditProductFormData = {
   supplierFeeValue: string;
   supplierGatewayFeeType: 'percent' | 'fixed';
   supplierGatewayFeeValue: string;
+  shopeeFreeShipping: boolean;
+  shippingFee: string;
   videoGenerationLlm: ProductItem['videoGenerationLlm'] | '';
   targetAudienceAge: string;
   targetAudienceLocation: string;
@@ -262,6 +264,8 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     supplierFeeValue: source?.supplierFeeValue !== undefined && source?.supplierFeeValue !== null ? String(source.supplierFeeValue) : '',
     supplierGatewayFeeType: source?.supplierGatewayFeeType || 'percent',
     supplierGatewayFeeValue: source?.supplierGatewayFeeValue !== undefined && source?.supplierGatewayFeeValue !== null ? String(source.supplierGatewayFeeValue) : '',
+    shopeeFreeShipping: source?.shippingOption === 'with',
+    shippingFee: source?.marketplaceShippingCost !== undefined && source?.marketplaceShippingCost !== null ? String(source.marketplaceShippingCost) : '',
     videoGenerationLlm: source?.videoGenerationLlm || '',
     targetAudienceAge: source?.targetAudienceAge || '',
     targetAudienceLocation: source?.targetAudienceLocation || '',
@@ -526,10 +530,12 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     const enjoeiAdType = formData.enjoeiAdType || product?.enjoeiAdType || 'classico';
     const amazonPlan = product?.amazonPlan === 'profissional' ? 'profissional' : 'individual';
     const mlShippingCost = parseCurrency(formData.mlShippingCost);
-    const marketplaceShippingCost = parseCurrency(formData.marketplaceShippingCost);
+    const marketplaceShippingCost = parseCurrency(
+      formData.marketplace === 'shopee' ? '0' : (formData.shippingFee || formData.marketplaceShippingCost)
+    );
     const categoryValue = formData.mlCategory || (product as { category?: string })?.category || 'eletronicos';
     const accountTypeValue = (formData.accountType || product?.accountType || 'cnpj') as 'cpf' | 'cnpj';
-    const shippingOption = product?.shippingOption || 'with';
+    const shippingOption = formData.shopeeFreeShipping ? 'with' : (product?.shippingOption || 'without');
     const isMercadoLivre = formData.marketplace === 'mercadolivre';
     const isShopee = formData.marketplace === 'shopee';
     const adsEnabled = isMercadoLivre
@@ -802,6 +808,8 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       promoVideoChannelNames: formData.promoVideoChannelNames,
       promoVideoChannelCopies: formData.promoVideoChannelCopies,
       additionalVideos: formData.additionalVideos,
+      shippingOption: formData.shopeeFreeShipping ? 'with' : 'without',
+      marketplaceShippingCost: formData.marketplace === 'shopee' ? undefined : formData.shippingFee,
     };
     
     console.log('=== UPDATED PRODUCT ===');
@@ -2961,6 +2969,42 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                   </div>
                 </>
               )}
+
+                  {/* Frete Grátis (Shopee) ou campo Frete (outros) */}
+                  {formData.marketplace === 'shopee' ? (
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label className="text-right dark:text-white">Frete Grátis</Label>
+                      <div className="col-span-3 flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleChange('shopeeFreeShipping', !formData.shopeeFreeShipping)}
+                          className={`w-6 h-6 rounded flex items-center justify-center border-2 transition-colors ${formData.shopeeFreeShipping ? 'bg-[#fe2c55] border-[#fe2c55]' : 'bg-transparent border-gray-400'}`}
+                        >
+                          {formData.shopeeFreeShipping && (
+                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </button>
+                        <span className="text-sm text-muted-foreground">
+                          Programa de Frete Grátis — adicional de 6%
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="shippingFee" className="text-right dark:text-white">Frete</Label>
+                      <Input
+                        id="shippingFee"
+                        type="text"
+                        inputMode="decimal"
+                        value={formData.shippingFee}
+                        onChange={(e) => handleCurrencyChange(e, (val) => handleChange('shippingFee', val))}
+                        className="col-span-3"
+                        placeholder="0,00"
+                      />
+                    </div>
+                  )}
             </div>
           </div>
         </div>
