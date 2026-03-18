@@ -641,9 +641,26 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
   // Always prefer organicMetrics (recalculated from pricingService) which correctly
   // deducts cost, commissions and fees. Fall back to stored netRevenue only when
   // organicMetrics is unavailable (no marketplace/price set yet).
-  const organicNetRevenue = organicMetrics
+  const organicNetRevenueBase = organicMetrics
     ? parseFloat(String(organicMetrics.netRevenue ?? '0'))
     : parseFloat(String(product?.netRevenue ?? '0'));
+
+  // Apply Shopee free shipping fee (6%) directly — pricingService uses shippingOption
+  // but the useMemo may not invalidate correctly; apply the deduction explicitly here.
+  const organicNetRevenue = (() => {
+    if (formData.marketplace === 'shopee' && formData.shopeeFreeShipping) {
+      const sellingPrice = parseFloat(String(formData.sellingPrice)) || 0;
+      // 6% of selling price is the free shipping fee
+      const freeShippingDeduction = sellingPrice * 0.06;
+      // Only deduct if organicMetrics didn't already account for it
+      // Check: if shippingOption was 'without' before, we need to deduct
+      const prevShipping = product?.shippingOption || 'without';
+      if (prevShipping !== 'with') {
+        return organicNetRevenueBase - freeShippingDeduction;
+      }
+    }
+    return organicNetRevenueBase;
+  })();
 
   // marketplace key→name map (used in handleSave and hint text)
   const marketplaceKeyToName: Record<string, string> = {
