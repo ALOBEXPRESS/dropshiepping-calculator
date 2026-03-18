@@ -535,7 +535,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     );
     const categoryValue = formData.mlCategory || (product as { category?: string })?.category || 'eletronicos';
     const accountTypeValue = (formData.accountType || product?.accountType || 'cnpj') as 'cpf' | 'cnpj';
-    const shippingOption = formData.shopeeFreeShipping ? 'with' : (product?.shippingOption || 'without');
+    const shippingOption = formData.shopeeFreeShipping ? 'with' : 'without';
     const isMercadoLivre = formData.marketplace === 'mercadolivre';
     const isShopee = formData.marketplace === 'shopee';
     const adsEnabled = isMercadoLivre
@@ -645,22 +645,9 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     ? parseFloat(String(organicMetrics.netRevenue ?? '0'))
     : parseFloat(String(product?.netRevenue ?? '0'));
 
-  // Apply Shopee free shipping fee (6%) directly — pricingService uses shippingOption
-  // but the useMemo may not invalidate correctly; apply the deduction explicitly here.
-  const organicNetRevenue = (() => {
-    if (formData.marketplace === 'shopee' && formData.shopeeFreeShipping) {
-      const sellingPrice = parseFloat(String(formData.sellingPrice)) || 0;
-      // 6% of selling price is the free shipping fee
-      const freeShippingDeduction = sellingPrice * 0.06;
-      // Only deduct if organicMetrics didn't already account for it
-      // Check: if shippingOption was 'without' before, we need to deduct
-      const prevShipping = product?.shippingOption || 'without';
-      if (prevShipping !== 'with') {
-        return organicNetRevenueBase - freeShippingDeduction;
-      }
-    }
-    return organicNetRevenueBase;
-  })();
+  // organicMetrics already calculates correctly using shippingOption from formData.shopeeFreeShipping
+  // so we just use organicNetRevenueBase directly — no manual override needed.
+  const organicNetRevenue = organicNetRevenueBase;
 
   // marketplace key→name map (used in handleSave and hint text)
   const marketplaceKeyToName: Record<string, string> = {
@@ -2994,9 +2981,6 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                       />
                     </div>
                   </div>
-                </>
-              )}
-
                   {/* Frete Grátis (Shopee) ou campo Frete (outros) */}
                   {formData.marketplace === 'shopee' ? (
                     <div className="grid grid-cols-4 items-center gap-4">
@@ -3032,6 +3016,8 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                       />
                     </div>
                   )}
+                </>
+              )}
             </div>
           </div>
         </div>
