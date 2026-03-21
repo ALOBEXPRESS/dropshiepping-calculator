@@ -320,7 +320,7 @@ export const calculateMetrics = (
           : effectiveSellingPrice * (supplierFeeVal / 100);
 
       const totalInfluencerPercent = influencers.reduce((acc, curr) => acc + (parseFloat(curr.percentage?.replace(',', '.') || '0')), 0);
-      const totalAffiliatePercent = affiliates.reduce((acc, curr) => acc + (parseFloat(curr.percentage?.replace(',', '.') || '0')), 0);
+      const totalAffiliatePercent = affiliates.length > 0 ? Math.max(...affiliates.map(a => parseFloat(a.percentage?.replace(',', '.') || '0'))) : 0;
       
       const influencerCost = effectiveSellingPrice * (totalInfluencerPercent / 100);
       const affiliateCost = effectiveSellingPrice * (totalAffiliatePercent / 100);
@@ -452,7 +452,7 @@ export const calculateMetrics = (
       const effectiveSellingPrice = manualPriceVal > 0 ? manualPriceVal : autoResult.suggestedPrice;
       
       const totalInfluencerPercent = influencers.reduce((acc, curr) => acc + (parseFloat(curr.percentage?.replace(',', '.') || '0')), 0);
-      const totalAffiliatePercent = affiliates.reduce((acc, curr) => acc + (parseFloat(curr.percentage?.replace(',', '.') || '0')), 0);
+      const totalAffiliatePercent = affiliates.length > 0 ? Math.max(...affiliates.map(a => parseFloat(a.percentage?.replace(',', '.') || '0'))) : 0;
       
       const influencerCost = effectiveSellingPrice * (totalInfluencerPercent / 100);
       const affiliateCost = effectiveSellingPrice * (totalAffiliatePercent / 100);
@@ -802,7 +802,7 @@ export const calculateMetrics = (
       : effectiveSellingPrice * (supplierFeeVal / 100);
 
   const totalInfluencerPercent = influencers.reduce((acc, curr) => acc + (parseFloat(curr.percentage?.replace(',', '.') || '0')), 0);
-  const totalAffiliatePercent = affiliates.reduce((acc, curr) => acc + (parseFloat(curr.percentage?.replace(',', '.') || '0')), 0);
+  const totalAffiliatePercent = affiliates.length > 0 ? Math.max(...affiliates.map(a => parseFloat(a.percentage?.replace(',', '.') || '0'))) : 0;
   
   const influencerCost = effectiveSellingPrice * (totalInfluencerPercent / 100);
   const affiliateCost = effectiveSellingPrice * (totalAffiliatePercent / 100);
