@@ -178,16 +178,33 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
   const { influencers: influencersDB, loading: loadingInfluencers } = useInfluencers(organizationId ?? undefined);
   const { affiliates: affiliatesDB, loading: loadingAffiliates } = useAffiliates(organizationId ?? undefined);
 
-  // Auto-select all affiliates when they load (default: all selected)
+  // Sync affiliates from DB when they load — always update percentage from marketplace commission
+  // This ensures commission changes in Settings are reflected without page reload
   useEffect(() => {
-    if (!loadingAffiliates && affiliatesDB.length > 0 && affiliates.length === 0) {
+    if (loadingAffiliates || affiliatesDB.length === 0) return;
+
+    if (affiliates.length === 0) {
+      // First load: select all
       setAffiliates(affiliatesDB.map(a => ({
         id: crypto.randomUUID(),
         name: a.name,
         percentage: (a.marketplace_commission_rate ?? a.percentage).toString(),
         marketplaceName: a.marketplace_name ?? undefined
       })));
+    } else {
+      // Already have affiliates: just refresh the percentage/marketplaceName from DB
+      // (in case commission was updated in Settings)
+      setAffiliates(prev => prev.map(aff => {
+        const dbEntry = affiliatesDB.find(a => a.name === aff.name);
+        if (!dbEntry) return aff;
+        return {
+          ...aff,
+          percentage: (dbEntry.marketplace_commission_rate ?? dbEntry.percentage).toString(),
+          marketplaceName: dbEntry.marketplace_name ?? aff.marketplaceName
+        };
+      }));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadingAffiliates, affiliatesDB]);
 
   // Group affiliates by marketplace
