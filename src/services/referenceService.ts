@@ -21,6 +21,7 @@ export interface Marketplace {
   monthly_fee_value: number;
   fixed_fee?: number;
   is_system: boolean;
+  affiliate_commission_rate?: number;
 }
 
 export const ReferenceService = {

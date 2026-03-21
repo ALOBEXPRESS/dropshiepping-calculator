@@ -8,7 +8,6 @@ interface AffiliateLocal {
   id: string;
   name: string;
   tiktok: string | null;
-  percentage: number;
   marketplace_id?: string | null;
 }
 import { Checkbox } from "@/components/ui/checkbox";
@@ -51,13 +50,14 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     commission_rate: 0,
     has_monthly_fee: false,
     monthly_fee_value: 0,
-    fixed_fee: 0
+    fixed_fee: 0,
+    affiliate_commission_rate: 0
   });
   const [editingMarketplaceId, setEditingMarketplaceId] = useState<string | null>(null);
 
   // Afiliados
   const [affiliates, setAffiliates] = useState<AffiliateLocal[]>([]);
-  const [newAffiliate, setNewAffiliate] = useState({ name: '', tiktok: '', percentage: 10.50, marketplace_id: '' });
+  const [newAffiliate, setNewAffiliate] = useState({ name: '', tiktok: '', marketplace_id: '' });
   const [editingAffiliateId, setEditingAffiliateId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -243,14 +243,13 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     if (!formData.id) return;
     const { data } = await supabase
       .from('affiliates')
-      .select('id, name, tiktok, percentage, affiliate_marketplaces(marketplace_id)')
+      .select('id, name, tiktok, affiliate_marketplaces(marketplace_id)')
       .eq('organization_id', formData.id)
       .order('name');
-    const mapped = (data || []).map((a: { id: string; name: string; tiktok: string | null; percentage: number; affiliate_marketplaces: { marketplace_id: string }[] }) => ({
+    const mapped = (data || []).map((a: { id: string; name: string; tiktok: string | null; affiliate_marketplaces: { marketplace_id: string }[] }) => ({
       id: a.id,
       name: a.name,
       tiktok: a.tiktok,
-      percentage: a.percentage,
       marketplace_id: a.affiliate_marketplaces?.[0]?.marketplace_id ?? null
     }));
     setAffiliates(mapped);
@@ -272,7 +271,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         await supabase.from('affiliates').update({
           name: newAffiliate.name.trim(),
           tiktok: newAffiliate.tiktok.trim() || null,
-          percentage: newAffiliate.percentage
         }).eq('id', editingAffiliateId);
         setEditingAffiliateId(null);
       } else {
@@ -280,11 +278,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           organization_id: formData.id,
           name: newAffiliate.name.trim(),
           tiktok: newAffiliate.tiktok.trim() || null,
-          percentage: newAffiliate.percentage
         }).select('id').single();
         affiliateId = data?.id ?? null;
       }
-      // Vincular marketplace
       if (affiliateId && newAffiliate.marketplace_id) {
         await supabase.from('affiliate_marketplaces').delete().eq('affiliate_id', affiliateId);
         await supabase.from('affiliate_marketplaces').insert({
@@ -292,7 +288,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           marketplace_id: newAffiliate.marketplace_id
         });
       }
-      setNewAffiliate({ name: '', tiktok: '', percentage: 10.50, marketplace_id: '' });
+      setNewAffiliate({ name: '', tiktok: '', marketplace_id: '' });
       void loadAffiliates();
     } catch (err) {
       console.error('Error saving affiliate:', err);
@@ -300,7 +296,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   };
 
   const startEditAffiliate = (a: AffiliateLocal) => {
-    setNewAffiliate({ name: a.name, tiktok: a.tiktok || '', percentage: a.percentage, marketplace_id: a.marketplace_id || '' });
+    setNewAffiliate({ name: a.name, tiktok: a.tiktok || '', marketplace_id: a.marketplace_id || '' });
     setEditingAffiliateId(a.id);
   };
 
@@ -353,7 +349,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           commission_rate: newMarketplace.commission_rate,
           has_monthly_fee: newMarketplace.has_monthly_fee,
           monthly_fee_value: newMarketplace.monthly_fee_value,
-          fixed_fee: newMarketplace.fixed_fee
+          fixed_fee: newMarketplace.fixed_fee,
+          affiliate_commission_rate: newMarketplace.affiliate_commission_rate
         });
         setEditingMarketplaceId(null);
       } else {
@@ -363,6 +360,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           has_monthly_fee: newMarketplace.has_monthly_fee,
           monthly_fee_value: newMarketplace.monthly_fee_value,
           fixed_fee: newMarketplace.fixed_fee,
+          affiliate_commission_rate: newMarketplace.affiliate_commission_rate,
           organization_id: formData.id
         });
       }
@@ -371,7 +369,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         commission_rate: 0,
         has_monthly_fee: false,
         monthly_fee_value: 0,
-        fixed_fee: 0
+        fixed_fee: 0,
+        affiliate_commission_rate: 0
       });
       void loadMarketplaces();
     } catch (error) {
@@ -385,7 +384,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       commission_rate: mp.commission_rate,
       has_monthly_fee: mp.has_monthly_fee,
       monthly_fee_value: mp.monthly_fee_value,
-      fixed_fee: mp.fixed_fee || 0
+      fixed_fee: mp.fixed_fee || 0,
+      affiliate_commission_rate: mp.affiliate_commission_rate || 0
     });
     setEditingMarketplaceId(mp.id);
   };
@@ -396,7 +396,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       commission_rate: 0,
       has_monthly_fee: false,
       monthly_fee_value: 0,
-      fixed_fee: 0
+      fixed_fee: 0,
+      affiliate_commission_rate: 0
     });
     setEditingMarketplaceId(null);
   };
@@ -678,8 +679,18 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                      className="bg-white dark:bg-zinc-900"
                    />
                  </div>
+                 <div className="space-y-2">
+                   <Label>Comissão de Afiliado (%)</Label>
+                   <Input
+                     type="number"
+                     step="0.01"
+                     value={newMarketplace.affiliate_commission_rate}
+                     onChange={(e) => setNewMarketplace(prev => ({...prev, affiliate_commission_rate: parseFloat(e.target.value) || 0}))}
+                     placeholder="0.00"
+                     className="bg-white dark:bg-zinc-900"
+                   />
+                 </div>
               </div>
-              
               <div className="flex items-center space-x-2 pt-2">
                 <Checkbox 
                   id="hasMonthlyFee" 
@@ -734,6 +745,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                             Comissão: {mp.commission_rate}%
                             {mp.fixed_fee ? ` | Taxa fixa: R$ ${mp.fixed_fee.toFixed(2)}` : ''}
                             {mp.has_monthly_fee && ` | Mensalidade: R$ ${mp.monthly_fee_value.toFixed(2)}`}
+                            {mp.affiliate_commission_rate ? ` | Afiliado: ${mp.affiliate_commission_rate}%` : ''}
                             {mp.is_system && ' (Padrão)'}
                         </span>
                     </div>
@@ -791,17 +803,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Comissão (%)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={newAffiliate.percentage}
-                    onChange={(e) => setNewAffiliate(prev => ({ ...prev, percentage: parseFloat(e.target.value) || 0 }))}
-                    className="bg-white dark:bg-zinc-900"
-                  />
-                </div>
-                <div className="space-y-2">
+                <div className="space-y-2 md:col-span-2">
                   <Label>Marketplace</Label>
                   <Select value={newAffiliate.marketplace_id} onValueChange={(val) => setNewAffiliate(prev => ({ ...prev, marketplace_id: val }))}>
                     <SelectTrigger className="bg-white dark:bg-zinc-900">
@@ -828,7 +830,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   )}
                 </Button>
                 {editingAffiliateId && (
-                  <Button type="button" onClick={() => { setEditingAffiliateId(null); setNewAffiliate({ name: '', tiktok: '', percentage: 10.50, marketplace_id: '' }); }} variant="outline" className="shrink-0">
+                  <Button type="button" onClick={() => { setEditingAffiliateId(null); setNewAffiliate({ name: '', tiktok: '', marketplace_id: '' }); }} variant="outline" className="shrink-0">
                     Cancelar
                   </Button>
                 )}
@@ -845,8 +847,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                       <span className="font-medium">{a.name}</span>
                       <span className="text-xs text-gray-500">
                         {a.tiktok && <span>@{a.tiktok} · </span>}
-                        Comissão: {a.percentage}%
-                        {a.marketplace_id && <span> · {marketplaces.find(m => m.id === a.marketplace_id)?.name}</span>}
+                        {a.marketplace_id && <span>{marketplaces.find(m => m.id === a.marketplace_id)?.name}</span>}
                       </span>
                     </div>
                     <div className="flex gap-1">
