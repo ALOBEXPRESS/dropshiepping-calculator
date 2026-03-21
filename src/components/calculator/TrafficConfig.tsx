@@ -184,13 +184,8 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
     if (loadingAffiliates || affiliatesDB.length === 0) return;
 
     if (affiliates.length === 0) {
-      // First load: select all
-      setAffiliates(affiliatesDB.map(a => ({
-        id: crypto.randomUUID(),
-        name: a.name,
-        percentage: (a.marketplace_commission_rate ?? a.percentage).toString(),
-        marketplaceName: a.marketplace_name ?? undefined
-      })));
+      // First load: do NOT auto-select — leave empty so user picks manually
+      return;
     } else {
       // Already have affiliates: just refresh the percentage/marketplaceName from DB
       // (in case commission was updated in Settings)
@@ -220,7 +215,7 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
   const [openMarketplaces, setOpenMarketplaces] = React.useState<Record<string, boolean>>({});
   const toggleMarketplaceOpen = (name: string) => setOpenMarketplaces(prev => ({ ...prev, [name]: !prev[name] }));
   // Default open = true when not yet set
-  const isMarketplaceOpen = (name: string) => openMarketplaces[name] !== false;
+  const isMarketplaceOpen = (name: string) => openMarketplaces[name] === true;
   
   const selectedOrganicChannels = organicChannelOptions.filter((option) => organicChannels.includes(option.key));
   // Sempre mostrar todos os canais disponíveis
