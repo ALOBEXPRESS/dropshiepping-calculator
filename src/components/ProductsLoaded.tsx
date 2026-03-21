@@ -48,13 +48,15 @@ export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBli
   }, [debouncedSearch, updateFilters, setPage]);
 
   const supplierOptions = useMemo(() => {
-    const uniqueSuppliers = Array.from(new Set(items.map((item) => item.supplierSku).filter(Boolean)));
-    const mapped = uniqueSuppliers.map((supplier) => ({
-      value: supplier ?? 'all',
-      label: supplier === 'ALOBFOR_DROP_01' ? 'Tyr' : (supplier === 'ALOBEXPRESS_01' ? 'Alob Express' : (supplier === 'ALOBFOR_DROP_02' ? 'Dogama' : supplier ?? 'Fornecedor'))
-    }));
-    return [{ value: 'all', label: 'Todos' }, { value: 'uncategorized', label: 'Não categorizado' }, ...mapped];
-  }, [items]);
+    // Static list of known suppliers — must not be derived from filtered items
+    // to avoid options disappearing when a filter is active
+    const knownSuppliers = [
+      { value: 'ALOBFOR_DROP_02', label: 'Dogama' },
+      { value: 'ALOBFOR_DROP_01', label: 'Tyr' },
+      { value: 'ALOBEXPRESS_01', label: 'Alob Express' },
+    ];
+    return [{ value: 'all', label: 'Todos' }, { value: 'uncategorized', label: 'Não categorizado' }, ...knownSuppliers];
+  }, []);
 
   const ticketOptions: { value: BlingProductFilters['ticket']; label: string }[] = useMemo(() => ([
     { value: 'all', label: 'Todos' },
