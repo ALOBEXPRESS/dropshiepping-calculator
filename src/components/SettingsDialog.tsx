@@ -238,15 +238,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     }
   }, [formData.id]);
 
-  useEffect(() => {
-    if (formData.id) {
-      void loadAccountHolders();
-      void loadMarketplaces();
-      void loadAffiliates();
-    }
-  }, [formData.id, loadAccountHolders, loadMarketplaces]);
-
-  const loadAffiliates = async () => {
+  const loadAffiliates = useCallback(async () => {
     if (!formData.id) return;
     const { data } = await supabase
       .from('affiliates')
@@ -254,7 +246,15 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       .eq('organization_id', formData.id)
       .order('name');
     setAffiliates(data || []);
-  };
+  }, [formData.id]);
+
+  useEffect(() => {
+    if (formData.id) {
+      void loadAccountHolders();
+      void loadMarketplaces();
+      void loadAffiliates();
+    }
+  }, [formData.id, loadAccountHolders, loadMarketplaces, loadAffiliates]);
 
   const handleAddAffiliate = async () => {
     if (!newAffiliate.name.trim() || !formData.id) return;
