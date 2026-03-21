@@ -712,8 +712,8 @@ const enrichVariationsWithImages = async (products: ProductItem[]): Promise<Prod
     
     parts.forEach(part => {
       const trimmed = part.trim();
-      // Check if it's a size (P, M, G, GG, Unico, or sizes with slash like 34/35, 36/37, 39/40)
-      if (/^(p|m|g|gg|xg|xxg|pp|pequeno|medio|grande|unico|\d+\/\d+)$/i.test(trimmed)) {
+      // Check if it's a size (P, M, G, GG, Unico, numeric like 38/39/40, or sizes with slash like 34/35)
+      if (/^(p|m|g|gg|xg|xxg|pp|pequeno|medio|grande|unico|\d+\/\d+|\d+)$/i.test(trimmed)) {
         size = trimmed;
       } else if (trimmed.length > 0) {
         // Everything else is considered color (can be multi-word like "Verde �gua e Preto")
