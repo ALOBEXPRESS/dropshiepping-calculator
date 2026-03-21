@@ -59,6 +59,7 @@ type EditProductFormData = {
   gatewayMethod: ProductItem['gatewayMethod'] | '';
   gatewayBank: ProductItem['gatewayBank'] | '';
   gatewayFeeValue: string;
+  gatewayFeeType: 'percent' | 'fixed';
   gatewayInstallments: string;
   supplierFeeType: 'percent' | 'fixed';
   supplierFeeValue: string;
@@ -263,6 +264,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     gatewayMethod: source?.gatewayMethod || '',
     gatewayBank: source?.gatewayBank || '',
     gatewayFeeValue: source?.gatewayFeeValue !== undefined && source?.gatewayFeeValue !== null ? String(source.gatewayFeeValue) : '',
+    gatewayFeeType: source?.gatewayFeeType || 'percent',
     gatewayInstallments: source?.gatewayInstallments !== undefined && source?.gatewayInstallments !== null ? String(source.gatewayInstallments) : '1',
     supplierFeeType: source?.supplierFeeType || 'percent',
     supplierFeeValue: source?.supplierFeeValue !== undefined && source?.supplierFeeValue !== null ? String(source.supplierFeeValue) : '',
@@ -571,6 +573,9 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     const supplierGatewayFeePercent = supplierGatewayFeeType === 'percent' ? supplierGatewayFeeValue : 0;
     const supplierGatewayFixedFee = supplierGatewayFeeType === 'fixed' ? supplierGatewayFeeValue : 0;
     const gatewayFeeVal = parseCurrency(formData.gatewayFeeValue ?? 0);
+    const gatewayFeeType = formData.gatewayFeeType || 'percent';
+    const gatewayFeePercent = gatewayFeeType === 'percent' ? gatewayFeeVal : 0;
+    const gatewayFixedFeeVal = gatewayFeeType === 'fixed' ? gatewayFeeVal : 0;
 
     return calculateMetrics(
       costPrice,
@@ -587,7 +592,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       cpc,
       dailyBudget,
       salesQuantity,
-      gatewayFeeVal,
+      gatewayFeePercent,
       sellingPrice,
       0,
       0,
@@ -598,7 +603,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       paidTrafficValue,
       mlShippingCost,
       'percent',
-      0,
+      gatewayFixedFeeVal,
       0,
       0,
       enjoeiAdType,
@@ -632,7 +637,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     formData.shopeeFreeShipping, formData.shippingFee, formData.mlShippingCost,
     formData.marketplaceShippingCost, formData.supplierFeeType, formData.supplierFeeValue,
     formData.supplierGatewayFeeType, formData.supplierGatewayFeeValue,
-    formData.gatewayBank, formData.gatewayMethod, formData.gatewayFeeValue, formData.gatewayInstallments,
+    formData.gatewayBank, formData.gatewayMethod, formData.gatewayFeeValue, formData.gatewayFeeType, formData.gatewayInstallments,
     formData.shopeeUseAds,
     formData.shopeeStoreCouponEnabled, formData.shopeeStoreCouponValue,
     formData.shopeeProductCouponEnabled, formData.shopeeProductCouponValue,
@@ -740,6 +745,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       gatewayMethod: formData.gatewayMethod || product.gatewayMethod,
       gatewayBank: formData.gatewayBank || product.gatewayBank,
       gatewayFeeValue: formData.gatewayFeeValue || product.gatewayFeeValue,
+      gatewayFeeType: formData.gatewayFeeType || product.gatewayFeeType || 'percent',
       gatewayInstallments: formData.gatewayInstallments || product.gatewayInstallments,
       videoGenerationLlm: formData.videoGenerationLlm || product.videoGenerationLlm,
       marketplace: nextMarketplace,
@@ -2936,16 +2942,27 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                     <Label className="text-right dark:text-white">
                       Taxa de Gateway Compra
                     </Label>
-                    <div className="col-span-3">
+                    <div className="col-span-3 flex gap-2">
+                      <div className="flex rounded-md overflow-hidden border border-input">
+                        <button
+                          type="button"
+                          className={`px-3 py-2 text-sm font-medium transition-colors ${formData.gatewayFeeType === 'percent' ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground hover:bg-muted'}`}
+                          onClick={() => handleChange('gatewayFeeType', 'percent')}
+                        >%</button>
+                        <button
+                          type="button"
+                          className={`px-3 py-2 text-sm font-medium transition-colors ${formData.gatewayFeeType === 'fixed' ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground hover:bg-muted'}`}
+                          onClick={() => handleChange('gatewayFeeType', 'fixed')}
+                        >R$</button>
+                      </div>
                       <Input
                         type="number"
                         min="0"
                         step="0.01"
-                        placeholder="Ex: 4.29"
+                        placeholder={formData.gatewayFeeType === 'percent' ? 'Ex: 4.29' : 'Ex: 2.50'}
                         value={formData.gatewayFeeValue}
                         onChange={(e) => handleChange('gatewayFeeValue', e.target.value)}
                       />
-                      <p className="text-[10px] text-muted-foreground mt-1">% sobre o valor de venda</p>
                     </div>
                   </div>
                   {/* Parcelas */}

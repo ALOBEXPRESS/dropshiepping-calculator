@@ -61,6 +61,9 @@ type ProductRow = {
   operation_mode?: string | null;
   gateway_method?: string | null;
   gateway_bank?: string | null;
+  gateway_fee_value?: number | null;
+  gateway_fee_type?: string | null;
+  gateway_installments?: number | null;
   supplier_fee_type?: string | null;
   supplier_fee_value?: number | null;
   supplier_gateway_fee_type?: string | null;
@@ -257,6 +260,9 @@ type ProductPayload = {
   operation_mode?: string | null;
   gateway_method?: string | null;
   gateway_bank?: string | null;
+  gateway_fee_value?: number | null;
+  gateway_fee_type?: string | null;
+  gateway_installments?: number | null;
   supplier_fee_type?: string | null;
   supplier_fee_value?: number | null;
   supplier_gateway_fee_type?: string | null;
@@ -854,6 +860,9 @@ const mapProductRow = (item: ProductRow): ProductItem => ({
   operationMode: (item.operation_mode ?? '') as ProductItem['operationMode'],
   gatewayMethod: (item.gateway_method ?? '') as ProductItem['gatewayMethod'],
   gatewayBank: item.gateway_bank ?? '',
+  gatewayFeeValue: item.gateway_fee_value != null ? String(item.gateway_fee_value) : '',
+  gatewayFeeType: (item.gateway_fee_type ?? 'percent') as 'percent' | 'fixed',
+  gatewayInstallments: item.gateway_installments != null ? String(item.gateway_installments) : '1',
   supplierFeeType: (item.supplier_fee_type ?? 'percent') as 'percent' | 'fixed',
   supplierFeeValue: item.supplier_fee_value != null ? String(item.supplier_fee_value) : '',
   supplierGatewayFeeType: (item.supplier_gateway_fee_type ?? 'fixed') as 'percent' | 'fixed',
@@ -1043,6 +1052,9 @@ const productSelectColumnList = [
   'operation_mode',
   'gateway_method',
   'gateway_bank',
+  'gateway_fee_value',
+  'gateway_fee_type',
+  'gateway_installments',
   'supplier_fee_type',
   'supplier_fee_value',
   'supplier_gateway_fee_type',
@@ -1496,6 +1508,9 @@ export const ProductService = {
       operation_mode: product.operationMode,
       gateway_method: product.gatewayMethod,
       gateway_bank: product.gatewayBank,
+      gateway_fee_value: (product.gatewayFeeValue !== undefined && product.gatewayFeeValue !== null && product.gatewayFeeValue !== "") ? Number(product.gatewayFeeValue) : null,
+      gateway_fee_type: product.gatewayFeeType ?? null,
+      gateway_installments: (product.gatewayInstallments !== undefined && product.gatewayInstallments !== null && product.gatewayInstallments !== "") ? Number(product.gatewayInstallments) : null,
       supplier_fee_type: product.supplierFeeType ?? null,
       supplier_fee_value: (product.supplierFeeValue !== undefined && product.supplierFeeValue !== null && product.supplierFeeValue !== "") ? Number(product.supplierFeeValue) : null,
       supplier_gateway_fee_type: product.supplierGatewayFeeType ?? null,
@@ -1733,6 +1748,9 @@ export const ProductService = {
       operation_mode: product.operationMode,
       gateway_method: product.gatewayMethod,
       gateway_bank: product.gatewayBank,
+      gateway_fee_value: (product.gatewayFeeValue !== undefined && product.gatewayFeeValue !== null && product.gatewayFeeValue !== "") ? Number(product.gatewayFeeValue) : null,
+      gateway_fee_type: product.gatewayFeeType ?? null,
+      gateway_installments: (product.gatewayInstallments !== undefined && product.gatewayInstallments !== null && product.gatewayInstallments !== "") ? Number(product.gatewayInstallments) : null,
       supplier_fee_type: product.supplierFeeType ?? null,
       supplier_fee_value: (product.supplierFeeValue !== undefined && product.supplierFeeValue !== null && product.supplierFeeValue !== "") ? Number(product.supplierFeeValue) : null,
       supplier_gateway_fee_type: product.supplierGatewayFeeType ?? null,
