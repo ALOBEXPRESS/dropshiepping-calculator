@@ -58,6 +58,8 @@ type EditProductFormData = {
   operationMode: ProductItem['operationMode'] | '';
   gatewayMethod: ProductItem['gatewayMethod'] | '';
   gatewayBank: ProductItem['gatewayBank'] | '';
+  gatewayFeeValue: string;
+  gatewayInstallments: string;
   supplierFeeType: 'percent' | 'fixed';
   supplierFeeValue: string;
   supplierGatewayFeeType: 'percent' | 'fixed';
@@ -260,6 +262,8 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     operationMode: source?.operationMode || '',
     gatewayMethod: source?.gatewayMethod || '',
     gatewayBank: source?.gatewayBank || '',
+    gatewayFeeValue: source?.gatewayFeeValue !== undefined && source?.gatewayFeeValue !== null ? String(source.gatewayFeeValue) : '',
+    gatewayInstallments: source?.gatewayInstallments !== undefined && source?.gatewayInstallments !== null ? String(source.gatewayInstallments) : '1',
     supplierFeeType: source?.supplierFeeType || 'percent',
     supplierFeeValue: source?.supplierFeeValue !== undefined && source?.supplierFeeValue !== null ? String(source.supplierFeeValue) : '',
     supplierGatewayFeeType: source?.supplierGatewayFeeType || 'percent',
@@ -733,6 +737,8 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       operationMode: formData.operationMode || product.operationMode,
       gatewayMethod: formData.gatewayMethod || product.gatewayMethod,
       gatewayBank: formData.gatewayBank || product.gatewayBank,
+      gatewayFeeValue: formData.gatewayFeeValue || product.gatewayFeeValue,
+      gatewayInstallments: formData.gatewayInstallments || product.gatewayInstallments,
       videoGenerationLlm: formData.videoGenerationLlm || product.videoGenerationLlm,
       marketplace: nextMarketplace,
       supplierName: formData.supplierName || product.supplierName,
@@ -2923,6 +2929,39 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                       </SelectContent>
                     </Select>
                   </div>
+                  {/* Taxa de Gateway Compra */}
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right dark:text-white">
+                      Taxa de Gateway Compra
+                    </Label>
+                    <div className="col-span-3">
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="Ex: 4.29"
+                        value={formData.gatewayFeeValue}
+                        onChange={(e) => handleChange('gatewayFeeValue', e.target.value)}
+                      />
+                      <p className="text-[10px] text-muted-foreground mt-1">% sobre o valor de venda</p>
+                    </div>
+                  </div>
+                  {/* Parcelas */}
+                  {(formData.gatewayBank === 'picpay' || formData.gatewayBank === 'nubank' || formData.gatewayBank === 'bradesco' || formData.gatewayBank === 'paypal') && formData.gatewayMethod === 'credit' && (
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label className="text-right dark:text-white">Parcelas</Label>
+                      <div className="col-span-3">
+                        <Input
+                          type="number"
+                          min="1"
+                          max="12"
+                          value={formData.gatewayInstallments}
+                          onChange={(e) => handleChange('gatewayInstallments', e.target.value)}
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-1">Taxa aumenta com parcelas</p>
+                      </div>
+                    </div>
+                  )}
                   {/* Taxa do Fornecedor */}
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label className="text-right dark:text-white">

@@ -103,6 +103,8 @@ export interface ProductItem {
   operationMode?: 'dropshipping' | 'armazem_alob';
   gatewayMethod?: 'pix' | 'credit' | 'debit';
   gatewayBank?: string;
+  gatewayFeeValue?: string | number;
+  gatewayInstallments?: string | number;
   supplierFeeType?: 'percent' | 'fixed';
   supplierFeeValue?: string | number;
   supplierGatewayFeeType?: 'percent' | 'fixed';
