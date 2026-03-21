@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -177,6 +177,25 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
   const { organizationId } = useSettings();
   const { influencers: influencersDB, loading: loadingInfluencers } = useInfluencers(organizationId ?? undefined);
   const { affiliates: affiliatesDB, loading: loadingAffiliates } = useAffiliates(organizationId ?? undefined);
+
+  // Auto-select all affiliates when they load (default: all selected)
+  useEffect(() => {
+    if (!loadingAffiliates && affiliatesDB.length > 0 && affiliates.length === 0) {
+      setAffiliates(affiliatesDB.map(a => ({
+        id: crypto.randomUUID(),
+        name: a.name,
+        percentage: (a.marketplace_commission_rate ?? a.percentage).toString()
+      })));
+    }
+  }, [loadingAffiliates, affiliatesDB]);
+
+  // Group affiliates by marketplace
+  const affiliatesByMarketplace = affiliatesDB.reduce<Record<string, typeof affiliatesDB>>((acc, aff) => {
+    const key = aff.marketplace_name || 'Sem marketplace';
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(aff);
+    return acc;
+  }, {});
   
   const selectedOrganicChannels = organicChannelOptions.filter((option) => organicChannels.includes(option.key));
   // Sempre mostrar todos os canais disponíveis
@@ -515,66 +534,80 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                            </div>
                        ) : (
                            <div className="space-y-2">
-                               {affiliatesDB.map((affiliateDB) => {
-                                   const isSelected = affiliates.some(aff => aff.name === affiliateDB.name);
-                                   
+                               {Object.entries(affiliatesByMarketplace).map(([marketplaceName, mktAffiliates]) => {
+                                   const allSelected = mktAffiliates.every(a => affiliates.some(aff => aff.name === a.name));
+                                   const someSelected = mktAffiliates.some(a => affiliates.some(aff => aff.name === a.name));
+                                   const commission = mktAffiliates[0]?.marketplace_commission_rate ?? mktAffiliates[0]?.percentage ?? 0;
+
+                                   const toggleAll = (checked: boolean) => {
+                                       if (checked) {
+                                           const toAdd = mktAffiliates
+                                               .filter(a => !affiliates.some(aff => aff.name === a.name))
+                                               .map(a => ({ id: crypto.randomUUID(), name: a.name, percentage: (a.marketplace_commission_rate ?? a.percentage).toString() }));
+                                           setAffiliates([...affiliates, ...toAdd]);
+                                       } else {
+                                           setAffiliates(affiliates.filter(aff => !mktAffiliates.some(a => a.name === aff.name)));
+                                       }
+                                   };
+
                                    return (
-                                       <div key={affiliateDB.id} className="p-3 bg-gray-50 rounded-lg dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700">
-                                           <div className="flex items-start gap-3">
+                                       <CollapsibleSection
+                                           key={marketplaceName}
+                                           title={`${marketplaceName} — Comissão ${commission}%`}
+                                           defaultOpen={true}
+                                           icon={<Music className="w-4 h-4 text-pink-500" />}
+                                           className="bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700"
+                                       >
+                                           {/* Selecionar todos */}
+                                           <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200 dark:border-gray-600">
                                                <Checkbox
-                                                   id={`affiliate-${affiliateDB.id}`}
-                                                   checked={isSelected}
-                                                   onCheckedChange={(checked) => {
-                                                       if (checked) {
-                                                           const commission = affiliateDB.marketplace_commission_rate ?? affiliateDB.percentage;
-                                                           setAffiliates([...affiliates, {
-                                                               id: crypto.randomUUID(),
-                                                               name: affiliateDB.name,
-                                                               percentage: commission.toString()
-                                                           }]);
-                                                       } else {
-                                                           setAffiliates(affiliates.filter(aff => aff.name !== affiliateDB.name));
-                                                       }
-                                                   }}
-                                                   className="mt-1"
+                                                   id={`select-all-${marketplaceName}`}
+                                                   checked={allSelected}
+                                                   onCheckedChange={(checked) => toggleAll(!!checked)}
+                                                   className={someSelected && !allSelected ? 'opacity-60' : ''}
                                                />
-                                               <div className="flex-1">
-                                                   <Label 
-                                                       htmlFor={`affiliate-${affiliateDB.id}`}
-                                                       className="text-sm font-medium text-gray-900 dark:text-white cursor-pointer"
-                                                   >
-                                                       {affiliateDB.name}
-                                                   </Label>
-                                                   <div className="mt-1 flex flex-wrap gap-2 text-xs text-gray-600 dark:text-gray-200">
-                                                       {affiliateDB.instagram && (
-                                                           <span className="flex items-center gap-1">
-                                                               <Instagram className="w-3 h-3" /> {affiliateDB.instagram}
-                                                           </span>
-                                                       )}
-                                                       {affiliateDB.tiktok && (
-                                                           <span className="flex items-center gap-1">
-                                                               <Music className="w-3 h-3" /> {affiliateDB.tiktok}
-                                                           </span>
-                                                       )}
-                                                       {affiliateDB.twitter && (
-                                                           <span className="flex items-center gap-1">
-                                                               <Twitter className="w-3 h-3" /> {affiliateDB.twitter}
-                                                           </span>
-                                                       )}
-                                                   </div>
-                                                   {isSelected && (
-                                                       <div className="mt-2">
-                                                           <span className="text-xs text-gray-500 dark:text-gray-300">
-                                                               Comissão: <strong>{affiliateDB.marketplace_commission_rate != null ? `${affiliateDB.marketplace_commission_rate}%` : `${affiliateDB.percentage}%`}</strong>
-                                                               {affiliateDB.marketplace_name && (
-                                                                   <span className="ml-1 text-gray-400">({affiliateDB.marketplace_name})</span>
-                                                               )}
-                                                           </span>
-                                                       </div>
-                                                   )}
-                                               </div>
+                                               <Label htmlFor={`select-all-${marketplaceName}`} className="text-xs font-semibold text-gray-700 dark:text-gray-200 cursor-pointer">
+                                                   Selecionar todos ({mktAffiliates.length})
+                                               </Label>
                                            </div>
-                                       </div>
+
+                                           <div className="space-y-2">
+                                               {mktAffiliates.map((affiliateDB) => {
+                                                   const isSelected = affiliates.some(aff => aff.name === affiliateDB.name);
+                                                   return (
+                                                       <div key={affiliateDB.id} className="p-2 bg-white dark:bg-gray-900/60 rounded-lg border border-gray-100 dark:border-gray-700">
+                                                           <div className="flex items-center gap-3">
+                                                               <Checkbox
+                                                                   id={`affiliate-${affiliateDB.id}`}
+                                                                   checked={isSelected}
+                                                                   onCheckedChange={(checked) => {
+                                                                       if (checked) {
+                                                                           setAffiliates([...affiliates, {
+                                                                               id: crypto.randomUUID(),
+                                                                               name: affiliateDB.name,
+                                                                               percentage: (affiliateDB.marketplace_commission_rate ?? affiliateDB.percentage).toString()
+                                                                           }]);
+                                                                       } else {
+                                                                           setAffiliates(affiliates.filter(aff => aff.name !== affiliateDB.name));
+                                                                       }
+                                                                   }}
+                                                               />
+                                                               <div className="flex-1 min-w-0">
+                                                                   <Label htmlFor={`affiliate-${affiliateDB.id}`} className="text-sm font-medium text-gray-900 dark:text-white cursor-pointer block truncate">
+                                                                       {affiliateDB.name}
+                                                                   </Label>
+                                                                   {affiliateDB.tiktok && (
+                                                                       <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                                                                           <Music className="w-3 h-3" /> {affiliateDB.tiktok}
+                                                                       </span>
+                                                                   )}
+                                                               </div>
+                                                           </div>
+                                                       </div>
+                                                   );
+                                               })}
+                                           </div>
+                                       </CollapsibleSection>
                                    );
                                })}
                            </div>
