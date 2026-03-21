@@ -2864,9 +2864,9 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                         className="col-span-3"
                         disabled
                       />
-                      {(marketplaceCommissionRate > 0 || marketplaceFixedFee > 0) && (
+                      {organicMetrics && (
                         <p className="text-xs text-muted-foreground">
-                          {currentMarketplaceName}: {marketplaceCommissionRate > 0 ? `comissão ${marketplaceCommissionRate}%` : ''}{marketplaceCommissionRate > 0 && marketplaceFixedFee > 0 ? ' + ' : ''}{marketplaceFixedFee > 0 ? `taxa fixa ${formatCurrency(marketplaceFixedFee)}` : ''}{formData.marketplace === 'shopee' && formData.shopeeFreeShipping ? ' + 6% (Frete Grátis)' : ''}
+                          {organicMetrics.taxDescription}
                         </p>
                       )}
                     </div>

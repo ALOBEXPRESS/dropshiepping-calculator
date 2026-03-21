@@ -615,8 +615,8 @@ export const calculateMetrics = (
     const commissionFee = Math.max(0, baseCommission - transactionFee);
     
     taxDescription = hasFreeShipping 
-      ? `${baseCommission}% (Comissão) + 6% (Frete Grátis) + R$ ${shopeeFixedFee.toFixed(2)} (Tarifa Fixa Shopee)` 
-      : `${commissionFee}% (Comissão) + ${transactionFee}% (Transação) + R$ ${shopeeFixedFee.toFixed(2)} (Tarifa Fixa Shopee)`;
+      ? `Shopee: comissão ${totalRate}% (inclui 6% Frete Grátis) + R$ ${shopeeFixedFee.toFixed(2)} (Tarifa Fixa ${currentShopeeSellerType.toUpperCase()})` 
+      : `Shopee: ${commissionFee}% (Comissão) + ${transactionFee}% (Transação) + R$ ${shopeeFixedFee.toFixed(2)} (Tarifa Fixa ${currentShopeeSellerType.toUpperCase()})`;
   } else if (currentMarketplace === 'tiktok') {
       marketplaceFee = tiktokCommVal;
       taxDescription = `${tiktokCommVal}% (Comissão Tiktok Shop)`;
