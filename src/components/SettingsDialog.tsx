@@ -7,8 +7,9 @@ import { Trash2, Plus, Pencil, Save, X, AtSign } from 'lucide-react';
 interface AffiliateLocal {
   id: string;
   name: string;
-  instagram: string | null;
+  tiktok: string | null;
   percentage: number;
+  marketplace_id?: string | null;
 }
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -56,7 +57,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   // Afiliados
   const [affiliates, setAffiliates] = useState<AffiliateLocal[]>([]);
-  const [newAffiliate, setNewAffiliate] = useState({ name: '', instagram: '', percentage: 10.50 });
+  const [newAffiliate, setNewAffiliate] = useState({ name: '', tiktok: '', percentage: 10.50, marketplace_id: '' });
   const [editingAffiliateId, setEditingAffiliateId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -242,10 +243,17 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     if (!formData.id) return;
     const { data } = await supabase
       .from('affiliates')
-      .select('id, name, instagram, percentage')
+      .select('id, name, tiktok, percentage, affiliate_marketplaces(marketplace_id)')
       .eq('organization_id', formData.id)
       .order('name');
-    setAffiliates(data || []);
+    const mapped = (data || []).map((a: { id: string; name: string; tiktok: string | null; percentage: number; affiliate_marketplaces: { marketplace_id: string }[] }) => ({
+      id: a.id,
+      name: a.name,
+      tiktok: a.tiktok,
+      percentage: a.percentage,
+      marketplace_id: a.affiliate_marketplaces?.[0]?.marketplace_id ?? null
+    }));
+    setAffiliates(mapped);
   }, [formData.id]);
 
   useEffect(() => {
@@ -259,22 +267,32 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const handleAddAffiliate = async () => {
     if (!newAffiliate.name.trim() || !formData.id) return;
     try {
+      let affiliateId = editingAffiliateId;
       if (editingAffiliateId) {
         await supabase.from('affiliates').update({
           name: newAffiliate.name.trim(),
-          instagram: newAffiliate.instagram.trim() || null,
+          tiktok: newAffiliate.tiktok.trim() || null,
           percentage: newAffiliate.percentage
         }).eq('id', editingAffiliateId);
         setEditingAffiliateId(null);
       } else {
-        await supabase.from('affiliates').insert({
+        const { data } = await supabase.from('affiliates').insert({
           organization_id: formData.id,
           name: newAffiliate.name.trim(),
-          instagram: newAffiliate.instagram.trim() || null,
+          tiktok: newAffiliate.tiktok.trim() || null,
           percentage: newAffiliate.percentage
+        }).select('id').single();
+        affiliateId = data?.id ?? null;
+      }
+      // Vincular marketplace
+      if (affiliateId && newAffiliate.marketplace_id) {
+        await supabase.from('affiliate_marketplaces').delete().eq('affiliate_id', affiliateId);
+        await supabase.from('affiliate_marketplaces').insert({
+          affiliate_id: affiliateId,
+          marketplace_id: newAffiliate.marketplace_id
         });
       }
-      setNewAffiliate({ name: '', instagram: '', percentage: 10.50 });
+      setNewAffiliate({ name: '', tiktok: '', percentage: 10.50, marketplace_id: '' });
       void loadAffiliates();
     } catch (err) {
       console.error('Error saving affiliate:', err);
@@ -282,7 +300,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   };
 
   const startEditAffiliate = (a: AffiliateLocal) => {
-    setNewAffiliate({ name: a.name, instagram: a.instagram || '', percentage: a.percentage });
+    setNewAffiliate({ name: a.name, tiktok: a.tiktok || '', percentage: a.percentage, marketplace_id: a.marketplace_id || '' });
     setEditingAffiliateId(a.id);
   };
 
@@ -751,7 +769,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           <div className="col-span-1 md:col-span-2 space-y-4 pt-4 border-t border-gray-100 dark:border-zinc-800">
             <Label className="text-base font-semibold">Afiliados</Label>
             <div className="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-zinc-800 rounded-lg border border-gray-100 dark:border-zinc-700">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Nome</Label>
                   <Input
@@ -762,12 +780,12 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>@ (usuário)</Label>
+                  <Label>@ TikTok</Label>
                   <div className="relative">
                     <AtSign className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
                     <Input
-                      value={newAffiliate.instagram}
-                      onChange={(e) => setNewAffiliate(prev => ({ ...prev, instagram: e.target.value }))}
+                      value={newAffiliate.tiktok}
+                      onChange={(e) => setNewAffiliate(prev => ({ ...prev, tiktok: e.target.value }))}
                       placeholder="usuario"
                       className="bg-white dark:bg-zinc-900 pl-7"
                     />
@@ -783,6 +801,19 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                     className="bg-white dark:bg-zinc-900"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>Marketplace</Label>
+                  <Select value={newAffiliate.marketplace_id} onValueChange={(val) => setNewAffiliate(prev => ({ ...prev, marketplace_id: val }))}>
+                    <SelectTrigger className="bg-white dark:bg-zinc-900">
+                      <SelectValue placeholder="Selecione o marketplace" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {marketplaces.map(mp => (
+                        <SelectItem key={mp.id} value={mp.id}>{mp.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="flex gap-2 mt-2">
                 <Button
@@ -797,7 +828,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   )}
                 </Button>
                 {editingAffiliateId && (
-                  <Button type="button" onClick={() => { setEditingAffiliateId(null); setNewAffiliate({ name: '', instagram: '', percentage: 10.50 }); }} variant="outline" className="shrink-0">
+                  <Button type="button" onClick={() => { setEditingAffiliateId(null); setNewAffiliate({ name: '', tiktok: '', percentage: 10.50, marketplace_id: '' }); }} variant="outline" className="shrink-0">
                     Cancelar
                   </Button>
                 )}
@@ -813,8 +844,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                     <div className="flex flex-col">
                       <span className="font-medium">{a.name}</span>
                       <span className="text-xs text-gray-500">
-                        {a.instagram && <span>@{a.instagram} · </span>}
+                        {a.tiktok && <span>@{a.tiktok} · </span>}
                         Comissão: {a.percentage}%
+                        {a.marketplace_id && <span> · {marketplaces.find(m => m.id === a.marketplace_id)?.name}</span>}
                       </span>
                     </div>
                     <div className="flex gap-1">

@@ -20,24 +20,38 @@ export const useInfluencers = (organizationId?: string) => {
 
   useEffect(() => {
     const fetchInfluencers = async () => {
-      if (!organizationId) {
-        setInfluencers([]);
-        setLoading(false);
-        return;
-      }
-
       setLoading(true);
       setError(null);
 
       try {
+        // Resolve the correct org: prefer the member's org over the context org
+        let orgId = organizationId;
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: members } = await supabase
+            .from('organization_members')
+            .select('organization_id')
+            .eq('user_id', user.id)
+            .limit(1);
+          if (members && members.length > 0) {
+            orgId = members[0].organization_id;
+          }
+        }
+
+        if (!orgId) {
+          setInfluencers([]);
+          setLoading(false);
+          return;
+        }
+
         const { data, error: fetchError } = await supabase
           .from('influencers')
           .select('*')
-          .eq('organization_id', organizationId)
+          .eq('organization_id', orgId)
           .order('name', { ascending: true });
 
         if (fetchError) throw fetchError;
-
         setInfluencers(data || []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erro ao carregar influencers');
