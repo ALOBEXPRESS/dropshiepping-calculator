@@ -22,6 +22,7 @@ export interface Marketplace {
   fixed_fee?: number;
   is_system: boolean;
   affiliate_commission_rate?: number;
+  account_type?: 'cpf' | 'cnpj' | null;
 }
 
 export const ReferenceService = {

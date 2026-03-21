@@ -51,7 +51,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     has_monthly_fee: false,
     monthly_fee_value: 0,
     fixed_fee: 0,
-    affiliate_commission_rate: 0
+    affiliate_commission_rate: 0,
+    account_type: '' as '' | 'cpf' | 'cnpj'
   });
   const [editingMarketplaceId, setEditingMarketplaceId] = useState<string | null>(null);
 
@@ -350,7 +351,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           has_monthly_fee: newMarketplace.has_monthly_fee,
           monthly_fee_value: newMarketplace.monthly_fee_value,
           fixed_fee: newMarketplace.fixed_fee,
-          affiliate_commission_rate: newMarketplace.affiliate_commission_rate
+          affiliate_commission_rate: newMarketplace.affiliate_commission_rate,
+          account_type: newMarketplace.account_type || null
         });
         setEditingMarketplaceId(null);
       } else {
@@ -361,6 +363,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           monthly_fee_value: newMarketplace.monthly_fee_value,
           fixed_fee: newMarketplace.fixed_fee,
           affiliate_commission_rate: newMarketplace.affiliate_commission_rate,
+          account_type: newMarketplace.account_type || null,
           organization_id: formData.id
         });
       }
@@ -370,7 +373,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         has_monthly_fee: false,
         monthly_fee_value: 0,
         fixed_fee: 0,
-        affiliate_commission_rate: 0
+        affiliate_commission_rate: 0,
+        account_type: ''
       });
       void loadMarketplaces();
     } catch (error) {
@@ -385,7 +389,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       has_monthly_fee: mp.has_monthly_fee,
       monthly_fee_value: mp.monthly_fee_value,
       fixed_fee: mp.fixed_fee || 0,
-      affiliate_commission_rate: mp.affiliate_commission_rate || 0
+      affiliate_commission_rate: mp.affiliate_commission_rate || 0,
+      account_type: (mp.account_type as '' | 'cpf' | 'cnpj') || ''
     });
     setEditingMarketplaceId(mp.id);
   };
@@ -397,7 +402,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       has_monthly_fee: false,
       monthly_fee_value: 0,
       fixed_fee: 0,
-      affiliate_commission_rate: 0
+      affiliate_commission_rate: 0,
+      account_type: ''
     });
     setEditingMarketplaceId(null);
   };
@@ -690,6 +696,18 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                      className="bg-white dark:bg-zinc-900"
                    />
                  </div>
+                 <div className="space-y-2">
+                   <Label>Tipo de Conta</Label>
+                   <select
+                     value={newMarketplace.account_type}
+                     onChange={(e) => setNewMarketplace(prev => ({...prev, account_type: e.target.value as '' | 'cpf' | 'cnpj'}))}
+                     className="w-full h-9 rounded-md border border-input bg-white dark:bg-zinc-900 px-3 py-1 text-sm shadow-sm"
+                   >
+                     <option value="">Não especificado</option>
+                     <option value="cpf">CPF (R$ 5,00 taxa fixa Shopee)</option>
+                     <option value="cnpj">CNPJ (R$ 4,00 taxa fixa Shopee)</option>
+                   </select>
+                 </div>
               </div>
               <div className="flex items-center space-x-2 pt-2">
                 <Checkbox 
@@ -746,6 +764,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                             {mp.fixed_fee ? ` | Taxa fixa: R$ ${mp.fixed_fee.toFixed(2)}` : ''}
                             {mp.has_monthly_fee && ` | Mensalidade: R$ ${mp.monthly_fee_value.toFixed(2)}`}
                             {mp.affiliate_commission_rate ? ` | Afiliado: ${mp.affiliate_commission_rate}%` : ''}
+                            {mp.account_type ? ` | ${mp.account_type.toUpperCase()}` : ''}
                             {mp.is_system && ' (Padrão)'}
                         </span>
                     </div>
