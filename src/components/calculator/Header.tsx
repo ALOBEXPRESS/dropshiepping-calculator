@@ -38,8 +38,8 @@ export const Header: React.FC<HeaderProps> = ({ onLogoClick }) => {
          />
       </div>
       <div className="text-center md:text-right">
-         <p className="text-gray-300 text-xl font-medium font-iceland">Calculadora de Precificação Dropshipping Nacional <span className="text-sm text-gray-500 font-normal">v1.0.0</span></p>
-         <p className="text-sm text-gray-400 mt-1">Taxas reais atualizadas de Marketplaces 2025</p>
+         <p className="text-gray-300 text-xl font-medium font-iceland">Calculadora de Precificação Dropshipping Nacional <span className="text-sm text-gray-500 font-normal">v3.0.0</span></p>
+         <p className="text-sm text-gray-400 mt-1">Taxas reais atualizadas de Marketplaces 2026</p>
       </div>
     </div>
   );
