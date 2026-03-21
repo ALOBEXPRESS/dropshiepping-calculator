@@ -234,9 +234,7 @@ export const useDropshippingCalculator = () => {
   const [influencers, setInfluencers] = useState<Influencer[]>(() => 
     Array.isArray(draft.influencers) ? draft.influencers : []
   );
-  const [affiliates, setAffiliates] = useState<Affiliate[]>(() => 
-    Array.isArray(draft.affiliates) ? draft.affiliates : []
-  );
+  const [affiliates, setAffiliates] = useState<Affiliate[]>([]);
   
   const [orgCostVideo, setOrgCostVideo] = useState(''); // Only used if ChatGPT
   const [orgKieCost, setOrgKieCost] = useState(''); // Deprecated
