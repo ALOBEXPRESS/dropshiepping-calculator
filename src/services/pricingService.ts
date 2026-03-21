@@ -264,8 +264,8 @@ export const calculateMetrics = (
               if (m > 0) return c * m;
               return c / Math.abs(m);
           }
-          const denom = 1 - (feeRate + recommendedMargin + gateway + supplierFeeRate) / 100;
-          return denom > 0 ? (c + fixed) / denom : (c + fixed) * 2; 
+          const denom = 1 - (feeRate + recommendedMargin + gateway) / 100;
+          return denom > 0 ? (c + fixed + baseCost * (supplierFeeRate / 100)) / denom : (c + fixed + baseCost * (supplierFeeRate / 100)) * 2; 
       };
 
       // 1. First Pass
@@ -308,14 +308,12 @@ export const calculateMetrics = (
       const adsCostPerSale = (currentAds && currentSales > 0 && currentDailyBudget > 0) ? (currentDailyBudget / currentSales) : 0;
       const totalCPA = adsCostPerSale + paidTrafficCost;
 
-      // Calculate final supplier fee cost based on effective selling price
+      // Calculate final supplier fee cost based on baseCost (not selling price)
   const supplierFeeCost = supplierFeeType === 'fixed' 
       ? supplierFeeVal 
-      : effectiveSellingPrice * (supplierFeeVal / 100);
+      : baseCost * (supplierFeeVal / 100);
 
   // Recalculate total cost to include dynamic supplier fee for final metrics
-  // Note: 'totalCost' variable previously held only base + fixed parts. 
-  // Let's create a 'fullTotalCost' for margin calculation
   const fullTotalCost = totalCost + (supplierFeeType === 'percent' ? supplierFeeCost : 0);
 
   // Total Fees Calculation
@@ -332,7 +330,7 @@ export const calculateMetrics = (
       
       const supplierFeeCostEnjoei = supplierFeeType === 'fixed' 
           ? supplierFeeVal 
-          : effectiveSellingPrice * (supplierFeeVal / 100);
+          : baseCost * (supplierFeeVal / 100);
 
       const totalInfluencerPercent = influencers.reduce((acc, curr) => acc + (parseFloat(curr.percentage?.replace(',', '.') || '0')), 0);
       const totalAffiliatePercent = calcTotalAffiliatePercent(affiliates);
@@ -505,7 +503,7 @@ export const calculateMetrics = (
           reverseCR = (currentSales / clicks) * 100;
       }
       
-      const variableSupplierFee = supplierFeeType === 'percent' ? effectiveSellingPrice * (supplierFeeRate / 100) : 0;
+      const variableSupplierFee = supplierFeeType === 'percent' ? baseCost * (supplierFeeRate / 100) : 0;
       const finalSupplierFeeCost = supplierFeeCostFixed + variableSupplierFee;
 
       return {
@@ -656,24 +654,22 @@ export const calculateMetrics = (
          const cat = amazonCategories[amazonCategory];
          const minComm = cat ? cat.minimum : 1.0;
          const supplierRate = supplierFeeRate;
+         const supplierFixedCost = baseCost * (supplierRate / 100);
          
-         // Standard calculation with supplier fee rate in denominator
-         const denom = 1 - (feeRate + m + gateway + supplierRate) / 100;
-         const price = denom > 0 ? (c + fixed) / denom : (c + fixed) * 2;
+         // Standard calculation with supplier fee as fixed cost in numerator
+         const denom = 1 - (feeRate + m + gateway) / 100;
+         const price = denom > 0 ? (c + fixed + supplierFixedCost) / denom : (c + fixed + supplierFixedCost) * 2;
          
          // Check if calculated commission is below minimum
          const comm = price * (feeRate / 100);
          if (comm < minComm) {
              // Recalculate with Fixed Commission Amount (minComm) instead of Rate
-             // Price = Cost + FixedFee + MinComm + Margin*Price + Gateway*Price + SupplierRate*Price
-             // Price - Margin*Price - Gateway*Price - SupplierRate*Price = Cost + FixedFee + MinComm
-             // Price * (1 - Margin - Gateway - SupplierRate) = Cost + FixedFee + MinComm
-             const denomMin = 1 - (m + gateway + supplierRate) / 100;
-             return denomMin > 0 ? (c + fixed + minComm) / denomMin : (c + fixed + minComm) * 2;
+             const denomMin = 1 - (m + gateway) / 100;
+             return denomMin > 0 ? (c + fixed + minComm + supplierFixedCost) / denomMin : (c + fixed + minComm + supplierFixedCost) * 2;
          }
          return price;
       }
-      return (c + fixed) / (1 - (feeRate + m + gateway + supplierFeeRate) / 100);
+      return (c + fixed + baseCost * (supplierFeeRate / 100)) / (1 - (feeRate + m + gateway) / 100);
   };
 
   if (currentMarketplace === 'mercadolivre') {
@@ -811,10 +807,10 @@ export const calculateMetrics = (
 
   const marketplaceCost = calculatedCommission;
   
-  // Calculate final supplier fee cost based on effective selling price
+  // Calculate final supplier fee cost based on baseCost (not selling price)
   const supplierFeeCost = supplierFeeType === 'fixed' 
       ? supplierFeeVal 
-      : effectiveSellingPrice * (supplierFeeVal / 100);
+      : baseCost * (supplierFeeVal / 100);
 
   const totalInfluencerPercent = influencers.reduce((acc, curr) => acc + (parseFloat(curr.percentage?.replace(',', '.') || '0')), 0);
   const totalAffiliatePercent = calcTotalAffiliatePercent(affiliates);
