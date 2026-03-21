@@ -660,25 +660,6 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
   // so we just use organicNetRevenueBase directly — no manual override needed.
   const organicNetRevenue = organicNetRevenueBase;
 
-  // marketplace key→name map (used in handleSave and hint text)
-  const marketplaceKeyToName: Record<string, string> = {
-    mercadolivre: 'Mercado Livre',
-    shopee: 'Shopee',
-    tiktok: 'TikTok',
-    shein: 'Shein',
-    amazon: 'Amazon',
-    enjoei: 'Enjoei',
-    wordpress: 'Site Próprio',
-    facebook: 'Facebook',
-    olx: 'OLX',
-  };
-  const currentMarketplaceName = marketplaceKeyToName[formData.marketplace] ?? formData.marketplace;
-  const marketplaceRecord = marketplaces.find(
-    (mp) => mp.name.toLowerCase() === currentMarketplaceName.toLowerCase()
-  );
-  const marketplaceCommissionRate = marketplaceRecord?.commission_rate ?? 0;
-  const marketplaceFixedFee = marketplaceRecord?.fixed_fee ?? 0;
-
   const organicVideoCost = 0;
 
   const handleSave = async () => {
