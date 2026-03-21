@@ -184,7 +184,8 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
       setAffiliates(affiliatesDB.map(a => ({
         id: crypto.randomUUID(),
         name: a.name,
-        percentage: (a.marketplace_commission_rate ?? a.percentage).toString()
+        percentage: (a.marketplace_commission_rate ?? a.percentage).toString(),
+        marketplaceName: a.marketplace_name ?? undefined
       })));
     }
   }, [loadingAffiliates, affiliatesDB]);
@@ -550,7 +551,7 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                                        if (checked) {
                                            const toAdd = mktAffiliates
                                                .filter(a => !affiliates.some(aff => aff.name === a.name))
-                                               .map(a => ({ id: crypto.randomUUID(), name: a.name, percentage: (a.marketplace_commission_rate ?? a.percentage).toString() }));
+                                               .map(a => ({ id: crypto.randomUUID(), name: a.name, percentage: (a.marketplace_commission_rate ?? a.percentage).toString(), marketplaceName }));
                                            setAffiliates([...affiliates, ...toAdd]);
                                        } else {
                                            setAffiliates(affiliates.filter(aff => !mktAffiliates.some(a => a.name === aff.name)));
@@ -604,7 +605,8 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                                                                                setAffiliates([...affiliates, {
                                                                                    id: crypto.randomUUID(),
                                                                                    name: affiliateDB.name,
-                                                                                   percentage: (affiliateDB.marketplace_commission_rate ?? affiliateDB.percentage).toString()
+                                                                                   percentage: (affiliateDB.marketplace_commission_rate ?? affiliateDB.percentage).toString(),
+                                                                                   marketplaceName
                                                                                }]);
                                                                            } else {
                                                                                setAffiliates(affiliates.filter(aff => aff.name !== affiliateDB.name));

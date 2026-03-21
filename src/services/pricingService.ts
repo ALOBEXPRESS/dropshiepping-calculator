@@ -2,6 +2,21 @@ import type { MercadoLivreTaxes, ShopeeCategory, CalculationResult, AiModel, Kie
 import { amazonCategories } from './amazonCategories';
 import { calculateProfitFromPrice, calculateSellingPrice, type MercadoLivreParams, type CalculationResult as MLCalculationResult } from './calculators/mercadolivre';
 
+// Sum affiliate commissions once per marketplace (dedup by marketplaceName, fallback by rate value)
+const calcTotalAffiliatePercent = (affiliates: Affiliate[]): number => {
+  if (affiliates.length === 0) return 0;
+  const seen = new Set<string>();
+  let total = 0;
+  for (const a of affiliates) {
+    const key = a.marketplaceName ?? a.percentage?.replace(',', '.') ?? '0';
+    if (!seen.has(key)) {
+      seen.add(key);
+      total += parseFloat(a.percentage?.replace(',', '.') || '0');
+    }
+  }
+  return total;
+};
+
 export const shopeeCategories: Record<string, ShopeeCategory> = {
   eletronicos: { name: 'Eletrônicos', avgCPC: 0.45, avgCR: 1.2 },
   moda: { name: 'Moda e Acessórios', avgCPC: 0.35, avgCR: 2.5 },
@@ -320,7 +335,7 @@ export const calculateMetrics = (
           : effectiveSellingPrice * (supplierFeeVal / 100);
 
       const totalInfluencerPercent = influencers.reduce((acc, curr) => acc + (parseFloat(curr.percentage?.replace(',', '.') || '0')), 0);
-      const totalAffiliatePercent = affiliates.length > 0 ? Math.max(...affiliates.map(a => parseFloat(a.percentage?.replace(',', '.') || '0'))) : 0;
+      const totalAffiliatePercent = calcTotalAffiliatePercent(affiliates);
       
       const influencerCost = effectiveSellingPrice * (totalInfluencerPercent / 100);
       const affiliateCost = effectiveSellingPrice * (totalAffiliatePercent / 100);
@@ -452,7 +467,7 @@ export const calculateMetrics = (
       const effectiveSellingPrice = manualPriceVal > 0 ? manualPriceVal : autoResult.suggestedPrice;
       
       const totalInfluencerPercent = influencers.reduce((acc, curr) => acc + (parseFloat(curr.percentage?.replace(',', '.') || '0')), 0);
-      const totalAffiliatePercent = affiliates.length > 0 ? Math.max(...affiliates.map(a => parseFloat(a.percentage?.replace(',', '.') || '0'))) : 0;
+      const totalAffiliatePercent = calcTotalAffiliatePercent(affiliates);
       
       const influencerCost = effectiveSellingPrice * (totalInfluencerPercent / 100);
       const affiliateCost = effectiveSellingPrice * (totalAffiliatePercent / 100);
@@ -802,7 +817,7 @@ export const calculateMetrics = (
       : effectiveSellingPrice * (supplierFeeVal / 100);
 
   const totalInfluencerPercent = influencers.reduce((acc, curr) => acc + (parseFloat(curr.percentage?.replace(',', '.') || '0')), 0);
-  const totalAffiliatePercent = affiliates.length > 0 ? Math.max(...affiliates.map(a => parseFloat(a.percentage?.replace(',', '.') || '0'))) : 0;
+  const totalAffiliatePercent = calcTotalAffiliatePercent(affiliates);
   
   const influencerCost = effectiveSellingPrice * (totalInfluencerPercent / 100);
   const affiliateCost = effectiveSellingPrice * (totalAffiliatePercent / 100);

@@ -11,6 +11,7 @@ export interface Affiliate {
   id: string;
   name: string;
   percentage: string;
+  marketplaceName?: string;
 }
 
 export interface TaxRate {
