@@ -268,7 +268,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     gatewayInstallments: source?.gatewayInstallments !== undefined && source?.gatewayInstallments !== null ? String(source.gatewayInstallments) : '1',
     supplierFeeType: source?.supplierFeeType || 'percent',
     supplierFeeValue: source?.supplierFeeValue !== undefined && source?.supplierFeeValue !== null ? String(source.supplierFeeValue) : '',
-    supplierGatewayFeeType: source?.supplierGatewayFeeType || 'percent',
+    supplierGatewayFeeType: source?.supplierGatewayFeeType || 'fixed',
     supplierGatewayFeeValue: source?.supplierGatewayFeeValue !== undefined && source?.supplierGatewayFeeValue !== null ? String(source.supplierGatewayFeeValue) : '',
     shopeeFreeShipping: source?.shippingOption === 'with',
     shippingFee: source?.marketplaceShippingCost !== undefined && source?.marketplaceShippingCost !== null ? String(source.marketplaceShippingCost) : '',
