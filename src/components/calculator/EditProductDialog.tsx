@@ -570,6 +570,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     const supplierGatewayFeeValue = parseCurrency(formData.supplierGatewayFeeValue ?? 0);
     const supplierGatewayFeePercent = supplierGatewayFeeType === 'percent' ? supplierGatewayFeeValue : 0;
     const supplierGatewayFixedFee = supplierGatewayFeeType === 'fixed' ? supplierGatewayFeeValue : 0;
+    const gatewayFeeVal = parseCurrency(formData.gatewayFeeValue ?? 0);
 
     return calculateMetrics(
       costPrice,
@@ -586,7 +587,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       cpc,
       dailyBudget,
       salesQuantity,
-      0,
+      gatewayFeeVal,
       sellingPrice,
       0,
       0,
@@ -631,7 +632,8 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     formData.shopeeFreeShipping, formData.shippingFee, formData.mlShippingCost,
     formData.marketplaceShippingCost, formData.supplierFeeType, formData.supplierFeeValue,
     formData.supplierGatewayFeeType, formData.supplierGatewayFeeValue,
-    formData.gatewayBank, formData.gatewayMethod, formData.shopeeUseAds,
+    formData.gatewayBank, formData.gatewayMethod, formData.gatewayFeeValue, formData.gatewayInstallments,
+    formData.shopeeUseAds,
     formData.shopeeStoreCouponEnabled, formData.shopeeStoreCouponValue,
     formData.shopeeProductCouponEnabled, formData.shopeeProductCouponValue,
     formData.shopeeFollowerCouponEnabled, formData.shopeeFollowerCouponValue,
