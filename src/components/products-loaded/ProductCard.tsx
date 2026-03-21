@@ -6,6 +6,7 @@ import type { BlingProductItem } from '@/hooks/useProductsBling';
 import blingLogo from '@/imgs/bling.svg';
 import alobExpressLogo from '@/imgs/Logo 2.png';
 import yeiziDropLogo from '@/imgs/yeizidrop.png';
+import dogamaLogo from '@/imgs/dogama.jpg';
 
 type ProductCardProps = {
   product: BlingProductItem;
@@ -194,6 +195,20 @@ export const ProductCard = ({
                 alt="Tyr"
                 className="h-5 w-auto"
                 onError={() => setBadgeErrors((prev) => ({ ...prev, ALOBFOR_DROP_01: true }))}
+              />
+            )}
+          </div>
+        ) : null}
+        {currentProduct.supplierSku === 'ALOBFOR_DROP_02' ? (
+          <div className="absolute right-3 top-3 rounded-full bg-white/90 p-0.5 shadow-sm dark:bg-zinc-900/90 overflow-hidden">
+            {badgeErrors.ALOBFOR_DROP_02 ? (
+              <span className="text-[10px] font-semibold text-gray-700 dark:text-zinc-200 px-1">Dogama</span>
+            ) : (
+              <img
+                src={dogamaLogo}
+                alt="Dogama"
+                className="h-6 w-6 object-cover rounded-full"
+                onError={() => setBadgeErrors((prev) => ({ ...prev, ALOBFOR_DROP_02: true }))}
               />
             )}
           </div>

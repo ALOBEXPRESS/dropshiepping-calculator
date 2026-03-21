@@ -1042,6 +1042,8 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       handleSupplierChange('ALOBEXPRESS');
     } else if (product.supplierSku === 'ALOBFOR_DROP_01') {
       handleSupplierChange('Tyr');
+    } else if (product.supplierSku === 'ALOBFOR_DROP_02') {
+      handleSupplierChange('Dogama');
     } else {
       handleSupplierChange('');
     }

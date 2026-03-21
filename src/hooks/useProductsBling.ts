@@ -173,7 +173,7 @@ export const useProductsBling = (organizationId?: string | null) => {
         }
         if (currentFilters.supplierSku && currentFilters.supplierSku !== 'all') {
           if (currentFilters.supplierSku === 'uncategorized') {
-            query = query.or('sku_fornecedor.is.null,and(sku_fornecedor.not.eq.ALOBFOR_DROP_01,sku_fornecedor.not.eq.ALOBEXPRESS_01)');
+            query = query.or('sku_fornecedor.is.null,and(sku_fornecedor.not.eq.ALOBFOR_DROP_01,sku_fornecedor.not.eq.ALOBEXPRESS_01,sku_fornecedor.not.eq.ALOBFOR_DROP_02)');
           } else {
             query = query.eq('sku_fornecedor', currentFilters.supplierSku);
           }

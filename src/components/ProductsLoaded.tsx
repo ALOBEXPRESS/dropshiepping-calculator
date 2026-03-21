@@ -51,7 +51,7 @@ export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBli
     const uniqueSuppliers = Array.from(new Set(items.map((item) => item.supplierSku).filter(Boolean)));
     const mapped = uniqueSuppliers.map((supplier) => ({
       value: supplier ?? 'all',
-      label: supplier === 'ALOBFOR_DROP_01' ? 'Tyr' : (supplier === 'ALOBEXPRESS_01' ? 'Alob Express' : supplier ?? 'Fornecedor')
+      label: supplier === 'ALOBFOR_DROP_01' ? 'Tyr' : (supplier === 'ALOBEXPRESS_01' ? 'Alob Express' : (supplier === 'ALOBFOR_DROP_02' ? 'Dogama' : supplier ?? 'Fornecedor'))
     }));
     return [{ value: 'all', label: 'Todos' }, { value: 'uncategorized', label: 'Não categorizado' }, ...mapped];
   }, [items]);
