@@ -11,6 +11,9 @@ export interface AffiliateDB {
   percentage: number;
   created_at: string;
   updated_at: string;
+  // Marketplace commission (from affiliate_marketplaces join)
+  marketplace_name?: string | null;
+  marketplace_commission_rate?: number | null;
 }
 
 export const useAffiliates = (organizationId?: string) => {
@@ -47,12 +50,29 @@ export const useAffiliates = (organizationId?: string) => {
 
         const { data, error: fetchError } = await supabase
           .from('affiliates')
-          .select('*')
+          .select(`
+            *,
+            affiliate_marketplaces(
+              marketplace_id,
+              marketplaces(name, affiliate_commission_rate)
+            )
+          `)
           .eq('organization_id', orgId)
           .order('name', { ascending: true });
 
         if (fetchError) throw fetchError;
-        setAffiliates(data || []);
+
+        // Flatten marketplace commission into each affiliate
+        const enriched = (data || []).map((aff: any) => {
+          const firstMarketplace = aff.affiliate_marketplaces?.[0]?.marketplaces;
+          return {
+            ...aff,
+            marketplace_name: firstMarketplace?.name ?? null,
+            marketplace_commission_rate: firstMarketplace?.affiliate_commission_rate ?? null,
+          };
+        });
+
+        setAffiliates(enriched);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erro ao carregar afiliados');
         console.error('Error fetching affiliates:', err);

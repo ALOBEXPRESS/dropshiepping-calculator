@@ -517,7 +517,6 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                            <div className="space-y-2">
                                {affiliatesDB.map((affiliateDB) => {
                                    const isSelected = affiliates.some(aff => aff.name === affiliateDB.name);
-                                   const selectedAffiliate = affiliates.find(aff => aff.name === affiliateDB.name);
                                    
                                    return (
                                        <div key={affiliateDB.id} className="p-3 bg-gray-50 rounded-lg dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700">
@@ -527,10 +526,11 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                                                    checked={isSelected}
                                                    onCheckedChange={(checked) => {
                                                        if (checked) {
+                                                           const commission = affiliateDB.marketplace_commission_rate ?? affiliateDB.percentage;
                                                            setAffiliates([...affiliates, {
                                                                id: crypto.randomUUID(),
                                                                name: affiliateDB.name,
-                                                               percentage: affiliateDB.percentage.toString()
+                                                               percentage: commission.toString()
                                                            }]);
                                                        } else {
                                                            setAffiliates(affiliates.filter(aff => aff.name !== affiliateDB.name));
@@ -564,24 +564,12 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                                                    </div>
                                                    {isSelected && (
                                                        <div className="mt-2">
-                                                           <Label className="text-xs text-gray-600 dark:text-gray-200">Porcentagem de comissão Alob</Label>
-                                                           <div className="relative mt-1">
-                                                               <Input
-                                                                   value={selectedAffiliate?.percentage || ''}
-                                                                   onChange={(e) => {
-                                                                       const newAffiliates = affiliates.map(aff => 
-                                                                           aff.name === affiliateDB.name 
-                                                                               ? { ...aff, percentage: e.target.value }
-                                                                               : aff
-                                                                       );
-                                                                       setAffiliates(newAffiliates);
-                                                                   }}
-                                                                   placeholder="0,00"
-                                                                   className="h-8 bg-white dark:bg-zinc-900 pr-8"
-                                                                   inputMode="decimal"
-                                                               />
-                                                               <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-semibold text-xs">%</span>
-                                                           </div>
+                                                           <span className="text-xs text-gray-500 dark:text-gray-300">
+                                                               Comissão: <strong>{affiliateDB.marketplace_commission_rate != null ? `${affiliateDB.marketplace_commission_rate}%` : `${affiliateDB.percentage}%`}</strong>
+                                                               {affiliateDB.marketplace_name && (
+                                                                   <span className="ml-1 text-gray-400">({affiliateDB.marketplace_name})</span>
+                                                               )}
+                                                           </span>
                                                        </div>
                                                    )}
                                                </div>
