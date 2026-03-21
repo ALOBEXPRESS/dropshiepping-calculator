@@ -2554,7 +2554,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
               {/* Área de Variações */}
               {hasVariations && (
                 <div className="space-y-3 animate-fadeIn">
-                  <div className="grid grid-cols-6 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <Select value={variationType} onValueChange={(val) => setVariationType(val as 'color' | 'size')}>
                       <SelectTrigger className="text-xs">
                         <SelectValue placeholder="Tipo" />
@@ -2565,37 +2565,15 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                       </SelectContent>
                     </Select>
                     <Input 
-                      placeholder={variationType === 'color' ? 'Cor (ex: #FF0000)' : 'Tamanho (ex: P)'}
+                      placeholder={variationType === 'color' ? 'Cor (ex: Azul)' : 'Tamanho (ex: P)'}
                       value={variationName}
                       onChange={(e) => setVariationName(e.target.value)}
                       className="text-xs"
                     />
                     <Input 
-                      placeholder="SKU Variação"
-                      value={variationSku}
-                      onChange={(e) => setVariationSku(e.target.value)}
-                      className="text-xs"
-                    />
-                    <Input 
-                      type="number"
-                      inputMode="numeric"
-                      placeholder="Estoque"
-                      value={variationStock}
-                      onChange={(e) => setVariationStock(e.target.value)}
-                      className="text-xs"
-                    />
-                    <Input 
                       type="text"
                       inputMode="decimal" 
-                      placeholder="Custo (R$)" 
-                      value={variationCost}
-                      onChange={(e) => handleCurrencyChange(e, setVariationCost)}
-                      className="text-xs"
-                    />
-                    <Input 
-                      type="text"
-                      inputMode="decimal" 
-                      placeholder="Markup" 
+                      placeholder="Markup global" 
                       value={variationMarkup}
                       onChange={(e) => handleCurrencyChange(e, setVariationMarkup)}
                       className="text-xs"
@@ -2608,7 +2586,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                   {variations.length > 0 && (
                     <div className="space-y-2">
                       <div className="text-[10px] text-gray-500 font-semibold">
-                        Tipo da variação: {variationType === 'color' ? 'Cor' : 'Tamanho'}
+                        Tipo da variação: {variationType === 'color' ? 'Cor' : 'Tamanho'} · Custo herdado do produto pai
                       </div>
                       <div className="border rounded-md overflow-hidden">
                       <Table>
@@ -2617,8 +2595,6 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                             <TableHead className="h-8 text-xs">Variação</TableHead>
                             <TableHead className="h-8 text-xs">SKU</TableHead>
                             <TableHead className="h-8 text-xs">Estoque</TableHead>
-                            <TableHead className="h-8 text-xs">Custo</TableHead>
-                            <TableHead className="h-8 text-xs">Preço Venda (Opcional)</TableHead>
                             <TableHead className="h-8 text-xs">Markup</TableHead>
                             <TableHead className="h-8 text-xs w-8"></TableHead>
                           </TableRow>
@@ -2629,23 +2605,6 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                               <TableCell className="py-2 text-xs font-medium">{v.name}</TableCell>
                               <TableCell className="py-2 text-xs">{v.sku || '-'}</TableCell>
                               <TableCell className="py-2 text-xs">{v.stockQuantity || '-'}</TableCell>
-                              <TableCell className="py-2 text-xs">R$ {v.cost}</TableCell>
-                              <TableCell className="py-2">
-                                {v.manualPrice ? (
-                                  <div className="text-[11px] font-semibold text-gray-700">
-                                    Preço de venda R$ {v.manualPrice}
-                                  </div>
-                                ) : null}
-                                <Input 
-                                  className={v.manualPrice ? "mt-1 h-7 w-24 text-xs bg-background" : "h-7 w-24 text-xs bg-background"} 
-                                  placeholder="0,00"
-                                  value={v.manualPrice || ''}
-                                  onChange={(e) => handleCurrencyChange(e, (val) => {
-                                    const shouldLock = parseCurrency(val) > 0;
-                                    updateVariation(v.id, { manualPrice: val, manualPriceLocked: shouldLock });
-                                  })}
-                                />
-                              </TableCell>
                               <TableCell className="py-2">
                                 <Select value={v.markup} onValueChange={(val) => updateAllVariationsMarkup(val)}>
                                   <SelectTrigger className="h-7 w-24 text-xs">
