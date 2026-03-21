@@ -194,7 +194,7 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
     } else {
       // Already have affiliates: just refresh the percentage/marketplaceName from DB
       // (in case commission was updated in Settings)
-      setAffiliates(prev => prev.map(aff => {
+      const updated: typeof affiliates = affiliates.map(aff => {
         const dbEntry = affiliatesDB.find(a => a.name === aff.name);
         if (!dbEntry) return aff;
         return {
@@ -202,7 +202,8 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
           percentage: (dbEntry.marketplace_commission_rate ?? dbEntry.percentage).toString(),
           marketplaceName: dbEntry.marketplace_name ?? aff.marketplaceName
         };
-      }));
+      });
+      setAffiliates(updated);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadingAffiliates, affiliatesDB]);
