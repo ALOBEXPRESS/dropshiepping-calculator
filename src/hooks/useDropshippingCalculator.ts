@@ -642,7 +642,13 @@ export const useDropshippingCalculator = () => {
 
         if (bank === 'picpay') {
             if (method === 'credit' || method === 'credit_sight' || method === 'credit_parc') {
-                fee = 0.99;
+                // PicPay Pix com crédito: taxas crescentes por parcela
+                const picpayRates: Record<number, number> = {
+                    1: 4.29, 2: 6.78, 3: 8.28, 4: 9.78, 5: 13.86,
+                    6: 14.86, 7: 15.86, 8: 16.86, 9: 17.86, 10: 18.86,
+                    11: 19.86, 12: 20.86
+                };
+                fee = picpayRates[Math.min(installments, 12)] ?? 4.29;
                 fixed = 0;
             } else if (method === 'pix') {
                 fee = 0;
@@ -697,8 +703,8 @@ export const useDropshippingCalculator = () => {
   const updateGatewayFees = (bank: string, method: string, installments: string) => {
     const { fee, fixed } = calculateGatewayFee(bank, method, installments, false);
     if (bank === 'picpay' && method === 'credit') {
-      setGatewayFeeType('fixed');
-      setGatewayFee('1,00');
+      setGatewayFeeType('percent');
+      setGatewayFee(fee.toString().replace('.', ','));
       setGatewayFixedFee('0');
       return;
     }

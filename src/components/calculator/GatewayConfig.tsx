@@ -168,23 +168,19 @@ export const GatewayConfig: React.FC<GatewayConfigProps> = ({
                      onClick={() => handleGatewayMethodChange('credit')}
                      data-testid="gateway-method-pix-credit"
                   >
-                     Pix com crédito (Taxa + Min R$5)
+                     Pix com crédito (4,29% a 20,86%)
                   </Button>
 
                   {gatewayMethod === 'credit' && (
                     <div className="col-span-2 text-[10px] text-gray-600 p-2 bg-green-50 rounded border border-green-100 space-y-2">
                         <div>
-                            <p className="font-semibold">ℹ️ Taxa de Serviço Transparente</p>
+                            <p className="font-semibold">ℹ️ Taxa por parcelas (PicPay)</p>
                             <ul className="list-disc pl-3 mt-1 space-y-1">
-                                <li>Tarifa percentual: até 9,99%</li>
-                                <li>Valor mínimo: R$ 5,00 (quando aplicável)</li>
+                                <li>1x: 4,29% | 2x: 6,78% | 3x: 8,28%</li>
+                                <li>4x: 9,78% | 5x: 13,86% | 6x: 14,86%</li>
+                                <li>7x: 15,86% | 8x: 16,86% | 9x: 17,86%</li>
+                                <li>10x: 18,86% | 11x: 19,86% | 12x: 20,86%</li>
                             </ul>
-                        </div>
-                        <div className="bg-white/50 p-1.5 rounded text-gray-500">
-                            <p className="font-semibold text-[9px] uppercase tracking-wider mb-1">Exemplo</p>
-                            <p>Transação de R$ 100,00 com taxa de 9,99%:</p>
-                            <p>• Valor da taxa: R$ 9,99</p>
-                            <p>• Total debitado: R$ 109,99</p>
                         </div>
                     </div>
                   )}
