@@ -60,6 +60,7 @@ type ProductDraft = {
   shopeeSellerVoucherEnabled?: boolean;
   shopeeSellerVoucherValue?: string;
   shopeeSellerVoucherType?: 'percent' | 'fixed';
+  shopeeSellerType?: 'cpf' | 'cnpj';
   shopeeTotalBudget?: string;
   shopeeStartDate?: string;
   shopeeEndDate?: string;
@@ -183,7 +184,7 @@ export const useDropshippingCalculator = () => {
   
   const [category, setCategory] = useState(() => typeof draft.category === 'string' ? draft.category : 'eletronicos');
   const [shippingOption, setShippingOption] = useState('with'); // Para Shopee
-  const [shopeeSellerType, setShopeeSellerType] = useState<'cpf' | 'cnpj'>('cnpj');
+  const [shopeeSellerType, setShopeeSellerType] = useState<'cpf' | 'cnpj'>(() => (draft.shopeeSellerType === 'cpf' || draft.shopeeSellerType === 'cnpj') ? draft.shopeeSellerType : 'cpf');
   const [shopeeStoreCouponEnabled, setShopeeStoreCouponEnabled] = useState(() => typeof draft.shopeeStoreCouponEnabled === 'boolean' ? draft.shopeeStoreCouponEnabled : false);
   const [shopeeStoreCouponValue, setShopeeStoreCouponValue] = useState(() => typeof draft.shopeeStoreCouponValue === 'string' ? draft.shopeeStoreCouponValue : '');
   const [shopeeStoreCouponType, setShopeeStoreCouponType] = useState<'percent' | 'fixed'>(() => isFeeType(draft.shopeeStoreCouponType) ? draft.shopeeStoreCouponType : 'percent');
@@ -481,6 +482,7 @@ export const useDropshippingCalculator = () => {
       shopeeSellerVoucherEnabled,
       shopeeSellerVoucherValue,
       shopeeSellerVoucherType,
+      shopeeSellerType,
       shopeeTotalBudget,
       shopeeStartDate,
       shopeeEndDate,
@@ -577,6 +579,7 @@ export const useDropshippingCalculator = () => {
     shopeeSellerVoucherEnabled,
     shopeeSellerVoucherValue,
     shopeeSellerVoucherType,
+    shopeeSellerType,
     shopeeTotalBudget,
     shopeeStartDate,
     shopeeEndDate,
