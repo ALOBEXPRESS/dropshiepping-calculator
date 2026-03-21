@@ -2,7 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { ReferenceService, type AccountHolder, type Marketplace } from '@/services/referenceService';
 import { Button } from '@/components/ui/button';
-import { Trash2, Plus, Pencil, Save, X } from 'lucide-react';
+import { Trash2, Plus, Pencil, Save, X, AtSign } from 'lucide-react';
+
+interface AffiliateLocal {
+  id: string;
+  name: string;
+  instagram: string | null;
+  percentage: number;
+}
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -46,6 +53,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     fixed_fee: 0
   });
   const [editingMarketplaceId, setEditingMarketplaceId] = useState<string | null>(null);
+
+  // Afiliados
+  const [affiliates, setAffiliates] = useState<AffiliateLocal[]>([]);
+  const [newAffiliate, setNewAffiliate] = useState({ name: '', instagram: '', percentage: 10.50 });
+  const [editingAffiliateId, setEditingAffiliateId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     id: '',
@@ -230,8 +242,54 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     if (formData.id) {
       void loadAccountHolders();
       void loadMarketplaces();
+      void loadAffiliates();
     }
   }, [formData.id, loadAccountHolders, loadMarketplaces]);
+
+  const loadAffiliates = async () => {
+    if (!formData.id) return;
+    const { data } = await supabase
+      .from('affiliates')
+      .select('id, name, instagram, percentage')
+      .eq('organization_id', formData.id)
+      .order('name');
+    setAffiliates(data || []);
+  };
+
+  const handleAddAffiliate = async () => {
+    if (!newAffiliate.name.trim() || !formData.id) return;
+    try {
+      if (editingAffiliateId) {
+        await supabase.from('affiliates').update({
+          name: newAffiliate.name.trim(),
+          instagram: newAffiliate.instagram.trim() || null,
+          percentage: newAffiliate.percentage
+        }).eq('id', editingAffiliateId);
+        setEditingAffiliateId(null);
+      } else {
+        await supabase.from('affiliates').insert({
+          organization_id: formData.id,
+          name: newAffiliate.name.trim(),
+          instagram: newAffiliate.instagram.trim() || null,
+          percentage: newAffiliate.percentage
+        });
+      }
+      setNewAffiliate({ name: '', instagram: '', percentage: 10.50 });
+      void loadAffiliates();
+    } catch (err) {
+      console.error('Error saving affiliate:', err);
+    }
+  };
+
+  const startEditAffiliate = (a: AffiliateLocal) => {
+    setNewAffiliate({ name: a.name, instagram: a.instagram || '', percentage: a.percentage });
+    setEditingAffiliateId(a.id);
+  };
+
+  const handleDeleteAffiliate = async (id: string) => {
+    await supabase.from('affiliates').delete().eq('id', id);
+    void loadAffiliates();
+  };
 
   const handleAddHolder = async () => {
     setError(null);
@@ -682,6 +740,90 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Seção Afiliados */}
+          <div className="col-span-1 md:col-span-2 space-y-4 pt-4 border-t border-gray-100 dark:border-zinc-800">
+            <Label className="text-base font-semibold">Afiliados</Label>
+            <div className="flex flex-col gap-2 p-4 bg-gray-50 dark:bg-zinc-800 rounded-lg border border-gray-100 dark:border-zinc-700">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Nome</Label>
+                  <Input
+                    value={newAffiliate.name}
+                    onChange={(e) => setNewAffiliate(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Ex: Vitrine da Danny"
+                    className="bg-white dark:bg-zinc-900"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>@ (usuário)</Label>
+                  <div className="relative">
+                    <AtSign className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+                    <Input
+                      value={newAffiliate.instagram}
+                      onChange={(e) => setNewAffiliate(prev => ({ ...prev, instagram: e.target.value }))}
+                      placeholder="usuario"
+                      className="bg-white dark:bg-zinc-900 pl-7"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Comissão (%)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={newAffiliate.percentage}
+                    onChange={(e) => setNewAffiliate(prev => ({ ...prev, percentage: parseFloat(e.target.value) || 0 }))}
+                    className="bg-white dark:bg-zinc-900"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 mt-2">
+                <Button
+                  type="button"
+                  onClick={handleAddAffiliate}
+                  className={`w-full ${editingAffiliateId ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'} text-white`}
+                >
+                  {editingAffiliateId ? (
+                    <><Save className="h-4 w-4 mr-2" /> Atualizar Afiliado</>
+                  ) : (
+                    <><Plus className="h-4 w-4 mr-2" /> Adicionar Afiliado</>
+                  )}
+                </Button>
+                {editingAffiliateId && (
+                  <Button type="button" onClick={() => { setEditingAffiliateId(null); setNewAffiliate({ name: '', instagram: '', percentage: 10.50 }); }} variant="outline" className="shrink-0">
+                    Cancelar
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
+              {affiliates.length === 0 ? (
+                <p className="text-sm text-gray-500 italic">Nenhum afiliado cadastrado.</p>
+              ) : (
+                affiliates.map(a => (
+                  <div key={a.id} className={`flex items-center justify-between p-3 rounded border ${editingAffiliateId === a.id ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800' : 'bg-gray-50 dark:bg-zinc-800 border-gray-100 dark:border-zinc-700'}`}>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{a.name}</span>
+                      <span className="text-xs text-gray-500">
+                        {a.instagram && <span>@{a.instagram} · </span>}
+                        Comissão: {a.percentage}%
+                      </span>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button type="button" variant="ghost" size="icon" onClick={() => startEditAffiliate(a)} className="h-6 w-6 text-blue-500 hover:text-blue-700 hover:bg-blue-50">
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                      <Button type="button" variant="ghost" size="icon" onClick={() => handleDeleteAffiliate(a.id)} className="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50">
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </div>
                   </div>
                 ))
