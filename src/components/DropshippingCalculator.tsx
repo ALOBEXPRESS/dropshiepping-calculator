@@ -3897,38 +3897,55 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                         ))}
                       </div>
                       {totalPages > 1 && (
-                        <div className="flex items-center justify-center gap-2 pt-6">
+                        <div className="flex items-center justify-center gap-1 pt-6 flex-wrap">
                           <Button
                             variant="outline"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-8 w-8 shrink-0"
                             disabled={currentPage === 1}
                             onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                           >
                             <ChevronLeft className="h-4 w-4" />
                           </Button>
 
-                          <div className="flex items-center gap-1">
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                              <button
-                                key={page}
-                                onClick={() => setCurrentPage(page)}
-                                className={`
-                                  h-8 w-8 rounded-md text-xs font-medium transition-colors
-                                  ${currentPage === page
-                                    ? 'bg-pink-600 text-white shadow-sm'
-                                    : 'bg-transparent text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}
-                                `}
-                              >
-                                {page}
-                              </button>
-                            ))}
+                          <div className="flex items-center gap-1 flex-wrap justify-center">
+                            {(() => {
+                              const pages: (number | 'ellipsis')[] = [];
+                              const delta = 2;
+                              const left = Math.max(2, currentPage - delta);
+                              const right = Math.min(totalPages - 1, currentPage + delta);
+
+                              pages.push(1);
+                              if (left > 2) pages.push('ellipsis');
+                              for (let i = left; i <= right; i++) pages.push(i);
+                              if (right < totalPages - 1) pages.push('ellipsis');
+                              if (totalPages > 1) pages.push(totalPages);
+
+                              return pages.map((page, idx) =>
+                                page === 'ellipsis' ? (
+                                  <span key={`ellipsis-${idx}`} className="h-8 w-6 flex items-center justify-center text-xs text-gray-400">…</span>
+                                ) : (
+                                  <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page as number)}
+                                    className={`
+                                      h-8 w-8 rounded-md text-xs font-medium transition-colors shrink-0
+                                      ${currentPage === page
+                                        ? 'bg-pink-600 text-white shadow-sm'
+                                        : 'bg-transparent text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}
+                                    `}
+                                  >
+                                    {page}
+                                  </button>
+                                )
+                              );
+                            })()}
                           </div>
 
                           <Button
                             variant="outline"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-8 w-8 shrink-0"
                             disabled={currentPage === totalPages}
                             onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                           >
