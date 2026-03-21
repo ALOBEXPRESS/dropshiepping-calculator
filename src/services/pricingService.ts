@@ -562,7 +562,7 @@ export const calculateMetrics = (
   const calculateFees = (currentPrice: number) => {
       let currentFixedFee = 0;
       let currentMarketplaceFee = 0;
-      const shopeeFixedFee = currentShopeeSellerType === 'cpf' ? 7 : 4;
+      const shopeeFixedFee = currentShopeeSellerType === 'cpf' ? 5 : 4;
 
       if (currentMarketplace === 'shopee') {
           const baseCommission = currentExtraCommission > 0 ? currentExtraCommission : 14;
@@ -720,7 +720,7 @@ export const calculateMetrics = (
       ? `0% comissão`
       : `${marketplaceFee}% comissão${fixedFee > 0 ? ' + R$ ' + fixedFee.toFixed(2) + ' (Tarifa Fixa Mercado Livre)' : ''}`;
   } else if (currentMarketplace === 'shopee') {
-      const shopeeFixedFee = currentShopeeSellerType === 'cpf' ? 7 : 4;
+      const shopeeFixedFee = currentShopeeSellerType === 'cpf' ? 5 : 4;
       const tempPrice = calcPrice(totalCost, recommendedMargin, marketplaceFee, shopeeFixedFee + gatewayFixedFeeVal, gatewayFeeVal);
       
       if (tempPrice < 8) {

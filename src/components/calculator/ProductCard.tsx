@@ -380,11 +380,15 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     const mlShipping = parseCurrency(product.mlShippingCost ?? 0);
     const marketplaceShipping = parseCurrency(product.marketplaceShippingCost ?? 0);
     const amazonPlan = product.amazonPlan === 'profissional' ? 'profissional' : 'individual';
+    const gatewayFeeType = product.gatewayFeeType || 'percent';
+    const gatewayFeeRaw = parseCurrency(product.gatewayFeeValue ?? 0);
+    const gatewayFeePercent = gatewayFeeType === 'percent' ? gatewayFeeRaw : 0;
+    const gatewayFixedFee = gatewayFeeType === 'fixed' ? gatewayFeeRaw : 0;
     try {
       const metrics = calculateMetrics(
         cp, 0, supplierFeeValue, 0, mp, category, adType, shippingOption, accountType,
-        0, false, 0, 0, 0, 0, sp, 0, 0, 0, marketplaceShipping, 0, 0, 0, mlShipping,
-        'percent', 0, 0, 0, enjoeiAdType, 0,
+        0, false, 0, 0, 0, gatewayFeePercent, sp, 0, 0, 0, marketplaceShipping, 0, 0, 0, mlShipping,
+        'percent', gatewayFixedFee, 0, 0, enjoeiAdType, 0,
         product.gatewayBank || '', product.gatewayMethod || '', '', '',
         product.meliPlus ?? false, supplierFeeType, supplierGatewayFeePercent, supplierGatewayFixedFee,
         supplierGatewayFeeType, amazonPlan, category, 0,
