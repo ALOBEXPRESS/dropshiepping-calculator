@@ -1031,7 +1031,8 @@ export const useDropshippingCalculator = () => {
     const gatewayFixedBase = parseCurrency(gatewayFixedFee) || 0;
     const gatewayPercent = gatewayFeeType === 'percent' ? gatewayFeeValue : 0;
     const gatewayFixed = (gatewayFeeType === 'fixed' ? gatewayFeeValue : 0) + gatewayFixedBase;
-    const gatewayOverride = gatewayBank === 'picpay' && gatewayMethod === 'pix';
+    // PicPay PIX override: only zero out if user hasn't manually set a fee
+    const gatewayOverride = gatewayBank === 'picpay' && gatewayMethod === 'pix' && gatewayFeeValue === 0 && gatewayFixedBase === 0;
     const gatewayPercentFinal = gatewayOverride ? 0 : gatewayPercent;
     const gatewayFixedFinal = gatewayOverride ? 0 : gatewayFixed;
     const ptGatewayFeeValue = trafficMode === 'paid' ? (parseCurrency(paidTrafficGatewayFee) || 0) : 0;
