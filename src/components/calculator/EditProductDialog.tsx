@@ -487,7 +487,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
         if (normalized === 'dogama') {
           next.supplierFeeType = 'percent';
           next.supplierFeeValue = '6';
-          next.supplierGatewayFeeType = 'fixed';
+          next.supplierGatewayFeeType = 'percent';
           next.supplierGatewayFeeValue = '2';
         } else if (normalized === 'tyr' || normalized === 'tyr (yeizidrop)') {
           next.supplierFeeType = 'percent';
