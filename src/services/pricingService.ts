@@ -319,7 +319,7 @@ export const calculateMetrics = (
       else if (actualMargin < (recommendedMargin - 0.5)) marginStatus = 'low';
       else if (actualMargin > (recommendedMargin + 0.5)) marginStatus = 'excellent';
 
-      const taxDescription = `${marketplaceFeeRate}% Comissão + R$ ${finalFixedFee.toFixed(2)} Tarifa Fixa${inactivityFee > 0 ? ' + R$ ' + inactivityFee.toFixed(2) + ' (Inatividade)' : ''}`;
+      let taxDescription = `${marketplaceFeeRate}% Comissão + R$ ${finalFixedFee.toFixed(2)} Tarifa Fixa${inactivityFee > 0 ? ' + R$ ' + inactivityFee.toFixed(2) + ' (Inatividade)' : ''}`;
       
       const supplierFeeCostEnjoei = supplierFeeType === 'fixed' 
           ? supplierFeeVal 
@@ -330,6 +330,10 @@ export const calculateMetrics = (
       
       const influencerCost = effectiveSellingPrice * (totalInfluencerPercent / 100);
       const affiliateCost = effectiveSellingPrice * (totalAffiliatePercent / 100);
+
+      if (totalAffiliatePercent > 0) {
+        taxDescription += ` + ${totalAffiliatePercent}% (Afiliado)`;
+      }
 
       return {
           cost: fullTotalCost,
@@ -528,7 +532,7 @@ export const calculateMetrics = (
           netRevenue: netRevenue.toFixed(2),
           actualMargin: actualMargin.toFixed(1),
           recommendedMargin,
-          taxDescription: result.taxDescription,
+          taxDescription: totalAffiliatePercent > 0 ? `${result.taxDescription} + ${totalAffiliatePercent}% (Afiliado)` : result.taxDescription,
           manualPrice: manualPriceVal,
           discountApplied,
           increaseApplied,
@@ -810,6 +814,11 @@ export const calculateMetrics = (
   
   const influencerCost = effectiveSellingPrice * (totalInfluencerPercent / 100);
   const affiliateCost = effectiveSellingPrice * (totalAffiliatePercent / 100);
+
+  // Append affiliate commission to taxDescription if applicable
+  if (totalAffiliatePercent > 0) {
+    taxDescription += ` + ${totalAffiliatePercent}% (Afiliado)`;
+  }
 
   // Partial cost was totalCost (base + fixed supplier + gateway supplier + pkg + shipping)
   // We need to subtract the variable supplier fee too

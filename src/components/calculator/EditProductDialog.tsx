@@ -543,6 +543,9 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     const accountTypeValue = (formData.accountType || product?.accountType || 'cnpj') as 'cpf' | 'cnpj';
     const shippingOption = formData.shopeeFreeShipping ? 'with' : 'without';
     const isMercadoLivre = formData.marketplace === 'mercadolivre';
+    // TikTok commission from settings marketplaces, fallback to 6%
+    const tiktokMarketplace = marketplaces.find(m => m.name?.toLowerCase() === 'tiktok');
+    const tiktokCommVal = tiktokMarketplace?.commission_rate ?? 6;
     const isShopee = formData.marketplace === 'shopee';
     const adsEnabled = isMercadoLivre
       ? Boolean(formData.mercadoAdsEnabled || formData.mercadoAdsDailyBudget || formData.mercadoAdsSalesQuantity)
@@ -596,7 +599,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       sellingPrice,
       0,
       0,
-      0,
+      tiktokCommVal,
       marketplaceShippingCost,
       0,
       0,
