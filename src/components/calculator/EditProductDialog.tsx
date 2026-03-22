@@ -2368,44 +2368,68 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
 
                   {/* Affiliates Section - DROPDOWN */}
                   <div className="mb-4 space-y-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
                       <p className="text-xs font-bold text-black uppercase">Marketing de Afiliado</p>
-                      <Select 
-                        disabled={loadingAffiliates}
-                        onValueChange={(affiliateId) => {
-                          const affiliate = affiliatesDB.find(aff => aff.id === affiliateId);
-                          if (affiliate && !formData.affiliates.some(aff => aff.name === affiliate.name)) {
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={loadingAffiliates || affiliatesDB.filter(aff => !formData.affiliates.some(s => s.name === aff.name)).length === 0}
+                          onClick={() => {
+                            const remaining = affiliatesDB.filter(aff => !formData.affiliates.some(s => s.name === aff.name));
                             setFormData(prev => ({
                               ...prev,
-                              affiliates: [...prev.affiliates, {
-                                id: crypto.randomUUID(),
-                                name: affiliate.name,
-                                percentage: affiliate.percentage.toString(),
-                                marketplaceName: affiliate.marketplace_name ?? undefined
-                              }]
+                              affiliates: [
+                                ...prev.affiliates,
+                                ...remaining.map(aff => ({
+                                  id: crypto.randomUUID(),
+                                  name: aff.name,
+                                  percentage: aff.percentage.toString(),
+                                  marketplaceName: aff.marketplace_name ?? undefined
+                                }))
+                              ]
                             }));
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="w-[200px] h-7 text-xs">
-                          <SelectValue placeholder={loadingAffiliates ? "Carregando..." : "Selecionar afiliado"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {affiliatesDB
-                            .filter(aff => !formData.affiliates.some(selected => selected.name === aff.name))
-                            .map(aff => (
-                              <SelectItem key={aff.id} value={aff.id}>
-                                {aff.name}
+                          }}
+                          className="h-7 px-2 text-xs rounded border border-gray-300 bg-white hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600"
+                        >
+                          Adicionar todos
+                        </button>
+                        <Select 
+                          disabled={loadingAffiliates}
+                          onValueChange={(affiliateId) => {
+                            const affiliate = affiliatesDB.find(aff => aff.id === affiliateId);
+                            if (affiliate && !formData.affiliates.some(aff => aff.name === affiliate.name)) {
+                              setFormData(prev => ({
+                                ...prev,
+                                affiliates: [...prev.affiliates, {
+                                  id: crypto.randomUUID(),
+                                  name: affiliate.name,
+                                  percentage: affiliate.percentage.toString(),
+                                  marketplaceName: affiliate.marketplace_name ?? undefined
+                                }]
+                              }));
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-[200px] h-7 text-xs">
+                            <SelectValue placeholder={loadingAffiliates ? "Carregando..." : "Selecionar afiliado"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {affiliatesDB
+                              .filter(aff => !formData.affiliates.some(selected => selected.name === aff.name))
+                              .map(aff => (
+                                <SelectItem key={aff.id} value={aff.id}>
+                                  {aff.name}
+                                </SelectItem>
+                              ))
+                            }
+                            {affiliatesDB.filter(aff => !formData.affiliates.some(selected => selected.name === aff.name)).length === 0 && (
+                              <SelectItem value="none" disabled>
+                                {loadingAffiliates ? "Carregando..." : "Nenhum afiliado disponível"}
                               </SelectItem>
-                            ))
-                          }
-                          {affiliatesDB.filter(aff => !formData.affiliates.some(selected => selected.name === aff.name)).length === 0 && (
-                            <SelectItem value="none" disabled>
-                              {loadingAffiliates ? "Carregando..." : "Nenhum afiliado disponível"}
-                            </SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                     
                     {formData.affiliates.length === 0 ? (
@@ -2422,7 +2446,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                                   affiliates: prev.affiliates.filter(aff => aff.id !== affiliate.id)
                                 }));
                               }}
-                              className="absolute top-2 right-2 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400"
+                              className="absolute top-2 right-2 text-gray-600 hover:text-red-500 dark:text-gray-200 dark:hover:text-red-400"
                             >
                               <X className="w-4 h-4" />
                             </button>
