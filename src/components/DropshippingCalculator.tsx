@@ -1044,10 +1044,11 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       handleSupplierChange('');
     }
     // Override supplier fee values with product-saved values if present
-    if (product.supplierFeeType) setSupplierFeeType(product.supplierFeeType as 'percent' | 'fixed');
-    if (product.supplierFeeValue !== null && product.supplierFeeValue !== undefined) {
-      const feeVal = String(product.supplierFeeValue);
-      if (product.supplierFeeType === 'fixed') {
+    const p = product as unknown as { supplierFeeType?: string; supplierFeeValue?: string | number; supplierGatewayFeeType?: string; supplierGatewayFeeValue?: string | number };
+    if (p.supplierFeeType) setSupplierFeeType(p.supplierFeeType as 'percent' | 'fixed');
+    if (p.supplierFeeValue !== null && p.supplierFeeValue !== undefined) {
+      const feeVal = String(p.supplierFeeValue);
+      if (p.supplierFeeType === 'fixed') {
         setSupplierFixedFee(feeVal);
         setSupplierFeePercent('0');
       } else {
@@ -1055,10 +1056,10 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         setSupplierFixedFee('0');
       }
     }
-    if (product.supplierGatewayFeeType) setSupplierGatewayFeeType(product.supplierGatewayFeeType as 'percent' | 'fixed');
-    if (product.supplierGatewayFeeValue !== null && product.supplierGatewayFeeValue !== undefined) {
-      const gwVal = String(product.supplierGatewayFeeValue);
-      if (product.supplierGatewayFeeType === 'fixed') {
+    if (p.supplierGatewayFeeType) setSupplierGatewayFeeType(p.supplierGatewayFeeType as 'percent' | 'fixed');
+    if (p.supplierGatewayFeeValue !== null && p.supplierGatewayFeeValue !== undefined) {
+      const gwVal = String(p.supplierGatewayFeeValue);
+      if (p.supplierGatewayFeeType === 'fixed') {
         setSupplierGatewayFixedFee(gwVal);
         setSupplierGatewayFee('0');
       } else {
@@ -3713,8 +3714,8 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         {showOnlyProducts ? (
           <>
           <div className="grid gap-6 lg:grid-cols-2">
-            <div className="bg-[#FF3366]/80 text-white rounded-xl p-5 shadow-lg border border-white/10 flex flex-col">
-              <ElectricBorder color="#fe2c55" speed={0.8} chaos={0.1} borderRadius={16} className="flex flex-col flex-1">
+            <div className="bg-[#FF3366]/80 text-white rounded-xl p-5 shadow-lg border border-white/10 flex flex-col overflow-visible">
+              <ElectricBorder color="#fe2c55" speed={0.8} chaos={0.1} borderRadius={16} className="flex flex-col flex-1 overflow-visible">
                 <div className="rounded-lg p-0 flex flex-col flex-1 h-full">
                   <div className="flex items-center justify-between p-4 bg-[#FF3366]/80 rounded-t-2xl">
                   </div>
