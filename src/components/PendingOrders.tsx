@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useSettings } from '@/contexts/SettingsContext';
-import { Loader2, CheckCircle, AlertCircle, Package, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, CheckCircle, AlertCircle, Package, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { ProcessOrderModal } from './ProcessOrderModal';
 
 // Importar ícones dos marketplaces
@@ -63,6 +63,7 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed }
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [processResult, setProcessResult] = useState<ProcessResult | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -205,6 +206,28 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed }
       alert(`❌ Erro ao processar pedido:\n\n${errorMessage}`);
     } finally {
       setProcessing(null);
+    }
+  };
+
+  const deleteOrder = async (blingOrderId: string, orderNumber: number) => {
+    if (!confirm(`Tem certeza que deseja excluir o Pedido #${orderNumber}? Esta ação não pode ser desfeita.`)) return;
+
+    setDeleting(blingOrderId);
+    setError(null);
+    try {
+      const { error: deleteError } = await supabase
+        .from('bling_orders')
+        .delete()
+        .eq('id', blingOrderId);
+
+      if (deleteError) throw deleteError;
+
+      setPendingOrders((prev) => prev.filter((o) => o.bling_order_id !== blingOrderId));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao excluir pedido';
+      setError(msg);
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -423,21 +446,36 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed }
               )}
             </div>
 
-            {/* Botão de Processar */}
-            <Button
-              onClick={() => processOrder(order.bling_order_id)}
-              disabled={processing === order.bling_order_id}
-              className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold"
-            >
-              {processing === order.bling_order_id ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Processando...
-                </>
-              ) : (
-                'PROCESSAR LUCRO'
-              )}
-            </Button>
+            {/* Botões de ação */}
+            <div className="flex gap-2">
+              <Button
+                onClick={() => processOrder(order.bling_order_id)}
+                disabled={processing === order.bling_order_id || deleting === order.bling_order_id}
+                className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold"
+              >
+                {processing === order.bling_order_id ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Processando...
+                  </>
+                ) : (
+                  'PROCESSAR LUCRO'
+                )}
+              </Button>
+              <Button
+                onClick={() => deleteOrder(order.bling_order_id, order.order_number)}
+                disabled={processing === order.bling_order_id || deleting === order.bling_order_id}
+                variant="outline"
+                className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/30"
+                title="Excluir pedido"
+              >
+                {deleting === order.bling_order_id ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
           </Card>
         ))}
       </div>
