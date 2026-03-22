@@ -14,6 +14,7 @@ import { gsap } from 'gsap';
 import { siFacebook, siInstagram, siKuaishou, siShopee, siTiktok, siWhatsapp, siYoutube, siMercadopago } from 'simple-icons/icons';
 import { useProductSalesStats } from '@/hooks/useProductSalesStats';
 import { calculateMetrics } from '@/services/pricingService';
+import { useTiktokCommission } from '@/hooks/useTiktokCommission';
 
 interface ProfitProjectionProps {
   product: ProductItem | null;
@@ -48,6 +49,7 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
   
   // Buscar estatísticas de vendas do produto
   const { stats: salesStats } = useProductSalesStats(product?.id);
+  const tiktokCommission = useTiktokCommission();
   
   useEffect(() => {
     if (!product?.id) return;
@@ -241,7 +243,7 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
     try {
       const metrics = calculateMetrics(
         cp, 0, supplierFeeValue, 0, mp, category, adType, shippingOption, accountType,
-        0, false, 0, 0, 0, gatewayFeePercent, sp, 0, 0, 0, marketplaceShipping, 0, 0, 0, mlShipping,
+        0, false, 0, 0, 0, gatewayFeePercent, sp, 0, 0, tiktokCommission, marketplaceShipping, 0, 0, 0, mlShipping,
         'percent', gatewayFixedFee, 0, 0, enjoeiAdType, 0,
         product.gatewayBank || '', product.gatewayMethod || '', '', '',
         product.meliPlus ?? false, supplierFeeType, supplierGatewayFeePercent, supplierGatewayFixedFee,

@@ -40,6 +40,7 @@ import shopeeAdsMoney from '../../imgs/3d-render-realistic-currency-money-brazil
 import dollarImage from '../../imgs/dólar.png';
 import { parseCurrency } from '../../utils/currency';
 import { calculateMetrics } from '../../services/pricingService';
+import { useTiktokCommission } from '../../hooks/useTiktokCommission';
 import { AnimatedCard } from '../ui/AnimatedCard';
 import gsap from 'gsap';
 import { useProductSalesStats } from '../../hooks/useProductSalesStats';
@@ -239,6 +240,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   
   // Buscar vendas reais do produto
   const { stats: salesStats } = useProductSalesStats(product.id);
+  const tiktokCommission = useTiktokCommission();
   
   const [investData, setInvestData] = useState({
     campaignName: '',
@@ -387,7 +389,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     try {
       const metrics = calculateMetrics(
         cp, 0, supplierFeeValue, 0, mp, category, adType, shippingOption, accountType,
-        0, false, 0, 0, 0, gatewayFeePercent, sp, 0, 0, 0, marketplaceShipping, 0, 0, 0, mlShipping,
+        0, false, 0, 0, 0, gatewayFeePercent, sp, 0, 0, tiktokCommission, marketplaceShipping, 0, 0, 0, mlShipping,
         'percent', gatewayFixedFee, 0, 0, enjoeiAdType, 0,
         product.gatewayBank || '', product.gatewayMethod || '', '', '',
         product.meliPlus ?? false, supplierFeeType, supplierGatewayFeePercent, supplierGatewayFixedFee,
