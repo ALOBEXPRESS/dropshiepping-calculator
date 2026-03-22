@@ -616,7 +616,7 @@ export const calculateMetrics = (
       : `Shopee: ${commissionFee}% (Comissão) + ${transactionFee}% (Transação) + R$ ${shopeeFixedFee.toFixed(2)} (Tarifa Fixa ${currentShopeeSellerType.toUpperCase()})`;
   } else if (currentMarketplace === 'tiktok') {
       marketplaceFee = tiktokCommVal;
-      taxDescription = `${tiktokCommVal}% (Comissão Tiktok Shop)`;
+      taxDescription = `${tiktokCommVal}% (Comissão Tiktok Shop)`; // updated after finalFixedFee
   } else if (currentMarketplace === 'shein') {
       marketplaceFee = 16;
       taxDescription = `16% (Comissão Shein)`;
@@ -782,6 +782,13 @@ export const calculateMetrics = (
   } = resolveShopeeCoupons(effectiveSellingPrice, baseCost);
   const finalFees = calculateFees(effectiveSellingPrice);
   const finalFixedFee = finalFees.fixed;
+
+  // Update TikTok taxDescription now that finalFixedFee is known
+  if (currentMarketplace === 'tiktok') {
+    taxDescription = finalFixedFee > 0
+      ? `${tiktokCommVal}% (Comissão Tiktok Shop) + R$ ${finalFixedFee.toFixed(2)} (Taxa Fixa)`
+      : `${tiktokCommVal}% (Comissão Tiktok Shop)`;
+  }
 
   let calculatedCommission = effectiveSellingPrice * (marketplaceFee / 100);
   if (currentMarketplace === 'shopee' && calculatedCommission > 100) {
