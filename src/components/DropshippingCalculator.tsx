@@ -1043,6 +1043,29 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
     } else {
       handleSupplierChange('');
     }
+    // Override supplier fee values with product-saved values if present
+    if (product.supplierFeeType) setSupplierFeeType(product.supplierFeeType as 'percent' | 'fixed');
+    if (product.supplierFeeValue !== null && product.supplierFeeValue !== undefined) {
+      const feeVal = String(product.supplierFeeValue);
+      if (product.supplierFeeType === 'fixed') {
+        setSupplierFixedFee(feeVal);
+        setSupplierFeePercent('0');
+      } else {
+        setSupplierFeePercent(feeVal);
+        setSupplierFixedFee('0');
+      }
+    }
+    if (product.supplierGatewayFeeType) setSupplierGatewayFeeType(product.supplierGatewayFeeType as 'percent' | 'fixed');
+    if (product.supplierGatewayFeeValue !== null && product.supplierGatewayFeeValue !== undefined) {
+      const gwVal = String(product.supplierGatewayFeeValue);
+      if (product.supplierGatewayFeeType === 'fixed') {
+        setSupplierGatewayFixedFee(gwVal);
+        setSupplierGatewayFee('0');
+      } else {
+        setSupplierGatewayFee(gwVal);
+        setSupplierGatewayFixedFee('0');
+      }
+    }
     if (productVariations.length > 0) {
       const variationInfos = productVariations.map((variation) => parseVariationInfo(variation.variationName || variation.name || ''));
       const hasSize = variationInfos.some((info) => info.size);
