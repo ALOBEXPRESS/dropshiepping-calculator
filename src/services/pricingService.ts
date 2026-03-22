@@ -2,19 +2,12 @@ import type { MercadoLivreTaxes, ShopeeCategory, CalculationResult, AiModel, Kie
 import { amazonCategories } from './amazonCategories';
 import { calculateProfitFromPrice, calculateSellingPrice, type MercadoLivreParams, type CalculationResult as MLCalculationResult } from './calculators/mercadolivre';
 
-// Sum affiliate commissions once per marketplace (dedup by marketplaceName, fallback by rate value)
+// Affiliate commission = single rate per marketplace (not summed per affiliate).
+// Multiple affiliates represent different people selling the same product — the marketplace
+// commission rate is the same for all. Use the highest rate among selected affiliates.
 const calcTotalAffiliatePercent = (affiliates: Affiliate[]): number => {
   if (affiliates.length === 0) return 0;
-  const seen = new Set<string>();
-  let total = 0;
-  for (const a of affiliates) {
-    const key = a.marketplaceName ?? a.percentage?.replace(',', '.') ?? '0';
-    if (!seen.has(key)) {
-      seen.add(key);
-      total += parseFloat(a.percentage?.replace(',', '.') || '0');
-    }
-  }
-  return total;
+  return Math.max(...affiliates.map(a => parseFloat(a.percentage?.replace(',', '.') || '0')));
 };
 
 export const shopeeCategories: Record<string, ShopeeCategory> = {
