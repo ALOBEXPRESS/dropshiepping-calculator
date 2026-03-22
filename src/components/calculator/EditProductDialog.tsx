@@ -629,6 +629,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       formData.shopeeFollowerCouponType || product?.shopeeFollowerCouponType || 'fixed',
       formData.shopeeSellerVoucherType || product?.shopeeSellerVoucherType || 'fixed',
       conversionRate
+    , [], formData.affiliates
     );
   };
 
@@ -643,6 +644,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     formData.shopeeProductCouponEnabled, formData.shopeeProductCouponValue,
     formData.shopeeFollowerCouponEnabled, formData.shopeeFollowerCouponValue,
     formData.shopeeSellerVoucherEnabled, formData.shopeeSellerVoucherValue,
+    formData.affiliates,
   ]); // eslint-disable-line react-hooks/exhaustive-deps
   const organicSuggestedPrice = parseFloat(organicMetrics?.suggestedPrice ?? '0');
   const organicAdsCostPerSale = parseFloat(organicMetrics?.adsCostPerSale ?? '0');
@@ -2378,7 +2380,8 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                               affiliates: [...prev.affiliates, {
                                 id: crypto.randomUUID(),
                                 name: affiliate.name,
-                                percentage: affiliate.percentage.toString()
+                                percentage: affiliate.percentage.toString(),
+                                marketplaceName: affiliate.marketplace_name ?? undefined
                               }]
                             }));
                           }
