@@ -13,6 +13,7 @@ import marketplaceSheinLogo from '@/imgs/shein.svg';
 import { gsap } from 'gsap';
 import { siFacebook, siInstagram, siKuaishou, siShopee, siTiktok, siWhatsapp, siYoutube, siMercadopago } from 'simple-icons/icons';
 import { useProductSalesStats } from '@/hooks/useProductSalesStats';
+import { calculateMetrics } from '@/services/pricingService';
 
 interface ProfitProjectionProps {
   product: ProductItem | null;
@@ -209,8 +210,51 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
 
   const price = parseCurrency(product.sellingPrice || 0);
   const cost = parseCurrency(product.costPrice || 0);
-  const hasNetRevenue = product.netRevenue !== undefined && product.netRevenue !== null && product.netRevenue !== '';
-  const netRevenue = hasNetRevenue ? parseCurrency(product.netRevenue!) : (price - cost);
+
+  // Recalculate profit in real-time (same logic as ProductCard) to include affiliates/influencers
+  const netRevenue = (() => {
+    const mp = product.marketplace || '';
+    const sp = parseCurrency(product.sellingPrice ?? 0);
+    const cp = parseCurrency(product.costPrice ?? 0);
+    if (!mp || (sp <= 0 && cp <= 0)) {
+      const stored = product.netRevenue;
+      return stored !== undefined && stored !== null && stored !== '' ? parseCurrency(stored) : (price - cost);
+    }
+    const supplierFeeType = product.supplierFeeType || 'percent';
+    const supplierFeeValue = parseCurrency(product.supplierFeeValue ?? 0);
+    const supplierGatewayFeeType = product.supplierGatewayFeeType || 'fixed';
+    const supplierGatewayFeeValue = parseCurrency(product.supplierGatewayFeeValue ?? 0);
+    const supplierGatewayFeePercent = supplierGatewayFeeType === 'percent' ? supplierGatewayFeeValue : 0;
+    const supplierGatewayFixedFee = supplierGatewayFeeType === 'fixed' ? supplierGatewayFeeValue : 0;
+    const adType = product.adType || 'classico';
+    const enjoeiAdType = product.enjoeiAdType || 'classico';
+    const category = product.mlCategory || (product as { category?: string }).category || 'eletronicos';
+    const accountType = (product.accountType || 'cnpj') as 'cpf' | 'cnpj';
+    const shippingOption = product.shippingOption || 'with';
+    const mlShipping = parseCurrency(product.mlShippingCost ?? 0);
+    const marketplaceShipping = parseCurrency(product.marketplaceShippingCost ?? 0);
+    const amazonPlan = product.amazonPlan === 'profissional' ? 'profissional' : 'individual';
+    const gatewayFeeType = product.gatewayFeeType || 'percent';
+    const gatewayFeeRaw = parseCurrency(product.gatewayFeeValue ?? 0);
+    const gatewayFeePercent = gatewayFeeType === 'percent' ? gatewayFeeRaw : 0;
+    const gatewayFixedFee = gatewayFeeType === 'fixed' ? gatewayFeeRaw : 0;
+    try {
+      const metrics = calculateMetrics(
+        cp, 0, supplierFeeValue, 0, mp, category, adType, shippingOption, accountType,
+        0, false, 0, 0, 0, gatewayFeePercent, sp, 0, 0, 0, marketplaceShipping, 0, 0, 0, mlShipping,
+        'percent', gatewayFixedFee, 0, 0, enjoeiAdType, 0,
+        product.gatewayBank || '', product.gatewayMethod || '', '', '',
+        product.meliPlus ?? false, supplierFeeType, supplierGatewayFeePercent, supplierGatewayFixedFee,
+        supplierGatewayFeeType, amazonPlan, category, 0,
+        0, 0, 0, 0, 'fixed', 'fixed', 'fixed', 'fixed', 0,
+        product.influencers || [], product.affiliates || []
+      );
+      return parseFloat(String(metrics.netRevenue ?? '0'));
+    } catch {
+      const stored = product.netRevenue;
+      return stored !== undefined && stored !== null && stored !== '' ? parseCurrency(stored) : (price - cost);
+    }
+  })();
   
   // Use lucro real das vendas se disponível, senão use netRevenue estimado
   const estimatedProfitPerUnit = salesStats.totalSales > 0 
