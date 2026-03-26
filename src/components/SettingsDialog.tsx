@@ -811,7 +811,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>@ TikTok</Label>
+                  <Label>@ Usuário</Label>
                   <div className="relative">
                     <AtSign className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
                     <Input
@@ -860,25 +860,36 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               {affiliates.length === 0 ? (
                 <p className="text-sm text-gray-500 italic">Nenhum afiliado cadastrado.</p>
               ) : (
-                affiliates.map(a => (
-                  <div key={a.id} className={`flex items-center justify-between p-3 rounded border ${editingAffiliateId === a.id ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800' : 'bg-gray-50 dark:bg-zinc-800 border-gray-100 dark:border-zinc-700'}`}>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{a.name}</span>
-                      <span className="text-xs text-gray-500">
-                        {a.tiktok && <span>@{a.tiktok} · </span>}
-                        {a.marketplace_id && <span>{marketplaces.find(m => m.id === a.marketplace_id)?.name}</span>}
-                      </span>
+                (() => {
+                  // Group affiliates by marketplace
+                  const groups: Record<string, typeof affiliates> = {};
+                  affiliates.forEach(a => {
+                    const mpName = marketplaces.find(m => m.id === a.marketplace_id)?.name ?? 'Sem marketplace';
+                    if (!groups[mpName]) groups[mpName] = [];
+                    groups[mpName].push(a);
+                  });
+                  return Object.entries(groups).map(([mpName, items]) => (
+                    <div key={mpName} className="mb-3">
+                      <p className="text-xs font-bold uppercase text-gray-400 dark:text-gray-500 mb-1 px-1">{mpName}</p>
+                      {items.map(a => (
+                        <div key={a.id} className={`flex items-center justify-between p-3 rounded border mb-1 ${editingAffiliateId === a.id ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800' : 'bg-gray-50 dark:bg-zinc-800 border-gray-100 dark:border-zinc-700'}`}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{a.name}</span>
+                            {a.tiktok && <span className="text-xs text-gray-500">@{a.tiktok}</span>}
+                          </div>
+                          <div className="flex gap-1">
+                            <Button type="button" variant="ghost" size="icon" onClick={() => startEditAffiliate(a)} className="h-6 w-6 text-blue-500 hover:text-blue-700 hover:bg-blue-50">
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button type="button" variant="ghost" size="icon" onClick={() => handleDeleteAffiliate(a.id)} className="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50">
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div className="flex gap-1">
-                      <Button type="button" variant="ghost" size="icon" onClick={() => startEditAffiliate(a)} className="h-6 w-6 text-blue-500 hover:text-blue-700 hover:bg-blue-50">
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                      <Button type="button" variant="ghost" size="icon" onClick={() => handleDeleteAffiliate(a.id)} className="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50">
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                ))
+                  ));
+                })()
               )}
             </div>
           </div>

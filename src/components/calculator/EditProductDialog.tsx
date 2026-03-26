@@ -2386,7 +2386,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                                 ...remaining.map(aff => ({
                                   id: crypto.randomUUID(),
                                   name: aff.name,
-                                  percentage: aff.percentage.toString(),
+                                  percentage: (aff.marketplace_commission_rate ?? aff.percentage ?? 0).toString(),
                                   marketplaceName: aff.marketplace_name ?? undefined
                                 }))
                               ]
@@ -2406,7 +2406,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                                 affiliates: [...prev.affiliates, {
                                   id: crypto.randomUUID(),
                                   name: affiliate.name,
-                                  percentage: affiliate.percentage.toString(),
+                                  percentage: (affiliate.marketplace_commission_rate ?? affiliate.percentage ?? 0).toString(),
                                   marketplaceName: affiliate.marketplace_name ?? undefined
                                 }]
                               }));
