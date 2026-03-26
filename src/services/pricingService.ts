@@ -827,6 +827,22 @@ export const calculateMetrics = (
     taxDescription += ` + ${totalAffiliatePercent}% (Afiliado)`;
   }
 
+  // Append supplier fees to taxDescription for transparency
+  if (supplierFeeCost > 0) {
+    if (supplierFeeType === 'fixed') {
+      taxDescription += ` + R$ ${supplierFeeCost.toFixed(2)} (Taxa Fornecedor)`;
+    } else {
+      taxDescription += ` + ${supplierFeeVal}% fornecedor = R$ ${supplierFeeCost.toFixed(2)}`;
+    }
+  }
+  if (supplierGatewayCost > 0) {
+    if (supplierGatewayFeeType === 'fixed') {
+      taxDescription += ` + R$ ${supplierGatewayCost.toFixed(2)} (Gateway Fornecedor)`;
+    } else {
+      taxDescription += ` + ${supplierGatewayFeePercent}% gateway fornecedor = R$ ${supplierGatewayCost.toFixed(2)}`;
+    }
+  }
+
   // Partial cost was totalCost (base + fixed supplier + gateway supplier + pkg + shipping)
   // We need to subtract the variable supplier fee too
   const netRevenue = effectiveSellingPrice - marketplaceCost - finalFixedFee - gatewayCost - totalCost - supplierFeeCost - adsCostPerSale - paidTrafficCost - paidTrafficGatewayCost - shopeeCouponTotal - influencerCost - affiliateCost;
