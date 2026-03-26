@@ -611,6 +611,11 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
           productId: product.id,
           sellingPrice: product.sellingPrice ? Number(product.sellingPrice) : null,
           costPrice: product.costPrice ? Number(product.costPrice) : null,
+          description: product.description ?? null,
+          weight: product.weight ?? null,
+          width: product.width ?? null,
+          height: product.height ?? null,
+          depth: product.depth ?? null,
         }),
         signal: controller.signal,
       });
