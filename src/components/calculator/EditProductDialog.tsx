@@ -2376,9 +2376,9 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          disabled={loadingAffiliates || affiliatesDB.filter(aff => !formData.affiliates.some(s => s.name === aff.name)).length === 0}
+                          disabled={loadingAffiliates || affiliatesDB.filter(aff => !formData.affiliates.some(s => s.name === aff.name) && (!aff.marketplace_name || aff.marketplace_name.toLowerCase() === (formData.marketplace || '').toLowerCase())).length === 0}
                           onClick={() => {
-                            const remaining = affiliatesDB.filter(aff => !formData.affiliates.some(s => s.name === aff.name));
+                            const remaining = affiliatesDB.filter(aff => !formData.affiliates.some(s => s.name === aff.name) && (!aff.marketplace_name || aff.marketplace_name.toLowerCase() === (formData.marketplace || '').toLowerCase()));
                             setFormData(prev => ({
                               ...prev,
                               affiliates: [
@@ -2418,14 +2418,14 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                           </SelectTrigger>
                           <SelectContent>
                             {affiliatesDB
-                              .filter(aff => !formData.affiliates.some(selected => selected.name === aff.name))
+                              .filter(aff => !formData.affiliates.some(selected => selected.name === aff.name) && (!aff.marketplace_name || aff.marketplace_name.toLowerCase() === (formData.marketplace || '').toLowerCase()))
                               .map(aff => (
                                 <SelectItem key={aff.id} value={aff.id}>
                                   {aff.name}
                                 </SelectItem>
                               ))
                             }
-                            {affiliatesDB.filter(aff => !formData.affiliates.some(selected => selected.name === aff.name)).length === 0 && (
+                            {affiliatesDB.filter(aff => !formData.affiliates.some(selected => selected.name === aff.name) && (!aff.marketplace_name || aff.marketplace_name.toLowerCase() === (formData.marketplace || '').toLowerCase())).length === 0 && (
                               <SelectItem value="none" disabled>
                                 {loadingAffiliates ? "Carregando..." : "Nenhum afiliado disponível"}
                               </SelectItem>
