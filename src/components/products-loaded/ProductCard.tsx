@@ -97,12 +97,7 @@ export const ProductCard = ({
   
   // Botão verde se não estiver cadastrado, ciano se já estiver cadastrado
   const shouldShowFillLabel = !isRegistered || isHovering;
-  const isButtonActive = shouldShowFillLabel; // Verde quando não cadastrado, ciano quando cadastrado
-  
-  const resolvedDescription = currentProduct.description || product.description || '';
-  const filledProduct = currentProduct.description
-    ? currentProduct
-    : { ...currentProduct, description: resolvedDescription };
+  const isButtonActive = shouldShowFillLabel;
 
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900">
@@ -265,7 +260,7 @@ export const ProductCard = ({
             className={isButtonActive
               ? "h-9 bg-[#16A34A] px-4 text-xs font-semibold text-white hover:bg-[#15803D]"
               : "h-9 bg-[#25f4ee] px-4 text-xs font-semibold text-gray-900 hover:bg-emerald-100 hover:text-emerald-700"}
-            onClick={() => onFill(filledProduct, variations)}
+            onClick={() => onFill(product, variations)}
             onMouseEnter={() => setIsHovering(true)}
             onMouseLeave={() => setIsHovering(false)}
           >
