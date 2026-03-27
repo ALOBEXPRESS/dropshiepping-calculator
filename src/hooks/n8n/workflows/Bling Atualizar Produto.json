@@ -1,0 +1,1082 @@
+{
+  "name": "Bling Atualizar Produto",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "664105d0-3f73-4ae7-8ca5-0fe098da45fd",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        105840,
+        35216
+      ],
+      "id": "60731f96-99e8-411d-a034-6485f93b28f0",
+      "name": "Webhook2",
+      "webhookId": "664105d0-3f73-4ae7-8ca5-0fe098da45fd"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "bling_tokens",
+        "limit": 3
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        106080,
+        35216
+      ],
+      "id": "077cc2ef-7b0a-4dff-9118-d70e3a02b445",
+      "name": "Pegar Access Token2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "JAUrj9KSS49DSWZu",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const token = $input.first().json;\nconst expiresAt = token.expires_at ? new Date(token.expires_at) : null;\nconst now = new Date();\nconst expired = (expiresAt === null) || (expiresAt <= now);\nreturn [{ json: Object.assign({}, token, { needsRefresh: expired }) }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        106320,
+        35376
+      ],
+      "id": "783a05b6-656b-4944-8e0c-f06f9e940e68",
+      "name": "Check Token Expiry1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cond-needs-refresh",
+              "leftValue": "={{ $json.needsRefresh }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        106560,
+        35376
+      ],
+      "id": "775a4d74-ab96-40b3-a6e9-47dcbc7db851",
+      "name": "IF Precisa Refresh1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.bling.com.br/Api/v3/oauth/token",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Basic ZGRhODkxYTJkNWY3YWI2N2U4MmQwZDM1YTkzOWEwNzBkMmUyMWUxZjplZDY3YTg4NjBkZTc3NjU3YWYwMmQ0ZGI1NjI2YjhlYWE1Y2I1MzI5YTA3NjM4MTZkZWIyNGM0ZTQ5M2U="
+            },
+            {
+              "name": "Accept",
+              "value": "1.0"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/x-www-form-urlencoded"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "refresh_token"
+            },
+            {
+              "name": "refresh_token",
+              "value": "={{ $('Pegar Access Token2').item.json.refresh_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        106800,
+        35296
+      ],
+      "id": "9105be66-9fe1-432c-a0e2-d62985b35060",
+      "name": "Refresh Token1"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "bling_tokens",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "4c45950a-d5db-4c96-b761-5b0d96a7c7d0"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "access_token",
+              "fieldValue": "={{ $json.access_token }}"
+            },
+            {
+              "fieldId": "refresh_token",
+              "fieldValue": "={{ $json.refresh_token }}"
+            },
+            {
+              "fieldId": "expires_at",
+              "fieldValue": "={{ new Date(Date.now() + ($json.expires_in * 1000)).toISOString() }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        107040,
+        35296
+      ],
+      "id": "5c5a9d11-64f0-4b7b-a7f6-50b87e4f9b16",
+      "name": "Atualizar Token2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "JAUrj9KSS49DSWZu",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const token = $json.access_token || $('Pegar Access Token2').item.json.access_token;\nreturn [{ json: { access_token: token } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        106448,
+        35216
+      ],
+      "id": "ced0d9cc-ea3b-467d-a539-04194dbeff90",
+      "name": "Get Valid Token2"
+    },
+    {
+      "parameters": {
+        "url": "https://api.bling.com.br/Api/v3/produtos",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "codigo",
+              "value": "={{ $('Webhook2').item.json.body.sku }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Get Valid Token2').item.json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        106320,
+        35216
+      ],
+      "id": "4bc5b193-5b03-41b4-b98e-76d8d15dbf92",
+      "name": "GET Produto por SKU2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cond-produto-encontrado",
+              "leftValue": "={{ $('GET Produto por SKU2').item.json.data && $('GET Produto por SKU2').item.json.data[0] ? true : false }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        106560,
+        35216
+      ],
+      "id": "016922f4-c92e-4f16-ae07-6178f5c44314",
+      "name": "IF Produto Encontrado2"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.bling.com.br/Api/v3/produtos/{{ $('GET Produto por SKU2').item.json.data[0].id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Get Valid Token2').item.json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        106800,
+        35056
+      ],
+      "id": "61f877e1-1170-4a51-a5ce-1d6aa73951ae",
+      "name": "GET Detalhes Produto2"
+    },
+    {
+      "parameters": {
+        "url": "https://api.bling.com.br/Api/v3/estoques/saldos",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "codigos[]",
+              "value": "={{ $('Webhook2').item.json.body.sku }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Get Valid Token2').item.json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        107088,
+        35056
+      ],
+      "id": "efbd48d6-879b-43e7-a0db-5f179faba8a4",
+      "name": "GET Estoque2"
+    },
+    {
+      "parameters": {
+        "url": "https://api.bling.com.br/Api/v3/produtos/fornecedores",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "idProduto",
+              "value": "={{ $('GET Produto por SKU2').item.json.data[0].id }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Get Valid Token2').item.json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        107280,
+        35056
+      ],
+      "id": "02fad990-4bf2-433a-8362-3aaa86f49364",
+      "name": "GET Fornecedores2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fornecedores = $input.first().json.data || [];\nconst dogma = fornecedores.find(function(f) { return f.codigo === 'ALOBFOR_DROP_02'; });\nconst tyr = fornecedores.find(function(f) { return f.codigo === 'ALOBFOR_DROP_01'; });\nconst fornecedor = dogma || tyr || null;\nconsole.log('Fornecedor identificado:', fornecedor ? fornecedor.codigo : 'nenhum');\nreturn [{ json: { fornecedor: fornecedor } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        107744,
+        35056
+      ],
+      "id": "3dce4bf8-cbe7-4873-961f-c35fa5d34fb1",
+      "name": "Code: Identificar Fornecedor2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cond-fornecedor",
+              "leftValue": "={{ $json.fornecedor !== null && $json.fornecedor !== undefined }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        107968,
+        35056
+      ],
+      "id": "c33800e7-b8c4-4ded-aa38-be365edd3f1b",
+      "name": "IF Fornecedor Encontrado2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const token = $('Get Valid Token2').item.json.access_token;\nconst fornecedor = $('Code: Identificar Fornecedor2').item.json.fornecedor;\nconst produtoId = $('GET Produto por SKU2').item.json.data[0].id;\nconst costPrice = $('Webhook2').item.json.body.costPrice\n  ? Number($('Webhook2').item.json.body.costPrice)\n  : (fornecedor.precoCusto || 0);\nlet idFornecedor = fornecedor.fornecedor ? fornecedor.fornecedor.id : 0;\nif (!idFornecedor) {\n  try {\n    const r = await this.helpers.httpRequest({ method: 'GET',\n      url: 'https://api.bling.com.br/Api/v3/contatos?codigo=' + encodeURIComponent(fornecedor.codigo),\n      headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' } });\n    idFornecedor = r.data && r.data[0] ? r.data[0].id : 0;\n  } catch(e) { console.log('Error fetching contact:', e.message); }\n}\nif (!idFornecedor) { return [{ json: { skipped: true, reason: 'no_contact_id' } }]; }\ntry {\n  await this.helpers.httpRequest({ method: 'PUT',\n    url: 'https://api.bling.com.br/Api/v3/produtos/fornecedores/' + fornecedor.id,\n    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'Accept': 'application/json' },\n    body: { idProduto: produtoId, idFornecedor: idFornecedor, descricao: fornecedor.descricao || '',\n      codigo: fornecedor.codigo || '', precoCusto: costPrice, precoCompra: costPrice,\n      padrao: fornecedor.padrao !== undefined ? fornecedor.padrao : true } });\n} catch(err) { console.log('PUT Fornecedor error:', err.message); }\nreturn [{ json: { success: true, fornecedorId: fornecedor.id, idFornecedor: idFornecedor } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        108208,
+        35136
+      ],
+      "id": "aca1d63f-03c8-4eaa-95aa-c217ea7e5820",
+      "name": "PUT Fornecedor2"
+    },
+    {
+      "parameters": {
+        "url": "https://api.bling.com.br/Api/v3/contatos",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "codigo",
+              "value": "ALOBFOR_DROP_02"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $('Get Valid Token2').item.json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        108144,
+        35312
+      ],
+      "id": "5e660911-2adf-42e6-8f2f-d714f9df42ab",
+      "name": "GET Contato Fornecedor2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sku = $('Webhook2').item.json.body.sku;\nconst produtoId = $('GET Produto por SKU2').item.json.data[0].id;\nconst token = $('Get Valid Token2').item.json.access_token;\nconst supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lbnNxaGpueHdwY3Vhbm96c2tlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NjQxMzI3MiwiZXhwIjoyMDgxOTg5MjcyfQ.yyp6TzvCGA3yl0SdPveR0y86cxRSeCyUTjQtBoJt5Bg';\nconst baseUrl = 'https://oensqhjnxwpcuanozske.supabase.co/rest/v1';\nconst sbResult = await this.helpers.httpRequest({ method: 'GET',\n  url: baseUrl + '/products_bling?sku=eq.' + encodeURIComponent(sku) + '&select=cost_price',\n  headers: { 'apikey': supabaseKey, 'Authorization': 'Bearer ' + supabaseKey } });\nconst costPrice = sbResult && sbResult[0] ? sbResult[0].cost_price : 0;\nconst contatoData = $('GET Contato Fornecedor2').item.json;\nconst idFornecedor = contatoData.data && contatoData.data[0] ? contatoData.data[0].id : null;\nif (!idFornecedor) { return [{ json: { skipped: true, reason: 'supplier_not_found', sku: sku } }]; }\nconst result = await this.helpers.httpRequest({ method: 'POST',\n  url: 'https://api.bling.com.br/Api/v3/produtos/fornecedores',\n  headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'Accept': 'application/json' },\n  body: { idProduto: produtoId, idFornecedor: idFornecedor, descricao: 'Dogma Dropshipping',\n    codigo: 'ALOBFOR_DROP_02', precoCusto: costPrice, precoCompra: costPrice, padrao: true } });\nreturn [{ json: { success: true, sku: sku, idFornecedor: idFornecedor } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        108688,
+        35312
+      ],
+      "id": "8b871ec3-01db-4364-bfaa-5d5095cd5dd9",
+      "name": "POST Fornecedor2",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cond-variacoes",
+              "leftValue": "={{ $('GET Detalhes Produto2').item.json.data.formato === 'V' ? true : false }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        110064,
+        35056
+      ],
+      "id": "e5405cb5-47fc-4b55-93f3-ab5a303aa95b",
+      "name": "IF Tem Variacoes2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const det = $('GET Detalhes Produto2').item.json.data;\nconst token = $('Get Valid Token2').item.json.access_token;\nlet variacoes = [];\ntry {\n  const varResp = await this.helpers.httpRequest({ method: 'GET',\n    url: 'https://api.bling.com.br/Api/v3/produtos/variacoes/' + det.id,\n    headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' } });\n  variacoes = (varResp && varResp.data && varResp.data.variacoes) ? varResp.data.variacoes : [];\n} catch(e) { return [{ json: { variacoes: [] } }]; }\nfunction sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }\nconst variacoesCompletas = [];\nfor (var i = 0; i < variacoes.length; i++) {\n  var v = variacoes[i];\n  if (i > 0) { await sleep(400); }\n  try {\n    const r = await this.helpers.httpRequest({ method: 'GET',\n      url: 'https://api.bling.com.br/Api/v3/produtos/' + v.id,\n      headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' } });\n    if (r && r.data) { variacoesCompletas.push(r.data); }\n  } catch(e) { console.log('Error fetching variacao', v.id, ':', e.message); }\n}\nreturn [{ json: { variacoes: variacoesCompletas } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        110496,
+        35056
+      ],
+      "id": "0f1d0e6c-205a-402a-b411-351186cb59db",
+      "name": "GET Variacoes2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sku = $('Webhook2').item.json.body.sku;\nconst produtoId = $('GET Produto por SKU2').item.json.data[0].id;\nconst token = $('Get Valid Token2').item.json.access_token;\nconst det = $('GET Detalhes Produto2').item.json.data;\nconst salePrice = $('Webhook2').item.json.body.sellingPrice ? Number($('Webhook2').item.json.body.sellingPrice) : null;\nif (!salePrice) { return [{ json: { skipped: true, reason: 'no_price', sku: sku } }]; }\nfunction sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }\n// Faz PUT preservando todos os campos do produto, alterando apenas o preco\nasync function putComPreco(url, prodData) {\n  // Clona o objeto e atualiza apenas o preco\n  var body = JSON.parse(JSON.stringify(prodData));\n  body.preco = salePrice;\n  // Remove campos que a API nao aceita no PUT\n  delete body.id;\n  delete body.estoque;\n  delete body.fornecedor;\n  delete body.categoria;\n  try {\n    const resp = await this.helpers.httpRequest({ method: 'PUT', url: url,\n      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'Accept': 'application/json' },\n      body: body, returnFullResponse: true, ignoreHttpStatusErrors: true });\n    if (resp.statusCode >= 400) console.log('PUT ERRO', url.split('/').pop(), resp.statusCode, JSON.stringify(resp.body||{}).substring(0,400));\n    return resp.statusCode;\n  } catch(e) { console.log('PUT exception:', e.message); return 500; }\n}\n// Produto com variacoes: busca e atualiza cada variacao preservando seus dados\nif (det.formato === 'V') {\n  let variacoesData = [];\n  try { variacoesData = $('GET Variacoes2').item.json.variacoes || []; } catch(e) {}\n  if (variacoesData.length === 0) { return [{ json: { error: 'variacoes_vazias', sku: sku } }]; }\n  var ok = 0, erros = [];\n  for (var i = 0; i < variacoesData.length; i++) {\n    if (i > 0) { await sleep(400); }\n    var status = await putComPreco.call(this, 'https://api.bling.com.br/Api/v3/produtos/' + variacoesData[i].id, variacoesData[i]);\n    if (status < 400) { ok++; } else { erros.push({ codigo: variacoesData[i].codigo, status: status }); }\n  }\n  return [{ json: { success: ok > 0, updated: ok, errors: erros, total: variacoesData.length, sku: sku } }];\n}\n// Produto simples: reenvia dados completos com preco atualizado\nvar status = await putComPreco.call(this, 'https://api.bling.com.br/Api/v3/produtos/' + produtoId, det);\nif (status >= 400) { return [{ json: { error: 'PUT falhou', status: status, sku: sku } }]; }\nreturn [{ json: { success: true, sku: sku, preco: salePrice } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        109040,
+        34832
+      ],
+      "id": "8dd8cb0c-4277-4594-8354-501263ba154a",
+      "name": "PUT Produto Bling2",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const token = $('Get Valid Token2').item.json.access_token;\nconst produtoId = $('GET Produto por SKU2').item.json.data[0].id;\nconst salePrice = $('Webhook2').item.json.body.sellingPrice ? Number($('Webhook2').item.json.body.sellingPrice) : null;\nfunction sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }\nlet lojas = [];\ntry {\n  const resp = await this.helpers.httpRequest({ method: 'GET',\n    url: 'https://api.bling.com.br/Api/v3/produtos/lojas?idProduto=' + produtoId,\n    headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' } });\n  lojas = (resp && resp.data) ? resp.data : [];\n} catch(e) { console.log('GET Lojas error:', e.message); }\nif (lojas.length === 0 || !salePrice) { return [{ json: { lojasAtualizadas: 0 } }]; }\nfor (var i = 0; i < lojas.length; i++) {\n  var loja = lojas[i];\n  if (!loja.id) continue;\n  if (i > 0) { await sleep(400); }\n  try {\n    await this.helpers.httpRequest({ method: 'PUT',\n      url: 'https://api.bling.com.br/Api/v3/produtos/lojas/' + loja.id,\n      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'Accept': 'application/json' },\n      body: { preco: salePrice } });\n  } catch(e) { console.log('PUT Loja error:', loja.id, e.message); }\n}\nreturn [{ json: { lojasAtualizadas: lojas.length } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        109440,
+        35440
+      ],
+      "id": "8550d322-64da-47b8-99e3-14e5e7c65d22",
+      "name": "Atualizar Lojas2",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, data: { message: \"Produto atualizado no Bling com sucesso\", timestamp: new Date().toISOString() } }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        111648,
+        35056
+      ],
+      "id": "c112bc44-025e-411e-a44a-73d027e25582",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"success\": false, \"error\": \"Produto nao encontrado no Bling para o SKU informado\"}",
+        "options": {
+          "responseCode": 404
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        106800,
+        35424
+      ],
+      "id": "f0885538-f0f3-45d6-b0f5-4e42097d145e",
+      "name": "Error Handler2"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        106960,
+        35056
+      ],
+      "id": "ee8575a4-8ecd-4f84-9beb-248afc05ce24",
+      "name": "Wait Apos Detalhes2",
+      "webhookId": "45489ed5-7ba3-433e-ae4a-1eec2c062486"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        108384,
+        35120
+      ],
+      "id": "ad92df21-9cad-4f5b-9b29-644acb65d895",
+      "name": "Wait Apos PUT Fornecedor2",
+      "webhookId": "28b0e1bb-b919-494f-b200-b57333acf4f0"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        108896,
+        35312
+      ],
+      "id": "7f0e18cb-48dc-4e2b-abf4-812177c4a821",
+      "name": "Wait Apos POST Fornecedor2",
+      "webhookId": "a1b2c3d4-e5f6-7890-abcd-ef1234567891"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        107488,
+        35056
+      ],
+      "id": "44245917-03a8-47f1-8e2d-52a3e95a0909",
+      "name": "Wait",
+      "webhookId": "0fd071e3-140b-4f07-b2b9-9d1114be0e22"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        109616,
+        35008
+      ],
+      "id": "b85b7f32-a896-48a1-9c59-a02a17818261",
+      "name": "Wait1",
+      "webhookId": "a71e9066-ec70-4dec-84b2-00e3c68d62d6"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        110704,
+        35088
+      ],
+      "id": "1540aab5-5441-4ed9-8b8e-2ff42ceca374",
+      "name": "Wait2",
+      "webhookId": "5974626c-cafd-4de9-a27e-cec3e7028dd8"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        110944,
+        35136
+      ],
+      "id": "3079439f-bf57-43cc-aa96-6e8f21c12a88",
+      "name": "Wait3",
+      "webhookId": "1c5e659d-5d86-4e5b-9605-32e796da279b"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        110304,
+        34960
+      ],
+      "id": "3c0a7b86-f2fe-441a-8f8b-137e9e3300e3",
+      "name": "Wait4",
+      "webhookId": "b0946555-24be-4b45-b283-b2f585df239d"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        108384,
+        35312
+      ],
+      "id": "13867bb0-204c-4340-a105-f49a5b7aa152",
+      "name": "Wait5",
+      "webhookId": "a9dc7e4b-d87e-48cd-9f0c-62dc4749975b"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook2": {
+      "main": [
+        [
+          {
+            "node": "Pegar Access Token2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pegar Access Token2": {
+      "main": [
+        [
+          {
+            "node": "Check Token Expiry1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Token Expiry1": {
+      "main": [
+        [
+          {
+            "node": "IF Precisa Refresh1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Precisa Refresh1": {
+      "main": [
+        [
+          {
+            "node": "Refresh Token1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Valid Token2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refresh Token1": {
+      "main": [
+        [
+          {
+            "node": "Atualizar Token2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualizar Token2": {
+      "main": [
+        [
+          {
+            "node": "Get Valid Token2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Valid Token2": {
+      "main": [
+        [
+          {
+            "node": "GET Produto por SKU2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Produto por SKU2": {
+      "main": [
+        [
+          {
+            "node": "IF Produto Encontrado2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Produto Encontrado2": {
+      "main": [
+        [
+          {
+            "node": "GET Detalhes Produto2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Handler2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Detalhes Produto2": {
+      "main": [
+        [
+          {
+            "node": "Wait Apos Detalhes2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Apos Detalhes2": {
+      "main": [
+        [
+          {
+            "node": "GET Estoque2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Estoque2": {
+      "main": [
+        [
+          {
+            "node": "GET Fornecedores2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Fornecedores2": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Code: Identificar Fornecedor2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Identificar Fornecedor2": {
+      "main": [
+        [
+          {
+            "node": "IF Fornecedor Encontrado2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Fornecedor Encontrado2": {
+      "main": [
+        [
+          {
+            "node": "PUT Fornecedor2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GET Contato Fornecedor2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PUT Fornecedor2": {
+      "main": [
+        [
+          {
+            "node": "Wait Apos PUT Fornecedor2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Apos PUT Fornecedor2": {
+      "main": [
+        [
+          {
+            "node": "Atualizar Lojas2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Contato Fornecedor2": {
+      "main": [
+        [
+          {
+            "node": "Wait5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait5": {
+      "main": [
+        [
+          {
+            "node": "POST Fornecedor2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST Fornecedor2": {
+      "main": [
+        [
+          {
+            "node": "Wait Apos POST Fornecedor2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Apos POST Fornecedor2": {
+      "main": [
+        [
+          {
+            "node": "Atualizar Lojas2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualizar Lojas2": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "IF Tem Variacoes2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Tem Variacoes2": {
+      "main": [
+        [
+          {
+            "node": "GET Variacoes2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Variacoes2": {
+      "main": [
+        [
+          {
+            "node": "Wait2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait2": {
+      "main": [
+        [
+          {
+            "node": "Wait3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait3": {
+      "main": [
+        [
+          {
+            "node": "PUT Produto Bling2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait4": {
+      "main": [
+        [
+          {
+            "node": "PUT Produto Bling2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PUT Produto Bling2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": true
+  },
+  "versionId": "3a5aafb7-2fbe-4570-b4f5-f27b67bc809a",
+  "meta": {
+    "instanceId": "3d7d4fa7d3c4c290012153d978693be4156b77f6019587bc797861ba8b17bdab"
+  },
+  "id": "DTNUbZhqT1opV9qM",
+  "tags": []
+}
