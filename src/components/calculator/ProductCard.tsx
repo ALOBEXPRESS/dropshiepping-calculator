@@ -14,6 +14,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { ProductItem } from '../../types/calculator';
 import meliPlusLogo from '../../imgs/pill-meliplus@3x.png';
 import reputationExcellentIllustration from '../../imgs/ilustracao-reputacao-mercado-livre.png';
@@ -236,6 +246,7 @@ interface ProductCardProps {
 export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onDelete, onEdit, onBlingUpdate, isUpdatingBling, onInvestSave }) => {
   const [currentVarIndex, setCurrentVarIndex] = useState(0);
   const [isInvestOpen, setIsInvestOpen] = useState(false);
+  const [isBlingConfirmOpen, setIsBlingConfirmOpen] = useState(false);
   const [investStep, setInvestStep] = useState(0);
   
   // Buscar vendas reais do produto
@@ -1397,9 +1408,9 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
           Excluir
         </button>
         <button
-          onClick={() => onBlingUpdate(product)}
-          disabled={true}
-          title="Atualização temporariamente desabilitada"
+          onClick={() => setIsBlingConfirmOpen(true)}
+          disabled={isUpdatingBling}
+          title="Atualizar produto no Bling"
           className="inline-flex items-center justify-center gap-1 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-3.5 [&_svg]:shrink-0 border bg-background shadow-sm rounded-md px-2 h-8 w-full text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-100 dark:bg-white dark:border-gray-200 dark:hover:bg-gray-50"
         >
           {isUpdatingBling
@@ -1407,6 +1418,33 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
             : <RefreshCw className="w-3.5 h-3.5 mr-1" />}
           Atualizar
         </button>
+
+        <AlertDialog open={isBlingConfirmOpen} onOpenChange={setIsBlingConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar atualização</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que você quer atualizar o produto{' '}
+                <strong>{product.name}</strong> do marketplace{' '}
+                <strong>{product.marketplace}</strong>, titular{' '}
+                <strong>{product.accountHolder}</strong> e tipo de conta{' '}
+                <strong>{product.accountType?.toUpperCase()}</strong>?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Não</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setIsBlingConfirmOpen(false);
+                  onBlingUpdate(product);
+                }}
+                className="bg-amber-600 hover:bg-amber-700 text-white"
+              >
+                Sim, atualizar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         <button
           onClick={() => {
             setInvestData(getInvestDataFromProduct());
