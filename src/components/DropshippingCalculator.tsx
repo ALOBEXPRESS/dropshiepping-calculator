@@ -1281,6 +1281,23 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         || (productFilters.stockFilter === 'with_stock' && stock > 0)
         || (productFilters.stockFilter === 'without_stock' && stock <= 0);
 
+      // Filtro de afiliado
+      const hasAffiliate = Array.isArray(product.affiliates) && product.affiliates.length > 0;
+      const matchesAffiliate = productFilters.affiliateFilter === 'all'
+        || (productFilters.affiliateFilter === 'with' && hasAffiliate)
+        || (productFilters.affiliateFilter === 'without' && !hasAffiliate);
+
+      // Filtro de categoria (marketplace)
+      const matchesCategory = productFilters.categoryFilter === 'all'
+        || (product.marketplace ?? '') === productFilters.categoryFilter;
+
+      // Filtro de lucro mínimo
+      const productProfit = typeof product.netRevenue === 'number'
+        ? product.netRevenue
+        : parseCurrency(String(product.netRevenue ?? 0));
+      const minProfitVal = productFilters.minProfit ? parseCurrency(productFilters.minProfit) : null;
+      const matchesMinProfit = minProfitVal === null || productProfit >= minProfitVal;
+
       const matchesSearch = !normalizedGlobalSearch
         || normalizeText(productNameValue).includes(normalizedGlobalSearch)
         || normalizeText(skuValue).includes(normalizedGlobalSearch)
@@ -1292,7 +1309,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         || normalizeText(skuValue).includes(normalizedProductSearch)
         || normalizeText(supplierValue).includes(normalizedProductSearch)
         || normalizeText(holderValue).includes(normalizedProductSearch);
-      return matchesMarketplace && matchesSupplier && matchesHolder && matchesAccountType && matchesCnpj && matchesVideoModel && matchesStock && matchesSearch && matchesLocalSearch;
+      return matchesMarketplace && matchesSupplier && matchesHolder && matchesAccountType && matchesCnpj && matchesVideoModel && matchesStock && matchesAffiliate && matchesCategory && matchesMinProfit && matchesSearch && matchesLocalSearch;
     }).sort((a, b) => {
         if (productFilters.priceSort === 'all') return 0;
         
@@ -3862,6 +3879,32 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                         ))}
                       </SelectContent>
                     </Select>
+
+                    {/* Filtro: Com/Sem Afiliado */}
+                    <Select value={productFilters.affiliateFilter || "all"} onValueChange={(value) => handleProductFilterChange('affiliateFilter', value)}>
+                      <SelectTrigger className="border-dashed border-purple-300 dark:border-purple-700 focus:ring-purple-400">
+                        <SelectValue placeholder="Afiliado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos (afiliado)</SelectItem>
+                        <SelectItem value="with">✦ Com afiliado</SelectItem>
+                        <SelectItem value="without">○ Sem afiliado</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {/* Filtro: Lucro mínimo */}
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-emerald-500">R$</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={productFilters.minProfit}
+                        onChange={(e) => handleProductFilterChange('minProfit', e.target.value)}
+                        placeholder="Lucro mínimo"
+                        className="h-10 w-full rounded-md border border-emerald-300 bg-background pl-9 pr-3 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 dark:border-emerald-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                      />
+                    </div>
                   </div>
                   {shouldShowProductsLoading ? (
                     <div className="flex items-center justify-center py-20">
