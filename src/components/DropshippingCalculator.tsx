@@ -771,7 +771,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       marketplace_id: resolvedMarketplaceId,
       amazonPlan: marketplace === 'amazon' ? amazonPlan : undefined,
       amazonCategory: marketplace === 'amazon' ? amazonCategory : undefined,
-      mlCategory: marketplace === 'mercadolivre' ? (category || undefined) : undefined,
+      mlCategory: category || undefined,
       adType: marketplace === 'mercadolivre' ? adType : undefined,
       hasReputation: marketplace === 'mercadolivre' ? hasReputation : false,
       reputationLevel: marketplace === 'mercadolivre' && hasReputation ? reputationLevel : undefined,
