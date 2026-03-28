@@ -3873,6 +3873,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                     </div>
                   )}
 
+                  <CardContent className="space-y-4 pt-2">
                   <Input
                     value={productSearch}
                     onChange={(e) => { setProductSearch(e.target.value); setCurrentPage(1); }}
