@@ -48,6 +48,7 @@ import lumaLogo from '../../imgs/luma.png';
 import seedanceLogo from '../../imgs/seedance.png';
 import shopeeAdsMoney from '../../imgs/3d-render-realistic-currency-money-brazil-200-reais.png';
 import dollarImage from '../../imgs/dólar.png';
+import commissionIcon from '../../imgs/comission.png';
 import { parseCurrency } from '../../utils/currency';
 import { calculateMetrics } from '../../services/pricingService';
 import { useTiktokCommission } from '../../hooks/useTiktokCommission';
@@ -742,6 +743,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     && (product.adMedia ? hasValue(product.adUrl) && hasValue(product.adRedirectUrl) : true);
   const hasTrafficInvestment = hasCompleteInvestData && parseCurrency(product.investmentValue ?? 0) > 0;
   const showMoneyBorder = hasShopeeAdsInvestment || hasTrafficInvestment;
+  const hasAffiliateCommission = Array.isArray(product.affiliates) && product.affiliates.length > 0;
   
   // Verificar quantos canais com links foram configurados
   const promoVideoChannelsWithLinks = (product.promoVideoChannels || []).filter(
@@ -959,6 +961,13 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                         src={dollarImage}
                         alt="Investimento em Tráfego"
                         className="absolute left-1/2 top-1/2 z-10 w-12 -translate-x-1/2 -translate-y-1/2 opacity-95 drop-shadow-lg pointer-events-none"
+                      />
+                    )}
+                    {hasAffiliateCommission && (
+                      <img
+                        src={commissionIcon}
+                        alt="Comissão de Afiliado"
+                        className="absolute left-1/2 top-1/2 z-20 w-10 -translate-x-1/2 -translate-y-1/2 opacity-95 drop-shadow-lg pointer-events-none"
                       />
                     )}
                     {slides.length > 1 && (
