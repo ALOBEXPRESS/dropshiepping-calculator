@@ -3896,11 +3896,13 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                     <div className="relative">
                       <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-emerald-500">R$</span>
                       <input
-                        type="number"
-                        min="0"
-                        step="0.01"
+                        type="text"
+                        inputMode="decimal"
                         value={productFilters.minProfit}
-                        onChange={(e) => handleProductFilterChange('minProfit', e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^\d.,]/g, '');
+                          handleProductFilterChange('minProfit', val);
+                        }}
                         placeholder="Lucro mínimo"
                         className="h-10 w-full rounded-md border border-emerald-300 bg-background pl-9 pr-3 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 dark:border-emerald-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
                       />
