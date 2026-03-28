@@ -2,7 +2,7 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import type { MouseEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Calculator, TrendingUp, Package, DollarSign, AlertCircle, Plus, Trash2, ChevronLeft, ChevronRight, Loader2, Store } from 'lucide-react';
+import { Calculator, TrendingUp, Package, DollarSign, AlertCircle, Plus, Trash2, ChevronLeft, ChevronRight, Loader2, Store, Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -11,6 +11,7 @@ import { Checkbox } from "./ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import { Popover, PopoverTrigger, PopoverContent } from "./ui/popover";
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { MoonLoader } from 'react-spinners';
@@ -530,9 +531,9 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
   const remainingMarketingCapital = Math.max(marketingCapitalValue - totalMarketingInvestment, 0);
   const availableShopeeBudget = Math.max(marketingCapitalValue - paidTrafficInvestment, 0);
 
-  const handleProductsResponse = useCallback((list: ProductItem[]) => {
+  const handleProductsResponse = useCallback((list: ProductItem[], preservePage = false) => {
     setProducts(list);
-    setCurrentPage(1);
+    if (!preservePage) setCurrentPage(1);
     setIsProductsLoading(false);
     setSelectedProductIndex((prev) => {
       if (list.length === 0) return 0;
@@ -663,7 +664,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       }
       
       const list = await ProductService.getAll(organizationId ?? undefined);
-      handleProductsResponse(list);
+      handleProductsResponse(list, Boolean(payload.id)); // preserva página em updates
       setShowProductsList(true);
       toast.success('Produto salvo com sucesso!', { id: toastId });
     } catch (error: unknown) {
@@ -2180,7 +2181,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
     try {
       await ProductService.delete(productId);
       const list = await ProductService.getAll(organizationId ?? undefined);
-      handleProductsResponse(list);
+      handleProductsResponse(list, true); // preserva página ao deletar
       
       // Remover do registeredBlingBySku se tiver SKU
       if (skuKey && registeredBlingBySku[skuKey]) {
@@ -3907,7 +3908,41 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
 
                               return pages.map((page, idx) =>
                                 page === 'ellipsis' ? (
-                                  <span key={`ellipsis-${idx}`} className="h-8 w-6 flex items-center justify-center text-xs text-gray-400">…</span>
+                                  <Popover key={`ellipsis-${idx}`}>
+                                    <PopoverTrigger className="h-8 w-8 rounded-md text-xs font-medium text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center transition-colors">
+                                      …
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-44 p-2" align="center">
+                                      <p className="text-xs text-muted-foreground mb-2">Ir para página (1–{totalPages})</p>
+                                      <form
+                                        className="flex gap-1"
+                                        onSubmit={(e) => {
+                                          e.preventDefault();
+                                          const input = (e.currentTarget.elements.namedItem('gotoPage') as HTMLInputElement);
+                                          const val = parseInt(input.value, 10);
+                                          if (!isNaN(val) && val >= 1 && val <= totalPages) {
+                                            setCurrentPage(val);
+                                          }
+                                        }}
+                                      >
+                                        <input
+                                          name="gotoPage"
+                                          type="number"
+                                          min={1}
+                                          max={totalPages}
+                                          placeholder="Nº"
+                                          autoFocus
+                                          className="h-7 w-full rounded border border-input bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                                        />
+                                        <button
+                                          type="submit"
+                                          className="h-7 w-7 shrink-0 rounded bg-pink-600 text-white flex items-center justify-center hover:bg-pink-700"
+                                        >
+                                          <Search className="h-3 w-3" />
+                                        </button>
+                                      </form>
+                                    </PopoverContent>
+                                  </Popover>
                                 ) : (
                                   <button
                                     key={page}
