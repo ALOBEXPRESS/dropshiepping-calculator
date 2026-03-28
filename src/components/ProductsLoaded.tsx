@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useLocation } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RefreshCw, RefreshCcw, AlertTriangle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -28,6 +28,9 @@ export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBli
   
   const [searchInput, setSearchInput] = useState(getInitialSearch);
   const debouncedSearch = useDebounce(searchInput, 300);
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
+  const bulkAbortRef = useRef(false);
   
   const {
     items,
@@ -164,8 +167,108 @@ export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBli
     void fetchProducts(page, filters);
   }, [fetchProducts, filters, page]);
 
+  // Descrição legível dos filtros ativos para o modal
+  const activeFiltersDescription = useMemo(() => {
+    const parts: string[] = [];
+    if (filters.supplierSku && filters.supplierSku !== 'all') {
+      const label = supplierOptions.find(s => s.value === filters.supplierSku)?.label || filters.supplierSku;
+      parts.push(`fornecedor "${label}"`);
+    }
+    if (filters.ticket && filters.ticket !== 'all') {
+      parts.push(`ticket "${filters.ticket === 'low-ticket' ? 'Low-ticket' : 'High-ticket'}"`);
+    }
+    if (filters.minPrice) parts.push(`preço mínimo R$ ${filters.minPrice}`);
+    if (filters.maxPrice) parts.push(`preço máximo R$ ${filters.maxPrice}`);
+    if (filters.name) parts.push(`busca "${filters.name}"`);
+    return parts.length > 0 ? parts.join(', ') : 'todos os filtros ativos';
+  }, [filters, supplierOptions]);
+
+  const handleBulkUpdate = async () => {
+    if (!onUpdate) return;
+    bulkAbortRef.current = false;
+    const groups = groupedItems;
+    setBulkProgress({ done: 0, total: groups.length });
+    setShowBulkModal(false);
+
+    for (let i = 0; i < groups.length; i++) {
+      if (bulkAbortRef.current) break;
+      const { base, variations } = groups[i];
+      await onUpdate(base, variations);
+      setBulkProgress({ done: i + 1, total: groups.length });
+      // Pequeno delay para não sobrecarregar
+      if (i < groups.length - 1) await new Promise(r => setTimeout(r, 300));
+    }
+
+    setBulkProgress(null);
+  };
+
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+
+      {/* Modal de confirmação bulk update */}
+      {showBulkModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-700 dark:bg-zinc-900">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/40">
+                <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Atualizar todos os produtos?</h3>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">{groupedItems.length} produto{groupedItems.length !== 1 ? 's' : ''} serão atualizados</p>
+              </div>
+            </div>
+            <p className="mb-2 text-sm text-gray-700 dark:text-zinc-300">
+              Você irá atualizar os dados do Bling (nome, custo, estoque, dimensões) de{' '}
+              <span className="font-semibold text-blue-600 dark:text-blue-400">{groupedItems.length} produto{groupedItems.length !== 1 ? 's' : ''}</span>{' '}
+              com os seguintes critérios:
+            </p>
+            <div className="mb-5 rounded-lg border border-zinc-100 bg-zinc-50 px-4 py-3 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+              {activeFiltersDescription}
+            </div>
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowBulkModal(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                className="flex-1 bg-blue-600 text-white hover:bg-blue-700"
+                onClick={handleBulkUpdate}
+              >
+                <RefreshCcw className="mr-2 h-4 w-4" />
+                Confirmar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Barra de progresso bulk update */}
+      {bulkProgress && (
+        <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-800 dark:bg-blue-950/40">
+          <div className="mb-2 flex items-center justify-between text-xs font-semibold text-blue-700 dark:text-blue-300">
+            <span>Atualizando produtos... {bulkProgress.done}/{bulkProgress.total}</span>
+            <button
+              type="button"
+              className="text-xs text-red-500 hover:underline"
+              onClick={() => { bulkAbortRef.current = true; }}
+            >
+              Cancelar
+            </button>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-blue-200 dark:bg-blue-900">
+            <div
+              className="h-2 rounded-full bg-blue-500 transition-all duration-300"
+              style={{ width: `${(bulkProgress.done / bulkProgress.total) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Produtos integrados</h3>
@@ -203,6 +306,17 @@ export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBli
             <RefreshCw className="mr-2 h-3.5 w-3.5" />
             Atualizar
           </Button>
+          {onUpdate && groupedItems.length > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-9 border-blue-300 bg-blue-50 text-xs font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-200 dark:hover:bg-blue-900"
+              onClick={() => setShowBulkModal(true)}
+            >
+              <RefreshCcw className="mr-2 h-3.5 w-3.5" />
+              Atualizar todos ({groupedItems.length})
+            </Button>
+          )}
         </div>
       </div>
 
