@@ -964,11 +964,16 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                       />
                     )}
                     {hasAffiliateCommission && (
-                      <img
-                        src={commissionIcon}
-                        alt="Comissão de Afiliado"
-                        className="absolute left-1/2 top-1/2 z-20 w-10 -translate-x-1/2 -translate-y-1/2 opacity-95 drop-shadow-lg pointer-events-none"
-                      />
+                      <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
+                        <div className="w-full h-14" style={{ background: 'linear-gradient(to top, black, transparent)' }} />
+                        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex items-center justify-center">
+                          <img
+                            src={commissionIcon}
+                            alt="Comissão de Afiliado"
+                            className="w-14 h-14 object-contain drop-shadow-lg"
+                          />
+                        </div>
+                      </div>
                     )}
                     {slides.length > 1 && (
                       <>
