@@ -269,21 +269,13 @@ export const useDropshippingCalculator = () => {
     affiliateFilter: string;
     categoryFilter: string;
     minProfit: string;
+    maxProfit: string;
   }>(() => {
-    // Carregar filtros salvos do localStorage
     if (typeof window === 'undefined' || !('localStorage' in window)) {
       return {
-        marketplace: 'all',
-        supplier: '',
-        holder: '',
-        accountType: 'all',
-        cnpj: '',
-        videoModel: 'all',
-        priceSort: 'all',
-        stockFilter: 'all',
-        affiliateFilter: 'all',
-        categoryFilter: 'all',
-        minProfit: ''
+        marketplace: 'all', supplier: '', holder: '', accountType: 'all',
+        cnpj: '', videoModel: 'all', priceSort: 'all', stockFilter: 'all',
+        affiliateFilter: 'all', categoryFilter: 'all', minProfit: '', maxProfit: ''
       };
     }
     try {
@@ -291,28 +283,15 @@ export const useDropshippingCalculator = () => {
       if (saved) {
         const parsed = JSON.parse(saved);
         console.log('[Filters Load] Loaded from localStorage:', parsed);
-        return {
-          affiliateFilter: 'all',
-          categoryFilter: 'all',
-          minProfit: '',
-          ...parsed
-        };
+        return { affiliateFilter: 'all', categoryFilter: 'all', minProfit: '', maxProfit: '', ...parsed };
       }
     } catch (error) {
       console.log('[Filters Load] Error loading filters:', error);
     }
     return {
-      marketplace: 'all',
-      supplier: '',
-      holder: '',
-      accountType: 'all',
-      cnpj: '',
-      videoModel: 'all',
-      priceSort: 'all',
-      stockFilter: 'all',
-      affiliateFilter: 'all',
-      categoryFilter: 'all',
-      minProfit: ''
+      marketplace: 'all', supplier: '', holder: '', accountType: 'all',
+      cnpj: '', videoModel: 'all', priceSort: 'all', stockFilter: 'all',
+      affiliateFilter: 'all', categoryFilter: 'all', minProfit: '', maxProfit: ''
     };
   });
 

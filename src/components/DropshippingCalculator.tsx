@@ -1287,9 +1287,10 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         || (productFilters.affiliateFilter === 'with' && hasAffiliate)
         || (productFilters.affiliateFilter === 'without' && !hasAffiliate);
 
-      // Filtro de categoria (marketplace)
+      // Filtro de categoria (mlCategory ou amazonCategory)
+      const productCategoryVal = (product.mlCategory || product.amazonCategory || '').toLowerCase();
       const matchesCategory = productFilters.categoryFilter === 'all'
-        || (product.marketplace ?? '') === productFilters.categoryFilter;
+        || productCategoryVal === productFilters.categoryFilter.toLowerCase();
 
       // Filtro de lucro mínimo
       const productProfit = typeof product.netRevenue === 'number'
@@ -1297,6 +1298,10 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         : parseCurrency(String(product.netRevenue ?? 0));
       const minProfitVal = productFilters.minProfit ? parseCurrency(productFilters.minProfit) : null;
       const matchesMinProfit = minProfitVal === null || productProfit >= minProfitVal;
+
+      // Filtro de lucro máximo
+      const maxProfitVal = productFilters.maxProfit ? parseCurrency(productFilters.maxProfit) : null;
+      const matchesMaxProfit = maxProfitVal === null || productProfit <= maxProfitVal;
 
       const matchesSearch = !normalizedGlobalSearch
         || normalizeText(productNameValue).includes(normalizedGlobalSearch)
@@ -1309,7 +1314,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         || normalizeText(skuValue).includes(normalizedProductSearch)
         || normalizeText(supplierValue).includes(normalizedProductSearch)
         || normalizeText(holderValue).includes(normalizedProductSearch);
-      return matchesMarketplace && matchesSupplier && matchesHolder && matchesAccountType && matchesCnpj && matchesVideoModel && matchesStock && matchesAffiliate && matchesCategory && matchesMinProfit && matchesSearch && matchesLocalSearch;
+      return matchesMarketplace && matchesSupplier && matchesHolder && matchesAccountType && matchesCnpj && matchesVideoModel && matchesStock && matchesAffiliate && matchesCategory && matchesMinProfit && matchesMaxProfit && matchesSearch && matchesLocalSearch;
     }).sort((a, b) => {
         if (productFilters.priceSort === 'all') return 0;
         
@@ -3809,80 +3814,47 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                     })}
                   </div>
                   <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {/* Linha 1: Video | Ordenar | Estoque */}
                     <Select value={productFilters.videoModel || "all"} onValueChange={(value) => handleProductFilterChange('videoModel', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Modelo de Vídeo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {videoModelOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
+                      <SelectTrigger><SelectValue placeholder="Modelo de Vídeo" /></SelectTrigger>
+                      <SelectContent>{videoModelOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
                     </Select>
                     <Select value={productFilters.priceSort || "all"} onValueChange={(value) => handleProductFilterChange('priceSort', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Ordenar por Preço" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {priceFilterOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
+                      <SelectTrigger><SelectValue placeholder="Ordenar por Preço" /></SelectTrigger>
+                      <SelectContent>{priceFilterOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
                     </Select>
                     <Select value={productFilters.stockFilter || "all"} onValueChange={(value) => handleProductFilterChange('stockFilter', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Filtrar por Estoque" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {stockFilterOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={productFilters.supplier || "all"} onValueChange={(value) => handleProductFilterChange('supplier', value === "all" ? "" : value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Fornecedor" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todos</SelectItem>
-                        {suppliersList.map((s) => (
-                          <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
-                        ))}
-                      </SelectContent>
+                      <SelectTrigger><SelectValue placeholder="Filtrar por Estoque" /></SelectTrigger>
+                      <SelectContent>{stockFilterOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
                     </Select>
 
+                    {/* Linha 2: Fornecedor | Tipo de Conta | Titular */}
+                    <Select value={productFilters.supplier || "all"} onValueChange={(value) => handleProductFilterChange('supplier', value === "all" ? "" : value)}>
+                      <SelectTrigger><SelectValue placeholder="Fornecedor" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos</SelectItem>
+                        {suppliersList.map((s) => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                     <Select value={productFilters.accountType || "all"} onValueChange={(value) => handleProductFilterChange('accountType', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Tipo de Conta" />
-                      </SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Tipo de Conta" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Todos</SelectItem>
                         <SelectItem value="cpf">CPF</SelectItem>
                         <SelectItem value="cnpj">CNPJ</SelectItem>
                       </SelectContent>
                     </Select>
-
                     <Select value={productFilters.holder || "all"} onValueChange={(value) => handleProductFilterChange('holder', value === "all" ? "" : value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Titular" />
-                      </SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Titular" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Todos</SelectItem>
-                        {accountHoldersList.map((h) => (
-                          <SelectItem key={h.id} value={h.name}>{h.name}</SelectItem>
-                        ))}
+                        {accountHoldersList.map((h) => <SelectItem key={h.id} value={h.name}>{h.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
 
-                    {/* Filtro: Com/Sem Afiliado */}
+                    {/* Linha 3: Afiliado | Categoria */}
                     <Select value={productFilters.affiliateFilter || "all"} onValueChange={(value) => handleProductFilterChange('affiliateFilter', value)}>
-                      <SelectTrigger className="border-dashed border-purple-300 dark:border-purple-700 focus:ring-purple-400">
+                      <SelectTrigger className="border-dashed border-purple-300 dark:border-purple-700">
                         <SelectValue placeholder="Afiliado" />
                       </SelectTrigger>
                       <SelectContent>
@@ -3891,20 +3863,42 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                         <SelectItem value="without">○ Sem afiliado</SelectItem>
                       </SelectContent>
                     </Select>
+                    <Select value={productFilters.categoryFilter || "all"} onValueChange={(value) => handleProductFilterChange('categoryFilter', value)}>
+                      <SelectTrigger><SelectValue placeholder="Categoria" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todas as categorias</SelectItem>
+                        {['Eletrônicos','Celulares e Acessórios','Informática','Moda e Acessórios','Calçados','Relógios','Casa e Decoração','Móveis','Beleza e Cuidado Pessoal','Esportes e Fitness','Brinquedos','Ferramentas','Pet Shop','Livros','Automotivo'].map((cat) => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
 
-                    {/* Filtro: Lucro mínimo */}
+                    {/* Linha 4: Preço mínimo | Lucro mínimo | Lucro máximo */}
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-blue-500">R$</span>
+                      <input type="text" inputMode="decimal"
+                        value={productFilters.minPrice ?? ''}
+                        onChange={(e) => handleProductFilterChange('minPrice', e.target.value.replace(/[^\d.,]/g, ''))}
+                        placeholder="Preço mínimo"
+                        className="h-10 w-full rounded-md border border-blue-300 bg-background pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 dark:border-blue-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                      />
+                    </div>
                     <div className="relative">
                       <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-emerald-500">R$</span>
-                      <input
-                        type="text"
-                        inputMode="decimal"
+                      <input type="text" inputMode="decimal"
                         value={productFilters.minProfit}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/[^\d.,]/g, '');
-                          handleProductFilterChange('minProfit', val);
-                        }}
+                        onChange={(e) => handleProductFilterChange('minProfit', e.target.value.replace(/[^\d.,]/g, ''))}
                         placeholder="Lucro mínimo"
-                        className="h-10 w-full rounded-md border border-emerald-300 bg-background pl-9 pr-3 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 dark:border-emerald-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                        className="h-10 w-full rounded-md border border-emerald-300 bg-background pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 dark:border-emerald-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                      />
+                    </div>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-rose-500">R$</span>
+                      <input type="text" inputMode="decimal"
+                        value={productFilters.maxProfit}
+                        onChange={(e) => handleProductFilterChange('maxProfit', e.target.value.replace(/[^\d.,]/g, ''))}
+                        placeholder="Lucro máximo"
+                        className="h-10 w-full rounded-md border border-rose-300 bg-background pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-rose-400 focus:ring-offset-2 dark:border-rose-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
                       />
                     </div>
                   </div>
