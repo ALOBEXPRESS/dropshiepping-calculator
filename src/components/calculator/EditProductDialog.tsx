@@ -1026,15 +1026,16 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                           // Preencher os campos do formulário com os dados da variação
                           setFormData(prev => ({
                             ...prev,
-                            imageUrl: variation.imageUrl || '',
-                            sku: variation.sku || '',
-                            stockQuantity: String(variation.stockQuantity ?? ''),
-                            costPrice: String(variation.cost ?? ''),
-                            sellingPrice: String(variation.manualPrice || variation.suggestedPrice || ''),
-                            weight: String(variation.weight ?? ''),
-                            width: String(variation.width ?? ''),
-                            height: String(variation.height ?? ''),
-                            depth: String(variation.depth ?? ''),
+                            imageUrl: variation.imageUrl || prev.imageUrl || '',
+                            sku: variation.sku || prev.sku || '',
+                            stockQuantity: String(variation.stockQuantity ?? prev.stockQuantity ?? ''),
+                            costPrice: String(variation.cost ?? prev.costPrice ?? ''),
+                            // Mantém o preço atual se a variação não tiver preço próprio
+                            sellingPrice: String(variation.manualPrice || variation.suggestedPrice || prev.sellingPrice || ''),
+                            weight: String(variation.weight ?? prev.weight ?? ''),
+                            width: String(variation.width ?? prev.width ?? ''),
+                            height: String(variation.height ?? prev.height ?? ''),
+                            depth: String(variation.depth ?? prev.depth ?? ''),
                           }));
                         }}
                       />
