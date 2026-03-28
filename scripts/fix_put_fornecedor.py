@@ -10,14 +10,22 @@ new_code = (
     "  ? Number($('Webhook2').item.json.body.costPrice)\n"
     "  : (fornecedor.precoCusto || 0);\n"
     "\n"
-    "const idVinculo = fornecedor.id;\n"
-    "const idContatoFornecedor = fornecedor.fornecedor ? fornecedor.fornecedor.id : null;\n"
+    "// Mapeamento fixo: codigo do fornecedor -> ID do contato no Bling\n"
+    "const FORNECEDOR_IDS = {\n"
+    "  'ALOBFOR_DROP_01': 17905608001,\n"
+    "  'ALOBFOR_DROP_02': 18016812879,\n"
+    "  'ALOBEXPRESS_01':  17852526265\n"
+    "};\n"
     "\n"
-    "console.log('idVinculo:', idVinculo, 'idContato:', idContatoFornecedor);\n"
-    "console.log('fornecedor obj:', JSON.stringify(fornecedor));\n"
+    "const idVinculo = fornecedor.id;\n"
+    "const idContatoFornecedor = (fornecedor.fornecedor && fornecedor.fornecedor.id)\n"
+    "  ? fornecedor.fornecedor.id\n"
+    "  : (FORNECEDOR_IDS[fornecedor.codigo] || null);\n"
+    "\n"
+    "console.log('codigo:', fornecedor.codigo, 'idVinculo:', idVinculo, 'idContato:', idContatoFornecedor);\n"
     "\n"
     "if (!idContatoFornecedor) {\n"
-    "  return [{ json: { skipped: true, reason: 'fornecedor.fornecedor.id ausente' } }];\n"
+    "  return [{ json: { skipped: true, reason: 'idContato nao encontrado para: ' + fornecedor.codigo } }];\n"
     "}\n"
     "\n"
     "try {\n"
@@ -45,7 +53,7 @@ new_code = (
     "  if (resp.statusCode >= 400) {\n"
     "    return [{ json: { error: 'PUT falhou', status: resp.statusCode, body: resp.body } }];\n"
     "  }\n"
-    "  return [{ json: { success: true, idVinculo: idVinculo, idContatoFornecedor: idContatoFornecedor } }];\n"
+    "  return [{ json: { success: true, idVinculo: idVinculo, idContatoFornecedor: idContatoFornecedor, codigo: fornecedor.codigo } }];\n"
     "} catch(err) {\n"
     "  console.log('PUT Fornecedor error:', err.message);\n"
     "  return [{ json: { error: err.message } }];\n"
@@ -58,9 +66,9 @@ with open(path, 'r', encoding='utf-8') as f:
 for node in workflow['nodes']:
     if node['name'] == 'PUT Fornecedor2':
         node['parameters']['jsCode'] = new_code
+        assert "$('Get Valid Token2')" in new_code
+        assert 'ALOBFOR_DROP_01' in new_code
         print('corrigido')
-        # Verifica se $() está presente
-        assert "$('Get Valid Token2')" in new_code, "ERRO: expressoes $ perdidas!"
         break
 
 with open(path, 'w', encoding='utf-8') as f:
