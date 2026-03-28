@@ -522,7 +522,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
   const [editingProduct, setEditingProduct] = useState<ProductItem | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editSessionId, setEditSessionId] = useState(0);
-  const [updatingBlingId, setUpdatingBlingId] = useState<string | null>(null);
+  const [updatingBlingIds, setUpdatingBlingIds] = useState<Set<string>>(new Set());
 
   const paidTrafficInvestment = Number(calculations?.paidTrafficCost || 0);
   const shopeeTotalBudgetValue = useShopeeAds ? parseCurrency(shopeeTotalBudget || 0) : 0;
@@ -599,9 +599,10 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       toast.error('Webhook de atualização não configurado');
       return;
     }
-    setUpdatingBlingId(product.id);
+    // Permite múltiplas atualizações simultâneas
+    setUpdatingBlingIds((prev) => new Set(prev).add(product.id));
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30_000);
+    const timeoutId = setTimeout(() => controller.abort(), 120_000); // 2min para produtos com muitas variações
     try {
       const res = await fetch(webhookUrl, {
         method: 'POST',
@@ -623,19 +624,24 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       clearTimeout(timeoutId);
       const data = await res.json();
       if (data.success) {
-        toast.success('Produto atualizado com sucesso');
+        toast.success(`${product.name} atualizado no Bling`);
       } else {
         toast.error(data.error ?? 'Erro ao atualizar produto');
       }
     } catch (err) {
       clearTimeout(timeoutId);
       if ((err as Error).name === 'AbortError') {
-        toast.warning('A atualização está demorando mais que o esperado. Verifique o n8n.');
+        // Timeout não significa erro — o n8n pode ter concluído mas demorou
+        toast.warning(`${product.name}: atualização enviada, verifique o Bling em instantes.`);
       } else {
-        toast.error('Erro ao conectar com o webhook');
+        toast.error(`Erro ao conectar com o webhook: ${(err as Error).message}`);
       }
     } finally {
-      setUpdatingBlingId(null);
+      setUpdatingBlingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(product.id);
+        return next;
+      });
     }
   };
 
@@ -3875,7 +3881,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                               onDelete={handleDeleteProductAnimated}
                               onEdit={handleEditProductClick}
                               onBlingUpdate={handleBlingUpdate}
-                              isUpdatingBling={updatingBlingId === product.id}
+                              isUpdatingBling={updatingBlingIds.has(product.id)}
                               onInvestSave={handleInvestSaveProduct}
                             />
                           </div>
