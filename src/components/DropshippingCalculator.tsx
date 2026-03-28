@@ -2,7 +2,7 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import type { MouseEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Calculator, TrendingUp, Package, DollarSign, AlertCircle, Plus, Trash2, ChevronLeft, ChevronRight, Loader2, Store, Search } from 'lucide-react';
+import { Calculator, TrendingUp, Package, DollarSign, AlertCircle, Plus, Trash2, ChevronLeft, ChevronRight, Loader2, Store, Search, RefreshCcw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -523,6 +523,9 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editSessionId, setEditSessionId] = useState(0);
   const [updatingBlingIds, setUpdatingBlingIds] = useState<Set<string>>(new Set());
+  const [showBulkUpdateModal, setShowBulkUpdateModal] = useState(false);
+  const [bulkUpdateProgress, setBulkUpdateProgress] = useState<{ done: number; total: number } | null>(null);
+  const bulkUpdateAbortRef = { current: false };
 
   const paidTrafficInvestment = Number(calculations?.paidTrafficCost || 0);
   const shopeeTotalBudgetValue = useShopeeAds ? parseCurrency(shopeeTotalBudget || 0) : 0;
@@ -3780,13 +3783,96 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 borderRadius={16}
               >
                 <Card id="produtos" className="shadow-xl backdrop-blur-xl bg-white dark:bg-gray-900 border border-white/20 dark:border-gray-700/20" style={{ opacity: 1, visibility: 'visible' }}>
-                  <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2 cursor-pointer" onClick={handleNavigateToProducts}>
-                    <div className="flex flex-row items-center gap-2">
+                  <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2" onClick={handleNavigateToProducts}>
+                    <div className="flex flex-row items-center gap-2 cursor-pointer">
                       <Package className="w-6 h-6 text-[#fe2c55]" />
                       <CardTitle className="tracking-tight text-2xl font-bold text-gray-800 dark:text-white font-iceland">Produtos adicionados</CardTitle>
                     </div>
+                    {filteredProducts.length > 0 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 border-blue-300 bg-blue-50 text-xs font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-200 dark:hover:bg-blue-900"
+                        onClick={(e) => { e.stopPropagation(); setShowBulkUpdateModal(true); }}
+                      >
+                        <RefreshCcw className="mr-1.5 h-3.5 w-3.5" />
+                        Atualizar todos ({filteredProducts.length})
+                      </Button>
+                    )}
                   </CardHeader>
-                <CardContent className="space-y-4 pt-4" style={{ opacity: 1, visibility: 'visible' }}>
+
+                  {/* Modal de confirmação bulk update */}
+                  {showBulkUpdateModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                      <div className="mx-4 w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-700 dark:bg-zinc-900">
+                        <div className="mb-4 flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/40">
+                            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                          </div>
+                          <div>
+                            <h3 className="text-base font-semibold text-gray-900 dark:text-white">Atualizar todos no Bling?</h3>
+                            <p className="text-xs text-gray-500 dark:text-zinc-400">{filteredProducts.length} produto{filteredProducts.length !== 1 ? 's' : ''} serão enviados ao Bling</p>
+                          </div>
+                        </div>
+                        <p className="mb-2 text-sm text-gray-700 dark:text-zinc-300">
+                          Você irá atualizar o preço e dados de{' '}
+                          <span className="font-semibold text-blue-600 dark:text-blue-400">{filteredProducts.length} produto{filteredProducts.length !== 1 ? 's' : ''}</span>{' '}
+                          no Bling, segundo os filtros ativos:
+                        </p>
+                        <div className="mb-5 rounded-lg border border-zinc-100 bg-zinc-50 px-4 py-3 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 space-y-1">
+                          {productFilters.marketplace !== 'all' && <div>Marketplace: <span className="font-medium">{productFilters.marketplace}</span></div>}
+                          {productFilters.supplier && <div>Fornecedor: <span className="font-medium">{productFilters.supplier}</span></div>}
+                          {productFilters.accountType !== 'all' && <div>Tipo de conta: <span className="font-medium">{productFilters.accountType.toUpperCase()}</span></div>}
+                          {productFilters.holder && <div>Titular: <span className="font-medium">{productFilters.holder}</span></div>}
+                          {productFilters.affiliateFilter !== 'all' && <div>Afiliado: <span className="font-medium">{productFilters.affiliateFilter === 'with' ? 'Com afiliado' : 'Sem afiliado'}</span></div>}
+                          {productFilters.categoryFilter !== 'all' && <div>Categoria: <span className="font-medium">{productFilters.categoryFilter}</span></div>}
+                          {productFilters.minProfit && <div>Lucro mínimo: <span className="font-medium">R$ {productFilters.minProfit}</span></div>}
+                          {productFilters.maxProfit && <div>Lucro máximo: <span className="font-medium">R$ {productFilters.maxProfit}</span></div>}
+                          {!productFilters.supplier && !productFilters.holder && productFilters.marketplace === 'all' && productFilters.accountType === 'all' && productFilters.affiliateFilter === 'all' && productFilters.categoryFilter === 'all' && !productFilters.minProfit && !productFilters.maxProfit && (
+                            <div className="text-zinc-400 italic">Todos os produtos (sem filtros ativos)</div>
+                          )}
+                        </div>
+                        <div className="flex gap-3">
+                          <Button type="button" variant="outline" className="flex-1" onClick={() => setShowBulkUpdateModal(false)}>Cancelar</Button>
+                          <Button
+                            type="button"
+                            className="flex-1 bg-blue-600 text-white hover:bg-blue-700"
+                            onClick={async () => {
+                              setShowBulkUpdateModal(false);
+                              bulkUpdateAbortRef.current = false;
+                              const list = filteredProducts;
+                              setBulkUpdateProgress({ done: 0, total: list.length });
+                              for (let i = 0; i < list.length; i++) {
+                                if (bulkUpdateAbortRef.current) break;
+                                await handleBlingUpdate(list[i]);
+                                setBulkUpdateProgress({ done: i + 1, total: list.length });
+                                if (i < list.length - 1) await new Promise(r => setTimeout(r, 500));
+                              }
+                              setBulkUpdateProgress(null);
+                            }}
+                          >
+                            <RefreshCcw className="mr-2 h-4 w-4" />
+                            Confirmar
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Barra de progresso bulk update */}
+                  {bulkUpdateProgress && (
+                    <div className="mx-4 mb-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-800 dark:bg-blue-950/40">
+                      <div className="mb-2 flex items-center justify-between text-xs font-semibold text-blue-700 dark:text-blue-300">
+                        <span>Atualizando no Bling... {bulkUpdateProgress.done}/{bulkUpdateProgress.total}</span>
+                        <button type="button" className="text-xs text-red-500 hover:underline" onClick={() => { bulkUpdateAbortRef.current = true; }}>Cancelar</button>
+                      </div>
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-blue-200 dark:bg-blue-900">
+                        <div className="h-2 rounded-full bg-blue-500 transition-all duration-300" style={{ width: `${(bulkUpdateProgress.done / bulkUpdateProgress.total) * 100}%` }} />
+                      </div>
+                    </div>
+                  )}
+
                   <Input
                     value={productSearch}
                     onChange={(e) => { setProductSearch(e.target.value); setCurrentPage(1); }}
