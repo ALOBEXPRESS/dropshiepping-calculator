@@ -74,11 +74,11 @@ export const ShopeeConfig: React.FC<ShopeeConfigProps> = ({
   marketplace,
   category,
   handleShopeeCategoryChange,
-  extraCommission,
-  setExtraCommission,
-  shippingOption,
-  setShippingOption,
-  shopeeSellerType,
+  extraCommission: _extraCommission,
+  setExtraCommission: _setExtraCommission,
+  shippingOption: _shippingOption,
+  setShippingOption: _setShippingOption,
+  shopeeSellerType: _shopeeSellerType,
   useShopeeAds,
   handleShopeeAdsChange,
   adsCPC,
@@ -154,7 +154,7 @@ export const ShopeeConfig: React.FC<ShopeeConfigProps> = ({
     }
     return '';
   };
-  const fixedFeeLabel = shopeeSellerType === 'cpf' ? 'R$ 5,00 (Tarifa Fixa)' : 'R$ 4,00 (Tarifa Fixa)';
+  const fixedFeeLabel = 'Por faixa de preço (R$4–R$26)';
   const totalBudgetValue = parseCurrency(shopeeTotalBudget);
   const startDateIso = formatDateToIso(shopeeStartDate);
   const endDateIso = formatDateToIso(shopeeEndDate);
@@ -221,52 +221,39 @@ export const ShopeeConfig: React.FC<ShopeeConfigProps> = ({
         
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label className="text-xs text-gray-600 dark:text-gray-300">Taxa de Transação</Label>
+            <Label className="text-xs text-gray-600 dark:text-gray-300">Comissão</Label>
             <div className="relative">
-              <Input 
-                value="2%" 
-                disabled 
-                className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 h-9 font-medium" 
-              />
+              <Input value="20% (até R$79,99) / 14% (acima)" disabled className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 h-9 font-medium text-xs" />
             </div>
           </div>
-
           <div className="space-y-1.5">
             <Label className="text-xs text-gray-600 dark:text-gray-300">Taxa Fixa (por item)</Label>
             <div className="relative">
-              <Input 
-                value={fixedFeeLabel} 
-                disabled 
-                className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 h-9 font-medium" 
-              />
+              <Input value={fixedFeeLabel} disabled className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 h-9 font-medium text-xs" />
             </div>
           </div>
-          
-          <div className="col-span-2 space-y-1.5">
-             <Label className="text-xs text-gray-600 dark:text-gray-300">Comissões Extras (%)</Label>
-             <Input 
-                type="text"
-                inputMode="decimal"
-                value={extraCommission}
-                onChange={(e) => handleCurrencyChange(e, setExtraCommission)}
-                placeholder="0"
-                className="h-9 font-medium dark:bg-gray-800 dark:text-white" 
-              />
-          </div>
         </div>
-        <p className="text-[10px] text-gray-500 dark:text-gray-400 -mt-2">*com exceções para alguns vendedores</p>
+        <div className="rounded-lg border border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/30 px-3 py-2 text-xs text-orange-700 dark:text-orange-300 space-y-0.5">
+          <div className="font-semibold mb-1">Faixas de preço (novas regras 2025):</div>
+          <div>≤ R$79,99 → 20% + R$4</div>
+          <div>R$80–R$99,99 → 14% + R$16</div>
+          <div>R$100–R$199,99 → 14% + R$20</div>
+          <div>R$200–R$499,99 → 14% + R$26</div>
+          <div>≥ R$500 → 14% + R$26</div>
+        </div>
+        <p className="text-[10px] text-gray-500 dark:text-gray-400">*Frete Grátis obrigatório — incluso nas taxas acima</p>
 
         <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-900/40 rounded-lg border border-gray-200 dark:border-gray-800">
           <div className="space-y-0.5">
             <Label htmlFor="free-shipping" className="text-sm font-medium text-red-500 dark:text-red-400">
               Programa de Frete Grátis
             </Label>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Adicional de 6%</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Obrigatório — incluso nas taxas por faixa de preço</p>
           </div>
           <AnimatedCheckbox
             id="free-shipping"
-            checked={shippingOption === 'with'}
-            onChange={(checked) => setShippingOption(checked ? 'with' : 'without')}
+            checked={true}
+            onChange={() => {/* obrigatório, não pode desmarcar */}}
             label=""
           />
         </div>

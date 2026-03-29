@@ -127,9 +127,9 @@ export const calculateMetrics = (
     currentMarketplace: string,
     currentCategory: string,
     currentAdType: string,
-    currentShipping: string,
-    currentShopeeSellerType: 'cpf' | 'cnpj' = 'cnpj',
-    currentExtraCommission: number,
+    _currentShipping: string,
+    _currentShopeeSellerType: 'cpf' | 'cnpj' = 'cnpj',
+    _currentExtraCommission: number,
     currentAds: boolean,
     currentCpc: number,
     currentDailyBudget: number,
@@ -551,6 +551,15 @@ export const calculateMetrics = (
       };
   }
 
+  // Helper: retorna comissão % e taxa fixa da Shopee baseado no preço de venda (novas regras 2025)
+  const getShopeeRates = (price: number): { commission: number; fixed: number; subsidyPix: number } => {
+    if (price <= 79.99) return { commission: 20, fixed: 4, subsidyPix: 0 };
+    if (price <= 99.99) return { commission: 14, fixed: 16, subsidyPix: 5 };
+    if (price <= 199.99) return { commission: 14, fixed: 20, subsidyPix: 5 };
+    if (price <= 499.99) return { commission: 14, fixed: 26, subsidyPix: 5 };
+    return { commission: 14, fixed: 26, subsidyPix: 8 };
+  };
+
   // LEGACY LOGIC (Shopee, Tiktok, Wordpress)
   let marketplaceFee = 0;
   let fixedFee = 0;
@@ -559,14 +568,11 @@ export const calculateMetrics = (
   const calculateFees = (currentPrice: number) => {
       let currentFixedFee = 0;
       let currentMarketplaceFee = 0;
-      const shopeeFixedFee = currentShopeeSellerType === 'cpf' ? 5 : 4;
 
       if (currentMarketplace === 'shopee') {
-          const baseCommission = currentExtraCommission > 0 ? currentExtraCommission : 14;
-          const freeShippingFee = 6;
-          const hasFreeShipping = currentShipping === 'with';
-          currentMarketplaceFee = baseCommission + (hasFreeShipping ? freeShippingFee : 0);
-          currentFixedFee = currentPrice < 10 ? (currentPrice * 0.5) : shopeeFixedFee;
+          const rates = getShopeeRates(currentPrice);
+          currentMarketplaceFee = rates.commission;
+          currentFixedFee = currentPrice < 10 ? (currentPrice * 0.5) : rates.fixed;
       } else if (currentMarketplace === 'tiktok') {
           currentMarketplaceFee = tiktokCommVal;
           currentFixedFee = currentPrice < 79 ? 4 : 0;
@@ -602,18 +608,13 @@ export const calculateMetrics = (
   };
 
   if (currentMarketplace === 'shopee') {
-    const baseCommission = currentExtraCommission > 0 ? currentExtraCommission : 14;
-    const freeShippingFee = 6;
-    const hasFreeShipping = currentShipping === 'with';
-    const shopeeFixedFee = currentShopeeSellerType === 'cpf' ? 5 : 4;
-    const totalRate = baseCommission + (hasFreeShipping ? freeShippingFee : 0);
-    marketplaceFee = totalRate;
-    const transactionFee = 2;
-    const commissionFee = Math.max(0, baseCommission - transactionFee);
-    
-    taxDescription = hasFreeShipping 
-      ? `Shopee: comissão ${totalRate}% (inclui 6% Frete Grátis) + R$ ${shopeeFixedFee.toFixed(2)} (Tarifa Fixa ${currentShopeeSellerType.toUpperCase()})` 
-      : `Shopee: ${commissionFee}% (Comissão) + ${transactionFee}% (Transação) + R$ ${shopeeFixedFee.toFixed(2)} (Tarifa Fixa ${currentShopeeSellerType.toUpperCase()})`;
+    // Novas regras Shopee 2025: frete grátis obrigatório, taxas por faixa de preço
+    // Usamos preço estimado para determinar a faixa inicial (será recalculado com preço real)
+    const estimatedPrice = manualPriceVal > 0 ? manualPriceVal : (totalCost * 2.5);
+    const rates = getShopeeRates(estimatedPrice);
+    marketplaceFee = rates.commission;
+    const shopeeFixedFee = rates.fixed;
+    taxDescription = `Shopee: ${rates.commission}% comissão + R$ ${shopeeFixedFee.toFixed(2)} (Taxa Fixa) — Frete Grátis incluso`;
   } else if (currentMarketplace === 'tiktok') {
       marketplaceFee = tiktokCommVal;
       taxDescription = `${tiktokCommVal}% (Comissão Tiktok Shop)`; // updated after finalFixedFee
@@ -717,22 +718,28 @@ export const calculateMetrics = (
       ? `0% comissão`
       : `${marketplaceFee}% comissão${fixedFee > 0 ? ' + R$ ' + fixedFee.toFixed(2) + ' (Tarifa Fixa Mercado Livre)' : ''}`;
   } else if (currentMarketplace === 'shopee') {
-      const shopeeFixedFee = currentShopeeSellerType === 'cpf' ? 5 : 4;
-      const tempPrice = calcPrice(totalCost, recommendedMargin, marketplaceFee, shopeeFixedFee + gatewayFixedFeeVal, gatewayFeeVal);
-      
-      if (tempPrice < 8) {
-           const denominator = 0.5 - (marketplaceFee + recommendedMargin + gatewayFeeVal) / 100;
-           if (denominator > 0) {
-               suggestedPrice = totalCost / denominator;
-               fixedFee = suggestedPrice * 0.5;
-           } else {
-               suggestedPrice = tempPrice;
-               fixedFee = shopeeFixedFee;
-           }
-      } else {
-           suggestedPrice = tempPrice;
-           fixedFee = shopeeFixedFee;
+      // Cálculo iterativo: a faixa depende do preço, que depende da faixa
+      // Resolve com iteração até convergir
+      let iterPrice = totalCost * 2.5;
+      for (let i = 0; i < 10; i++) {
+        const rates = getShopeeRates(iterPrice);
+        const newPrice = calcPrice(totalCost, recommendedMargin, rates.commission, rates.fixed + gatewayFixedFeeVal, gatewayFeeVal);
+        if (Math.abs(newPrice - iterPrice) < 0.01) { iterPrice = newPrice; break; }
+        iterPrice = newPrice;
       }
+      const finalRates = getShopeeRates(iterPrice);
+      if (iterPrice < 8) {
+        const denominator = 0.5 - (finalRates.commission + recommendedMargin + gatewayFeeVal) / 100;
+        suggestedPrice = denominator > 0 ? totalCost / denominator : iterPrice;
+        fixedFee = suggestedPrice * 0.5;
+      } else {
+        suggestedPrice = iterPrice;
+        fixedFee = finalRates.fixed;
+      }
+      // Atualiza taxDescription com faixa real
+      const realRates = getShopeeRates(suggestedPrice);
+      marketplaceFee = realRates.commission;
+      taxDescription = `Shopee: ${realRates.commission}% comissão + R$ ${realRates.fixed.toFixed(2)} (Taxa Fixa) — Frete Grátis incluso`;
   } else if (currentMarketplace === 'tiktok') {
       const tempPriceWithFixed = calcPrice(totalCost, recommendedMargin, marketplaceFee, 2 + gatewayFixedFeeVal, gatewayFeeVal);
       
@@ -788,6 +795,12 @@ export const calculateMetrics = (
     taxDescription = finalFixedFee > 0
       ? `${tiktokCommVal}% (Comissão Tiktok Shop) + R$ ${finalFixedFee.toFixed(2)} (Taxa Fixa)`
       : `${tiktokCommVal}% (Comissão Tiktok Shop)`;
+  }
+  // Update Shopee taxDescription and marketplaceFee with real price faixa
+  if (currentMarketplace === 'shopee') {
+    const realRates = getShopeeRates(effectiveSellingPrice);
+    marketplaceFee = realRates.commission;
+    taxDescription = `Shopee: ${realRates.commission}% comissão + R$ ${finalFixedFee.toFixed(2)} (Taxa Fixa) — Frete Grátis incluso`;
   }
 
   let calculatedCommission = effectiveSellingPrice * (marketplaceFee / 100);
