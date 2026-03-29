@@ -306,17 +306,6 @@ export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBli
             <RefreshCw className="mr-2 h-3.5 w-3.5" />
             Atualizar
           </Button>
-          {onUpdate && groupedItems.length > 0 && (
-            <Button
-              type="button"
-              variant="outline"
-              className="h-9 border-blue-300 bg-blue-50 text-xs font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-200 dark:hover:bg-blue-900"
-              onClick={() => setShowBulkModal(true)}
-            >
-              <RefreshCcw className="mr-2 h-3.5 w-3.5" />
-              Atualizar todos ({groupedItems.length})
-            </Button>
-          )}
         </div>
       </div>
 
