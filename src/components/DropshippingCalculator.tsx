@@ -1306,6 +1306,11 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       const maxProfitVal = productFilters.maxProfit ? parseCurrency(productFilters.maxProfit) : null;
       const matchesMaxProfit = maxProfitVal === null || productProfit <= maxProfitVal;
 
+      // Filtro de preço mínimo de venda
+      const productSellingPrice = parseCurrency(String(product.sellingPrice ?? 0));
+      const minPriceVal = productFilters.minPrice ? parseCurrency(productFilters.minPrice) : null;
+      const matchesMinPrice = minPriceVal === null || productSellingPrice >= minPriceVal;
+
       const matchesSearch = !normalizedGlobalSearch
         || normalizeText(productNameValue).includes(normalizedGlobalSearch)
         || normalizeText(skuValue).includes(normalizedGlobalSearch)
@@ -1317,7 +1322,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         || normalizeText(skuValue).includes(normalizedProductSearch)
         || normalizeText(supplierValue).includes(normalizedProductSearch)
         || normalizeText(holderValue).includes(normalizedProductSearch);
-      return matchesMarketplace && matchesSupplier && matchesHolder && matchesAccountType && matchesCnpj && matchesVideoModel && matchesStock && matchesAffiliate && matchesCategory && matchesMinProfit && matchesMaxProfit && matchesSearch && matchesLocalSearch;
+      return matchesMarketplace && matchesSupplier && matchesHolder && matchesAccountType && matchesCnpj && matchesVideoModel && matchesStock && matchesAffiliate && matchesCategory && matchesMinProfit && matchesMaxProfit && matchesMinPrice && matchesSearch && matchesLocalSearch;
     }).sort((a, b) => {
         if (productFilters.priceSort === 'all') return 0;
         
