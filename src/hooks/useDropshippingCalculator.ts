@@ -164,7 +164,7 @@ export const useDropshippingCalculator = () => {
   const [supplierFeePercent, setSupplierFeePercent] = useState(() => typeof draft.supplierFeePercent === 'string' ? draft.supplierFeePercent : '0');
   const [supplierFeeType, setSupplierFeeType] = useState<'percent' | 'fixed'>(() => isFeeType(draft.supplierFeeType) ? draft.supplierFeeType : 'percent');
   const [supplierGatewayFee, setSupplierGatewayFee] = useState(() => typeof draft.supplierGatewayFee === 'string' ? draft.supplierGatewayFee : '0');
-  const [supplierGatewayFixedFee, setSupplierGatewayFixedFee] = useState(() => typeof draft.supplierGatewayFixedFee === 'string' ? draft.supplierGatewayFixedFee : '0');
+  const [supplierGatewayFixedFee, setSupplierGatewayFixedFee] = useState(() => typeof draft.supplierGatewayFixedFee === 'string' ? draft.supplierGatewayFixedFee : '2');
   const [supplierGatewayFeeType, setSupplierGatewayFeeType] = useState<'percent' | 'fixed'>(() => isFeeType(draft.supplierGatewayFeeType) ? draft.supplierGatewayFeeType : 'fixed');
   const [gatewayFee, setGatewayFee] = useState(() => typeof draft.gatewayFee === 'string' ? draft.gatewayFee : '0');
   const [gatewayFixedFee, setGatewayFixedFee] = useState(() => typeof draft.gatewayFixedFee === 'string' ? draft.gatewayFixedFee : '0');
@@ -884,7 +884,7 @@ export const useDropshippingCalculator = () => {
     setSupplierFixedFee('0');
     setSupplierGatewayFeeType('fixed');
     setSupplierGatewayFee('0');
-    setSupplierGatewayFixedFee('0');
+    setSupplierGatewayFixedFee('2');
     setGatewayFeeType('fixed');
     setGatewayFee('0');
     setGatewayFixedFee('0');
