@@ -1099,6 +1099,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
           variationType: variationTypeValue,
           name: variationLabel,
           sku: variation.sku || '',
+          imageUrl: variation.imageUrl || '',
           stockQuantity: variation.stockQuantity !== null && variation.stockQuantity !== undefined
             ? String(variation.stockQuantity)
             : '',
