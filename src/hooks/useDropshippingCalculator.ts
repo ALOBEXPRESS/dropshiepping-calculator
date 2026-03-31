@@ -785,9 +785,9 @@ export const useDropshippingCalculator = () => {
       setSupplierFeeType('percent');
       setSupplierFeePercent('6');
       setSupplierFixedFee('0');
-      setSupplierGatewayFeeType('percent');
-      setSupplierGatewayFee('2');
-      setSupplierGatewayFixedFee('0');
+      setSupplierGatewayFeeType('fixed');
+      setSupplierGatewayFee('0');
+      setSupplierGatewayFixedFee('2');
     } else if (normalized === 'yeizidrop' || normalized === 'dsers') {
       setSupplierFeePercent('0');
       setSupplierFixedFee('0');
