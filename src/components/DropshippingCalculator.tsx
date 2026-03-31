@@ -1078,8 +1078,10 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         setSupplierGatewayFixedFee(gwVal);
         setSupplierGatewayFee('0');
       } else {
-        setSupplierGatewayFee(gwVal);
-        setSupplierGatewayFixedFee('0');
+        // Migra percent -> fixed R$2 (novo padrão)
+        setSupplierGatewayFeeType('fixed');
+        setSupplierGatewayFixedFee('2');
+        setSupplierGatewayFee('0');
       }
     }
     if (productVariations.length > 0) {

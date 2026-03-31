@@ -134,6 +134,12 @@ export const useDropshippingCalculator = () => {
       }
       const parsed = JSON.parse(raw) as ProductDraft;
       console.log('[Draft Load] Loaded from localStorage:', DRAFT_STORAGE_KEY, parsed);
+      // Migração: gateway do fornecedor sempre fixed R$2
+      if (parsed && parsed.supplierGatewayFeeType === 'percent') {
+        parsed.supplierGatewayFeeType = 'fixed';
+        parsed.supplierGatewayFixedFee = '2';
+        parsed.supplierGatewayFee = '0';
+      }
       return parsed && typeof parsed === 'object' ? parsed : {};
     } catch {
       console.log('[Draft Load] Error parsing draft, clearing localStorage');
