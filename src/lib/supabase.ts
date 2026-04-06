@@ -44,5 +44,14 @@ const fetchWithRetry: typeof fetch = async (input, init) => {
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-key',
-  { global: { fetch: fetchWithRetry } }
+  {
+    global: { fetch: fetchWithRetry },
+    auth: {
+      // Usa storage key único por ambiente para evitar conflito entre localhost e produção
+      storageKey: `sb-auth-${typeof window !== 'undefined' ? window.location.hostname.replace(/\./g, '-') : 'default'}`,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+    }
+  }
 );
