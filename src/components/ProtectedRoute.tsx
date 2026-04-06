@@ -15,9 +15,15 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
         console.error('Error checking session:', error);
-        // If there is an error (e.g., invalid refresh token), treat as logged out
-        void supabase.auth.signOut();
-        setSession(null);
+        // Só faz signOut em erros de token inválido, não em erros de rede/rate limit
+        const isTokenError = error.message?.toLowerCase().includes('invalid') ||
+          error.message?.toLowerCase().includes('expired') ||
+          error.message?.toLowerCase().includes('jwt');
+        if (isTokenError) {
+          void supabase.auth.signOut();
+          setSession(null);
+        }
+        // Em caso de erro de rede/429, mantém sessão atual se existir
         setLoading(false);
         return;
       }
@@ -27,8 +33,11 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      // Só atualiza sessão em eventos relevantes, ignora erros de refresh
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+        setSession(session);
+      }
     });
 
     return () => subscription.unsubscribe();

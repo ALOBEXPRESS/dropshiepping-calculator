@@ -14,13 +14,25 @@ if (!supabaseUrl || !supabaseAnonKey) {
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const fetchWithRetry: typeof fetch = async (input, init) => {
+  const doFetch = () => fetch(input, init);
   try {
-    return await fetch(input, init);
+    const res = await doFetch();
+    // Retry on 429 with backoff (up to 3 attempts)
+    if (res.status === 429) {
+      await wait(2000);
+      const res2 = await doFetch();
+      if (res2.status === 429) {
+        await wait(4000);
+        return doFetch();
+      }
+      return res2;
+    }
+    return res;
   } catch (error) {
     if (error instanceof TypeError) {
       await wait(500);
       try {
-        return await fetch(input, init);
+        return await doFetch();
       } catch {
         throw new Error('Falha de conexão com o Supabase. Verifique internet, URL e chave.');
       }
