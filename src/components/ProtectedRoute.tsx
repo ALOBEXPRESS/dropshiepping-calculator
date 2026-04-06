@@ -1,9 +1,20 @@
-
 import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 
 import type { Session } from '@supabase/supabase-js';
+
+// Limpa todas as chaves de auth do Supabase do localStorage
+function clearSupabaseAuthStorage() {
+  const keysToRemove: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach(k => localStorage.removeItem(k));
+}
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -15,15 +26,14 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
         console.error('Error checking session:', error);
-        // Só faz signOut em erros de token inválido, não em erros de rede/rate limit
-        const isTokenError = error.message?.toLowerCase().includes('invalid') ||
-          error.message?.toLowerCase().includes('expired') ||
-          error.message?.toLowerCase().includes('jwt');
+        const msg = error.message?.toLowerCase() ?? '';
+        const isTokenError = msg.includes('invalid') || msg.includes('expired') || msg.includes('jwt') || msg.includes('refresh');
         if (isTokenError) {
+          // Limpa storage corrompido e força novo login
+          clearSupabaseAuthStorage();
           void supabase.auth.signOut();
           setSession(null);
         }
-        // Em caso de erro de rede/429, mantém sessão atual se existir
         setLoading(false);
         return;
       }
@@ -31,21 +41,17 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      // Só atualiza sessão em eventos relevantes, ignora erros de refresh
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
         setSession(session);
+        if (event === 'SIGNED_IN') setLoading(false);
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  if (isE2E) {
-    return <>{children}</>;
-  }
+  if (isE2E) return <>{children}</>;
 
   if (loading) {
     return (
