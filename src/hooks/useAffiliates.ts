@@ -63,13 +63,14 @@ export const useAffiliates = (organizationId?: string) => {
         if (fetchError) throw fetchError;
 
         // Flatten marketplace commission into each affiliate
-        const enriched = (data || []).map((aff: { affiliate_marketplaces?: Array<{ marketplaces?: { name?: string; affiliate_commission_rate?: number } }> }) => {
-          const firstMarketplace = aff.affiliate_marketplaces?.[0]?.marketplaces;
+        const enriched = (data || []).map((aff) => {
+          const typed = aff as { affiliate_marketplaces?: Array<{ marketplaces?: { name?: string; affiliate_commission_rate?: number } }> } & AffiliateDB;
+          const firstMarketplace = typed.affiliate_marketplaces?.[0]?.marketplaces;
           return {
-            ...aff,
+            ...typed,
             marketplace_name: firstMarketplace?.name ?? null,
             marketplace_commission_rate: firstMarketplace?.affiliate_commission_rate ?? null,
-          };
+          } as AffiliateDB;
         });
 
         setAffiliates(enriched);
