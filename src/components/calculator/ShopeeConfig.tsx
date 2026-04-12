@@ -74,11 +74,11 @@ export const ShopeeConfig: React.FC<ShopeeConfigProps> = ({
   marketplace,
   category,
   handleShopeeCategoryChange,
-  extraCommission: _extraCommission,
-  setExtraCommission: _setExtraCommission,
-  shippingOption: _shippingOption,
-  setShippingOption: _setShippingOption,
-  shopeeSellerType: _shopeeSellerType,
+  extraCommission: _extraCommission, // eslint-disable-line @typescript-eslint/no-unused-vars
+  setExtraCommission: _setExtraCommission, // eslint-disable-line @typescript-eslint/no-unused-vars
+  shippingOption: _shippingOption, // eslint-disable-line @typescript-eslint/no-unused-vars
+  setShippingOption: _setShippingOption, // eslint-disable-line @typescript-eslint/no-unused-vars
+  shopeeSellerType: _shopeeSellerType, // eslint-disable-line @typescript-eslint/no-unused-vars
   useShopeeAds,
   handleShopeeAdsChange,
   adsCPC,

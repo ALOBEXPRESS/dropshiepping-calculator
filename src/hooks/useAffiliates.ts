@@ -63,7 +63,7 @@ export const useAffiliates = (organizationId?: string) => {
         if (fetchError) throw fetchError;
 
         // Flatten marketplace commission into each affiliate
-        const enriched = (data || []).map((aff: any) => {
+        const enriched = (data || []).map((aff: { affiliate_marketplaces?: Array<{ marketplaces?: { name?: string; affiliate_commission_rate?: number } }> }) => {
           const firstMarketplace = aff.affiliate_marketplaces?.[0]?.marketplaces;
           return {
             ...aff,

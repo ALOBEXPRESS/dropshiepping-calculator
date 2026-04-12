@@ -328,6 +328,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     tiktokCTR: source?.tiktokCTR !== undefined && source?.tiktokCTR !== null ? String(source.tiktokCTR) : '',
     tiktokCVR: source?.tiktokCVR !== undefined && source?.tiktokCVR !== null ? String(source.tiktokCVR) : '',
     tiktokCatalogId: source?.tiktokCatalogId || '',
+    tiktokSfpEnabled: source?.tiktokSfpEnabled ?? false,
     campaignName: source?.campaignName || '',
     campaignObjective: source?.campaignObjective || '',
     budgetType: source?.budgetType || '',
@@ -637,19 +638,10 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     );
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const organicMetrics = useMemo(() => getUpdatedMetrics(), [
-    formData.marketplace, formData.sellingPrice, formData.costPrice,
-    formData.shopeeFreeShipping, formData.shippingFee, formData.mlShippingCost,
-    formData.marketplaceShippingCost, formData.supplierFeeType, formData.supplierFeeValue,
-    formData.supplierGatewayFeeType, formData.supplierGatewayFeeValue,
-    formData.gatewayBank, formData.gatewayMethod, formData.gatewayFeeValue, formData.gatewayFeeType, formData.gatewayInstallments,
-    formData.shopeeUseAds,
-    formData.shopeeStoreCouponEnabled, formData.shopeeStoreCouponValue,
-    formData.shopeeProductCouponEnabled, formData.shopeeProductCouponValue,
-    formData.shopeeFollowerCouponEnabled, formData.shopeeFollowerCouponValue,
-    formData.shopeeSellerVoucherEnabled, formData.shopeeSellerVoucherValue,
-    formData.affiliates,
-  ]); // eslint-disable-line react-hooks/exhaustive-deps
+    getUpdatedMetrics,
+  ]);
   const organicSuggestedPrice = parseFloat(organicMetrics?.suggestedPrice ?? '0');
   const organicAdsCostPerSale = parseFloat(organicMetrics?.adsCostPerSale ?? '0');
 

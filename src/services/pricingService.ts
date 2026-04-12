@@ -128,7 +128,7 @@ export const calculateMetrics = (
     currentCategory: string,
     currentAdType: string,
     _currentShipping: string,
-    _currentShopeeSellerType: 'cpf' | 'cnpj' = 'cnpj',
+    _currentShopeeSellerType: 'cpf' | 'cnpj' = 'cnpj', // eslint-disable-line @typescript-eslint/no-unused-vars
     _currentExtraCommission: number,
     currentAds: boolean,
     currentCpc: number,

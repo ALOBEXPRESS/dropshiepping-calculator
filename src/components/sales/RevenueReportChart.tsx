@@ -236,7 +236,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           : '<div style="font-size:11px;color:#9ca3af">Sem produtos</div>';
 
         // Criar lista de pedidos com botão excluir
-        const ordersHtml = periodData.orders_data?.map((order: { order_id: string; order_number: string; marketplace: string }) => {
+        const ordersHtml = periodData.orders_data?.map((order) => {
           const marketplaceName = order.marketplace && order.marketplace !== 'null' && order.marketplace !== 'undefined'
             ? order.marketplace 
             : 'Sem marketplace';
