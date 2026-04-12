@@ -530,6 +530,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   const marketplaceShippingValue = parseCurrency(product.marketplaceShippingCost ?? 0);
   const showFreeShippingIcon = (product.marketplace === 'mercadolivre' && (product.meliPlus || parseCurrency(product.mlShippingCost ?? 0) > 0))
     || (product.marketplace === 'shopee' && product.shippingOption === 'with')
+    || (product.marketplace === 'tiktok' && product.tiktokSfpEnabled)
     || (['tiktok', 'wordpress', 'enjoei', 'amazon', 'shein'].includes(product.marketplace ?? '') && marketplaceShippingValue > 0);
   const hasShopeeAdsInvestment = product.marketplace === 'shopee'
     && product.shopeeUseAds

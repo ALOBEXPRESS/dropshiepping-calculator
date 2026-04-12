@@ -67,8 +67,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           .from('organization_members')
           .select('organization_id')
           .eq('user_id', user.id)
-          .limit(1)
-          .abortSignal(signal);
+          .limit(1);
 
         if (members && members.length > 0) {
           orgId = members[0].organization_id;
@@ -81,8 +80,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           .from('organizations')
           .select('id')
           .eq('name', 'Empresa Alob')
-          .limit(1)
-          .abortSignal(signal);
+          .limit(1);
         if (orgs && orgs.length > 0) {
           orgId = orgs[0].id;
         } else {
@@ -90,8 +88,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           const { data: fallbackOrgs } = await supabase
             .from('organizations')
             .select('id')
-            .limit(1)
-            .abortSignal(signal);
+            .limit(1);
           if (fallbackOrgs && fallbackOrgs.length > 0) orgId = fallbackOrgs[0].id;
         }
       }

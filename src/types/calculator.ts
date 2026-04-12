@@ -187,6 +187,7 @@ export interface ProductItem {
   tiktokCTR?: string | number;
   tiktokCVR?: string | number;
   tiktokCatalogId?: string;
+  tiktokSfpEnabled?: boolean;
   influencers?: Influencer[];
   affiliates?: Affiliate[];
   influencer_id?: string;

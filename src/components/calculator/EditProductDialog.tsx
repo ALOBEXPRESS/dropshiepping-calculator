@@ -3051,6 +3051,26 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                       />
                     </div>
                   </div>
+                  
+                  {/* Taxa de serviço do SFP (TikTok) */}
+                  {formData.marketplace === 'tiktok' && formData.tiktokSfpEnabled && (
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label className="text-right dark:text-white">
+                        Taxa de serviço do SFP
+                      </Label>
+                      <div className="col-span-3 flex items-center gap-2">
+                        <div className="flex-1 px-3 py-2 bg-muted rounded-md text-sm">
+                          6% sobre o preço de venda
+                        </div>
+                        <img 
+                          src="/src/imgs/fretegratis.svg" 
+                          alt="Frete Grátis" 
+                          className="h-6 w-auto"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* Frete Grátis (Shopee) ou campo Frete (outros) */}
                   {formData.marketplace === 'shopee' ? (
                     <div className="grid grid-cols-4 items-center gap-4">
