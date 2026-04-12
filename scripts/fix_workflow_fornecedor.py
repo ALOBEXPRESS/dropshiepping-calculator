@@ -5,61 +5,53 @@ path = 'src/hooks/n8n/workflows/Bling Atualizar Produto.json'
 with open(path, 'r', encoding='utf-8') as f:
     workflow = json.load(f)
 
-# Corrige PUT Fornecedor2:
-# O problema é que GET /contatos?codigo=ALOBFOR_DROP_01 pode não retornar nada
-# pois "codigo" no endpoint /contatos é o CPF/CNPJ, não o código do fornecedor.
-# A busca correta é GET /contatos?nome=THAIS+SOUZA... ou buscar sem filtro e filtrar manualmente.
-# Solução: o idFornecedor já está dentro do objeto fornecedor retornado por GET /produtos/fornecedores
-# O campo correto é fornecedor.fornecedor.id (objeto aninhado)
+# CORREÇÃO DEFINITIVA do PUT Fornecedor2
+# 
+# Problemas identificados via documentação oficial:
+# 1. PUT /produtos/fornecedores/{idProdutoFornecedor}
+#    - {idProdutoFornecedor} na URL = ID do VÍNCULO (fornecedor.id do objeto retornado por GET /produtos/fornecedores)
+#    - Body deve ter: { produto: {id}, fornecedor: {id}, descricao, codigo, precoCusto, precoCompra, padrao }
+#    - O campo "fornecedor.id" no body = ID do CONTATO no Bling
+#
+# 2. O objeto retornado por GET /produtos/fornecedores tem estrutura:
+#    { id: <id_vinculo>, fornecedor: { id: <id_contato> }, produto: { id: <id_produto> }, ... }
+#
+# Portanto:
+#   - URL: /produtos/fornecedores/{fornecedor.id}  <- id do vínculo
+#   - Body: fornecedor: { id: fornecedor.fornecedor.id }  <- id do contato
+
 new_put_fornecedor_code = """const token = $('Get Valid Token2').item.json.access_token;
 const fornecedor = $('Code: Identificar Fornecedor2').item.json.fornecedor;
 const produtoId = $('GET Produto por SKU2').item.json.data[0].id;
-const costPrice = $('Webhook2').item.json.body.costPrice
+stPrice
   ? Number($('Webhook2').item.json.body.costPrice)
   : (fornecedor.precoCusto || 0);
 
-console.log('Fornecedor completo:', JSON.stringify(fornecedor));
+// ID do vínculo produto-fornecedor (usado na URL do PUT)
+const idVinculo = fornecedor.id;
+// ID do contato fornecedor (usado no body do PUT como fornecedor.id)
+const idContatoFornecedor = fornecedor.fornecedor ? fornecedor.fornecedor.id : null;
 
-// O idFornecedor é o ID do CONTATO no Bling, que vem em fornecedor.fornecedor.id
-let idFornecedor = (fornecedor.fornecedor && fornecedor.fornecedor.id) ? fornecedor.fornecedor.id : 0;
-console.log('idFornecedor do objeto:', idFornecedor);
+console.log('idVinculo (URL):', idVinculo);
+console.log('idContatoFornecedor (body):', idContatoFornecedor);
+console.log('fornecedor completo:', JSON.stringify(fornecedor));
 
-// Se não veio no objeto, busca o contato pelo nome (campo correto da API Bling)
-if (!idFornecedor) {
-  // Tenta buscar por nome - THAIS SOUZA para ALOBFOR_DROP_01, ou nome do fornecedor
-  const nomeBusca = fornecedor.fornecedor && fornecedor.fornecedor.nome
-    ? fornecedor.fornecedor.nome
-    : (fornecedor.codigo === 'ALOBFOR_DROP_01' ? 'THAIS SOUZA DO NASCIMENTO DIAS' : 'DOGMA');
-  
-  try {
-    const r = await this.helpers.httpRequest({
-      method: 'GET',
-      url: 'https://api.bling.com.br/Api/v3/contatos?pesquisa=' + encodeURIComponent(nomeBusca),
-      headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
-    });
-    console.log('Busca contato por nome:', nomeBusca, '-> resultado:', JSON.stringify((r.data||[]).slice(0,2)));
-    idFornecedor = (r.data && r.data[0]) ? r.data[0].id : 0;
-  } catch(e) {
-    console.log('Erro ao buscar contato por nome:', e.message);
-  }
-}
-
-if (!idFornecedor) {
-  return [{ json: { skipped: true, reason: 'no_contact_id', codigo: fornecedor.codigo } }];
+if (!idContatoFornecedor) {
+  return [{ json: { skipped: true, reason: 'fornecedor.fornecedor.id ausente', fornecedor: fornecedor } }];
 }
 
 try {
   const resp = await this.helpers.httpRequest({
     method: 'PUT',
-    url: 'https://api.bling.com.br/Api/v3/produtos/fornecedores/' + fornecedor.id,
+    url: 'https://api.bling.com.br/Api/v3/produtos/fornecedores/' + idVinculo,
     headers: {
       'Authorization': 'Bearer ' + token,
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     },
     body: {
-      idProduto: produtoId,
-      idFornecedor: idFornecedor,
+      produto: { id: produtoId },
+      fornecedor: { id: idContatoFornecedor },
       descricao: fornecedor.descricao || '',
       codigo: fornecedor.codigo || '',
       precoCusto: costPrice,
@@ -69,13 +61,16 @@ try {
     returnFullResponse: true,
     ignoreHttpStatusErrors: true
   });
-  console.log('PUT Fornecedor status:', resp.statusCode, JSON.stringify(resp.body||{}).substring(0,300));
+  console.log('PUT status:', resp.statusCode, JSON.stringify(resp.body||{}).substring(0, 300));
+  if (resp.statusCode >= 400) {
+    return [{ json: { error: } }];
+  }
 } catch(err) {
   console.log('PUT Fornecedor error:', err.message);
-  return [{ json: { error: err.message, fornecedorId: fornecedor.id } }];
+  return [{ json: { error: err.message } }];
 }
 
-return [{ json: { success: true, fornecedorId: fornecedor.id, idFornecedor: idFornecedor, codigo: fornecedor.codigo } }];"""
+return [{ json: { success: true, idVinculo: idVinculo, idContatoFornecedor: idContatoFornecedor, codigo: fornecedor.codigo } }];"""
 
 for node in workflow['nodes']:
     if node['name'] == 'PUT Fornecedor2':

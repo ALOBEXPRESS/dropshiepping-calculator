@@ -34,6 +34,8 @@ interface TikTokConfigProps {
   setTiktokCVR: (value: string) => void;
   tiktokCatalogId: string;
   setTiktokCatalogId: (value: string) => void;
+  tiktokSfpEnabled?: boolean;
+  setTiktokSfpEnabled?: (value: boolean) => void;
 }
 
 export const TikTokConfig: React.FC<TikTokConfigProps> = ({
@@ -63,7 +65,9 @@ export const TikTokConfig: React.FC<TikTokConfigProps> = ({
   tiktokCVR,
   setTiktokCVR,
   tiktokCatalogId,
-  setTiktokCatalogId
+  setTiktokCatalogId,
+  tiktokSfpEnabled = false,
+  setTiktokSfpEnabled
 }) => {
   const [isOpenMetrics, setIsOpenMetrics] = React.useState(false);
 
@@ -100,7 +104,33 @@ export const TikTokConfig: React.FC<TikTokConfigProps> = ({
             value={marketplaceShippingCost}
             onChange={(e) => handleCurrencyChange(e, setMarketplaceShippingCost)}
             placeholder="0,00"
+            disabled={tiktokSfpEnabled}
+            className={tiktokSfpEnabled ? 'opacity-50 cursor-not-allowed' : ''}
           />
+        </div>
+      </div>
+
+      <div className="flex items-center space-x-2 bg-blue-50 p-3 rounded-lg border border-blue-100 dark:bg-blue-900/20 dark:border-blue-800/30">
+        <Checkbox
+          id="tiktokSfp"
+          checked={tiktokSfpEnabled}
+          onCheckedChange={(checked) => {
+            if (setTiktokSfpEnabled) {
+              setTiktokSfpEnabled(checked as boolean);
+              if (checked) {
+                setMarketplaceShippingCost('0');
+              }
+            }
+          }}
+          className="border-blue-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 dark:border-blue-600 dark:data-[state=checked]:bg-blue-500 dark:data-[state=checked]:border-blue-500"
+        />
+        <div className="flex flex-col">
+          <Label htmlFor="tiktokSfp" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-gray-700 dark:text-gray-300 cursor-pointer">
+            Programa de Frete Grátis (SFP)
+          </Label>
+          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Taxa de serviço adicional de 6% sobre o preço de venda
+          </span>
         </div>
       </div>
 

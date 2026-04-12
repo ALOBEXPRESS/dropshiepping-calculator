@@ -248,6 +248,7 @@ export interface CalculationResult {
   affiliateCost: string;
   totalInfluencerPercent: number;
   totalAffiliatePercent: number;
+  tiktokSfpFee?: string;
 }
 
 export interface ShopeeCategory {

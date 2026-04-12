@@ -172,7 +172,8 @@ export const calculateMetrics = (
     shopeeSellerVoucherType: 'fixed' | 'percent' = 'fixed',
     currentConversionRate: number = 0,
     influencers: Influencer[] = [],
-    affiliates: Affiliate[] = []
+    affiliates: Affiliate[] = [],
+    tiktokSfpEnabled: boolean = false
 ): CalculationResult => {
   // Calculate supplier fee (if fixed, add to cost. If percent, it depends on selling price - handled later)
   const supplierFeeCostFixed = supplierFeeType === 'fixed' ? supplierFeeVal : 0;
@@ -379,7 +380,8 @@ export const calculateMetrics = (
           influencerCost: influencerCost.toFixed(2),
           affiliateCost: affiliateCost.toFixed(2),
           totalInfluencerPercent: totalInfluencerPercent,
-          totalAffiliatePercent: totalAffiliatePercent
+          totalAffiliatePercent: totalAffiliatePercent,
+          tiktokSfpFee: '0.00'
       };
   }
 
@@ -547,7 +549,8 @@ export const calculateMetrics = (
           influencerCost: influencerCost.toFixed(2),
           affiliateCost: affiliateCost.toFixed(2),
           totalInfluencerPercent: totalInfluencerPercent,
-          totalAffiliatePercent: totalAffiliatePercent
+          totalAffiliatePercent: totalAffiliatePercent,
+          tiktokSfpFee: '0.00'
       };
   }
 
@@ -858,7 +861,13 @@ export const calculateMetrics = (
 
   // Partial cost was totalCost (base + fixed supplier + gateway supplier + pkg + shipping)
   // We need to subtract the variable supplier fee too
-  const netRevenue = effectiveSellingPrice - marketplaceCost - finalFixedFee - gatewayCost - totalCost - supplierFeeCost - adsCostPerSale - paidTrafficCost - paidTrafficGatewayCost - shopeeCouponTotal - influencerCost - affiliateCost;
+  
+  // Calculate TikTok SFP fee (6% of selling price when enabled)
+  const tiktokSfpFee = (currentMarketplace === 'tiktok' && tiktokSfpEnabled) 
+    ? effectiveSellingPrice * 0.06 
+    : 0;
+  
+  const netRevenue = effectiveSellingPrice - marketplaceCost - finalFixedFee - gatewayCost - totalCost - supplierFeeCost - adsCostPerSale - paidTrafficCost - paidTrafficGatewayCost - shopeeCouponTotal - influencerCost - affiliateCost - tiktokSfpFee;
   const actualMargin = (netRevenue / effectiveSellingPrice) * 100;
   
   const breakevenCPA = netRevenue + totalCPA; 
@@ -910,7 +919,7 @@ export const calculateMetrics = (
       paidTrafficGatewayCost: paidTrafficGatewayCost.toFixed(2),
       adsCostPerSale: adsCostPerSale.toFixed(2),
       totalCPA: totalCPA.toFixed(2),
-    totalFees: (marketplaceCost + finalFixedFee + gatewayCost + paidTrafficCost + adsCostPerSale + pkgCost + supplierFeeCost + supplierGatewayCost + marketplaceShippingCost + paidTrafficGatewayCost + shopeeCouponTotal + influencerCost + affiliateCost).toFixed(2),
+    totalFees: (marketplaceCost + finalFixedFee + gatewayCost + paidTrafficCost + adsCostPerSale + pkgCost + supplierFeeCost + supplierGatewayCost + marketplaceShippingCost + paidTrafficGatewayCost + shopeeCouponTotal + influencerCost + affiliateCost + tiktokSfpFee).toFixed(2),
     shopeeStoreCoupon: shopeeStoreCouponValue.toFixed(2),
     shopeeProductCoupon: shopeeProductCouponValue.toFixed(2),
     shopeeFollowerCoupon: shopeeFollowerCouponValue.toFixed(2),
@@ -934,6 +943,7 @@ export const calculateMetrics = (
           influencerCost: influencerCost.toFixed(2),
           affiliateCost: affiliateCost.toFixed(2),
           totalInfluencerPercent: totalInfluencerPercent,
-          totalAffiliatePercent: totalAffiliatePercent
+          totalAffiliatePercent: totalAffiliatePercent,
+          tiktokSfpFee: tiktokSfpFee.toFixed(2)
       };
 };

@@ -23,7 +23,13 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isE2E = import.meta.env.VITE_E2E === 'true' || new URLSearchParams(window.location.search).get('e2e') === 'true';
 
   useEffect(() => {
+    // Timeout de 15s: se getSession() não resolver, redireciona para /login
+    const timeoutId = setTimeout(() => {
+      setLoading(false); // session já é null por padrão → Navigate para /login
+    }, 15_000);
+
     supabase.auth.getSession().then(({ data: { session }, error }) => {
+      clearTimeout(timeoutId);
       if (error) {
         console.error('Error checking session:', error);
         const msg = error.message?.toLowerCase() ?? '';
@@ -48,7 +54,17 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Listener para evento de sessão expirada por loop de 429
+    const handleSessionExpired = () => {
+      window.location.href = '/login?reason=session_expired';
+    };
+    window.addEventListener('supabase:session-expired', handleSessionExpired);
+
+    return () => {
+      clearTimeout(timeoutId);
+      subscription.unsubscribe();
+      window.removeEventListener('supabase:session-expired', handleSessionExpired);
+    };
   }, []);
 
   if (isE2E) return <>{children}</>;

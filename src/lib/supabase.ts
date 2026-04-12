@@ -40,8 +40,9 @@ const fetchWithRetry: typeof fetch = async (input, init) => {
       console.warn(`[Supabase] 429 on refresh token (${consecutive429} consecutive)`);
 
       if (consecutive429 >= 3) {
-        // Loop detectado — limpa storage corrompido
+        // Loop detectado — notifica UI e limpa storage corrompido
         console.error('[Supabase] Refresh token loop detected, clearing auth storage');
+        window.dispatchEvent(new CustomEvent('supabase:session-expired'));
         for (let i = localStorage.length - 1; i >= 0; i--) {
           const key = localStorage.key(i);
           if (key && (key.startsWith('sb-') || key.includes('supabase'))) {

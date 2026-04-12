@@ -21,7 +21,7 @@ import { RefreshCw } from 'lucide-react';
 import gsap from 'gsap';
 
 const Sales: React.FC = () => {
-  const { organizationId } = useSettings();
+  const { organizationId, loading, settingsError, retrySettings } = useSettings();
   const containerRef = useRef<HTMLDivElement>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const { stats } = useHeroStats(organizationId || '', refreshKey);
@@ -68,10 +68,26 @@ const Sales: React.FC = () => {
   const { isConnected, lastUpdate } = useRealtimeSync({ onUpdate: handleRefresh });
   const { filters, setFilters, resetFilters } = useFilterPersistence('sales-filters');
 
-  if (!organizationId) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <p className="text-gray-500 dark:text-gray-400">Carregando...</p>
+      </div>
+    );
+  }
+
+  if (settingsError || !organizationId) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen gap-4">
+        <p className="text-red-500 dark:text-red-400">
+          {settingsError ?? 'Organização não encontrada.'}
+        </p>
+        <button
+          onClick={retrySettings}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+        >
+          Tentar novamente
+        </button>
       </div>
     );
   }

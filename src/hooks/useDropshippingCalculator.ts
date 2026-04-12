@@ -384,6 +384,7 @@ export const useDropshippingCalculator = () => {
   const [tiktokCTR, setTiktokCTR] = useState(() => typeof draft.tiktokCTR === 'string' ? draft.tiktokCTR : '1,00');
   const [tiktokCVR, setTiktokCVR] = useState(() => typeof draft.tiktokCVR === 'string' ? draft.tiktokCVR : '1,50');
   const [tiktokCatalogId, setTiktokCatalogId] = useState(() => typeof draft.tiktokCatalogId === 'string' ? draft.tiktokCatalogId : '');
+  const [tiktokSfpEnabled, setTiktokSfpEnabled] = useState(() => typeof draft.tiktokSfpEnabled === 'boolean' ? draft.tiktokSfpEnabled : false);
 
   // Paid Traffic Metrics
   const [paidConversionRate, setPaidConversionRate] = useState('1,5');
@@ -512,6 +513,7 @@ export const useDropshippingCalculator = () => {
       tiktokCTR,
       tiktokCVR,
       tiktokCatalogId,
+      tiktokSfpEnabled,
       organicChannels,
       organicChannelLinks,
       organicChannelNames,
@@ -609,6 +611,7 @@ export const useDropshippingCalculator = () => {
     tiktokCTR,
     tiktokCVR,
     tiktokCatalogId,
+    tiktokSfpEnabled,
     organicChannels,
     organicChannelLinks,
     organicChannelNames,
@@ -1061,10 +1064,10 @@ export const useDropshippingCalculator = () => {
     const shopeeSellerVoucher = shopeeSellerVoucherEnabled ? (parseCurrency(shopeeSellerVoucherValue) || 0) : 0;
 
     return calculateMetrics(
-        cost, pkg, supplierFee, markupMult, marketplace, category, adType, shippingOption, shopeeSellerType, extra, adsEnabled, cpc, budget, sales, gatewayPercentFinal, manual, competitor, compMarkup, tiktokComm, wpShipping, emergency, rRate, pTraffic, mlShipping, paidTrafficType, gatewayFixedFinal, ptGatewayPercentFinal, ptGatewayFixedFinal, enjoeiType, enjoeiInactivity, gatewayBank, gatewayMethod, paidTrafficGatewayBank, paidTrafficGatewayMethod, meliPlus, supplierFeeType, supplierGatewayPercent, supplierGatewayFixed, supplierGatewayFeeType, amazonPlan, amazonCategory, customCommission, shopeeStoreCoupon, shopeeProductCoupon, shopeeFollowerCoupon, shopeeSellerVoucher, shopeeStoreCouponType, shopeeProductCouponType, shopeeFollowerCouponType, shopeeSellerVoucherType, conversionRate, influencers, affiliates
+        cost, pkg, supplierFee, markupMult, marketplace, category, adType, shippingOption, shopeeSellerType, extra, adsEnabled, cpc, budget, sales, gatewayPercentFinal, manual, competitor, compMarkup, tiktokComm, wpShipping, emergency, rRate, pTraffic, mlShipping, paidTrafficType, gatewayFixedFinal, ptGatewayPercentFinal, ptGatewayFixedFinal, enjoeiType, enjoeiInactivity, gatewayBank, gatewayMethod, paidTrafficGatewayBank, paidTrafficGatewayMethod, meliPlus, supplierFeeType, supplierGatewayPercent, supplierGatewayFixed, supplierGatewayFeeType, amazonPlan, amazonCategory, customCommission, shopeeStoreCoupon, shopeeProductCoupon, shopeeFollowerCoupon, shopeeSellerVoucher, shopeeStoreCouponType, shopeeProductCouponType, shopeeFollowerCouponType, shopeeSellerVoucherType, conversionRate, influencers, affiliates, tiktokSfpEnabled
     );
   }, [costPrice, packagingCost, supplierFixedFee, supplierFeePercent, markupMultiplier, extraCommission, adsCPC, dailyBudget, salesQuantity, gatewayFee, gatewayFixedFee, gatewayFeeType, manualSellingPrice, competitorPrice, competitorMarkup, tiktokCommission, wordpressShipping, operationMode, emergencyReserve, returnRate, paidTraffic, mlShippingCost, hasVariations, marketplace, category, adType, shippingOption, shopeeSellerType, useShopeeAds, paidTrafficType, paidTrafficGatewayFee, paidTrafficGatewayFixedFee, paidTrafficGatewayFeeType, enjoeiAdType, enjoeiInactivityMonths, trafficMode, gatewayBank, gatewayMethod, paidTrafficGatewayBank, paidTrafficGatewayMethod, meliPlus, supplierGatewayFee, supplierGatewayFixedFee, supplierGatewayFeeType, supplierFeeType, amazonPlan, amazonCategory, customCommission, shopeeStoreCouponEnabled, shopeeStoreCouponValue, shopeeStoreCouponType, shopeeProductCouponEnabled, shopeeProductCouponValue, shopeeProductCouponType, shopeeFollowerCouponEnabled, shopeeFollowerCouponValue, shopeeFollowerCouponType, shopeeSellerVoucherEnabled, shopeeSellerVoucherValue, shopeeSellerVoucherType, mercadoAdsEnabled, mercadoAdsDailyBudget, mercadoAdsSalesQuantity, mercadoAdsCpc, mercadoAdsConversionRate,
-    tiktokAdsEnabled, tiktokDailyBudget, tiktokAdsSalesQuantity, tiktokCPA, tiktokCPM, tiktokCTR, tiktokCVR, influencers, affiliates]);
+    tiktokAdsEnabled, tiktokDailyBudget, tiktokAdsSalesQuantity, tiktokCPA, tiktokCPM, tiktokCTR, tiktokCVR, tiktokSfpEnabled, influencers, affiliates]);
 
   const variationCalculations = useMemo<VariationCalculation[]>(() => {
       const sFixed = parseCurrency(supplierFixedFee) || 0;
@@ -1148,12 +1151,12 @@ export const useDropshippingCalculator = () => {
           return {
               ...v,
           metrics: calculateMetrics(
-              vCost, pkg, supplierFee, vMarkup, marketplace, category, adType, shippingOption, shopeeSellerType, extra, adsEnabled, cpc, budget, sales, gatewayPercentFinal, vManualPrice, competitor, compMarkup, tiktokComm, wpShipping, emergency, rRate, pTraffic, mlShipping, paidTrafficType, gatewayFixedFinal, ptGatewayPercentFinal, ptGatewayFixedFinal, enjoeiType, enjoeiInactivity, gatewayBank, gatewayMethod, paidTrafficGatewayBank, paidTrafficGatewayMethod, meliPlus, supplierFeeType, supplierGatewayPercent, supplierGatewayFixed, supplierGatewayFeeType, amazonPlan, amazonCategory, customCommission, shopeeStoreCoupon, shopeeProductCoupon, shopeeFollowerCoupon, shopeeSellerVoucher, shopeeStoreCouponType, shopeeProductCouponType, shopeeFollowerCouponType, shopeeSellerVoucherType, conversionRate, influencers, affiliates
+              vCost, pkg, supplierFee, vMarkup, marketplace, category, adType, shippingOption, shopeeSellerType, extra, adsEnabled, cpc, budget, sales, gatewayPercentFinal, vManualPrice, competitor, compMarkup, tiktokComm, wpShipping, emergency, rRate, pTraffic, mlShipping, paidTrafficType, gatewayFixedFinal, ptGatewayPercentFinal, ptGatewayFixedFinal, enjoeiType, enjoeiInactivity, gatewayBank, gatewayMethod, paidTrafficGatewayBank, paidTrafficGatewayMethod, meliPlus, supplierFeeType, supplierGatewayPercent, supplierGatewayFixed, supplierGatewayFeeType, amazonPlan, amazonCategory, customCommission, shopeeStoreCoupon, shopeeProductCoupon, shopeeFollowerCoupon, shopeeSellerVoucher, shopeeStoreCouponType, shopeeProductCouponType, shopeeFollowerCouponType, shopeeSellerVoucherType, conversionRate, influencers, affiliates, tiktokSfpEnabled
           )
           };
       });
   }, [variations, packagingCost, supplierFixedFee, supplierFeePercent, marketplace, category, shippingOption, shopeeSellerType, adType, extraCommission, useShopeeAds, adsCPC, dailyBudget, salesQuantity, mercadoAdsEnabled, mercadoAdsDailyBudget, mercadoAdsSalesQuantity, mercadoAdsCpc, mercadoAdsConversionRate, gatewayFee, gatewayFixedFee, gatewayFeeType, competitorPrice, competitorMarkup, tiktokCommission, wordpressShipping, operationMode, emergencyReserve, returnRate, paidTraffic, mlShippingCost, paidTrafficType, paidTrafficGatewayFee, paidTrafficGatewayFixedFee, paidTrafficGatewayFeeType, enjoeiAdType, enjoeiInactivityMonths, trafficMode, gatewayBank, gatewayMethod, paidTrafficGatewayBank, paidTrafficGatewayMethod, meliPlus, supplierGatewayFee, supplierGatewayFixedFee, supplierGatewayFeeType, supplierFeeType, amazonPlan, amazonCategory, customCommission, shopeeStoreCouponEnabled, shopeeStoreCouponValue, shopeeStoreCouponType, shopeeProductCouponEnabled, shopeeProductCouponValue, shopeeProductCouponType, shopeeFollowerCouponEnabled, shopeeFollowerCouponValue, shopeeFollowerCouponType, shopeeSellerVoucherEnabled, shopeeSellerVoucherValue, shopeeSellerVoucherType, manualSellingPrice,
-    tiktokAdsEnabled, tiktokDailyBudget, tiktokAdsSalesQuantity, tiktokCPA, tiktokCPM, tiktokCTR, tiktokCVR, influencers, affiliates]);
+    tiktokAdsEnabled, tiktokDailyBudget, tiktokAdsSalesQuantity, tiktokCPA, tiktokCPM, tiktokCTR, tiktokCVR, tiktokSfpEnabled, influencers, affiliates]);
 
   // Salvar filtros no localStorage sempre que mudarem
   useEffect(() => {
@@ -1293,6 +1296,7 @@ export const useDropshippingCalculator = () => {
     tiktokCTR, setTiktokCTR,
     tiktokCVR, setTiktokCVR,
     tiktokCatalogId, setTiktokCatalogId,
+    tiktokSfpEnabled, setTiktokSfpEnabled,
     handleFloatInput,
     handleOperationModeChange,
     handleDeliveryModeChange,

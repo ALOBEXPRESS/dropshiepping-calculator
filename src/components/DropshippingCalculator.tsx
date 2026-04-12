@@ -3095,6 +3095,8 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 setTiktokCVR={setTiktokCVR}
                 tiktokCatalogId={tiktokCatalogId}
                 setTiktokCatalogId={setTiktokCatalogId}
+                tiktokSfpEnabled={tiktokSfpEnabled}
+                setTiktokSfpEnabled={setTiktokSfpEnabled}
               />
 
               <EnjoeiConfig
@@ -3285,6 +3287,17 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                         ['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'
                     }`}>- R$ {formatMoney(calculations.supplierGatewayCost)}</span>
                   </div>
+
+                  {marketplace === 'tiktok' && tiktokSfpEnabled && calculations.tiktokSfpFee && parseFloat(calculations.tiktokSfpFee) > 0 && (
+                    <div className={`flex justify-between items-center py-2 border-b ${
+                        ['low', 'excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'
+                    }`}>
+                      <span className={['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>Taxa de serviço do SFP (6%)</span>
+                      <span className={`font-semibold ${
+                          ['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'
+                      }`}>- R$ {formatMoney(calculations.tiktokSfpFee)}</span>
+                    </div>
+                  )}
 
                   {parseFloat(calculations.paidTrafficCost) > 0 && (
                      <div className={`flex justify-between items-center py-2 border-b ${

@@ -11,6 +11,8 @@ interface SettingsContextType {
   loading: boolean;
   reloadSettings: () => Promise<void>;
   lastUpdated: number;
+  settingsError: string | null;
+  retrySettings: () => void;
 }
 
 const SettingsContext = createContext<SettingsContextType>({
@@ -22,6 +24,8 @@ const SettingsContext = createContext<SettingsContextType>({
   loading: false,
   reloadSettings: async () => {},
   lastUpdated: 0,
+  settingsError: null,
+  retrySettings: () => {},
 });
 
 export const useSettings = () => useContext(SettingsContext);
@@ -34,19 +38,26 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [grossInvestment, setGrossInvestment] = useState('0');
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(0);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
 
   const isAbortError = (error: unknown) =>
     (error instanceof DOMException && error.name === 'AbortError')
     || (error instanceof Error && error.name === 'AbortError');
 
   const fetchSettings = useCallback(async () => {
+    const controller = new AbortController();
+    const { signal } = controller;
+
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+      setSettingsError('Tempo limite excedido ao carregar configurações.');
+      setLoading(false);
+    }, 10_000);
+
     try {
       setLoading(true);
+      setSettingsError(null);
       const { data: { user } } = await supabase.auth.getUser();
-      // if (!user) {
-      //   setLoading(false);
-      //   return;
-      // }
 
       // 1. Try to find an organization for this user
       let orgId = null;
@@ -56,7 +67,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           .from('organization_members')
           .select('organization_id')
           .eq('user_id', user.id)
-          .limit(1);
+          .limit(1)
+          .abortSignal(signal);
 
         if (members && members.length > 0) {
           orgId = members[0].organization_id;
@@ -69,41 +81,59 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           .from('organizations')
           .select('id')
           .eq('name', 'Empresa Alob')
-          .limit(1);
+          .limit(1)
+          .abortSignal(signal);
         if (orgs && orgs.length > 0) {
           orgId = orgs[0].id;
         } else {
           // Se não encontrar "Empresa Alob", pega a primeira
-          const { data: fallbackOrgs } = await supabase.from('organizations').select('id').limit(1);
+          const { data: fallbackOrgs } = await supabase
+            .from('organizations')
+            .select('id')
+            .limit(1)
+            .abortSignal(signal);
           if (fallbackOrgs && fallbackOrgs.length > 0) orgId = fallbackOrgs[0].id;
         }
       }
 
+      if (!orgId) {
+        setSettingsError('Organização não encontrada.');
+        setOrganizationId(null);
+        return;
+      }
+
       setOrganizationId(orgId);
+      setSettingsError(null);
 
-      if (orgId) {
-        const { data: org } = await supabase
-          .from('organizations')
-          .select('working_capital, emergency_reserve, capital_marketing, gross_investment')
-          .eq('id', orgId)
-          .single();
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('working_capital, emergency_reserve, capital_marketing, gross_investment')
+        .eq('id', orgId)
+        .single()
+        .abortSignal(signal);
 
-        if (org) {
-          setWorkingCapital(org.working_capital?.toString() || '0');
-          setEmergencyReserve(org.emergency_reserve?.toString() || '0');
-          setCapitalMarketing(org.capital_marketing?.toString() || '0');
-          setGrossInvestment(org.gross_investment?.toString() || '0');
-        }
+      if (org) {
+        setWorkingCapital(org.working_capital?.toString() || '0');
+        setEmergencyReserve(org.emergency_reserve?.toString() || '0');
+        setCapitalMarketing(org.capital_marketing?.toString() || '0');
+        setGrossInvestment(org.gross_investment?.toString() || '0');
       }
       setLastUpdated(Date.now());
     } catch (error) {
       if (!isAbortError(error)) {
         console.error('Error fetching settings:', error);
+        setSettingsError('Erro ao conectar ao servidor.');
       }
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
     }
   }, []);
+
+  const retrySettings = useCallback(() => {
+    setSettingsError(null);
+    fetchSettings();
+  }, [fetchSettings]);
 
   useEffect(() => {
     fetchSettings();
@@ -134,7 +164,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       grossInvestment,
       loading,
       reloadSettings: fetchSettings,
-      lastUpdated
+      lastUpdated,
+      settingsError,
+      retrySettings,
     }}>
       {children}
     </SettingsContext.Provider>
