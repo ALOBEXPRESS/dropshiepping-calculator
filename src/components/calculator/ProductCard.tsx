@@ -49,6 +49,7 @@ import seedanceLogo from '../../imgs/seedance.png';
 import shopeeAdsMoney from '../../imgs/3d-render-realistic-currency-money-brazil-200-reais.png';
 import dollarImage from '../../imgs/dólar.png';
 import commissionIcon from '../../imgs/comission.png';
+import olxLogo from '../../imgs/olx.png';
 import { parseCurrency } from '../../utils/currency';
 import { calculateMetrics } from '../../services/pricingService';
 import { useTiktokCommission } from '../../hooks/useTiktokCommission';
@@ -552,7 +553,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     enjoei: enjoeiLogo,
     mercadolivre: mercadoLivreLogo,
     facebook: 'https://cdn.simpleicons.org/facebook/1877F2',
-    olx: 'https://cdn.simpleicons.org/olx/5A52FF'
+    olx: olxLogo
   };
   const marketplaceAltLabels: Record<string, string> = {
     wordpress: 'WooCommerce',
