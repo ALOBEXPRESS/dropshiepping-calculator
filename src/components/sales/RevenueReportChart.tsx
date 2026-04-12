@@ -222,7 +222,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const cost = Number(periodData.total_cost);
         const profit = revenue - cost;
 
-        const allProducts = periodData.orders_data?.flatMap((order: { products?: { name: string }[] }) =>
+        const allProducts = periodData.orders_data?.flatMap((order: { products?: { name: string }[]; marketplace?: string }) =>
           order.products?.map((p: { name: string }) => p.name) || []
         ) || [];
         const uniqueProducts = [...new Set(allProducts)] as string[];

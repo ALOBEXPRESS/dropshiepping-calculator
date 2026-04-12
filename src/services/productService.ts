@@ -146,6 +146,7 @@ type ProductRow = {
   tiktok_ctr?: number | null;
   tiktok_cvr?: number | null;
   tiktok_catalog_id?: string | null;
+  tiktok_sfp_enabled?: boolean | null;
   influencers?: Array<{
     id: string;
     name: string;
@@ -345,6 +346,7 @@ type ProductPayload = {
   tiktok_ctr?: number | null;
   tiktok_cvr?: number | null;
   tiktok_catalog_id?: string | null;
+  tiktok_sfp_enabled?: boolean | null;
   influencers?: Array<{
     id: string;
     name: string;

@@ -122,6 +122,7 @@ type EditProductFormData = {
   tiktokCTR: string;
   tiktokCVR: string;
   tiktokCatalogId: string;
+  tiktokSfpEnabled: boolean;
   campaignName: string;
   campaignObjective: string;
   budgetType: string;

@@ -46,7 +46,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const fetchSettings = useCallback(async () => {
     const controller = new AbortController();
-    const { signal } = controller;
+    // Signal available for future use if needed
+    // const signal = controller.signal;
 
     const timeoutId = setTimeout(() => {
       controller.abort();
