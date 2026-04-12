@@ -252,6 +252,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
     tiktokCTR, setTiktokCTR,
     tiktokCVR, setTiktokCVR,
     tiktokCatalogId, setTiktokCatalogId,
+    tiktokSfpEnabled, setTiktokSfpEnabled,
     handleFloatInput,
     handleOperationModeChange,
     handleDeliveryModeChange,
