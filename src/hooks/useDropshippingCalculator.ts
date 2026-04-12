@@ -90,6 +90,7 @@ type ProductDraft = {
   tiktokCTR?: string;
   tiktokCVR?: string;
   tiktokCatalogId?: string;
+  tiktokSfpEnabled?: boolean;
   organicChannels?: string[];
   organicChannelLinks?: Record<string, string>;
   organicChannelNames?: Record<string, string>;

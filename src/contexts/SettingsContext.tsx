@@ -109,8 +109,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .from('organizations')
         .select('working_capital, emergency_reserve, capital_marketing, gross_investment')
         .eq('id', orgId)
-        .single()
-        .abortSignal(signal);
+        .single();
 
       if (org) {
         setWorkingCapital(org.working_capital?.toString() || '0');
