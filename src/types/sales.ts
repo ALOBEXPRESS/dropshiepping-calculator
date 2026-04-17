@@ -20,6 +20,17 @@ export interface OrderData {
   marketplace_commission?: number;
   other_expenses?: number;
   commission_rate?: number;
+  // Campos do produto vinculado
+  product_name?: string;
+  product_cost_price?: number;
+  supplier_fee_type?: string;
+  supplier_fee_value?: string;
+  supplier_gateway_fee_type?: string;
+  supplier_gateway_fee_value?: string;
+  gateway_fee_type?: string;
+  gateway_fee_value?: string;
+  shipping_option?: string;
+  tiktok_sfp_enabled?: boolean;
   products: OrderProduct[];
 }
 

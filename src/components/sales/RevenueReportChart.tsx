@@ -255,15 +255,30 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const orderProfit = Number(order.total_profit ?? (orderRevenue - orderCost));
           const profitColor = orderProfit >= 0 ? '#16a34a' : '#dc2626';
 
-          // Nomes dos produtos do pedido
-          const productNames = (order.products || [])
+          // Nome do produto: usa product_name da SQL (novo campo) ou products[]
+          const productNamesFromItems = (order.products || [])
             .map((p: { name: string }) => p.name)
-            .filter(Boolean);
-          const productNamesHtml = productNames.length > 0
-            ? productNames.slice(0, 2).map((n: string) =>
-                `<div style="font-size:10px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px;font-weight:500">📦 ${n.length > 32 ? n.substring(0, 32) + '...' : n}</div>`
-              ).join('') + (productNames.length > 2 ? `<div style="font-size:10px;color:#9ca3af">+${productNames.length - 2} produto(s)</div>` : '')
+            .filter(Boolean) as string[];
+          const mainProductName = (order as { product_name?: string }).product_name || productNamesFromItems[0] || null;
+          const productNamesHtml = mainProductName
+            ? `<div style="font-size:10px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px;font-weight:500">📦 ${mainProductName.length > 36 ? mainProductName.substring(0, 36) + '...' : mainProductName}</div>`
+              + (productNamesFromItems.length > 1 ? `<div style="font-size:10px;color:#9ca3af">+${productNamesFromItems.length - 1} produto(s)</div>` : '')
             : '<div style="font-size:10px;color:#9ca3af;font-style:italic">Produto não vinculado</div>';
+
+          // Taxas do produto para exibição detalhada
+          const supplierFeeValue = Number((order as { supplier_fee_value?: string }).supplier_fee_value ?? 0);
+          const supplierFeeType = (order as { supplier_fee_type?: string }).supplier_fee_type ?? 'percent';
+          const supplierGatewayFeeValue = Number((order as { supplier_gateway_fee_value?: string }).supplier_gateway_fee_value ?? 0);
+          const supplierGatewayFeeType = (order as { supplier_gateway_fee_type?: string }).supplier_gateway_fee_type ?? 'fixed';
+          const productCostPrice = Number((order as { product_cost_price?: number }).product_cost_price ?? orderCost);
+
+          // Calcular taxas do fornecedor sobre o preço de venda
+          const supplierFee = supplierFeeType === 'percent'
+            ? (orderRevenue * supplierFeeValue) / 100
+            : supplierFeeValue;
+          const supplierGatewayFee = supplierGatewayFeeType === 'fixed'
+            ? supplierGatewayFeeValue
+            : (orderRevenue * supplierGatewayFeeValue) / 100;
 
           // Linha de despesas do marketplace
           const expensesHtml = `
@@ -275,12 +290,22 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               </div>
               <div style="display:flex;justify-content:space-between;font-size:11px;color:#374151;margin-bottom:2px">
                 <span>📦 Custo do produto</span>
-                <span style="color:#ef4444">-${formatCurrency(orderCost)}</span>
+                <span style="color:#ef4444">-${formatCurrency(productCostPrice)}</span>
               </div>
               ${orderCommission > 0 ? `
               <div style="display:flex;justify-content:space-between;font-size:11px;color:#374151;margin-bottom:2px">
                 <span>🏪 Comissão ${marketplaceName}${commissionRate > 0 ? ` (${commissionRate}%)` : ''}</span>
                 <span style="color:#ef4444">-${formatCurrency(orderCommission)}</span>
+              </div>` : ''}
+              ${supplierFee > 0 ? `
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:#374151;margin-bottom:2px">
+                <span>🏭 Taxa fornecedor${supplierFeeType === 'percent' ? ` (${supplierFeeValue}%)` : ''}</span>
+                <span style="color:#ef4444">-${formatCurrency(supplierFee)}</span>
+              </div>` : ''}
+              ${supplierGatewayFee > 0 ? `
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:#374151;margin-bottom:2px">
+                <span>💳 Gateway fornecedor${supplierGatewayFeeType === 'fixed' ? '' : ` (${supplierGatewayFeeValue}%)`}</span>
+                <span style="color:#ef4444">-${formatCurrency(supplierGatewayFee)}</span>
               </div>` : ''}
               ${orderShipping > 0 ? `
               <div style="display:flex;justify-content:space-between;font-size:11px;color:#374151;margin-bottom:2px">
