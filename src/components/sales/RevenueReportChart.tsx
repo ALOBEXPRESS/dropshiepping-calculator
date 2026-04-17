@@ -35,6 +35,7 @@ interface OrderDetail {
   order_id: string;
   order_number: string;
   marketplace: string;
+  marketplace_fixed_fee?: number;
   customer_name?: string;
   product_name?: string;
   product_sku?: string;
@@ -323,6 +324,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             order_id: order.order_id,
             order_number: orderNumber,
             marketplace: marketplaceName,
+            marketplace_fixed_fee: Number((order as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0),
             customer_name: customerName,
             product_name: mainProductName,
             product_sku: productSku || undefined,
@@ -581,6 +583,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       <span className="font-medium text-orange-600">-{formatCurrency(selectedOrder.marketplace_commission)}</span>
                     </div>
                   )}
+
+                  {(selectedOrder.marketplace_fixed_fee ?? 0) > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">Taxa fixa</span>
+                      <span className="font-medium text-orange-600">-{formatCurrency(selectedOrder.marketplace_fixed_fee ?? 0)}</span>
+                    </div>
+                  )}
                   
                   {selectedOrder.shipping_cost > 0 && (
                     <div className="flex justify-between text-sm">
@@ -601,6 +610,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                     <span className="text-orange-600">
                       -{formatCurrency(
                         selectedOrder.marketplace_commission +
+                        (selectedOrder.marketplace_fixed_fee ?? 0) +
                         selectedOrder.shipping_cost +
                         selectedOrder.other_expenses
                       )}
