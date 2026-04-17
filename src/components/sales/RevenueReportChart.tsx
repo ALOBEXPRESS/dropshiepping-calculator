@@ -501,10 +501,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 </h3>
                 
                 <div className="space-y-2 pl-4">
-                  {selectedOrder.product_cost_price > 0 && (
+                  {(selectedOrder.product_cost_price ?? 0) > 0 && (
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-400">Custo base do produto</span>
-                      <span className="font-medium text-red-600">-{formatCurrency(selectedOrder.product_cost_price)}</span>
+                      <span className="font-medium text-red-600">-{formatCurrency(selectedOrder.product_cost_price ?? 0)}</span>
                     </div>
                   )}
                   
@@ -544,7 +544,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                     <span>Subtotal Custo Produto</span>
                     <span className="text-red-600">
                       -{formatCurrency(
-                        selectedOrder.product_cost_price +
+                        (selectedOrder.product_cost_price ?? 0) +
                         (selectedOrder.supplier_fee_value
                           ? selectedOrder.supplier_fee_type === 'percent'
                             ? (selectedOrder.total_amount * Number(selectedOrder.supplier_fee_value)) / 100
