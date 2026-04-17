@@ -103,9 +103,11 @@ src/hooks/n8n/
 # Large documentation files
 docs/
 
-# Kiro & Trae configs (local only)
+# Kiro, Cursor, Claude & Trae configs (local only)
 .kiro/
 .trae/
+.cursor
+.claude/
 
 # Database migrations (managed separately)
 supabase/
@@ -148,3 +150,5 @@ video/
 # Local development
 *.local
 .vercel
+# Added by code-review-graph
+.code-review-graph/
