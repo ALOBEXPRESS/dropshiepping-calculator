@@ -11,6 +11,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import Chart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
 import { useRevenueReport } from '@/hooks/sales/useRevenueReport';
@@ -25,12 +31,36 @@ interface RevenueReportChartProps {
 }
 
 
+interface OrderDetail {
+  order_id: string;
+  order_number: string;
+  marketplace: string;
+  customer_name?: string;
+  product_name?: string;
+  product_sku?: string;
+  products?: { name: string; sku?: string }[];
+  total_amount: number;
+  total_cost: number;
+  product_cost_price?: number;
+  marketplace_commission: number;
+  commission_rate: number;
+  shipping_cost: number;
+  other_expenses: number;
+  supplier_fee_value?: string;
+  supplier_fee_type?: string;
+  supplier_gateway_fee_value?: string;
+  supplier_gateway_fee_type?: string;
+  total_profit: number;
+}
+
 export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organizationId, refreshTrigger }) => {
   const [period, setPeriod] = useState<PeriodFilter>('monthly');
   const { data, loading, error, refetch } = useRevenueReport(organizationId, period);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<{ id: string; number: string; store: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
   
   const chartRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef(data);
@@ -57,23 +87,43 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     };
   }, []);
 
-  // Adicionar event listeners para os botões de excluir no tooltip
+  // Adicionar event listeners para os botões de excluir e detalhar no tooltip
   useEffect(() => {
     const handleTooltipClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      const button = target.closest('[data-delete-order-btn]') as HTMLElement;
       
-      if (button) {
+      // Botão de excluir
+      const deleteButton = target.closest('[data-delete-order-btn]') as HTMLElement;
+      if (deleteButton) {
         e.preventDefault();
         e.stopPropagation();
         
-        const orderId = button.getAttribute('data-order-id');
-        const orderNumber = button.getAttribute('data-order-number');
-        const orderStore = button.getAttribute('data-order-store');
+        const orderId = deleteButton.getAttribute('data-order-id');
+        const orderNumber = deleteButton.getAttribute('data-order-number');
+        const orderStore = deleteButton.getAttribute('data-order-store');
         
         if (orderId && orderNumber && orderStore) {
           setOrderToDelete({ id: orderId, number: orderNumber, store: orderStore });
           setDeleteDialogOpen(true);
+        }
+        return;
+      }
+
+      // Botão de detalhar
+      const detailButton = target.closest('[data-detail-order-btn]') as HTMLElement;
+      if (detailButton) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const orderDataStr = detailButton.getAttribute('data-order-detail');
+        if (orderDataStr) {
+          try {
+            const orderData = JSON.parse(orderDataStr);
+            setSelectedOrder(orderData);
+            setDetailDialogOpen(true);
+          } catch (err) {
+            console.error('Error parsing order data:', err);
+          }
         }
       }
     };
@@ -235,115 +285,101 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             ).join('') + (uniqueProducts.length > 2 ? '<div style="font-size:11px;color:#9ca3af">...</div>' : '')
           : '<div style="font-size:11px;color:#9ca3af">Sem produtos</div>';
 
-        // Criar lista de pedidos com botão excluir
+        // Criar lista de pedidos com botão detalhar e excluir
         const ordersHtml = periodData.orders_data?.map((order) => {
           const marketplaceName = order.marketplace && order.marketplace !== 'null' && order.marketplace !== 'undefined'
             ? order.marketplace 
             : 'Sem marketplace';
-          const displayText = `${marketplaceName} - #${order.order_number || 'S/N'}`;
+          const customerName = (order as { customer_name?: string }).customer_name || 'Cliente não identificado';
+          const orderNumber = order.order_number || 'S/N';
+          
+          // Nome do produto: usa product_name da SQL (novo campo) ou products[]
+          const productNamesFromItems = (order.products || [])
+            .map((p: { name: string }) => p.name)
+            .filter(Boolean) as string[];
+          const mainProductName = (order as { product_name?: string }).product_name || productNamesFromItems[0] || 'Produto não vinculado';
+          const productCount = productNamesFromItems.length;
+
+          // SKU do produto
+          const productSku = (order as { product_sku?: string }).product_sku || 
+            ((order.products || [])[0] as { sku?: string })?.sku || 
+            null;
+
           const safeStore = order.marketplace && order.marketplace !== 'null' && order.marketplace !== 'undefined'
             ? order.marketplace
             : 'Sem marketplace';
 
           // Dados financeiros do pedido
           const orderRevenue = Number(order.total_amount ?? 0);
-          const orderCost = Number(order.total_cost ?? 0);
-          const orderCommission = Number(order.marketplace_commission ?? 0);
-          const orderShipping = Number(order.shipping_cost ?? 0);
-          const orderOtherExpenses = Number(order.other_expenses ?? 0);
-          const commissionRate = Number(order.commission_rate ?? 0);
-          const orderProfit = Number(order.total_profit ?? (orderRevenue - orderCost));
+          const orderProfit = Number(order.total_profit ?? 0);
           const profitColor = orderProfit >= 0 ? '#16a34a' : '#dc2626';
 
-          // Nome do produto: usa product_name da SQL (novo campo) ou products[]
-          const productNamesFromItems = (order.products || [])
-            .map((p: { name: string }) => p.name)
-            .filter(Boolean) as string[];
-          const mainProductName = (order as { product_name?: string }).product_name || productNamesFromItems[0] || null;
-          const productNamesHtml = mainProductName
-            ? `<div style="font-size:10px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px;font-weight:500">📦 ${mainProductName.length > 36 ? mainProductName.substring(0, 36) + '...' : mainProductName}</div>`
-              + (productNamesFromItems.length > 1 ? `<div style="font-size:10px;color:#9ca3af">+${productNamesFromItems.length - 1} produto(s)</div>` : '')
-            : '<div style="font-size:10px;color:#9ca3af;font-style:italic">Produto não vinculado</div>';
-
-          // Taxas do produto para exibição detalhada
-          const supplierFeeValue = Number((order as { supplier_fee_value?: string }).supplier_fee_value ?? 0);
-          const supplierFeeType = (order as { supplier_fee_type?: string }).supplier_fee_type ?? 'percent';
-          const supplierGatewayFeeValue = Number((order as { supplier_gateway_fee_value?: string }).supplier_gateway_fee_value ?? 0);
-          const supplierGatewayFeeType = (order as { supplier_gateway_fee_type?: string }).supplier_gateway_fee_type ?? 'fixed';
-          const productCostPrice = Number((order as { product_cost_price?: number }).product_cost_price ?? orderCost);
-
-          // Calcular taxas do fornecedor sobre o preço de venda
-          const supplierFee = supplierFeeType === 'percent'
-            ? (orderRevenue * supplierFeeValue) / 100
-            : supplierFeeValue;
-          const supplierGatewayFee = supplierGatewayFeeType === 'fixed'
-            ? supplierGatewayFeeValue
-            : (orderRevenue * supplierGatewayFeeValue) / 100;
-
-          // Linha de despesas do marketplace
-          const expensesHtml = `
-            <div style="margin-top:6px;padding-top:6px;border-top:1px dashed #e5e7eb;">
-              <div style="font-size:10px;color:#6b7280;font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">Despesas</div>
-              <div style="display:flex;justify-content:space-between;font-size:11px;color:#374151;margin-bottom:2px">
-                <span>💰 Preço de venda</span>
-                <span style="font-weight:600">${formatCurrency(orderRevenue)}</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;font-size:11px;color:#374151;margin-bottom:2px">
-                <span>📦 Custo do produto</span>
-                <span style="color:#ef4444">-${formatCurrency(productCostPrice)}</span>
-              </div>
-              ${orderCommission > 0 ? `
-              <div style="display:flex;justify-content:space-between;font-size:11px;color:#374151;margin-bottom:2px">
-                <span>🏪 Comissão ${marketplaceName}${commissionRate > 0 ? ` (${commissionRate}%)` : ''}</span>
-                <span style="color:#ef4444">-${formatCurrency(orderCommission)}</span>
-              </div>` : ''}
-              ${supplierFee > 0 ? `
-              <div style="display:flex;justify-content:space-between;font-size:11px;color:#374151;margin-bottom:2px">
-                <span>🏭 Taxa fornecedor${supplierFeeType === 'percent' ? ` (${supplierFeeValue}%)` : ''}</span>
-                <span style="color:#ef4444">-${formatCurrency(supplierFee)}</span>
-              </div>` : ''}
-              ${supplierGatewayFee > 0 ? `
-              <div style="display:flex;justify-content:space-between;font-size:11px;color:#374151;margin-bottom:2px">
-                <span>💳 Gateway fornecedor${supplierGatewayFeeType === 'fixed' ? '' : ` (${supplierGatewayFeeValue}%)`}</span>
-                <span style="color:#ef4444">-${formatCurrency(supplierGatewayFee)}</span>
-              </div>` : ''}
-              ${orderShipping > 0 ? `
-              <div style="display:flex;justify-content:space-between;font-size:11px;color:#374151;margin-bottom:2px">
-                <span>🚚 Frete</span>
-                <span style="color:#ef4444">-${formatCurrency(orderShipping)}</span>
-              </div>` : ''}
-              ${orderOtherExpenses > 0 ? `
-              <div style="display:flex;justify-content:space-between;font-size:11px;color:#374151;margin-bottom:2px">
-                <span>📋 Outras despesas</span>
-                <span style="color:#ef4444">-${formatCurrency(orderOtherExpenses)}</span>
-              </div>` : ''}
-              <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-top:4px;padding-top:4px;border-top:1px solid #e5e7eb">
-                <span style="color:#374151">Lucro real</span>
-                <span style="color:${profitColor}">${formatCurrency(orderProfit)}</span>
-              </div>
-            </div>
-          `;
+          // Preparar dados completos do pedido para o modal
+          const orderDetailData: OrderDetail = {
+            order_id: order.order_id,
+            order_number: orderNumber,
+            marketplace: marketplaceName,
+            customer_name: customerName,
+            product_name: mainProductName,
+            product_sku: productSku || undefined,
+            products: order.products,
+            total_amount: orderRevenue,
+            total_cost: Number(order.total_cost ?? 0),
+            product_cost_price: Number((order as { product_cost_price?: number }).product_cost_price ?? 0),
+            marketplace_commission: Number(order.marketplace_commission ?? 0),
+            commission_rate: Number(order.commission_rate ?? 0),
+            shipping_cost: Number(order.shipping_cost ?? 0),
+            other_expenses: Number(order.other_expenses ?? 0),
+            supplier_fee_value: (order as { supplier_fee_value?: string }).supplier_fee_value,
+            supplier_fee_type: (order as { supplier_fee_type?: string }).supplier_fee_type,
+            supplier_gateway_fee_value: (order as { supplier_gateway_fee_value?: string }).supplier_gateway_fee_value,
+            supplier_gateway_fee_type: (order as { supplier_gateway_fee_type?: string }).supplier_gateway_fee_type,
+            total_profit: orderProfit,
+          };
           
           return `
             <div style="padding:8px 0;border-top:1px solid #f3f4f6;">
-              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
                 <div style="flex:1;min-width:0">
-                  <div style="font-size:11px;color:#6b7280;margin-bottom:2px">${displayText}</div>
-                  ${productNamesHtml}
+                  <div style="font-size:11px;color:#374151;font-weight:600;margin-bottom:2px">
+                    ${customerName}
+                  </div>
+                  <div style="font-size:10px;color:#6b7280;margin-bottom:2px">
+                    🏪 ${marketplaceName} • Pedido #${orderNumber}
+                  </div>
+                  <div style="font-size:10px;color:#374151;margin-bottom:2px">
+                    📦 ${mainProductName.length > 30 ? mainProductName.substring(0, 30) + '...' : mainProductName}
+                    ${productSku ? ` (SKU: ${productSku})` : ''}
+                  </div>
+                  ${productCount > 1 ? `<div style="font-size:10px;color:#9ca3af">+${productCount - 1} produto(s)</div>` : ''}
                 </div>
-                <button 
-                  data-delete-order-btn
-                  data-order-id="${order.order_id}"
-                  data-order-number="${order.order_number}"
-                  data-order-store="${safeStore}"
-                  style="background:#ef4444;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer;flex-shrink:0;font-weight:500;transition:background 0.2s;"
-                  onmouseover="this.style.background='#dc2626'"
-                  onmouseout="this.style.background='#ef4444'"
-                >
-                  Excluir
-                </button>
+                <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+                  <button 
+                    data-detail-order-btn
+                    data-order-detail='${JSON.stringify(orderDetailData).replace(/'/g, "&apos;")}'
+                    style="background:#3b82f6;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer;font-weight:500;transition:background 0.2s;white-space:nowrap;"
+                    onmouseover="this.style.background='#2563eb'"
+                    onmouseout="this.style.background='#3b82f6'"
+                  >
+                    Detalhar
+                  </button>
+                  <button 
+                    data-delete-order-btn
+                    data-order-id="${order.order_id}"
+                    data-order-number="${orderNumber}"
+                    data-order-store="${safeStore}"
+                    style="background:#ef4444;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer;font-weight:500;transition:background 0.2s;white-space:nowrap;"
+                    onmouseover="this.style.background='#dc2626'"
+                    onmouseout="this.style.background='#ef4444'"
+                  >
+                    Excluir
+                  </button>
+                </div>
               </div>
-              ${expensesHtml}
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding-top:4px;border-top:1px dashed #e5e7eb">
+                <span style="color:#6b7280">Lucro:</span>
+                <span style="font-weight:700;color:${profitColor}">${formatCurrency(orderProfit)}</span>
+              </div>
             </div>
           `;
         }).join('') || '';
@@ -414,6 +450,178 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
   return (
     <>
+      {/* Dialog de detalhes do pedido */}
+      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Detalhes do Pedido #{selectedOrder?.order_number}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedOrder && (
+            <div className="space-y-6">
+              {/* Informações do pedido */}
+              <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Cliente</p>
+                  <p className="text-sm font-medium">{selectedOrder.customer_name}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Marketplace</p>
+                  <p className="text-sm font-medium">{selectedOrder.marketplace}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Produto</p>
+                  <p className="text-sm font-medium">{selectedOrder.product_name}</p>
+                  {selectedOrder.product_sku && (
+                    <p className="text-xs text-gray-500">SKU: {selectedOrder.product_sku}</p>
+                  )}
+                </div>
+                {selectedOrder.products && selectedOrder.products.length > 1 && (
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Produtos adicionais</p>
+                    <p className="text-sm font-medium">+{selectedOrder.products.length - 1} produto(s)</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Resumo financeiro */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center text-lg font-semibold">
+                  <span>💰 Preço de venda</span>
+                  <span className="text-green-600">{formatCurrency(selectedOrder.total_amount)}</span>
+                </div>
+              </div>
+
+              {/* Custo do Produto */}
+              <div className="space-y-3 p-4 bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-200 dark:border-red-800">
+                <h3 className="font-semibold text-red-700 dark:text-red-400 flex items-center gap-2">
+                  📦 Custo do Produto
+                </h3>
+                
+                <div className="space-y-2 pl-4">
+                  {selectedOrder.product_cost_price > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">Custo base do produto</span>
+                      <span className="font-medium text-red-600">-{formatCurrency(selectedOrder.product_cost_price)}</span>
+                    </div>
+                  )}
+                  
+                  {selectedOrder.supplier_fee_value && Number(selectedOrder.supplier_fee_value) > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Taxa do fornecedor
+                        {selectedOrder.supplier_fee_type === 'percent' && ` (${selectedOrder.supplier_fee_value}%)`}
+                      </span>
+                      <span className="font-medium text-red-600">
+                        -{formatCurrency(
+                          selectedOrder.supplier_fee_type === 'percent'
+                            ? (selectedOrder.total_amount * Number(selectedOrder.supplier_fee_value)) / 100
+                            : Number(selectedOrder.supplier_fee_value)
+                        )}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {selectedOrder.supplier_gateway_fee_value && Number(selectedOrder.supplier_gateway_fee_value) > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Gateway do fornecedor
+                        {selectedOrder.supplier_gateway_fee_type === 'percent' && ` (${selectedOrder.supplier_gateway_fee_value}%)`}
+                      </span>
+                      <span className="font-medium text-red-600">
+                        -{formatCurrency(
+                          selectedOrder.supplier_gateway_fee_type === 'fixed'
+                            ? Number(selectedOrder.supplier_gateway_fee_value)
+                            : (selectedOrder.total_amount * Number(selectedOrder.supplier_gateway_fee_value)) / 100
+                        )}
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between text-sm font-semibold pt-2 border-t border-red-300 dark:border-red-700">
+                    <span>Subtotal Custo Produto</span>
+                    <span className="text-red-600">
+                      -{formatCurrency(
+                        selectedOrder.product_cost_price +
+                        (selectedOrder.supplier_fee_value
+                          ? selectedOrder.supplier_fee_type === 'percent'
+                            ? (selectedOrder.total_amount * Number(selectedOrder.supplier_fee_value)) / 100
+                            : Number(selectedOrder.supplier_fee_value)
+                          : 0) +
+                        (selectedOrder.supplier_gateway_fee_value
+                          ? selectedOrder.supplier_gateway_fee_type === 'fixed'
+                            ? Number(selectedOrder.supplier_gateway_fee_value)
+                            : (selectedOrder.total_amount * Number(selectedOrder.supplier_gateway_fee_value)) / 100
+                          : 0)
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Custo Marketplace */}
+              <div className="space-y-3 p-4 bg-orange-50 dark:bg-orange-900/10 rounded-lg border border-orange-200 dark:border-orange-800">
+                <h3 className="font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-2">
+                  🏪 Custo Marketplace ({selectedOrder.marketplace})
+                </h3>
+                
+                <div className="space-y-2 pl-4">
+                  {selectedOrder.marketplace_commission > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Comissão
+                        {selectedOrder.commission_rate > 0 && ` (${selectedOrder.commission_rate}%)`}
+                      </span>
+                      <span className="font-medium text-orange-600">-{formatCurrency(selectedOrder.marketplace_commission)}</span>
+                    </div>
+                  )}
+                  
+                  {selectedOrder.shipping_cost > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">Frete</span>
+                      <span className="font-medium text-orange-600">-{formatCurrency(selectedOrder.shipping_cost)}</span>
+                    </div>
+                  )}
+                  
+                  {selectedOrder.other_expenses > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">Outras despesas</span>
+                      <span className="font-medium text-orange-600">-{formatCurrency(selectedOrder.other_expenses)}</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between text-sm font-semibold pt-2 border-t border-orange-300 dark:border-orange-700">
+                    <span>Subtotal Custo Marketplace</span>
+                    <span className="text-orange-600">
+                      -{formatCurrency(
+                        selectedOrder.marketplace_commission +
+                        selectedOrder.shipping_cost +
+                        selectedOrder.other_expenses
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Lucro Final */}
+              <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                <div className="flex justify-between items-center text-xl font-bold">
+                  <span>Lucro Real</span>
+                  <span className={selectedOrder.total_profit >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {formatCurrency(selectedOrder.total_profit)}
+                  </span>
+                </div>
+                <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                  Margem: {((selectedOrder.total_profit / selectedOrder.total_amount) * 100).toFixed(2)}%
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Dialog de confirmação de exclusão */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
