@@ -16,6 +16,10 @@ export interface OrderData {
   total_amount: number;
   total_cost: number;
   total_profit: number;
+  shipping_cost?: number;
+  marketplace_commission?: number;
+  other_expenses?: number;
+  commission_rate?: number;
   products: OrderProduct[];
 }
 

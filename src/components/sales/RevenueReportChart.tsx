@@ -244,45 +244,105 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const safeStore = order.marketplace && order.marketplace !== 'null' && order.marketplace !== 'undefined'
             ? order.marketplace
             : 'Sem marketplace';
+
+          // Dados financeiros do pedido
+          const orderRevenue = Number(order.total_amount ?? 0);
+          const orderCost = Number(order.total_cost ?? 0);
+          const orderCommission = Number(order.marketplace_commission ?? 0);
+          const orderShipping = Number(order.shipping_cost ?? 0);
+          const orderOtherExpenses = Number(order.other_expenses ?? 0);
+          const commissionRate = Number(order.commission_rate ?? 0);
+          const orderProfit = Number(order.total_profit ?? (orderRevenue - orderCost));
+          const profitColor = orderProfit >= 0 ? '#16a34a' : '#dc2626';
+
+          // Nomes dos produtos do pedido
+          const productNames = (order.products || [])
+            .map((p: { name: string }) => p.name)
+            .filter(Boolean);
+          const productNamesHtml = productNames.length > 0
+            ? productNames.slice(0, 2).map((n: string) =>
+                `<div style="font-size:10px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px;font-weight:500">📦 ${n.length > 32 ? n.substring(0, 32) + '...' : n}</div>`
+              ).join('') + (productNames.length > 2 ? `<div style="font-size:10px;color:#9ca3af">+${productNames.length - 2} produto(s)</div>` : '')
+            : '<div style="font-size:10px;color:#9ca3af;font-style:italic">Produto não vinculado</div>';
+
+          // Linha de despesas do marketplace
+          const expensesHtml = `
+            <div style="margin-top:6px;padding-top:6px;border-top:1px dashed #e5e7eb;">
+              <div style="font-size:10px;color:#6b7280;font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">Despesas</div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:#374151;margin-bottom:2px">
+                <span>💰 Preço de venda</span>
+                <span style="font-weight:600">${formatCurrency(orderRevenue)}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:#374151;margin-bottom:2px">
+                <span>📦 Custo do produto</span>
+                <span style="color:#ef4444">-${formatCurrency(orderCost)}</span>
+              </div>
+              ${orderCommission > 0 ? `
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:#374151;margin-bottom:2px">
+                <span>🏪 Comissão ${marketplaceName}${commissionRate > 0 ? ` (${commissionRate}%)` : ''}</span>
+                <span style="color:#ef4444">-${formatCurrency(orderCommission)}</span>
+              </div>` : ''}
+              ${orderShipping > 0 ? `
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:#374151;margin-bottom:2px">
+                <span>🚚 Frete</span>
+                <span style="color:#ef4444">-${formatCurrency(orderShipping)}</span>
+              </div>` : ''}
+              ${orderOtherExpenses > 0 ? `
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:#374151;margin-bottom:2px">
+                <span>📋 Outras despesas</span>
+                <span style="color:#ef4444">-${formatCurrency(orderOtherExpenses)}</span>
+              </div>` : ''}
+              <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-top:4px;padding-top:4px;border-top:1px solid #e5e7eb">
+                <span style="color:#374151">Lucro real</span>
+                <span style="color:${profitColor}">${formatCurrency(orderProfit)}</span>
+              </div>
+            </div>
+          `;
           
           return `
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-top:1px solid #f3f4f6;gap:8px;">
-              <span style="font-size:11px;color:#6b7280;flex:1;">${displayText}</span>
-              <button 
-                data-delete-order-btn
-                data-order-id="${order.order_id}"
-                data-order-number="${order.order_number}"
-                data-order-store="${safeStore}"
-                style="background:#ef4444;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer;flex-shrink:0;font-weight:500;transition:background 0.2s;"
-                onmouseover="this.style.background='#dc2626'"
-                onmouseout="this.style.background='#ef4444'"
-              >
-                Excluir
-              </button>
+            <div style="padding:8px 0;border-top:1px solid #f3f4f6;">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:11px;color:#6b7280;margin-bottom:2px">${displayText}</div>
+                  ${productNamesHtml}
+                </div>
+                <button 
+                  data-delete-order-btn
+                  data-order-id="${order.order_id}"
+                  data-order-number="${order.order_number}"
+                  data-order-store="${safeStore}"
+                  style="background:#ef4444;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer;flex-shrink:0;font-weight:500;transition:background 0.2s;"
+                  onmouseover="this.style.background='#dc2626'"
+                  onmouseout="this.style.background='#ef4444'"
+                >
+                  Excluir
+                </button>
+              </div>
+              ${expensesHtml}
             </div>
           `;
         }).join('') || '';
 
         return `
-          <div class="apexcharts-tooltip-custom" style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,0.12);min-width:220px;max-width:320px;pointer-events:auto;">
+          <div class="apexcharts-tooltip-custom" style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,0.12);min-width:260px;max-width:360px;pointer-events:auto;">
             <div style="font-weight:600;color:#111827;margin-bottom:6px;font-size:13px">${periodData.period_label}</div>
             <div style="margin-bottom:8px">${productLines}</div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
               <div style="display:flex;align-items:center;gap:6px">
                 <div style="width:10px;height:10px;border-radius:50%;background:#45B369"></div>
-                <span style="font-size:12px;color:#6b7280">Receita:</span>
+                <span style="font-size:12px;color:#6b7280">Receita total:</span>
               </div>
               <span style="font-size:12px;font-weight:600;color:#111827">${formatCurrency(revenue)}</span>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
               <div style="display:flex;align-items:center;gap:6px">
                 <div style="width:10px;height:10px;border-radius:50%;background:#EF4A00"></div>
-                <span style="font-size:12px;color:#6b7280">Custo:</span>
+                <span style="font-size:12px;color:#6b7280">Custo total:</span>
               </div>
               <span style="font-size:12px;font-weight:600;color:#111827">${formatCurrency(cost)}</span>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;padding-top:6px;border-top:1px solid #e5e7eb;margin-bottom:6px">
-              <span style="font-size:12px;font-weight:500;color:#374151">Lucro:</span>
+              <span style="font-size:12px;font-weight:500;color:#374151">Lucro total:</span>
               <span style="font-size:12px;font-weight:700;color:${profitColor}">${formatCurrency(profit)}</span>
             </div>
             ${ordersHtml}
