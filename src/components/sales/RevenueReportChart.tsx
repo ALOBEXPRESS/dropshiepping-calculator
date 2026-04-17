@@ -62,6 +62,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [deleting, setDeleting] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
+  const [openProduto, setOpenProduto] = useState(false);
+  const [openMarketplace, setOpenMarketplace] = useState(false);
   
   const chartRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef(data);
@@ -121,6 +123,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           try {
             const orderData = JSON.parse(orderDataStr);
             setSelectedOrder(orderData);
+            setOpenProduto(false);
+            setOpenMarketplace(false);
             setDetailDialogOpen(true);
           } catch (err) {
             console.error('Error parsing order data:', err);
@@ -459,7 +463,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     <>
       {/* Dialog de detalhes do pedido — Dark Premium */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="max-w-sm p-0 overflow-hidden border-0 bg-zinc-950 rounded-2xl shadow-2xl [&>button]:hidden">
+        <DialogContent className="max-w-lg p-0 overflow-hidden border-0 bg-zinc-950 rounded-2xl shadow-2xl [&>button]:hidden">
           {selectedOrder && (() => {
             const supplierFee = selectedOrder.supplier_fee_value && Number(selectedOrder.supplier_fee_value) > 0
               ? selectedOrder.supplier_fee_type === 'percent'
@@ -500,6 +504,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                     </span>
                   </div>
 
+                  {/* Badge marketplace — canto superior direito (dentro da imagem) */}
+                  <div className="absolute top-3 right-12 z-10">
+                    <span className="inline-flex items-center bg-orange-500/90 backdrop-blur-sm text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-lg shadow-orange-900/40">
+                      {selectedOrder.marketplace}
+                    </span>
+                  </div>
+
                   {/* Imagem com fundo claro para o produto */}
                   {selectedOrder.product_image_url ? (
                     <div className="h-52 bg-zinc-100 flex items-center justify-center overflow-hidden">
@@ -529,16 +540,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 {/* ── SCROLLABLE BODY ── */}
                 <div className="overflow-y-auto flex-1 px-4 pb-5 space-y-3">
 
-                  {/* Badge marketplace + nome + SKU + cliente */}
+                  {/* Nome + SKU + cliente (sem badge marketplace — já está na imagem) */}
                   <div className="pt-2">
-                    <div className="flex items-start justify-between gap-2 mb-1.5">
-                      <h2 className="text-white font-semibold text-sm leading-snug flex-1">
-                        {selectedOrder.product_name || 'Produto não identificado'}
-                      </h2>
-                      <span className="flex-shrink-0 inline-flex items-center bg-orange-500/15 text-orange-300 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-orange-500/25 whitespace-nowrap">
-                        {selectedOrder.marketplace}
-                      </span>
-                    </div>
+                    <h2 className="text-white font-semibold text-sm leading-snug mb-1.5">
+                      {selectedOrder.product_name || 'Produto não identificado'}
+                    </h2>
                     <div className="flex items-center gap-2 flex-wrap">
                       {selectedOrder.product_sku && (
                         <span className="text-[11px] text-zinc-500 font-mono bg-zinc-900 px-2 py-0.5 rounded">
@@ -569,86 +575,114 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                     </span>
                   </div>
 
-                  {/* Custo do Produto */}
+                  {/* Custo do Produto — Accordion */}
                   <div className="rounded-xl border border-red-900/50 overflow-hidden">
-                    <div className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-950/60 to-zinc-900/60">
-                      <svg className="w-3.5 h-3.5 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                      </svg>
-                      <span className="text-red-400 font-semibold text-xs uppercase tracking-wide">Custo do Produto</span>
-                    </div>
-                    <div className="px-4 py-3 space-y-2 bg-zinc-900/40">
-                      {productCost > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-zinc-400">Custo base</span>
-                          <span className="text-red-400 font-medium tabular-nums">-{formatCurrency(productCost)}</span>
-                        </div>
-                      )}
-                      {supplierFee > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-zinc-400">
-                            Taxa fornecedor{selectedOrder.supplier_fee_type === 'percent' ? ` (${selectedOrder.supplier_fee_value}%)` : ''}
-                          </span>
-                          <span className="text-red-400 font-medium tabular-nums">-{formatCurrency(supplierFee)}</span>
-                        </div>
-                      )}
-                      {gatewayFee > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-zinc-400">
-                            Gateway fornecedor{selectedOrder.supplier_gateway_fee_type === 'percent' ? ` (${selectedOrder.supplier_gateway_fee_value}%)` : ''}
-                          </span>
-                          <span className="text-red-400 font-medium tabular-nums">-{formatCurrency(gatewayFee)}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between text-sm font-semibold pt-2 border-t border-zinc-800">
-                        <span className="text-zinc-200">Subtotal</span>
-                        <span className="text-red-400 tabular-nums">-{formatCurrency(subtotalProduto)}</span>
+                    {/* Header clicável */}
+                    <button
+                      onClick={() => setOpenProduto(v => !v)}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-red-950/60 to-zinc-900/60 hover:from-red-950/80 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <svg className="w-3.5 h-3.5 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        <span className="text-red-400 font-semibold text-xs uppercase tracking-wide">Custo do Produto</span>
                       </div>
-                    </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-red-400 font-semibold text-sm tabular-nums">-{formatCurrency(subtotalProduto)}</span>
+                        <svg
+                          className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${openProduto ? 'rotate-180' : ''}`}
+                          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </button>
+                    {/* Conteúdo expansível */}
+                    {openProduto && (
+                      <div className="px-4 py-3 space-y-2 bg-zinc-900/40 border-t border-red-900/30">
+                        {productCost > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-zinc-400">Custo base</span>
+                            <span className="text-red-400 font-medium tabular-nums">-{formatCurrency(productCost)}</span>
+                          </div>
+                        )}
+                        {supplierFee > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-zinc-400">
+                              Taxa fornecedor{selectedOrder.supplier_fee_type === 'percent' ? ` (${selectedOrder.supplier_fee_value}%)` : ''}
+                            </span>
+                            <span className="text-red-400 font-medium tabular-nums">-{formatCurrency(supplierFee)}</span>
+                          </div>
+                        )}
+                        {gatewayFee > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-zinc-400">
+                              Gateway fornecedor{selectedOrder.supplier_gateway_fee_type === 'percent' ? ` (${selectedOrder.supplier_gateway_fee_value}%)` : ''}
+                            </span>
+                            <span className="text-red-400 font-medium tabular-nums">-{formatCurrency(gatewayFee)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Custo Marketplace */}
+                  {/* Custo Marketplace — Accordion */}
                   <div className="rounded-xl border border-orange-900/50 overflow-hidden">
-                    <div className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-950/60 to-zinc-900/60">
-                      <svg className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
-                      <span className="text-orange-400 font-semibold text-xs uppercase tracking-wide">
-                        Custo Marketplace — {selectedOrder.marketplace}
-                      </span>
-                    </div>
-                    <div className="px-4 py-3 space-y-2 bg-zinc-900/40">
-                      {selectedOrder.marketplace_commission > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-zinc-400">
-                            Comissão{selectedOrder.commission_rate > 0 ? ` (${selectedOrder.commission_rate}%)` : ''}
-                          </span>
-                          <span className="text-orange-400 font-medium tabular-nums">-{formatCurrency(selectedOrder.marketplace_commission)}</span>
-                        </div>
-                      )}
-                      {fixedFee > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-zinc-400">Taxa fixa</span>
-                          <span className="text-orange-400 font-medium tabular-nums">-{formatCurrency(fixedFee)}</span>
-                        </div>
-                      )}
-                      {selectedOrder.shipping_cost > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-zinc-400">Frete</span>
-                          <span className="text-orange-400 font-medium tabular-nums">-{formatCurrency(selectedOrder.shipping_cost)}</span>
-                        </div>
-                      )}
-                      {selectedOrder.other_expenses > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-zinc-400">Outras despesas</span>
-                          <span className="text-orange-400 font-medium tabular-nums">-{formatCurrency(selectedOrder.other_expenses)}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between text-sm font-semibold pt-2 border-t border-zinc-800">
-                        <span className="text-zinc-200">Subtotal</span>
-                        <span className="text-orange-400 tabular-nums">-{formatCurrency(subtotalMarketplace)}</span>
+                    {/* Header clicável */}
+                    <button
+                      onClick={() => setOpenMarketplace(v => !v)}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-orange-950/60 to-zinc-900/60 hover:from-orange-950/80 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <svg className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <span className="text-orange-400 font-semibold text-xs uppercase tracking-wide">
+                          Custo Marketplace — {selectedOrder.marketplace}
+                        </span>
                       </div>
-                    </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-orange-400 font-semibold text-sm tabular-nums">-{formatCurrency(subtotalMarketplace)}</span>
+                        <svg
+                          className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${openMarketplace ? 'rotate-180' : ''}`}
+                          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </button>
+                    {/* Conteúdo expansível */}
+                    {openMarketplace && (
+                      <div className="px-4 py-3 space-y-2 bg-zinc-900/40 border-t border-orange-900/30">
+                        {selectedOrder.marketplace_commission > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-zinc-400">
+                              Comissão{selectedOrder.commission_rate > 0 ? ` (${selectedOrder.commission_rate}%)` : ''}
+                            </span>
+                            <span className="text-orange-400 font-medium tabular-nums">-{formatCurrency(selectedOrder.marketplace_commission)}</span>
+                          </div>
+                        )}
+                        {fixedFee > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-zinc-400">Taxa fixa</span>
+                            <span className="text-orange-400 font-medium tabular-nums">-{formatCurrency(fixedFee)}</span>
+                          </div>
+                        )}
+                        {selectedOrder.shipping_cost > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-zinc-400">Frete</span>
+                            <span className="text-orange-400 font-medium tabular-nums">-{formatCurrency(selectedOrder.shipping_cost)}</span>
+                          </div>
+                        )}
+                        {selectedOrder.other_expenses > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-zinc-400">Outras despesas</span>
+                            <span className="text-orange-400 font-medium tabular-nums">-{formatCurrency(selectedOrder.other_expenses)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Lucro Real */}
