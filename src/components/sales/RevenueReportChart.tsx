@@ -272,9 +272,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const cost = Number(periodData.total_cost);
         const profit = revenue - cost;
 
-        const allProducts = periodData.orders_data?.flatMap((order: { products?: { name: string }[]; marketplace?: string }) =>
-          order.products?.map((p: { name: string }) => p.name) || []
-        ) || [];
+        // Coletar nomes de produtos: de products[] ou de product_name direto
+        const allProducts = periodData.orders_data?.flatMap((order: { products?: { name: string }[]; product_name?: string; marketplace?: string }) => {
+          const fromItems = order.products?.map((p: { name: string }) => p.name).filter(Boolean) || [];
+          if (fromItems.length > 0) return fromItems;
+          if (order.product_name) return [order.product_name];
+          return [];
+        }) || [];
         const uniqueProducts = [...new Set(allProducts)] as string[];
 
         const profitColor = profit >= 0 ? '#16a34a' : '#dc2626';
@@ -282,7 +286,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const productLines = uniqueProducts.length > 0
           ? uniqueProducts.slice(0, 2).map(p =>
               `<div style="font-size:11px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px">${p.length > 35 ? p.substring(0, 35) + '...' : p}</div>`
-            ).join('') + (uniqueProducts.length > 2 ? '<div style="font-size:11px;color:#9ca3af">...</div>' : '')
+            ).join('') + (uniqueProducts.length > 2 ? '<div style="font-size:11px;color:#9ca3af">+${uniqueProducts.length - 2} produto(s)</div>' : '')
           : '<div style="font-size:11px;color:#9ca3af">Sem produtos</div>';
 
         // Criar lista de pedidos com botão detalhar e excluir
