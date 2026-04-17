@@ -112,6 +112,27 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         return;
       }
 
+      // Botão de navegação (setas prev/next)
+      const navButton = target.closest('[data-tooltip-nav]') as HTMLElement;
+      if (navButton && !navButton.hasAttribute('disabled')) {
+        e.preventDefault();
+        e.stopPropagation();
+        const dir = navButton.getAttribute('data-nav-dir');
+        const key = navButton.getAttribute('data-nav-key');
+        const max = Number(navButton.getAttribute('data-nav-max'));
+        if (key) {
+          const current = (window as unknown as Record<string, number>)[key] ?? 0;
+          const next = dir === 'next' ? Math.min(current + 1, max) : Math.max(current - 1, 0);
+          (window as unknown as Record<string, number>)[key] = next;
+          // Forçar re-render do tooltip via evento sintético no gráfico
+          const chartEl = document.querySelector('.apexcharts-canvas');
+          if (chartEl) {
+            chartEl.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, cancelable: true }));
+          }
+        }
+        return;
+      }
+
       // Botão de detalhar
       const detailButton = target.closest('[data-detail-order-btn]') as HTMLElement;
       if (detailButton) {
@@ -203,7 +224,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
   const totalRevenue = data.reduce((sum, item) => sum + Number(item.total_revenue), 0);
   const totalCost = data.reduce((sum, item) => sum + Number(item.total_cost), 0);
-  const totalProfit = totalRevenue - totalCost;
+  const totalProfit = data.reduce((sum, item) => sum + Number(item.total_profit), 0);
 
 
   const chartOptions: ApexOptions = {
@@ -277,53 +298,37 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const cost = Number(periodData.total_cost);
         const profit = revenue - cost;
 
-        // Coletar nomes de produtos: de products[] ou de product_name direto
-        const allProducts = periodData.orders_data?.flatMap((order: { products?: { name: string }[]; product_name?: string; marketplace?: string }) => {
-          const fromItems = order.products?.map((p: { name: string }) => p.name).filter(Boolean) || [];
-          if (fromItems.length > 0) return fromItems;
-          if (order.product_name) return [order.product_name];
-          return [];
-        }) || [];
-        const uniqueProducts = [...new Set(allProducts)] as string[];
-
+        const ordersCount = periodData.orders_data?.length || 0;
         const profitColor = profit >= 0 ? '#16a34a' : '#dc2626';
 
-        const productLines = uniqueProducts.length > 0
-          ? uniqueProducts.slice(0, 2).map(p =>
-              `<div style="font-size:11px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px">${p.length > 35 ? p.substring(0, 35) + '...' : p}</div>`
-            ).join('') + (uniqueProducts.length > 2 ? '<div style="font-size:11px;color:#9ca3af">+${uniqueProducts.length - 2} produto(s)</div>' : '')
-          : '<div style="font-size:11px;color:#9ca3af">Sem produtos</div>';
+        // Estado de paginação do tooltip por período (persiste via window)
+        const stateKey = `tooltip_page_${dataPointIndex}`;
+        if (!(window as unknown as Record<string, number>)[stateKey]) {
+          (window as unknown as Record<string, number>)[stateKey] = 0;
+        }
+        const currentPage: number = (window as unknown as Record<string, number>)[stateKey];
+        const order = periodData.orders_data?.[currentPage];
 
-        // Criar lista de pedidos com botão detalhar e excluir
-        const ordersHtml = periodData.orders_data?.map((order) => {
+        // Gerar HTML de um único pedido (paginado)
+        const orderHtml = order ? (() => {
           const marketplaceName = order.marketplace && order.marketplace !== 'null' && order.marketplace !== 'undefined'
             ? order.marketplace 
             : 'Sem marketplace';
           const customerName = (order as { customer_name?: string }).customer_name || 'Cliente não identificado';
           const orderNumber = order.order_number || 'S/N';
           
-          // Nome do produto: usa product_name da SQL (novo campo) ou products[]
           const productNamesFromItems = (order.products || [])
             .map((p: { name: string }) => p.name)
             .filter(Boolean) as string[];
           const mainProductName = (order as { product_name?: string }).product_name || productNamesFromItems[0] || 'Produto não vinculado';
           const productCount = productNamesFromItems.length;
-
-          // SKU do produto
           const productSku = (order as { product_sku?: string }).product_sku || 
-            ((order.products || [])[0] as { sku?: string })?.sku || 
-            null;
-
-          const safeStore = order.marketplace && order.marketplace !== 'null' && order.marketplace !== 'undefined'
-            ? order.marketplace
-            : 'Sem marketplace';
-
-          // Dados financeiros do pedido
+            ((order.products || [])[0] as { sku?: string })?.sku || null;
+          const safeStore = marketplaceName;
           const orderRevenue = Number(order.total_amount ?? 0);
           const orderProfit = Number(order.total_profit ?? 0);
-          const profitColor = orderProfit >= 0 ? '#16a34a' : '#dc2626';
+          const orderProfitColor = orderProfit >= 0 ? '#16a34a' : '#dc2626';
 
-          // Preparar dados completos do pedido para o modal
           const orderDetailData: OrderDetail = {
             order_id: order.order_id,
             order_number: orderNumber,
@@ -347,19 +352,39 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             supplier_gateway_fee_type: (order as { supplier_gateway_fee_type?: string }).supplier_gateway_fee_type,
             total_profit: orderProfit,
           };
-          
+
+          // Setas de navegação (só aparece se há mais de 1 pedido)
+          const navHtml = ordersCount > 1 ? `
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid #f3f4f6;">
+              <button
+                data-tooltip-nav
+                data-nav-dir="prev"
+                data-nav-key="${stateKey}"
+                data-nav-max="${ordersCount - 1}"
+                style="background:${currentPage === 0 ? '#f3f4f6' : '#e5e7eb'};color:${currentPage === 0 ? '#d1d5db' : '#374151'};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:${currentPage === 0 ? 'default' : 'pointer'};font-weight:600;line-height:1;"
+                ${currentPage === 0 ? 'disabled' : ''}
+              >‹</button>
+              <span style="font-size:11px;color:#6b7280;font-weight:500">${currentPage + 1} / ${ordersCount} pedido${ordersCount > 1 ? 's' : ''}</span>
+              <button
+                data-tooltip-nav
+                data-nav-dir="next"
+                data-nav-key="${stateKey}"
+                data-nav-max="${ordersCount - 1}"
+                style="background:${currentPage === ordersCount - 1 ? '#f3f4f6' : '#e5e7eb'};color:${currentPage === ordersCount - 1 ? '#d1d5db' : '#374151'};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:${currentPage === ordersCount - 1 ? 'default' : 'pointer'};font-weight:600;line-height:1;"
+                ${currentPage === ordersCount - 1 ? 'disabled' : ''}
+              >›</button>
+            </div>
+          ` : '';
+
           return `
-            <div style="padding:8px 0;border-top:1px solid #f3f4f6;">
+            <div style="padding-top:6px;border-top:1px solid #f3f4f6;">
+              ${navHtml}
               <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
                 <div style="flex:1;min-width:0">
-                  <div style="font-size:11px;color:#374151;font-weight:600;margin-bottom:2px">
-                    ${customerName}
-                  </div>
-                  <div style="font-size:10px;color:#6b7280;margin-bottom:2px">
-                    🏪 ${marketplaceName} • Pedido #${orderNumber}
-                  </div>
+                  <div style="font-size:11px;color:#374151;font-weight:600;margin-bottom:2px">${customerName}</div>
+                  <div style="font-size:10px;color:#6b7280;margin-bottom:2px">🏪 ${marketplaceName} • Pedido #${orderNumber}</div>
                   <div style="font-size:10px;color:#374151;margin-bottom:2px">
-                    📦 ${mainProductName.length > 30 ? mainProductName.substring(0, 30) + '...' : mainProductName}
+                    📦 ${mainProductName.length > 28 ? mainProductName.substring(0, 28) + '...' : mainProductName}
                     ${productSku ? ` (SKU: ${productSku})` : ''}
                   </div>
                   ${productCount > 1 ? `<div style="font-size:10px;color:#9ca3af">+${productCount - 1} produto(s)</div>` : ''}
@@ -368,37 +393,35 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   <button 
                     data-detail-order-btn
                     data-order-detail='${JSON.stringify(orderDetailData).replace(/'/g, "&apos;")}'
-                    style="background:#3b82f6;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer;font-weight:500;transition:background 0.2s;white-space:nowrap;"
+                    style="background:#3b82f6;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer;font-weight:500;white-space:nowrap;"
                     onmouseover="this.style.background='#2563eb'"
                     onmouseout="this.style.background='#3b82f6'"
-                  >
-                    Detalhar
-                  </button>
+                  >Detalhar</button>
                   <button 
                     data-delete-order-btn
                     data-order-id="${order.order_id}"
                     data-order-number="${orderNumber}"
                     data-order-store="${safeStore}"
-                    style="background:#ef4444;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer;font-weight:500;transition:background 0.2s;white-space:nowrap;"
+                    style="background:#ef4444;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer;font-weight:500;white-space:nowrap;"
                     onmouseover="this.style.background='#dc2626'"
                     onmouseout="this.style.background='#ef4444'"
-                  >
-                    Excluir
-                  </button>
+                  >Excluir</button>
                 </div>
               </div>
               <div style="display:flex;justify-content:space-between;font-size:11px;padding-top:4px;border-top:1px dashed #e5e7eb">
                 <span style="color:#6b7280">Lucro:</span>
-                <span style="font-weight:700;color:${profitColor}">${formatCurrency(orderProfit)}</span>
+                <span style="font-weight:700;color:${orderProfitColor}">${formatCurrency(orderProfit)}</span>
               </div>
             </div>
           `;
-        }).join('') || '';
+        })() : '';
 
         return `
-          <div class="apexcharts-tooltip-custom" style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,0.12);min-width:260px;max-width:360px;pointer-events:auto;">
-            <div style="font-weight:600;color:#111827;margin-bottom:6px;font-size:13px">${periodData.period_label}</div>
-            <div style="margin-bottom:8px">${productLines}</div>
+          <div class="apexcharts-tooltip-custom" style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,0.12);min-width:270px;max-width:360px;pointer-events:auto;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+              <span style="font-weight:600;color:#111827;font-size:13px">${periodData.period_label}</span>
+              <span style="font-size:11px;color:#6b7280;background:#f3f4f6;padding:2px 8px;border-radius:99px;">${ordersCount} pedido${ordersCount !== 1 ? 's' : ''}</span>
+            </div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
               <div style="display:flex;align-items:center;gap:6px">
                 <div style="width:10px;height:10px;border-radius:50%;background:#45B369"></div>
@@ -406,18 +429,22 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               </div>
               <span style="font-size:12px;font-weight:600;color:#111827">${formatCurrency(revenue)}</span>
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
               <div style="display:flex;align-items:center;gap:6px">
                 <div style="width:10px;height:10px;border-radius:50%;background:#EF4A00"></div>
                 <span style="font-size:12px;color:#6b7280">Custo total:</span>
               </div>
               <span style="font-size:12px;font-weight:600;color:#111827">${formatCurrency(cost)}</span>
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;padding-top:6px;border-top:1px solid #e5e7eb;margin-bottom:6px">
-              <span style="font-size:12px;font-weight:500;color:#374151">Lucro total:</span>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <div style="display:flex;align-items:center;gap:6px">
+                <div style="width:10px;height:10px;border-radius:50%;background:#8b5cf6"></div>
+                <span style="font-size:12px;color:#6b7280">Lucro total:</span>
+              </div>
               <span style="font-size:12px;font-weight:700;color:${profitColor}">${formatCurrency(profit)}</span>
             </div>
-            ${ordersHtml}
+            <div style="height:1px;background:#e5e7eb;margin-bottom:6px;"></div>
+            ${orderHtml}
           </div>`;
       },
     },
