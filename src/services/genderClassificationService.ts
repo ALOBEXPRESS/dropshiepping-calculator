@@ -464,7 +464,7 @@ export async function runClassificationJob(
     
     const { data: records, error: queryError } = await supabase
       .from(tableName)
-      .select('id, name, country_code')
+      .select('id, name')
       .eq('organization_id', organizationId)
       .is('gender', null)
       .not('name', 'is', null);
@@ -506,8 +506,8 @@ export async function runClassificationJob(
         const firstNames = batch.map(record => extractFirstName(record.name));
         
         // Chamar API Genderize.io
-        // Usar country_code do primeiro registro do batch (se disponível)
-        const countryId = batch[0]?.country_code || undefined;
+        // Usar "BR" como país padrão para melhor precisão com nomes brasileiros
+        const countryId = 'BR';
         const apiResults = await classifyBatch(firstNames, config, countryId);
         
         // Processar resultados e atualizar banco
