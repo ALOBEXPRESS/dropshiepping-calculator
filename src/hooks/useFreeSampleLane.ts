@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import type { PendingOrder } from '@/types/pendingOrder';
@@ -23,8 +23,7 @@ interface ProcessResult {
 export interface UseFreeSampleLaneReturn {
   processing: string | null;
   processFreeSample: (order: PendingOrder, influencerId: string | null) => Promise<void>;
-  influencers: InfluencerOption[];
-  influencersLoading: boolean;
+  getInfluencersForMarketplace: (marketplaceId: string) => Promise<InfluencerOption[]>;
 }
 
 export function useFreeSampleLane(
@@ -32,36 +31,32 @@ export function useFreeSampleLane(
   onOrderProcessed: (blingOrderId: string) => void
 ): UseFreeSampleLaneReturn {
   const [processing, setProcessing] = useState<string | null>(null);
-  const [influencers, setInfluencers] = useState<InfluencerOption[]>([]);
-  const [influencersLoading, setInfluencersLoading] = useState(false);
 
-  // Fetch influencers for the organization
-  useEffect(() => {
-    if (!organizationId) return;
-
-    const fetchInfluencers = async () => {
-      setInfluencersLoading(true);
+  // Fetch influencers filtered by marketplace_id via influencer_marketplaces join
+  const getInfluencersForMarketplace = useCallback(
+    async (marketplaceId: string): Promise<InfluencerOption[]> => {
+      if (!marketplaceId) return [];
       try {
         const { data, error } = await supabase
-          .from('influencers')
-          .select('id, name, instagram, tiktok')
-          .eq('organization_id', organizationId)
-          .eq('is_active', true)
-          .order('name');
+          .from('influencer_marketplaces')
+          .select('influencer_id, influencers(id, name, instagram, tiktok)')
+          .eq('marketplace_id', marketplaceId);
 
         if (error) throw error;
-        setInfluencers(data ?? []);
-      } catch (err) {
-        console.error('Error fetching influencers:', err);
-        // Graceful degradation — empty list, processing can still proceed
-        setInfluencers([]);
-      } finally {
-        setInfluencersLoading(false);
-      }
-    };
 
-    fetchInfluencers();
-  }, [organizationId]);
+        return (data ?? [])
+          .map((row: { influencer_id: string; influencers: unknown }) => {
+            const inf = row.influencers as InfluencerOption | null;
+            return inf ?? null;
+          })
+          .filter((inf): inf is InfluencerOption => inf !== null);
+      } catch (err) {
+        console.error('Error fetching influencers for marketplace:', err);
+        return [];
+      }
+    },
+    []
+  );
 
   const processFreeSample = useCallback(
     async (order: PendingOrder, influencerId: string | null) => {
@@ -142,5 +137,5 @@ export function useFreeSampleLane(
     [organizationId, onOrderProcessed]
   );
 
-  return { processing, processFreeSample, influencers, influencersLoading };
+  return { processing, processFreeSample, getInfluencersForMarketplace };
 }

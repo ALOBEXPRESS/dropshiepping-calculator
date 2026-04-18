@@ -55,7 +55,7 @@ export const FreeSampleCard: React.FC<FreeSampleCardProps> = ({
   const icon = getMarketplaceIcon(order.marketplace_name);
 
   return (
-    <Card className="flex-shrink-0 w-64 p-4 flex flex-col border-violet-200 dark:border-violet-900/50 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md transition-shadow">
+    <Card className="flex-shrink-0 w-64 p-4 flex flex-col border-violet-200 dark:border-violet-900/50 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
       {/* Product image area — reduced height */}
       <div className="relative w-full h-32 rounded-lg overflow-hidden bg-gray-100 dark:bg-zinc-800 mb-3">
         {order.first_product_image ? (

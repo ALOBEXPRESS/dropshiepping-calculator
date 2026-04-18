@@ -6,6 +6,7 @@ import { FreeSampleCard } from './FreeSampleCard';
 import { ConfirmFreeSampleDialog } from './ConfirmFreeSampleDialog';
 import { useFreeSampleLane } from '@/hooks/useFreeSampleLane';
 import type { PendingOrder } from '@/types/pendingOrder';
+import type { InfluencerOption } from '@/hooks/useFreeSampleLane';
 
 interface FreeSampleLaneProps {
   orders: PendingOrder[];
@@ -18,10 +19,12 @@ export const FreeSampleLane: React.FC<FreeSampleLaneProps> = ({
   organizationId,
   onOrderProcessed,
 }) => {
-  const { processing, processFreeSample, influencers, influencersLoading } =
+  const { processing, processFreeSample, getInfluencersForMarketplace } =
     useFreeSampleLane(organizationId, onOrderProcessed);
 
   const [dialogOrder, setDialogOrder] = useState<PendingOrder | null>(null);
+  const [dialogInfluencers, setDialogInfluencers] = useState<InfluencerOption[]>([]);
+  const [dialogInfluencersLoading, setDialogInfluencersLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
@@ -44,8 +47,13 @@ export const FreeSampleLane: React.FC<FreeSampleLaneProps> = ({
     setTimeout(checkArrows, 350);
   };
 
-  const handleProcess = (order: PendingOrder) => {
+  const handleProcess = async (order: PendingOrder) => {
     setDialogOrder(order);
+    setDialogInfluencers([]);
+    setDialogInfluencersLoading(true);
+    const influencers = await getInfluencersForMarketplace(order.marketplace_id);
+    setDialogInfluencers(influencers);
+    setDialogInfluencersLoading(false);
   };
 
   const handleConfirm = async (influencerId: string | null) => {
@@ -63,8 +71,8 @@ export const FreeSampleLane: React.FC<FreeSampleLaneProps> = ({
       <ConfirmFreeSampleDialog
         open={dialogOrder !== null}
         order={dialogOrder}
-        influencers={influencers}
-        influencersLoading={influencersLoading}
+        influencers={dialogInfluencers}
+        influencersLoading={dialogInfluencersLoading}
         isProcessing={dialogOrder ? processing === dialogOrder.bling_order_id : false}
         onConfirm={handleConfirm}
         onCancel={handleCancel}
