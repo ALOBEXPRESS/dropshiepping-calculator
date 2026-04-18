@@ -56,6 +56,14 @@ export const FreeSampleLane: React.FC<FreeSampleLaneProps> = ({
     setDialogInfluencersLoading(false);
   };
 
+  const handleInfluencerCreated = (influencer: InfluencerOption) => {
+    setDialogInfluencers((prev) => {
+      // Avoid duplicates
+      if (prev.some((i) => i.id === influencer.id)) return prev;
+      return [...prev, influencer];
+    });
+  };
+
   const handleConfirm = async (influencerId: string | null) => {
     if (!dialogOrder) return;
     setDialogOrder(null);
@@ -71,11 +79,13 @@ export const FreeSampleLane: React.FC<FreeSampleLaneProps> = ({
       <ConfirmFreeSampleDialog
         open={dialogOrder !== null}
         order={dialogOrder}
+        organizationId={organizationId}
         influencers={dialogInfluencers}
         influencersLoading={dialogInfluencersLoading}
         isProcessing={dialogOrder ? processing === dialogOrder.bling_order_id : false}
         onConfirm={handleConfirm}
         onCancel={handleCancel}
+        onInfluencerCreated={handleInfluencerCreated}
       />
 
       <div className="w-full">
