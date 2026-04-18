@@ -211,7 +211,10 @@ export const ConfirmFreeSampleDialog: React.FC<ConfirmFreeSampleDialogProps> = (
                 variant="ghost"
                 size="sm"
                 className="h-7 text-xs text-violet-600 hover:text-violet-700 hover:bg-violet-50 dark:hover:bg-violet-950/30 gap-1"
-                onClick={() => setShowNewForm(true)}
+                onClick={() => {
+                  setForm({ ...EMPTY_FORM, name: order?.customer_name ?? '' });
+                  setShowNewForm(true);
+                }}
                 disabled={isProcessing}
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -283,37 +286,46 @@ export const ConfirmFreeSampleDialog: React.FC<ConfirmFreeSampleDialogProps> = (
                   <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                     <Instagram className="w-3 h-3" /> Instagram
                   </label>
-                  <Input
-                    placeholder="@usuario"
-                    value={form.instagram}
-                    onChange={(e) => setField('instagram', e.target.value)}
-                    disabled={saving}
-                    className="h-8 text-sm"
-                  />
+                  <div className="relative flex items-center">
+                    <span className="absolute left-2.5 text-xs text-muted-foreground select-none">@</span>
+                    <Input
+                      placeholder="usuario"
+                      value={form.instagram}
+                      onChange={(e) => setField('instagram', e.target.value.replace(/^@/, ''))}
+                      disabled={saving}
+                      className="h-8 text-sm pl-6"
+                    />
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                     <AtSign className="w-3 h-3" /> TikTok
                   </label>
-                  <Input
-                    placeholder="@usuario"
-                    value={form.tiktok}
-                    onChange={(e) => setField('tiktok', e.target.value)}
-                    disabled={saving}
-                    className="h-8 text-sm"
-                  />
+                  <div className="relative flex items-center">
+                    <span className="absolute left-2.5 text-xs text-muted-foreground select-none">@</span>
+                    <Input
+                      placeholder="usuario"
+                      value={form.tiktok}
+                      onChange={(e) => setField('tiktok', e.target.value.replace(/^@/, ''))}
+                      disabled={saving}
+                      className="h-8 text-sm pl-6"
+                    />
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                     <AtSign className="w-3 h-3" /> X
                   </label>
-                  <Input
-                    placeholder="@usuario"
-                    value={form.twitter}
-                    onChange={(e) => setField('twitter', e.target.value)}
-                    disabled={saving}
-                    className="h-8 text-sm"
-                  />
+                  <div className="relative flex items-center">
+                    <span className="absolute left-2.5 text-xs text-muted-foreground select-none">@</span>
+                    <Input
+                      placeholder="usuario"
+                      value={form.twitter}
+                      onChange={(e) => setField('twitter', e.target.value.replace(/^@/, ''))}
+                      disabled={saving}
+                      className="h-8 text-sm pl-6"
+                    />
+                  </div>
                 </div>
               </div>
 

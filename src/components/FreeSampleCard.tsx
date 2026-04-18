@@ -198,21 +198,22 @@ export const FreeSampleCard: React.FC<FreeSampleCardProps> = ({
         </div>
       </div>
 
-      {/* Action button — violet accent, no "ENVIAR AMOSTRA GRÁTIS" */}
+      {/* Action button — violet accent */}
       <Button
         onClick={onProcess}
         disabled={isProcessing}
-        className="w-full bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-bold"
+        size="sm"
+        className="w-full bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-semibold text-xs"
       >
         {isProcessing ? (
           <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
             Processando...
           </>
         ) : (
           <>
-            <Gift className="w-4 h-4 mr-2" />
-            PROCESSAR AMOSTRA GRÁTIS
+            <Gift className="w-3.5 h-3.5 mr-1.5" />
+            Amostra Grátis
           </>
         )}
       </Button>
