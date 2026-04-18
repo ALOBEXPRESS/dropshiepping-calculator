@@ -5,6 +5,9 @@ import {
   EnhancedGeographicSales,
   TopCustomersList,
 } from '@/components/sales';
+import { GenderDistributionChart } from '@/components/sales/GenderDistributionChart';
+import { GenderFilterBar, type GenderFilter } from '@/components/sales/GenderFilterBar';
+import { useLeadsWithGender } from '@/hooks/sales/useLeadsWithGender';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import gsap from 'gsap';
@@ -13,6 +16,14 @@ const Leads: React.FC = () => {
   const { organizationId } = useSettings();
   const containerRef = useRef<HTMLDivElement>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [genderFilter, setGenderFilter] = useState<GenderFilter>('all');
+
+  // Fetch leads with gender filter to get the count
+  const { count: filteredLeadsCount } = useLeadsWithGender(
+    organizationId || '',
+    genderFilter,
+    refreshKey
+  );
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -57,6 +68,20 @@ const Leads: React.FC = () => {
         </div>
         <div className="animate-on-load">
           <TopCustomersList organizationId={organizationId} refreshTrigger={refreshKey} />
+        </div>
+      </div>
+
+      {/* Distribuição de Gênero + Filtro */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="lg:col-span-2 animate-on-load">
+          <GenderDistributionChart organizationId={organizationId} refreshTrigger={refreshKey} />
+        </div>
+        <div className="animate-on-load">
+          <GenderFilterBar
+            value={genderFilter}
+            count={filteredLeadsCount}
+            onChange={setGenderFilter}
+          />
         </div>
       </div>
 

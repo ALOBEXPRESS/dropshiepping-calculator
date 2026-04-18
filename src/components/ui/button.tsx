@@ -1,11 +1,9 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
-import type { VariantProps } from "class-variance-authority"
+import { type VariantProps } from "class-variance-authority"
+
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "./button-variants"
-
-// eslint-disable-next-line react-refresh/only-export-components -- re-exporting variant helper alongside component is intentional
-export { buttonVariants } from "./button-variants"
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
@@ -27,4 +25,4 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 )
 Button.displayName = "Button"
 
-export { Button }
+export { Button, buttonVariants }

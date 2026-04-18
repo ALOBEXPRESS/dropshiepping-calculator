@@ -20,3 +20,5 @@ export { MarketplacePerformanceCard } from './MarketplacePerformanceCard';
 export { LowMarginProductsAlert } from './LowMarginProductsAlert';
 export { EnhancedGeographicSales } from './EnhancedGeographicSales';
 export { PaymentTransactions } from './PaymentTransactions';
+export { GenderDistributionChart } from './GenderDistributionChart';
+export { GenderFilterBar } from './GenderFilterBar';

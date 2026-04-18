@@ -1,0 +1,403 @@
+- generic [ref=e2]:
+  - region "Notifications alt+T"
+  - generic [ref=e437]:
+    - complementary [ref=e438]:
+      - generic [ref=e439]:
+        - generic [ref=e440]:
+          - img "Logo" [ref=e441]
+          - button [ref=e442] [cursor=pointer]:
+            - img
+        - list [ref=e443]:
+          - listitem [ref=e444]:
+            - generic [ref=e445] [cursor=pointer]:
+              - img
+              - generic [ref=e446]: Painel
+              - img
+            - list [ref=e447]:
+              - listitem [ref=e448]:
+                - link "Calculadora" [ref=e449] [cursor=pointer]:
+                  - /url: /
+                  - text: Calculadora
+              - listitem [ref=e451]:
+                - link "Produtos" [ref=e452] [cursor=pointer]:
+                  - /url: /produtos
+                  - text: Produtos
+              - listitem [ref=e454]:
+                - link "Vendas" [ref=e455] [cursor=pointer]:
+                  - /url: /vendas
+                  - text: Vendas
+              - listitem [ref=e457]:
+                - link "Leads" [ref=e458] [cursor=pointer]:
+                  - /url: /leads
+                  - text: Leads
+    - generic [ref=e460]:
+      - banner [ref=e461]:
+        - search [ref=e463]:
+          - generic:
+            - img
+          - textbox "Pesquisar produtos" [ref=e464]:
+            - /placeholder: Pesquisar produtos...
+        - generic [ref=e465]:
+          - button [ref=e466] [cursor=pointer]:
+            - img
+          - button [ref=e467] [cursor=pointer]:
+            - img
+          - button "Notificações" [ref=e468] [cursor=pointer]:
+            - img
+          - generic [ref=e469] [cursor=pointer]:
+            - img "@shadcn" [ref=e471]
+            - generic [ref=e472]:
+              - paragraph [ref=e473]: Admin User
+              - paragraph [ref=e474]: Admin
+      - generic [ref=e475]:
+        - generic [ref=e476]:
+          - generic [ref=e477]:
+            - heading "Dashboard de Vendas" [level=1] [ref=e478]
+            - paragraph [ref=e479]: Visão completa do desempenho
+          - generic [ref=e480]:
+            - generic "Tempo real indisponível — usando polling a cada 30s" [ref=e481]:
+              - img
+              - text: Polling
+            - generic [ref=e482]:
+              - combobox [ref=e483] [cursor=pointer]:
+                - generic [ref=e484]:
+                  - img
+                  - generic: Últimos 30 dias
+                - img
+              - generic [ref=e485]:
+                - img
+                - generic [ref=e486]: 19 mar - 18 abr 2026
+            - button "Atualizar dados do dashboard" [ref=e487] [cursor=pointer]:
+              - img
+              - text: Atualizar
+        - search "Filtros de vendas" [ref=e489]:
+          - generic [ref=e490]:
+            - generic [ref=e491]: Data inicial
+            - textbox "Filtrar por data inicial" [ref=e492]
+          - generic [ref=e493]:
+            - generic [ref=e494]: Data final
+            - textbox "Filtrar por data final" [ref=e495]
+          - generic [ref=e496]:
+            - generic [ref=e497]: Marketplace
+            - textbox "Filtrar por marketplace" [ref=e498]:
+              - /placeholder: ID do canal
+        - generic [ref=e501]:
+          - img
+          - paragraph [ref=e502]: Carregando vendas pendentes...
+        - generic [ref=e504]:
+          - generic [ref=e505]:
+            - generic [ref=e506]:
+              - img
+              - heading "Amostras Grátis — Influenciadores" [level=2] [ref=e507]
+            - generic [ref=e508]: 0 pedidos
+          - generic [ref=e510]:
+            - generic [ref=e511]:
+              - img
+            - generic [ref=e512]:
+              - paragraph [ref=e513]: Nenhum pedido na fila de amostras grátis
+              - paragraph [ref=e514]: Arraste um pedido de cima para cá para enviá-lo como amostra grátis.
+        - generic [ref=e515]:
+          - generic [ref=e516]:
+            - region "Indicadores principais de desempenho" [ref=e519]:
+              - 'article "Lucro Total: R$ 0,00" [ref=e520]':
+                - generic [ref=e521]:
+                  - generic:
+                    - img
+                - paragraph [ref=e522]: Lucro Total
+                - paragraph [ref=e523]: R$ 0,00
+                - paragraph [ref=e524]: vs. período anterior
+              - 'article "Pedidos: 0" [ref=e525]':
+                - generic [ref=e526]:
+                  - generic:
+                    - img
+                - paragraph [ref=e527]: Pedidos
+                - paragraph [ref=e528]: "0"
+                - paragraph [ref=e529]: esta semana
+              - 'article "Clientes: 0" [ref=e530]':
+                - generic [ref=e531]:
+                  - generic:
+                    - img
+                - paragraph [ref=e532]: Clientes
+                - paragraph [ref=e533]: "0"
+                - paragraph [ref=e534]: esta semana
+              - 'article "Produtos: 0" [ref=e535]':
+                - generic [ref=e536]:
+                  - generic:
+                    - img
+                - paragraph [ref=e537]: Produtos
+                - paragraph [ref=e538]: "0"
+                - paragraph [ref=e539]: esta semana
+            - generic [ref=e541]:
+              - generic [ref=e542]:
+                - generic [ref=e543]:
+                  - heading "Relatório de Receita" [level=3] [ref=e544]
+                  - generic [ref=e545]:
+                    - generic [ref=e546]:
+                      - paragraph [ref=e547]: Receita
+                      - paragraph [ref=e548]: R$ 22,90
+                    - generic [ref=e549]:
+                      - paragraph [ref=e550]: Custo
+                      - paragraph [ref=e551]: R$ 14,90
+                    - generic [ref=e552]:
+                      - paragraph [ref=e553]: Lucro
+                      - paragraph [ref=e554]: R$ 5,94
+                - combobox [ref=e555] [cursor=pointer]:
+                  - generic: Mensal
+                  - img
+              - generic [ref=e558]:
+                - img "area chart with 2 data series" [ref=e559]:
+                  - generic "Apr" [ref=e576]
+                  - generic [ref=e578]:
+                    - generic "R$ 24,00" [ref=e579]
+                    - generic "R$ 22,00" [ref=e580]
+                    - generic "R$ 20,00" [ref=e581]
+                    - generic "R$ 18,00" [ref=e582]
+                    - generic "R$ 16,00" [ref=e583]
+                    - generic "R$ 14,00" [ref=e584]
+                - generic [ref=e585]:
+                  - button "Receita, visible. Press Enter or Space to toggle." [ref=e586] [cursor=pointer]:
+                    - generic [ref=e587]:
+                      - img
+                    - generic [ref=e588]: Receita
+                  - button "Custo, visible. Press Enter or Space to toggle." [ref=e589] [cursor=pointer]:
+                    - generic [ref=e590]:
+                      - img
+                    - generic [ref=e591]: Custo
+                - tooltip: ● ●
+          - generic [ref=e594]:
+            - img
+        - generic [ref=e595]:
+          - generic [ref=e597]:
+            - generic [ref=e598]:
+              - tablist [ref=e599]:
+                - tab "Produtos Mais Vendidos" [selected] [ref=e600] [cursor=pointer]:
+                  - img
+                  - generic [ref=e601]: Produtos Mais Vendidos
+                - tab "Pedidos Recentes" [ref=e602] [cursor=pointer]:
+                  - img
+                  - generic [ref=e603]: Pedidos Recentes
+                - tab "Distribuição" [ref=e604] [cursor=pointer]:
+                  - img
+                  - generic [ref=e605]: Distribuição
+                - tab "Transações" [ref=e606] [cursor=pointer]:
+                  - img
+                  - generic [ref=e607]: Transações
+              - button "Ver Todos" [ref=e608] [cursor=pointer]:
+                - text: Ver Todos
+                - img
+            - tabpanel "Produtos Mais Vendidos" [ref=e609]:
+              - generic [ref=e610]:
+                - generic [ref=e611]:
+                  - generic [ref=e612]:
+                    - generic [ref=e613]:
+                      - img
+                    - generic [ref=e614]:
+                      - heading "Produtos Mais Vendidos" [level=3] [ref=e615]
+                      - paragraph [ref=e616]: 0 unidades vendidas no total
+                  - button "Ver Todos" [ref=e617] [cursor=pointer]
+                - table [ref=e619]:
+                  - rowgroup [ref=e620]:
+                    - row "Ranking Produto Preço Vendidos Pedidos Receita" [ref=e621]:
+                      - columnheader "Ranking" [ref=e622]
+                      - columnheader "Produto" [ref=e623]
+                      - columnheader "Preço" [ref=e624]
+                      - columnheader "Vendidos" [ref=e625]
+                      - columnheader "Pedidos" [ref=e626]
+                      - columnheader "Receita" [ref=e627]
+                  - rowgroup [ref=e628]:
+                    - row "1 Camisa Feminina Baby Cherry Vibes Camisa Feminina Baby Cherry Vibes R$ 61,90 0 0 R$ 0,00" [ref=e629]:
+                      - cell "1" [ref=e630]:
+                        - generic [ref=e631]: "1"
+                      - cell "Camisa Feminina Baby Cherry Vibes Camisa Feminina Baby Cherry Vibes" [ref=e632]:
+                        - generic [ref=e633]:
+                          - img "Camisa Feminina Baby Cherry Vibes" [ref=e635]
+                          - paragraph [ref=e637]: Camisa Feminina Baby Cherry Vibes
+                      - cell "R$ 61,90" [ref=e638]:
+                        - paragraph [ref=e639]: R$ 61,90
+                      - cell "0" [ref=e640]:
+                        - paragraph [ref=e642]: "0"
+                      - cell "0" [ref=e643]:
+                        - generic [ref=e644]: "0"
+                      - cell "R$ 0,00" [ref=e645]:
+                        - paragraph [ref=e646]: R$ 0,00
+                    - row "2 Blusa Moletom Baralho Blusa Moletom Baralho R$ 99,90 0 0 R$ 0,00" [ref=e647]:
+                      - cell "2" [ref=e648]:
+                        - generic [ref=e649]: "2"
+                      - cell "Blusa Moletom Baralho Blusa Moletom Baralho" [ref=e650]:
+                        - generic [ref=e651]:
+                          - img "Blusa Moletom Baralho" [ref=e653]
+                          - paragraph [ref=e655]: Blusa Moletom Baralho
+                      - cell "R$ 99,90" [ref=e656]:
+                        - paragraph [ref=e657]: R$ 99,90
+                      - cell "0" [ref=e658]:
+                        - paragraph [ref=e660]: "0"
+                      - cell "0" [ref=e661]:
+                        - generic [ref=e662]: "0"
+                      - cell "R$ 0,00" [ref=e663]:
+                        - paragraph [ref=e664]: R$ 0,00
+                    - row "3 Headset Gamer com Microfone P2 Homologado Anatel para PC Notebook e Smartphone Headset Gamer com Microfone P2 Homologado Anatel para PC Notebook e Smartphone R$ 72,80 0 0 R$ 0,00" [ref=e665]:
+                      - cell "3" [ref=e666]:
+                        - generic [ref=e667]: "3"
+                      - cell "Headset Gamer com Microfone P2 Homologado Anatel para PC Notebook e Smartphone Headset Gamer com Microfone P2 Homologado Anatel para PC Notebook e Smartphone" [ref=e668]:
+                        - generic [ref=e669]:
+                          - img "Headset Gamer com Microfone P2 Homologado Anatel para PC Notebook e Smartphone" [ref=e671]
+                          - paragraph [ref=e673]: Headset Gamer com Microfone P2 Homologado Anatel para PC Notebook e Smartphone
+                      - cell "R$ 72,80" [ref=e674]:
+                        - paragraph [ref=e675]: R$ 72,80
+                      - cell "0" [ref=e676]:
+                        - paragraph [ref=e678]: "0"
+                      - cell "0" [ref=e679]:
+                        - generic [ref=e680]: "0"
+                      - cell "R$ 0,00" [ref=e681]:
+                        - paragraph [ref=e682]: R$ 0,00
+                    - row "4 Kit Garrafa Térmica Urso com Xícaras Kit Garrafa Térmica Urso com Xícaras R$ 54,90 0 0 R$ 0,00" [ref=e683]:
+                      - cell "4" [ref=e684]:
+                        - generic [ref=e685]: "4"
+                      - cell "Kit Garrafa Térmica Urso com Xícaras Kit Garrafa Térmica Urso com Xícaras" [ref=e686]:
+                        - generic [ref=e687]:
+                          - img "Kit Garrafa Térmica Urso com Xícaras" [ref=e689]
+                          - paragraph [ref=e691]: Kit Garrafa Térmica Urso com Xícaras
+                      - cell "R$ 54,90" [ref=e692]:
+                        - paragraph [ref=e693]: R$ 54,90
+                      - cell "0" [ref=e694]:
+                        - paragraph [ref=e696]: "0"
+                      - cell "0" [ref=e697]:
+                        - generic [ref=e698]: "0"
+                      - cell "R$ 0,00" [ref=e699]:
+                        - paragraph [ref=e700]: R$ 0,00
+                    - row "5 Camisa Feminina Baby Look Lindinha Camisa Feminina Baby Look Lindinha R$ 55,90 0 0 R$ 0,00" [ref=e701]:
+                      - cell "5" [ref=e702]:
+                        - generic [ref=e703]: "5"
+                      - cell "Camisa Feminina Baby Look Lindinha Camisa Feminina Baby Look Lindinha" [ref=e704]:
+                        - generic [ref=e705]:
+                          - img "Camisa Feminina Baby Look Lindinha" [ref=e707]
+                          - paragraph [ref=e709]: Camisa Feminina Baby Look Lindinha
+                      - cell "R$ 55,90" [ref=e710]:
+                        - paragraph [ref=e711]: R$ 55,90
+                      - cell "0" [ref=e712]:
+                        - paragraph [ref=e714]: "0"
+                      - cell "0" [ref=e715]:
+                        - generic [ref=e716]: "0"
+                      - cell "R$ 0,00" [ref=e717]:
+                        - paragraph [ref=e718]: R$ 0,00
+                    - row "6 Cabo Carregador Tipo C V8 Cabo De Dados Micro Usb Cabo Carregador Tipo C V8 Cabo De Dados Micro Usb R$ 18,99 0 0 R$ 0,00" [ref=e719]:
+                      - cell "6" [ref=e720]:
+                        - generic [ref=e721]: "6"
+                      - cell "Cabo Carregador Tipo C V8 Cabo De Dados Micro Usb Cabo Carregador Tipo C V8 Cabo De Dados Micro Usb" [ref=e722]:
+                        - generic [ref=e723]:
+                          - img "Cabo Carregador Tipo C V8 Cabo De Dados Micro Usb" [ref=e725]
+                          - paragraph [ref=e727]: Cabo Carregador Tipo C V8 Cabo De Dados Micro Usb
+                      - cell "R$ 18,99" [ref=e728]:
+                        - paragraph [ref=e729]: R$ 18,99
+                      - cell "0" [ref=e730]:
+                        - paragraph [ref=e732]: "0"
+                      - cell "0" [ref=e733]:
+                        - generic [ref=e734]: "0"
+                      - cell "R$ 0,00" [ref=e735]:
+                        - paragraph [ref=e736]: R$ 0,00
+                - generic [ref=e737]:
+                  - paragraph [ref=e738]: Página 1 de 10
+                  - generic [ref=e739]:
+                    - button "Anterior" [disabled]:
+                      - img
+                      - text: Anterior
+                    - button "Próxima" [ref=e740] [cursor=pointer]:
+                      - text: Próxima
+                      - img
+          - generic [ref=e742]:
+            - generic [ref=e743]:
+              - heading "Transações" [level=3] [ref=e744]
+              - combobox [ref=e745] [cursor=pointer]:
+                - generic: Este Mês
+                - img
+            - generic [ref=e746]:
+              - img
+        - generic [ref=e747]:
+          - generic [ref=e749]:
+            - generic [ref=e751]: Produtos com Margem Baixa
+            - paragraph [ref=e754]: Carregando...
+          - generic [ref=e756]:
+            - generic [ref=e757]:
+              - heading "Relatório de Estoque" [level=3] [ref=e758]
+              - generic [ref=e759]: Página 1 de 45
+            - generic [ref=e760]:
+              - generic [ref=e761]:
+                - generic [ref=e762]:
+                  - img "Garrafa Coelho Fofa 680ml com Canudo para Crianças Escola e Passeios" [ref=e764]
+                  - generic [ref=e765]:
+                    - paragraph [ref=e766]: Garrafa Coelho Fofa 680ml com Canudo para Crianças Escola e Passeios
+                    - paragraph [ref=e767]: R$ 44,20
+                  - generic [ref=e768]:
+                    - img
+                    - text: Disponível
+                - generic [ref=e770]:
+                  - generic [ref=e771]: 402 un.
+                  - generic [ref=e772]: 100%
+              - generic [ref=e775]:
+                - generic [ref=e776]:
+                  - img "Umidificador de Mesa Cápsula Espacial para Quarto Escritório e Home Office LED" [ref=e778]
+                  - generic [ref=e779]:
+                    - paragraph [ref=e780]: Umidificador de Mesa Cápsula Espacial para Quarto Escritório e Home Office LED
+                    - paragraph [ref=e781]: R$ 69,90
+                  - generic [ref=e782]:
+                    - img
+                    - text: Disponível
+                - generic [ref=e784]:
+                  - generic [ref=e785]: 297 un.
+                  - generic [ref=e786]: 100%
+              - generic [ref=e789]:
+                - generic [ref=e790]:
+                  - img "Mini Aparador de Pelos Elétrico USB Compacto para Rosto e Acabamento Preciso" [ref=e792]
+                  - generic [ref=e793]:
+                    - paragraph [ref=e794]: Mini Aparador de Pelos Elétrico USB Compacto para Rosto e Acabamento Preciso
+                    - paragraph [ref=e795]: R$ 37,00
+                  - generic [ref=e796]:
+                    - img
+                    - text: Disponível
+                - generic [ref=e798]:
+                  - generic [ref=e799]: 292 un.
+                  - generic [ref=e800]: 100%
+              - generic [ref=e803]:
+                - generic [ref=e804]:
+                  - img "Carregador MagSafe Portátil iPhone 12 13 14 Sem Fio Rápido e Compacto" [ref=e806]
+                  - generic [ref=e807]:
+                    - paragraph [ref=e808]: Carregador MagSafe Portátil iPhone 12 13 14 Sem Fio Rápido e Compacto
+                    - paragraph [ref=e809]: R$ 50,00
+                  - generic [ref=e810]:
+                    - img
+                    - text: Disponível
+                - generic [ref=e812]:
+                  - generic [ref=e813]: 289 un.
+                  - generic [ref=e814]: 100%
+              - generic [ref=e817]:
+                - generic [ref=e818]:
+                  - img "Jogo de Facas Colorido 6 Peças para Cozinha Gourmet Presente Criativo e Funcional" [ref=e820]
+                  - generic [ref=e821]:
+                    - paragraph [ref=e822]: Jogo de Facas Colorido 6 Peças para Cozinha Gourmet Presente Criativo e Funcional
+                    - paragraph [ref=e823]: R$ 41,30
+                  - generic [ref=e824]:
+                    - img
+                    - text: Disponível
+                - generic [ref=e826]:
+                  - generic [ref=e827]: 289 un.
+                  - generic [ref=e828]: 100%
+              - generic [ref=e831]:
+                - generic [ref=e832]:
+                  - img "Fone Sem Fio M10 Bluetooth 5.1 para Esporte À Prova D'água IPX7 com Controle Touch" [ref=e834]
+                  - generic [ref=e835]:
+                    - paragraph [ref=e836]: Fone Sem Fio M10 Bluetooth 5.1 para Esporte À Prova D'água IPX7 com Controle Touch
+                    - paragraph [ref=e837]: R$ 44,20
+                  - generic [ref=e838]:
+                    - img
+                    - text: Disponível
+                - generic [ref=e840]:
+                  - generic [ref=e841]: 287 un.
+                  - generic [ref=e842]: 100%
+            - generic [ref=e845]:
+              - button "Anterior" [disabled]:
+                - img
+                - text: Anterior
+              - generic [ref=e846]: 1-6 de 270
+              - button "Próxima" [ref=e847] [cursor=pointer]:
+                - text: Próxima
+                - img
