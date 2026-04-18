@@ -12,12 +12,16 @@ interface FreeSampleLaneProps {
   orders: PendingOrder[];
   organizationId: string;
   onOrderProcessed: (blingOrderId: string) => void;
+  onDropOrder?: (order: PendingOrder) => void;
+  onReturnOrder?: (order: PendingOrder) => void;
 }
 
 export const FreeSampleLane: React.FC<FreeSampleLaneProps> = ({
   orders,
   organizationId,
   onOrderProcessed,
+  onDropOrder,
+  onReturnOrder,
 }) => {
   const { processing, processFreeSample, getInfluencersForMarketplace } =
     useFreeSampleLane(organizationId, onOrderProcessed);
@@ -25,6 +29,7 @@ export const FreeSampleLane: React.FC<FreeSampleLaneProps> = ({
   const [dialogOrder, setDialogOrder] = useState<PendingOrder | null>(null);
   const [dialogInfluencers, setDialogInfluencers] = useState<InfluencerOption[]>([]);
   const [dialogInfluencersLoading, setDialogInfluencersLoading] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
@@ -58,7 +63,6 @@ export const FreeSampleLane: React.FC<FreeSampleLaneProps> = ({
 
   const handleInfluencerCreated = (influencer: InfluencerOption) => {
     setDialogInfluencers((prev) => {
-      // Avoid duplicates
       if (prev.some((i) => i.id === influencer.id)) return prev;
       return [...prev, influencer];
     });
@@ -72,6 +76,33 @@ export const FreeSampleLane: React.FC<FreeSampleLaneProps> = ({
 
   const handleCancel = () => {
     setDialogOrder(null);
+  };
+
+  // Drag-and-drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Only clear if leaving the drop zone entirely (not entering a child)
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragOver(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    try {
+      const order = JSON.parse(e.dataTransfer.getData('application/json')) as PendingOrder;
+      if (order && onDropOrder) {
+        onDropOrder(order);
+      }
+    } catch {
+      // Invalid drag data — ignore
+    }
   };
 
   return (
@@ -88,7 +119,16 @@ export const FreeSampleLane: React.FC<FreeSampleLaneProps> = ({
         onInfluencerCreated={handleInfluencerCreated}
       />
 
-      <div className="w-full">
+      <div
+        className={`w-full rounded-xl transition-colors duration-200 ${
+          isDragOver
+            ? 'ring-2 ring-violet-400 ring-offset-2 bg-violet-50/50 dark:bg-violet-950/20'
+            : ''
+        }`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
         {/* Section header */}
         <div className="flex items-center gap-3 mb-4">
           <div className="flex items-center gap-2">
@@ -103,21 +143,42 @@ export const FreeSampleLane: React.FC<FreeSampleLaneProps> = ({
           >
             {orders.length} {orders.length === 1 ? 'pedido' : 'pedidos'}
           </Badge>
+          {isDragOver && (
+            <span className="text-xs text-violet-500 dark:text-violet-400 animate-pulse font-medium">
+              Solte aqui para adicionar como amostra grátis
+            </span>
+          )}
         </div>
 
         {/* Empty state */}
         {orders.length === 0 ? (
-          <Card className="p-8 border-dashed border-violet-200 dark:border-violet-900/50 bg-violet-50/30 dark:bg-violet-950/10">
+          <Card
+            className={`p-8 border-dashed transition-colors duration-200 ${
+              isDragOver
+                ? 'border-violet-400 bg-violet-100/50 dark:bg-violet-900/20'
+                : 'border-violet-200 dark:border-violet-900/50 bg-violet-50/30 dark:bg-violet-950/10'
+            }`}
+          >
             <div className="flex flex-col items-center justify-center gap-3 text-center">
-              <div className="w-12 h-12 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-                <Package className="w-6 h-6 text-violet-400" />
+              <div
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors duration-200 ${
+                  isDragOver
+                    ? 'bg-violet-200 dark:bg-violet-800/50'
+                    : 'bg-violet-100 dark:bg-violet-900/30'
+                }`}
+              >
+                <Package className={`w-6 h-6 ${isDragOver ? 'text-violet-600' : 'text-violet-400'}`} />
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Nenhum pedido na fila de amostras grátis
+                  {isDragOver
+                    ? 'Solte o pedido aqui!'
+                    : 'Nenhum pedido na fila de amostras grátis'}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Clique em "ENVIAR AMOSTRA GRÁTIS" em um pedido acima para movê-lo para cá.
+                  {isDragOver
+                    ? 'O pedido será movido para a fila de amostras grátis.'
+                    : 'Arraste um pedido de cima para cá para enviá-lo como amostra grátis.'}
                 </p>
               </div>
             </div>
@@ -149,6 +210,7 @@ export const FreeSampleLane: React.FC<FreeSampleLaneProps> = ({
                   order={order}
                   onProcess={() => handleProcess(order)}
                   isProcessing={processing === order.bling_order_id}
+                  onReturnToPending={onReturnOrder ? () => onReturnOrder(order) : undefined}
                 />
               ))}
             </div>

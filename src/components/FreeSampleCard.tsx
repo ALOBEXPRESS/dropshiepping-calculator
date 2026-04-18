@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Package, Gift } from 'lucide-react';
+import { Loader2, Package, Gift, GripVertical } from 'lucide-react';
 import type { PendingOrder } from '@/types/pendingOrder';
 
 // Marketplace icons (same as PendingOrders)
@@ -45,6 +45,7 @@ interface FreeSampleCardProps {
   order: PendingOrder;
   onProcess: () => void;
   isProcessing: boolean;
+  onReturnToPending?: () => void;
 }
 
 export const FreeSampleCard: React.FC<FreeSampleCardProps> = ({
@@ -55,7 +56,48 @@ export const FreeSampleCard: React.FC<FreeSampleCardProps> = ({
   const icon = getMarketplaceIcon(order.marketplace_name);
 
   return (
-    <Card className="flex-shrink-0 w-64 p-4 flex flex-col border-violet-200 dark:border-violet-900/50 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+    <Card
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData('application/json', JSON.stringify(order));
+        e.dataTransfer.setData('text/source', 'freesample');
+        e.dataTransfer.effectAllowed = 'move';
+
+        // Custom drag image — violet pill
+        const ghost = document.createElement('div');
+        ghost.style.cssText = `
+          position: fixed; top: -9999px; left: -9999px;
+          background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+          color: white; font-size: 12px; font-weight: 700;
+          padding: 8px 14px; border-radius: 999px;
+          box-shadow: 0 4px 16px rgba(139,92,246,0.4);
+          white-space: nowrap; pointer-events: none;
+          display: flex; align-items: center; gap: 6px;
+        `;
+        ghost.textContent = `🎁 Pedido #${order.order_number}`;
+        document.body.appendChild(ghost);
+        e.dataTransfer.setDragImage(ghost, ghost.offsetWidth / 2, 20);
+        setTimeout(() => document.body.removeChild(ghost), 0);
+
+        const card = e.currentTarget as HTMLElement;
+        card.style.opacity = '0.4';
+        card.style.transform = 'scale(0.97)';
+        card.style.transition = 'opacity 150ms, transform 150ms';
+      }}
+      onDragEnd={(e) => {
+        const card = e.currentTarget as HTMLElement;
+        card.style.opacity = '1';
+        card.style.transform = 'scale(1)';
+      }}
+      className="flex-shrink-0 w-64 p-4 flex flex-col border-violet-200 dark:border-violet-900/50 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-grab active:cursor-grabbing select-none"
+    >
+      {/* Drag handle hint */}
+      <div className="flex items-center justify-between mb-2 -mt-1">
+        <div className="flex items-center gap-1 text-[10px] text-violet-400 dark:text-violet-500 font-medium">
+          <GripVertical className="w-3 h-3" />
+          <span>Arraste para devolver</span>
+        </div>
+      </div>
       {/* Product image area — reduced height */}
       <div className="relative w-full h-32 rounded-lg overflow-hidden bg-gray-100 dark:bg-zinc-800 mb-3">
         {order.first_product_image ? (

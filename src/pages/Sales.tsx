@@ -105,6 +105,19 @@ const Sales: React.FC = () => {
     [handleOrderProcessed]
   );
 
+  // Return a free sample order back to the pending lane
+  const handleReturnToPending = useCallback((order: PendingOrder) => {
+    setFreeSampleOrders((prev) => {
+      const next = prev.filter((o) => o.bling_order_id !== order.bling_order_id);
+      try {
+        sessionStorage.setItem('freeSampleOrders', JSON.stringify(next));
+      } catch {
+        // sessionStorage unavailable
+      }
+      return next;
+    });
+  }, []);
+
   const handleRefresh = useCallback(() => {
     setRefreshKey(Date.now());
   }, []);
@@ -177,6 +190,7 @@ const Sales: React.FC = () => {
         <PendingOrders
           onOrderProcessed={handleOrderProcessed}
           onMoveToFreeSample={handleMoveToFreeSample}
+          onReturnFromFreeSample={handleReturnToPending}
         />
       </div>
 
@@ -187,6 +201,8 @@ const Sales: React.FC = () => {
             orders={freeSampleOrders}
             organizationId={organizationId}
             onOrderProcessed={handleFreeSampleProcessed}
+            onDropOrder={handleMoveToFreeSample}
+            onReturnOrder={handleReturnToPending}
           />
         </div>
       )}

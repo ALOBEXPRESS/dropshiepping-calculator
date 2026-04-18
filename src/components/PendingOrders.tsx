@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useSettings } from '@/contexts/SettingsContext';
-import { Loader2, CheckCircle, AlertCircle, Package, ChevronLeft, ChevronRight, Trash2, Gift } from 'lucide-react';
+import { Loader2, CheckCircle, AlertCircle, Package, ChevronLeft, ChevronRight, Trash2, GripVertical } from 'lucide-react';
 import { ProcessOrderModal } from './ProcessOrderModal';
 import type { PendingOrder } from '@/types/pendingOrder';
 
@@ -44,9 +44,10 @@ interface ProcessResult {
 interface PendingOrdersProps {
   onOrderProcessed?: () => void;
   onMoveToFreeSample?: (order: PendingOrder) => void;
+  onReturnFromFreeSample?: (order: PendingOrder) => void;
 }
 
-export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, onMoveToFreeSample }) => {
+export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, onReturnFromFreeSample }) => {
   const { organizationId } = useSettings();
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +59,7 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   useEffect(() => {
     if (organizationId) {
@@ -302,7 +304,46 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
       )}
 
       {/* Container do carrossel com setas */}
-      <div className="relative">
+      <div
+        className={`relative rounded-xl transition-colors duration-200 ${
+          isDragOver
+            ? 'ring-2 ring-green-400 ring-offset-2 bg-green-50/30 dark:bg-green-950/10'
+            : ''
+        }`}
+        onDragOver={(e) => {
+          // Only accept drops from the free sample lane
+          if (e.dataTransfer.types.includes('text/source') || e.dataTransfer.types.includes('application/json')) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            setIsDragOver(true);
+          }
+        }}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+            setIsDragOver(false);
+          }
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          setIsDragOver(false);
+          const source = e.dataTransfer.getData('text/source');
+          // Only accept drops from free sample lane
+          if (source !== 'freesample') return;
+          try {
+            const order = JSON.parse(e.dataTransfer.getData('application/json')) as PendingOrder;
+            if (order && onReturnFromFreeSample) {
+              onReturnFromFreeSample(order);
+              // Add back to local state (optimistic)
+              setPendingOrders((prev) => {
+                if (prev.some((o) => o.bling_order_id === order.bling_order_id)) return prev;
+                return [order, ...prev];
+              });
+            }
+          } catch {
+            // Invalid drag data
+          }
+        }}
+      >
         {/* Seta Esquerda */}
         {showLeftArrow && (
           <button
@@ -327,8 +368,52 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
         {pendingOrders.map((order) => (
           <Card
             key={order.bling_order_id}
-            className="flex-shrink-0 w-[380px] p-4 hover:shadow-lg transition-shadow duration-200"
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.setData('application/json', JSON.stringify(order));
+              e.dataTransfer.setData('text/source', 'pending');
+              e.dataTransfer.effectAllowed = 'move';
+
+              // Custom drag image — small pill instead of the full card
+              const ghost = document.createElement('div');
+              ghost.style.cssText = `
+                position: fixed; top: -9999px; left: -9999px;
+                background: linear-gradient(135deg, #22c55e, #16a34a);
+                color: white; font-size: 12px; font-weight: 700;
+                padding: 8px 14px; border-radius: 999px;
+                box-shadow: 0 4px 16px rgba(34,197,94,0.4);
+                white-space: nowrap; pointer-events: none;
+                display: flex; align-items: center; gap: 6px;
+              `;
+              ghost.textContent = `📦 Pedido #${order.order_number}`;
+              document.body.appendChild(ghost);
+              e.dataTransfer.setDragImage(ghost, ghost.offsetWidth / 2, 20);
+              setTimeout(() => document.body.removeChild(ghost), 0);
+
+              // Visual state on the card
+              const card = e.currentTarget as HTMLElement;
+              card.style.opacity = '0.4';
+              card.style.transform = 'scale(0.97)';
+              card.style.transition = 'opacity 150ms, transform 150ms';
+            }}
+            onDragEnd={(e) => {
+              const card = e.currentTarget as HTMLElement;
+              card.style.opacity = '1';
+              card.style.transform = 'scale(1)';
+              // Se o drop foi aceito pela drop zone, remove o card da lista
+              if (e.dataTransfer.dropEffect === 'move') {
+                setPendingOrders((prev) =>
+                  prev.filter((o) => o.bling_order_id !== order.bling_order_id)
+                );
+              }
+            }}
+            className="flex-shrink-0 w-[380px] p-4 hover:shadow-lg transition-shadow duration-200 cursor-grab active:cursor-grabbing select-none"
           >
+            {/* Drag hint */}
+            <div className="flex items-center gap-1 mb-2 -mt-1 text-[10px] text-gray-400 dark:text-gray-600 font-medium">
+              <GripVertical className="w-3 h-3" />
+              <span>Arraste para Amostras Grátis</span>
+            </div>
             {/* Imagem do Produto — altura reduzida */}
             <div className="relative w-full h-32 mb-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-zinc-900 dark:to-zinc-800 rounded-xl overflow-hidden shadow-sm">
               {order.first_product_image ? (
@@ -392,9 +477,16 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
                 <span className="text-sm font-semibold text-gray-900 dark:text-white">
                   Pedido #{order.order_number}
                 </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {formatDate(order.order_date)}
-                </span>
+                <div className="text-right">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 block">
+                    {formatDate(order.order_date)}
+                  </span>
+                  {order.order_created_at && (
+                    <span className="text-[10px] text-gray-400 dark:text-gray-600 block">
+                      {new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date(order.order_created_at))}
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -450,23 +542,6 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
                   'PROCESSAR LUCRO'
                 )}
               </Button>
-              {onMoveToFreeSample && (
-                <Button
-                  onClick={() => {
-                    onMoveToFreeSample(order);
-                    setPendingOrders((prev) =>
-                      prev.filter((o) => o.bling_order_id !== order.bling_order_id)
-                    );
-                  }}
-                  disabled={processing === order.bling_order_id || deleting === order.bling_order_id}
-                  variant="outline"
-                  className="border-violet-300 text-violet-600 hover:bg-violet-50 hover:border-violet-400 dark:border-violet-800 dark:text-violet-400 dark:hover:bg-violet-950/30 text-xs px-2"
-                  title="Enviar como amostra grátis para influenciador"
-                >
-                  <Gift className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
-                  <span className="hidden sm:inline">AMOSTRA</span>
-                </Button>
-              )}
               <Button
                 onClick={() => deleteOrder(order.bling_order_id, order.order_number)}
                 disabled={processing === order.bling_order_id || deleting === order.bling_order_id}
