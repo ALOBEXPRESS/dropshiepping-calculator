@@ -22,3 +22,4 @@ export { EnhancedGeographicSales } from './EnhancedGeographicSales';
 export { PaymentTransactions } from './PaymentTransactions';
 export { GenderDistributionChart } from './GenderDistributionChart';
 export { GenderFilterBar } from './GenderFilterBar';
+export { GenderClassificationJobButton } from './GenderClassificationJobButton';
