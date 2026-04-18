@@ -51,10 +51,10 @@ export const useLeadConversionFunnel = (organizationId: string, refreshTrigger?:
         const totalLeads = leads.length;
 
         // Classificar cada lead segundo as regras de negócio:
-        // - Novo Lead:    total_orders = 0 (nunca comprou)
-        // - Recorrente:   total_orders > 1 E processed_count = 0 (comprou mais de uma vez, nenhuma processada)
-        // - Convertido:   processed_count = 1 (exatamente 1 "Processar Lucro")
-        // - Qualificado:  processed_count > 1 (mais de 1 "Processar Lucro")
+        // - Novo Lead:    processed_count = 0 (nunca teve lucro processado)
+        // - Recorrente:   total_orders > 2 E processed_count = 0 (mais de 2 pedidos, nenhum processado)
+        // - Convertido:   processed_count >= 1 (teve lucro processado)
+        // - Qualificado:  processed_count > 1 (teve lucro processado mais de uma vez)
         let novos = 0;
         let recorrentes = 0;
         let convertidos = 0;
@@ -65,14 +65,16 @@ export const useLeadConversionFunnel = (organizationId: string, refreshTrigger?:
           const blingOrders = Number(lead.total_orders) || 0;
 
           if (processedCount > 1) {
+            // Teve lucro processado mais de uma vez
             qualificados++;
           } else if (processedCount === 1) {
+            // Teve lucro processado exatamente uma vez
             convertidos++;
-          } else if (blingOrders > 1) {
-            // Comprou mais de uma vez no Bling mas nenhuma foi processada
+          } else if (blingOrders > 2) {
+            // Mais de 2 pedidos no Bling mas nenhum processado
             recorrentes++;
           } else {
-            // total_orders = 0 ou 1 sem processamento = novo lead
+            // Nenhum lucro processado (pode ter 0, 1 ou 2 pedidos no Bling)
             novos++;
           }
         }

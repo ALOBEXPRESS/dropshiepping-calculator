@@ -8,6 +8,7 @@ import {
 import { GenderDistributionChart } from '@/components/sales/GenderDistributionChart';
 import { GenderFilterBar, type GenderFilter } from '@/components/sales/GenderFilterBar';
 import { GenderClassificationJobButton } from '@/components/sales/GenderClassificationJobButton';
+import { GenderLeadsList } from '@/components/sales/GenderLeadsList';
 import { useLeadsWithGender } from '@/hooks/sales/useLeadsWithGender';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
@@ -72,7 +73,7 @@ const Leads: React.FC = () => {
         </div>
       </div>
 
-      {/* Distribuição de Gênero + Filtro + Botão de Classificação */}
+      {/* Distribuição de Gênero + Filtro + Botão de Classificação + Lista de Leads */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-2 animate-on-load">
           <GenderDistributionChart organizationId={organizationId} refreshTrigger={refreshKey} />
@@ -86,6 +87,11 @@ const Leads: React.FC = () => {
             value={genderFilter}
             count={filteredLeadsCount}
             onChange={setGenderFilter}
+          />
+          <GenderLeadsList
+            organizationId={organizationId}
+            genderFilter={genderFilter}
+            refreshTrigger={refreshKey}
           />
         </div>
       </div>
