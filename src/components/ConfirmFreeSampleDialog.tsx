@@ -48,7 +48,7 @@ export const ConfirmFreeSampleDialog: React.FC<ConfirmFreeSampleDialogProps> = (
   const [selectedInfluencerId, setSelectedInfluencerId] = useState<string>('');
 
   const handleConfirm = () => {
-    onConfirm(selectedInfluencerId || null);
+    onConfirm(selectedInfluencerId === '__none__' || selectedInfluencerId === '' ? null : selectedInfluencerId);
   };
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -117,7 +117,7 @@ export const ConfirmFreeSampleDialog: React.FC<ConfirmFreeSampleDialogProps> = (
               <SelectValue placeholder={influencersLoading ? 'Carregando...' : 'Sem influenciador'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Sem influenciador</SelectItem>
+              <SelectItem value="__none__">Sem influenciador</SelectItem>
               {influencers.map((inf) => (
                 <SelectItem key={inf.id} value={inf.id}>
                   <span className="font-medium">{inf.name}</span>
