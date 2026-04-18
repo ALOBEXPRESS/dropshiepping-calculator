@@ -11,6 +11,7 @@ import {
 } from '@/components/sales';
 import { RealtimeStatusBadge } from '@/components/sales/RealtimeStatusBadge';
 import { PendingOrders } from '@/components/PendingOrders';
+import { FreeSampleLane } from '@/components/FreeSampleLane';
 import { useHeroStats } from '@/hooks/sales/useHeroStats';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import { useFilterPersistence } from '@/hooks/useFilterPersistence';
@@ -19,12 +20,23 @@ import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { RefreshCw } from 'lucide-react';
 import gsap from 'gsap';
+import type { PendingOrder } from '@/types/pendingOrder';
 
 const Sales: React.FC = () => {
   const { organizationId, loading, settingsError, retrySettings } = useSettings();
   const containerRef = useRef<HTMLDivElement>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const { stats } = useHeroStats(organizationId || '', refreshKey);
+
+  // Free sample lane state — rehydrated from sessionStorage
+  const [freeSampleOrders, setFreeSampleOrders] = useState<PendingOrder[]>(() => {
+    try {
+      const stored = sessionStorage.getItem('freeSampleOrders');
+      return stored ? (JSON.parse(stored) as PendingOrder[]) : [];
+    } catch {
+      return [];
+    }
+  });
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -60,6 +72,38 @@ const Sales: React.FC = () => {
     console.log('🔄 Novo refreshKey:', newKey);
     setRefreshKey(newKey);
   }, []);
+
+  // Move a pending order to the free sample lane
+  const handleMoveToFreeSample = useCallback((order: PendingOrder) => {
+    setFreeSampleOrders((prev) => {
+      // Deduplicate by bling_order_id
+      if (prev.some((o) => o.bling_order_id === order.bling_order_id)) return prev;
+      const next = [...prev, order];
+      try {
+        sessionStorage.setItem('freeSampleOrders', JSON.stringify(next));
+      } catch {
+        // sessionStorage unavailable (private mode) — state lives in memory only
+      }
+      return next;
+    });
+  }, []);
+
+  // Called when a free sample order is processed — remove from lane and refresh dashboard
+  const handleFreeSampleProcessed = useCallback(
+    (blingOrderId: string) => {
+      setFreeSampleOrders((prev) => {
+        const next = prev.filter((o) => o.bling_order_id !== blingOrderId);
+        try {
+          sessionStorage.setItem('freeSampleOrders', JSON.stringify(next));
+        } catch {
+          // sessionStorage unavailable
+        }
+        return next;
+      });
+      handleOrderProcessed();
+    },
+    [handleOrderProcessed]
+  );
 
   const handleRefresh = useCallback(() => {
     setRefreshKey(Date.now());
@@ -129,9 +173,23 @@ const Sales: React.FC = () => {
       </div>
 
       {/* Vendas a Processar - Topo */}
-      <div className="mb-6 animate-on-load">
-        <PendingOrders onOrderProcessed={handleOrderProcessed} />
+      <div className="mb-4 animate-on-load">
+        <PendingOrders
+          onOrderProcessed={handleOrderProcessed}
+          onMoveToFreeSample={handleMoveToFreeSample}
+        />
       </div>
+
+      {/* Amostras Grátis — Influenciadores */}
+      {organizationId && (
+        <div className="mb-6 animate-on-load">
+          <FreeSampleLane
+            orders={freeSampleOrders}
+            organizationId={organizationId}
+            onOrderProcessed={handleFreeSampleProcessed}
+          />
+        </div>
+      )}
 
       {/* Layout principal: Coluna 1 (KPIs + Gráfico) | Coluna 2 (Estatísticas de Clientes) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">

@@ -3,8 +3,9 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useSettings } from '@/contexts/SettingsContext';
-import { Loader2, CheckCircle, AlertCircle, Package, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { Loader2, CheckCircle, AlertCircle, Package, ChevronLeft, ChevronRight, Trash2, Gift } from 'lucide-react';
 import { ProcessOrderModal } from './ProcessOrderModal';
+import type { PendingOrder } from '@/types/pendingOrder';
 
 // Importar ícones dos marketplaces
 import mercadoLivreIcon from '@/imgs/mercadolivre.svg';
@@ -31,20 +32,6 @@ const getMarketplaceIcon = (marketplaceName: string) => {
   return MARKETPLACE_ICONS[marketplaceName] || '';
 };
 
-interface PendingOrder {
-  bling_order_id: string;
-  order_number: number;
-  order_date: string;
-  total_amount: number;
-  customer_name: string;
-  customer_email: string;
-  marketplace_name: string;
-  marketplace_id: string;
-  commission_rate: number;
-  items_count: number;
-  first_product_image: string | null;
-}
-
 interface ProcessResult {
   success: boolean;
   message: string;
@@ -56,9 +43,10 @@ interface ProcessResult {
 
 interface PendingOrdersProps {
   onOrderProcessed?: () => void;
+  onMoveToFreeSample?: (order: PendingOrder) => void;
 }
 
-export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed }) => {
+export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, onMoveToFreeSample }) => {
   const { organizationId } = useSettings();
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -341,8 +329,8 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed }
             key={order.bling_order_id}
             className="flex-shrink-0 w-[380px] p-4 hover:shadow-lg transition-shadow duration-200"
           >
-            {/* Imagem do Produto */}
-            <div className="relative w-full h-48 mb-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-zinc-900 dark:to-zinc-800 rounded-xl overflow-hidden shadow-sm">
+            {/* Imagem do Produto — altura reduzida */}
+            <div className="relative w-full h-32 mb-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-zinc-900 dark:to-zinc-800 rounded-xl overflow-hidden shadow-sm">
               {order.first_product_image ? (
                 <img
                   src={order.first_product_image}
@@ -462,6 +450,23 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed }
                   'PROCESSAR LUCRO'
                 )}
               </Button>
+              {onMoveToFreeSample && (
+                <Button
+                  onClick={() => {
+                    onMoveToFreeSample(order);
+                    setPendingOrders((prev) =>
+                      prev.filter((o) => o.bling_order_id !== order.bling_order_id)
+                    );
+                  }}
+                  disabled={processing === order.bling_order_id || deleting === order.bling_order_id}
+                  variant="outline"
+                  className="border-violet-300 text-violet-600 hover:bg-violet-50 hover:border-violet-400 dark:border-violet-800 dark:text-violet-400 dark:hover:bg-violet-950/30 text-xs px-2"
+                  title="Enviar como amostra grátis para influenciador"
+                >
+                  <Gift className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
+                  <span className="hidden sm:inline">AMOSTRA</span>
+                </Button>
+              )}
               <Button
                 onClick={() => deleteOrder(order.bling_order_id, order.order_number)}
                 disabled={processing === order.bling_order_id || deleting === order.bling_order_id}

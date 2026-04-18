@@ -1,0 +1,710 @@
+- generic [ref=e2]:
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - img "Logo" [ref=e7]
+          - button [ref=e8] [cursor=pointer]:
+            - img
+        - list [ref=e9]:
+          - listitem [ref=e10]:
+            - generic [ref=e11] [cursor=pointer]:
+              - img
+              - generic [ref=e12]: Painel
+              - img
+            - list [ref=e13]:
+              - listitem [ref=e14]:
+                - link "Calculadora" [ref=e15] [cursor=pointer]:
+                  - /url: /
+                  - text: Calculadora
+              - listitem [ref=e17]:
+                - link "Produtos" [ref=e18] [cursor=pointer]:
+                  - /url: /produtos
+                  - text: Produtos
+              - listitem [ref=e20]:
+                - link "Vendas" [ref=e21] [cursor=pointer]:
+                  - /url: /vendas
+                  - text: Vendas
+              - listitem [ref=e23]:
+                - link "Leads" [ref=e24] [cursor=pointer]:
+                  - /url: /leads
+                  - text: Leads
+    - generic [ref=e26]:
+      - banner [ref=e27]:
+        - generic [ref=e28]:
+          - button [ref=e29] [cursor=pointer]:
+            - img
+          - search [ref=e30]:
+            - generic:
+              - img
+            - textbox "Pesquisar produtos" [ref=e31]:
+              - /placeholder: Pesquisar produtos...
+        - generic [ref=e32]:
+          - button [ref=e33] [cursor=pointer]:
+            - img
+          - button [ref=e34] [cursor=pointer]:
+            - img
+          - button "Notificações" [ref=e35] [cursor=pointer]:
+            - img
+          - generic [ref=e36] [cursor=pointer]:
+            - img "@shadcn" [ref=e48]
+            - generic [ref=e39]:
+              - paragraph [ref=e40]: Admin User
+              - paragraph [ref=e41]: Admin
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - generic [ref=e51]:
+            - heading "Dashboard de Vendas" [level=1] [ref=e52]
+            - paragraph [ref=e53]: Visão completa do desempenho
+          - generic [ref=e54]:
+            - generic "Tempo real indisponível — usando polling a cada 30s" [ref=e55]:
+              - img
+              - text: Polling
+            - generic [ref=e56]:
+              - combobox [ref=e57] [cursor=pointer]:
+                - generic [ref=e58]:
+                  - img
+                  - generic: Últimos 30 dias
+                - img
+              - generic [ref=e59]:
+                - img
+                - generic [ref=e60]: 18 mar - 17 abr 2026
+            - button "Atualizar dados do dashboard" [ref=e61] [cursor=pointer]:
+              - img
+              - text: Atualizar
+        - search "Filtros de vendas" [ref=e63]:
+          - generic [ref=e64]:
+            - generic [ref=e65]: Data inicial
+            - textbox "Filtrar por data inicial" [ref=e66]
+          - generic [ref=e67]:
+            - generic [ref=e68]: Data final
+            - textbox "Filtrar por data final" [ref=e69]
+          - generic [ref=e70]:
+            - generic [ref=e71]: Marketplace
+            - textbox "Filtrar por marketplace" [ref=e72]:
+              - /placeholder: ID do canal
+        - generic [ref=e74]:
+          - generic [ref=e75]:
+            - generic [ref=e76]:
+              - heading "Vendas a Processar" [level=2] [ref=e77]
+              - paragraph [ref=e78]: 13 vendas pendentes
+            - button "Atualizar" [ref=e79] [cursor=pointer]
+          - generic [ref=e80]:
+            - generic [ref=e81]:
+              - generic [ref=e82]:
+                - generic [ref=e83]:
+                  - 'img "Produto do pedido #135" [ref=e84]'
+                  - img "TikTok" [ref=e86]
+                - generic [ref=e87]:
+                  - generic [ref=e88]:
+                    - generic [ref=e89]: "Pedido #135"
+                    - generic [ref=e90]: 15/04/2026
+                  - paragraph [ref=e92]: Mariana Alves
+                  - generic [ref=e93]:
+                    - generic [ref=e94]:
+                      - paragraph [ref=e95]: Valor Total
+                      - paragraph [ref=e96]: R$ 24,90
+                    - generic [ref=e97]:
+                      - paragraph [ref=e98]: Itens
+                      - paragraph [ref=e99]: "1"
+                  - generic [ref=e100]: "Comissão: 10%"
+                - generic [ref=e101]:
+                  - button "PROCESSAR LUCRO" [ref=e102] [cursor=pointer]
+                  - button "Excluir pedido" [ref=e103] [cursor=pointer]:
+                    - img
+              - generic [ref=e104]:
+                - generic [ref=e105]:
+                  - 'img "Produto do pedido #146" [ref=e106]'
+                  - img "TikTok" [ref=e108]
+                - generic [ref=e109]:
+                  - generic [ref=e110]:
+                    - generic [ref=e111]: "Pedido #146"
+                    - generic [ref=e112]: 15/04/2026
+                  - paragraph [ref=e114]: Graciana Silva Dos Santos Gregorio
+                  - generic [ref=e115]:
+                    - generic [ref=e116]:
+                      - paragraph [ref=e117]: Valor Total
+                      - paragraph [ref=e118]: R$ 111,90
+                    - generic [ref=e119]:
+                      - paragraph [ref=e120]: Itens
+                      - paragraph [ref=e121]: "2"
+                  - generic [ref=e122]: "Comissão: 10%"
+                - generic [ref=e123]:
+                  - button "PROCESSAR LUCRO" [ref=e124] [cursor=pointer]
+                  - button "Excluir pedido" [ref=e125] [cursor=pointer]:
+                    - img
+              - generic [ref=e126]:
+                - generic [ref=e127]:
+                  - 'img "Produto do pedido #139" [ref=e128]'
+                  - img "TikTok" [ref=e130]
+                - generic [ref=e131]:
+                  - generic [ref=e132]:
+                    - generic [ref=e133]: "Pedido #139"
+                    - generic [ref=e134]: 15/04/2026
+                  - paragraph [ref=e136]: Ana Letícia Gomes Ferreira
+                  - generic [ref=e137]:
+                    - generic [ref=e138]:
+                      - paragraph [ref=e139]: Valor Total
+                      - paragraph [ref=e140]: R$ 150,80
+                    - generic [ref=e141]:
+                      - paragraph [ref=e142]: Itens
+                      - paragraph [ref=e143]: "3"
+                  - generic [ref=e144]: "Comissão: 10%"
+                - generic [ref=e145]:
+                  - button "PROCESSAR LUCRO" [ref=e146] [cursor=pointer]
+                  - button "Excluir pedido" [ref=e147] [cursor=pointer]:
+                    - img
+              - generic [ref=e148]:
+                - generic [ref=e149]:
+                  - 'img "Produto do pedido #149" [ref=e150]'
+                  - img "TikTok" [ref=e152]
+                - generic [ref=e153]:
+                  - generic [ref=e154]:
+                    - generic [ref=e155]: "Pedido #149"
+                    - generic [ref=e156]: 15/04/2026
+                  - paragraph [ref=e158]: Stephanie Gossler dos Santos
+                  - generic [ref=e159]:
+                    - generic [ref=e160]:
+                      - paragraph [ref=e161]: Valor Total
+                      - paragraph [ref=e162]: R$ 61,90
+                    - generic [ref=e163]:
+                      - paragraph [ref=e164]: Itens
+                      - paragraph [ref=e165]: "1"
+                  - generic [ref=e166]: "Comissão: 10%"
+                - generic [ref=e167]:
+                  - button "PROCESSAR LUCRO" [ref=e168] [cursor=pointer]
+                  - button "Excluir pedido" [ref=e169] [cursor=pointer]:
+                    - img
+              - generic [ref=e170]:
+                - generic [ref=e171]:
+                  - 'img "Produto do pedido #148" [ref=e172]'
+                  - img "TikTok" [ref=e174]
+                - generic [ref=e175]:
+                  - generic [ref=e176]:
+                    - generic [ref=e177]: "Pedido #148"
+                    - generic [ref=e178]: 15/04/2026
+                  - paragraph [ref=e180]: Emanuel Ferreira da costa
+                  - generic [ref=e181]:
+                    - generic [ref=e182]:
+                      - paragraph [ref=e183]: Valor Total
+                      - paragraph [ref=e184]: R$ 154,90
+                    - generic [ref=e185]:
+                      - paragraph [ref=e186]: Itens
+                      - paragraph [ref=e187]: "3"
+                  - generic [ref=e188]: "Comissão: 10%"
+                - generic [ref=e189]:
+                  - button "PROCESSAR LUCRO" [ref=e190] [cursor=pointer]
+                  - button "Excluir pedido" [ref=e191] [cursor=pointer]:
+                    - img
+              - generic [ref=e192]:
+                - generic [ref=e193]:
+                  - generic [ref=e194]:
+                    - img
+                  - img "TikTok" [ref=e196]
+                - generic [ref=e197]:
+                  - generic [ref=e198]:
+                    - generic [ref=e199]: "Pedido #136"
+                    - generic [ref=e200]: 15/04/2026
+                  - paragraph [ref=e202]: Rebeca Rosado
+                  - generic [ref=e203]:
+                    - generic [ref=e204]:
+                      - paragraph [ref=e205]: Valor Total
+                      - paragraph [ref=e206]: R$ 14,90
+                    - generic [ref=e207]:
+                      - paragraph [ref=e208]: Itens
+                      - paragraph [ref=e209]: "0"
+                  - generic [ref=e210]: "Comissão: 10%"
+                - generic [ref=e211]:
+                  - button "PROCESSAR LUCRO" [ref=e212] [cursor=pointer]
+                  - button "Excluir pedido" [ref=e213] [cursor=pointer]:
+                    - img
+              - generic [ref=e214]:
+                - generic [ref=e215]:
+                  - 'img "Produto do pedido #143" [ref=e216]'
+                  - img "TikTok" [ref=e218]
+                - generic [ref=e219]:
+                  - generic [ref=e220]:
+                    - generic [ref=e221]: "Pedido #143"
+                    - generic [ref=e222]: 15/04/2026
+                  - paragraph [ref=e224]: PAMELLA DA SILVA GONCALVES
+                  - generic [ref=e225]:
+                    - generic [ref=e226]:
+                      - paragraph [ref=e227]: Valor Total
+                      - paragraph [ref=e228]: R$ 132,90
+                    - generic [ref=e229]:
+                      - paragraph [ref=e230]: Itens
+                      - paragraph [ref=e231]: "3"
+                  - generic [ref=e232]: "Comissão: 10%"
+                - generic [ref=e233]:
+                  - button "PROCESSAR LUCRO" [ref=e234] [cursor=pointer]
+                  - button "Excluir pedido" [ref=e235] [cursor=pointer]:
+                    - img
+              - generic [ref=e236]:
+                - generic [ref=e237]:
+                  - 'img "Produto do pedido #141" [ref=e238]'
+                  - img "TikTok" [ref=e240]
+                - generic [ref=e241]:
+                  - generic [ref=e242]:
+                    - generic [ref=e243]: "Pedido #141"
+                    - generic [ref=e244]: 15/04/2026
+                  - paragraph [ref=e246]: Ana Letícia Gomes Ferreira
+                  - generic [ref=e247]:
+                    - generic [ref=e248]:
+                      - paragraph [ref=e249]: Valor Total
+                      - paragraph [ref=e250]: R$ 171,70
+                    - generic [ref=e251]:
+                      - paragraph [ref=e252]: Itens
+                      - paragraph [ref=e253]: "4"
+                  - generic [ref=e254]: "Comissão: 10%"
+                - generic [ref=e255]:
+                  - button "PROCESSAR LUCRO" [ref=e256] [cursor=pointer]
+                  - button "Excluir pedido" [ref=e257] [cursor=pointer]:
+                    - img
+              - generic [ref=e258]:
+                - generic [ref=e259]:
+                  - 'img "Produto do pedido #138" [ref=e260]'
+                  - img "TikTok" [ref=e262]
+                - generic [ref=e263]:
+                  - generic [ref=e264]:
+                    - generic [ref=e265]: "Pedido #138"
+                    - generic [ref=e266]: 15/04/2026
+                  - paragraph [ref=e268]: Júlia Côrtes
+                  - generic [ref=e269]:
+                    - generic [ref=e270]:
+                      - paragraph [ref=e271]: Valor Total
+                      - paragraph [ref=e272]: R$ 29,00
+                    - generic [ref=e273]:
+                      - paragraph [ref=e274]: Itens
+                      - paragraph [ref=e275]: "1"
+                  - generic [ref=e276]: "Comissão: 10%"
+                - generic [ref=e277]:
+                  - button "PROCESSAR LUCRO" [ref=e278] [cursor=pointer]
+                  - button "Excluir pedido" [ref=e279] [cursor=pointer]:
+                    - img
+              - generic [ref=e280]:
+                - generic [ref=e281]:
+                  - 'img "Produto do pedido #134" [ref=e282]'
+                  - img "TikTok" [ref=e284]
+                - generic [ref=e285]:
+                  - generic [ref=e286]:
+                    - generic [ref=e287]: "Pedido #134"
+                    - generic [ref=e288]: 15/04/2026
+                  - paragraph [ref=e290]: viviane soares
+                  - generic [ref=e291]:
+                    - generic [ref=e292]:
+                      - paragraph [ref=e293]: Valor Total
+                      - paragraph [ref=e294]: R$ 29,00
+                    - generic [ref=e295]:
+                      - paragraph [ref=e296]: Itens
+                      - paragraph [ref=e297]: "1"
+                  - generic [ref=e298]: "Comissão: 10%"
+                - generic [ref=e299]:
+                  - button "PROCESSAR LUCRO" [ref=e300] [cursor=pointer]
+                  - button "Excluir pedido" [ref=e301] [cursor=pointer]:
+                    - img
+              - generic [ref=e302]:
+                - generic [ref=e303]:
+                  - 'img "Produto do pedido #140" [ref=e304]'
+                  - img "TikTok" [ref=e306]
+                - generic [ref=e307]:
+                  - generic [ref=e308]:
+                    - generic [ref=e309]: "Pedido #140"
+                    - generic [ref=e310]: 15/04/2026
+                  - paragraph [ref=e312]: Ana Letícia Gomes Ferreira
+                  - generic [ref=e313]:
+                    - generic [ref=e314]:
+                      - paragraph [ref=e315]: Valor Total
+                      - paragraph [ref=e316]: R$ 174,39
+                    - generic [ref=e317]:
+                      - paragraph [ref=e318]: Itens
+                      - paragraph [ref=e319]: "5"
+                  - generic [ref=e320]: "Comissão: 10%"
+                - generic [ref=e321]:
+                  - button "PROCESSAR LUCRO" [ref=e322] [cursor=pointer]
+                  - button "Excluir pedido" [ref=e323] [cursor=pointer]:
+                    - img
+              - generic [ref=e324]:
+                - generic [ref=e325]:
+                  - 'img "Produto do pedido #145" [ref=e326]'
+                  - img "TikTok" [ref=e328]
+                - generic [ref=e329]:
+                  - generic [ref=e330]:
+                    - generic [ref=e331]: "Pedido #145"
+                    - generic [ref=e332]: 15/04/2026
+                  - paragraph [ref=e334]: Ruth Tenório
+                  - generic [ref=e335]:
+                    - generic [ref=e336]:
+                      - paragraph [ref=e337]: Valor Total
+                      - paragraph [ref=e338]: R$ 196,49
+                    - generic [ref=e339]:
+                      - paragraph [ref=e340]: Itens
+                      - paragraph [ref=e341]: "6"
+                  - generic [ref=e342]: "Comissão: 10%"
+                - generic [ref=e343]:
+                  - button "PROCESSAR LUCRO" [ref=e344] [cursor=pointer]
+                  - button "Excluir pedido" [ref=e345] [cursor=pointer]:
+                    - img
+              - generic [ref=e346]:
+                - generic [ref=e347]:
+                  - 'img "Produto do pedido #142" [ref=e348]'
+                  - img "TikTok" [ref=e350]
+                - generic [ref=e351]:
+                  - generic [ref=e352]:
+                    - generic [ref=e353]: "Pedido #142"
+                    - generic [ref=e354]: 15/04/2026
+                  - paragraph [ref=e356]: Ana Letícia Gomes Ferreira
+                  - generic [ref=e357]:
+                    - generic [ref=e358]:
+                      - paragraph [ref=e359]: Valor Total
+                      - paragraph [ref=e360]: R$ 100,79
+                    - generic [ref=e361]:
+                      - paragraph [ref=e362]: Itens
+                      - paragraph [ref=e363]: "2"
+                  - generic [ref=e364]: "Comissão: 10%"
+                - generic [ref=e365]:
+                  - button "PROCESSAR LUCRO" [ref=e366] [cursor=pointer]
+                  - button "Excluir pedido" [ref=e367] [cursor=pointer]:
+                    - img
+            - button "Rolar para direita" [ref=e368] [cursor=pointer]:
+              - img
+        - generic [ref=e369]:
+          - generic [ref=e370]:
+            - region "Indicadores principais de desempenho" [ref=e373]:
+              - 'article "Lucro Total: R$ 0,00" [ref=e374]':
+                - generic [ref=e375]:
+                  - generic:
+                    - img
+                - paragraph [ref=e376]: Lucro Total
+                - paragraph [ref=e377]: R$ 0,00
+                - paragraph [ref=e378]: vs. período anterior
+              - 'article "Pedidos: 1, Aumento de 1%" [ref=e379]':
+                - generic [ref=e380]:
+                  - generic:
+                    - img
+                  - generic "Aumento de 1%" [ref=e381]:
+                    - img
+                    - text: +1%
+                - paragraph [ref=e382]: Pedidos
+                - paragraph [ref=e383]: "1"
+                - paragraph [ref=e384]: esta semana
+              - 'article "Clientes: 1, Aumento de 1%" [ref=e385]':
+                - generic [ref=e386]:
+                  - generic:
+                    - img
+                  - generic "Aumento de 1%" [ref=e387]:
+                    - img
+                    - text: +1%
+                - paragraph [ref=e388]: Clientes
+                - paragraph [ref=e389]: "1"
+                - paragraph [ref=e390]: esta semana
+              - 'article "Produtos: 270, Aumento de 270%" [ref=e391]':
+                - generic [ref=e392]:
+                  - generic:
+                    - img
+                  - generic "Aumento de 270%" [ref=e393]:
+                    - img
+                    - text: +270%
+                - paragraph [ref=e394]: Produtos
+                - paragraph [ref=e395]: "270"
+                - paragraph [ref=e396]: esta semana
+            - generic [ref=e398]:
+              - generic [ref=e399]:
+                - generic [ref=e400]:
+                  - heading "Relatório de Receita" [level=3] [ref=e401]
+                  - generic [ref=e402]:
+                    - generic [ref=e403]:
+                      - paragraph [ref=e404]: Receita
+                      - paragraph [ref=e405]: R$ 22,90
+                    - generic [ref=e406]:
+                      - paragraph [ref=e407]: Custo
+                      - paragraph [ref=e408]: R$ 14,90
+                    - generic [ref=e409]:
+                      - paragraph [ref=e410]: Lucro
+                      - paragraph [ref=e411]: R$ 8,00
+                - combobox [ref=e412] [cursor=pointer]:
+                  - generic: Mensal
+                  - img
+              - generic [ref=e415]:
+                - img "area chart with 2 data series" [ref=e416]:
+                  - generic "Apr" [ref=e433]
+                  - generic [ref=e435]:
+                    - generic "R$ 24,00" [ref=e436]
+                    - generic "R$ 22,00" [ref=e437]
+                    - generic "R$ 20,00" [ref=e438]
+                    - generic "R$ 18,00" [ref=e439]
+                    - generic "R$ 16,00" [ref=e440]
+                    - generic "R$ 14,00" [ref=e441]
+                - generic [ref=e442]:
+                  - button "Receita, visible. Press Enter or Space to toggle." [ref=e443] [cursor=pointer]:
+                    - generic [ref=e444]:
+                      - img
+                    - generic [ref=e445]: Receita
+                  - button "Custo, visible. Press Enter or Space to toggle." [ref=e446] [cursor=pointer]:
+                    - generic [ref=e447]:
+                      - img
+                    - generic [ref=e448]: Custo
+                - tooltip: ● ●
+          - generic [ref=e450]:
+            - generic [ref=e451]:
+              - heading "Estatísticas de Clientes" [level=3] [ref=e452]
+              - combobox [ref=e453] [cursor=pointer]:
+                - generic: Este Mês
+                - img
+            - generic [ref=e454]:
+              - application [ref=e458]
+              - generic [ref=e464]:
+                - paragraph [ref=e465]: "13"
+                - paragraph [ref=e466]: Total de Clientes
+              - generic [ref=e468]:
+                - generic [ref=e471]: Outros
+                - generic [ref=e472]:
+                  - generic [ref=e473]: 13 clientes
+                  - generic [ref=e474]: 100%
+        - generic [ref=e475]:
+          - generic [ref=e477]:
+            - generic [ref=e478]:
+              - tablist [ref=e479]:
+                - tab "Produtos Mais Vendidos" [selected] [ref=e480] [cursor=pointer]:
+                  - img
+                  - generic [ref=e481]: Produtos Mais Vendidos
+                - tab "Pedidos Recentes" [ref=e482] [cursor=pointer]:
+                  - img
+                  - generic [ref=e483]: Pedidos Recentes
+                - tab "Distribuição" [ref=e484] [cursor=pointer]:
+                  - img
+                  - generic [ref=e485]: Distribuição
+                - tab "Transações" [ref=e486] [cursor=pointer]:
+                  - img
+                  - generic [ref=e487]: Transações
+              - button "Ver Todos" [ref=e488] [cursor=pointer]:
+                - text: Ver Todos
+                - img
+            - tabpanel "Produtos Mais Vendidos" [ref=e489]:
+              - generic [ref=e490]:
+                - generic [ref=e491]:
+                  - generic [ref=e492]:
+                    - generic [ref=e493]:
+                      - img
+                    - generic [ref=e494]:
+                      - heading "Produtos Mais Vendidos" [level=3] [ref=e495]
+                      - paragraph [ref=e496]: 0 unidades vendidas no total
+                  - button "Ver Todos" [ref=e497] [cursor=pointer]
+                - table [ref=e499]:
+                  - rowgroup [ref=e500]:
+                    - row "Ranking Produto Preço Vendidos Pedidos Receita" [ref=e501]:
+                      - columnheader "Ranking" [ref=e502]
+                      - columnheader "Produto" [ref=e503]
+                      - columnheader "Preço" [ref=e504]
+                      - columnheader "Vendidos" [ref=e505]
+                      - columnheader "Pedidos" [ref=e506]
+                      - columnheader "Receita" [ref=e507]
+                  - rowgroup [ref=e508]:
+                    - row "1 Camisa Feminina Baby Cherry Vibes Camisa Feminina Baby Cherry Vibes R$ 61,90 0 0 R$ 0,00" [ref=e509]:
+                      - cell "1" [ref=e510]:
+                        - generic [ref=e511]: "1"
+                      - cell "Camisa Feminina Baby Cherry Vibes Camisa Feminina Baby Cherry Vibes" [ref=e512]:
+                        - generic [ref=e513]:
+                          - img "Camisa Feminina Baby Cherry Vibes" [ref=e515]
+                          - paragraph [ref=e517]: Camisa Feminina Baby Cherry Vibes
+                      - cell "R$ 61,90" [ref=e518]:
+                        - paragraph [ref=e519]: R$ 61,90
+                      - cell "0" [ref=e520]:
+                        - paragraph [ref=e522]: "0"
+                      - cell "0" [ref=e523]:
+                        - generic [ref=e524]: "0"
+                      - cell "R$ 0,00" [ref=e525]:
+                        - paragraph [ref=e526]: R$ 0,00
+                    - row "2 Blusa Moletom Baralho Blusa Moletom Baralho R$ 99,90 0 0 R$ 0,00" [ref=e527]:
+                      - cell "2" [ref=e528]:
+                        - generic [ref=e529]: "2"
+                      - cell "Blusa Moletom Baralho Blusa Moletom Baralho" [ref=e530]:
+                        - generic [ref=e531]:
+                          - img "Blusa Moletom Baralho" [ref=e533]
+                          - paragraph [ref=e535]: Blusa Moletom Baralho
+                      - cell "R$ 99,90" [ref=e536]:
+                        - paragraph [ref=e537]: R$ 99,90
+                      - cell "0" [ref=e538]:
+                        - paragraph [ref=e540]: "0"
+                      - cell "0" [ref=e541]:
+                        - generic [ref=e542]: "0"
+                      - cell "R$ 0,00" [ref=e543]:
+                        - paragraph [ref=e544]: R$ 0,00
+                    - row "3 Headset Gamer com Microfone P2 Homologado Anatel para PC Notebook e Smartphone Headset Gamer com Microfone P2 Homologado Anatel para PC Notebook e Smartphone R$ 72,80 0 0 R$ 0,00" [ref=e545]:
+                      - cell "3" [ref=e546]:
+                        - generic [ref=e547]: "3"
+                      - cell "Headset Gamer com Microfone P2 Homologado Anatel para PC Notebook e Smartphone Headset Gamer com Microfone P2 Homologado Anatel para PC Notebook e Smartphone" [ref=e548]:
+                        - generic [ref=e549]:
+                          - img "Headset Gamer com Microfone P2 Homologado Anatel para PC Notebook e Smartphone" [ref=e551]
+                          - paragraph [ref=e553]: Headset Gamer com Microfone P2 Homologado Anatel para PC Notebook e Smartphone
+                      - cell "R$ 72,80" [ref=e554]:
+                        - paragraph [ref=e555]: R$ 72,80
+                      - cell "0" [ref=e556]:
+                        - paragraph [ref=e558]: "0"
+                      - cell "0" [ref=e559]:
+                        - generic [ref=e560]: "0"
+                      - cell "R$ 0,00" [ref=e561]:
+                        - paragraph [ref=e562]: R$ 0,00
+                    - row "4 Kit Garrafa Térmica Urso com Xícaras Kit Garrafa Térmica Urso com Xícaras R$ 54,90 0 0 R$ 0,00" [ref=e563]:
+                      - cell "4" [ref=e564]:
+                        - generic [ref=e565]: "4"
+                      - cell "Kit Garrafa Térmica Urso com Xícaras Kit Garrafa Térmica Urso com Xícaras" [ref=e566]:
+                        - generic [ref=e567]:
+                          - img "Kit Garrafa Térmica Urso com Xícaras" [ref=e569]
+                          - paragraph [ref=e571]: Kit Garrafa Térmica Urso com Xícaras
+                      - cell "R$ 54,90" [ref=e572]:
+                        - paragraph [ref=e573]: R$ 54,90
+                      - cell "0" [ref=e574]:
+                        - paragraph [ref=e576]: "0"
+                      - cell "0" [ref=e577]:
+                        - generic [ref=e578]: "0"
+                      - cell "R$ 0,00" [ref=e579]:
+                        - paragraph [ref=e580]: R$ 0,00
+                    - row "5 Camisa Feminina Baby Look Lindinha Camisa Feminina Baby Look Lindinha R$ 55,90 0 0 R$ 0,00" [ref=e581]:
+                      - cell "5" [ref=e582]:
+                        - generic [ref=e583]: "5"
+                      - cell "Camisa Feminina Baby Look Lindinha Camisa Feminina Baby Look Lindinha" [ref=e584]:
+                        - generic [ref=e585]:
+                          - img "Camisa Feminina Baby Look Lindinha" [ref=e587]
+                          - paragraph [ref=e589]: Camisa Feminina Baby Look Lindinha
+                      - cell "R$ 55,90" [ref=e590]:
+                        - paragraph [ref=e591]: R$ 55,90
+                      - cell "0" [ref=e592]:
+                        - paragraph [ref=e594]: "0"
+                      - cell "0" [ref=e595]:
+                        - generic [ref=e596]: "0"
+                      - cell "R$ 0,00" [ref=e597]:
+                        - paragraph [ref=e598]: R$ 0,00
+                    - row "6 Cabo Carregador Tipo C V8 Cabo De Dados Micro Usb Cabo Carregador Tipo C V8 Cabo De Dados Micro Usb R$ 18,99 0 0 R$ 0,00" [ref=e599]:
+                      - cell "6" [ref=e600]:
+                        - generic [ref=e601]: "6"
+                      - cell "Cabo Carregador Tipo C V8 Cabo De Dados Micro Usb Cabo Carregador Tipo C V8 Cabo De Dados Micro Usb" [ref=e602]:
+                        - generic [ref=e603]:
+                          - img "Cabo Carregador Tipo C V8 Cabo De Dados Micro Usb" [ref=e605]
+                          - paragraph [ref=e607]: Cabo Carregador Tipo C V8 Cabo De Dados Micro Usb
+                      - cell "R$ 18,99" [ref=e608]:
+                        - paragraph [ref=e609]: R$ 18,99
+                      - cell "0" [ref=e610]:
+                        - paragraph [ref=e612]: "0"
+                      - cell "0" [ref=e613]:
+                        - generic [ref=e614]: "0"
+                      - cell "R$ 0,00" [ref=e615]:
+                        - paragraph [ref=e616]: R$ 0,00
+                - generic [ref=e617]:
+                  - paragraph [ref=e618]: Página 1 de 10
+                  - generic [ref=e619]:
+                    - button "Anterior" [disabled]:
+                      - img
+                      - text: Anterior
+                    - button "Próxima" [ref=e620] [cursor=pointer]:
+                      - text: Próxima
+                      - img
+          - generic [ref=e622]:
+            - generic [ref=e623]:
+              - heading "Transações" [level=3] [ref=e624]
+              - combobox [ref=e625] [cursor=pointer]:
+                - generic: Este Mês
+                - img
+            - generic [ref=e627]:
+              - img [ref=e629]
+              - generic [ref=e632]:
+                - paragraph [ref=e633]: Pix
+                - paragraph [ref=e634]: Sonia
+              - generic [ref=e635]:
+                - paragraph [ref=e636]: +R$ 22,90
+                - generic [ref=e637]: "#133"
+        - generic [ref=e638]:
+          - generic [ref=e640]:
+            - generic [ref=e641]:
+              - generic [ref=e642]:
+                - img
+                - text: Produtos com Margem Baixa
+              - generic [ref=e643]: Produtos com margem de lucro abaixo de 20%
+            - alert [ref=e645]:
+              - img
+              - generic [ref=e646]: Parabéns! Todos os produtos têm margem de lucro saudável (≥ 20%)
+          - generic [ref=e648]:
+            - generic [ref=e649]:
+              - heading "Relatório de Estoque" [level=3] [ref=e650]
+              - generic [ref=e651]: Página 1 de 45
+            - generic [ref=e652]:
+              - generic [ref=e653]:
+                - generic [ref=e654]:
+                  - img "Garrafa Coelho Fofa 680ml com Canudo para Crianças Escola e Passeios" [ref=e656]
+                  - generic [ref=e657]:
+                    - paragraph [ref=e658]: Garrafa Coelho Fofa 680ml com Canudo para Crianças Escola e Passeios
+                    - paragraph [ref=e659]: R$ 44,20
+                  - generic [ref=e660]:
+                    - img
+                    - text: Disponível
+                - generic [ref=e662]:
+                  - generic [ref=e663]: 402 un.
+                  - generic [ref=e664]: 100%
+              - generic [ref=e667]:
+                - generic [ref=e668]:
+                  - img "Umidificador de Mesa Cápsula Espacial para Quarto Escritório e Home Office LED" [ref=e670]
+                  - generic [ref=e671]:
+                    - paragraph [ref=e672]: Umidificador de Mesa Cápsula Espacial para Quarto Escritório e Home Office LED
+                    - paragraph [ref=e673]: R$ 69,90
+                  - generic [ref=e674]:
+                    - img
+                    - text: Disponível
+                - generic [ref=e676]:
+                  - generic [ref=e677]: 297 un.
+                  - generic [ref=e678]: 100%
+              - generic [ref=e681]:
+                - generic [ref=e682]:
+                  - img "Mini Aparador de Pelos Elétrico USB Compacto para Rosto e Acabamento Preciso" [ref=e684]
+                  - generic [ref=e685]:
+                    - paragraph [ref=e686]: Mini Aparador de Pelos Elétrico USB Compacto para Rosto e Acabamento Preciso
+                    - paragraph [ref=e687]: R$ 37,00
+                  - generic [ref=e688]:
+                    - img
+                    - text: Disponível
+                - generic [ref=e690]:
+                  - generic [ref=e691]: 292 un.
+                  - generic [ref=e692]: 100%
+              - generic [ref=e695]:
+                - generic [ref=e696]:
+                  - img "Carregador MagSafe Portátil iPhone 12 13 14 Sem Fio Rápido e Compacto" [ref=e698]
+                  - generic [ref=e699]:
+                    - paragraph [ref=e700]: Carregador MagSafe Portátil iPhone 12 13 14 Sem Fio Rápido e Compacto
+                    - paragraph [ref=e701]: R$ 50,00
+                  - generic [ref=e702]:
+                    - img
+                    - text: Disponível
+                - generic [ref=e704]:
+                  - generic [ref=e705]: 289 un.
+                  - generic [ref=e706]: 100%
+              - generic [ref=e709]:
+                - generic [ref=e710]:
+                  - img "Jogo de Facas Colorido 6 Peças para Cozinha Gourmet Presente Criativo e Funcional" [ref=e712]
+                  - generic [ref=e713]:
+                    - paragraph [ref=e714]: Jogo de Facas Colorido 6 Peças para Cozinha Gourmet Presente Criativo e Funcional
+                    - paragraph [ref=e715]: R$ 41,30
+                  - generic [ref=e716]:
+                    - img
+                    - text: Disponível
+                - generic [ref=e718]:
+                  - generic [ref=e719]: 289 un.
+                  - generic [ref=e720]: 100%
+              - generic [ref=e723]:
+                - generic [ref=e724]:
+                  - img "Fone Sem Fio M10 Bluetooth 5.1 para Esporte À Prova D'água IPX7 com Controle Touch" [ref=e726]
+                  - generic [ref=e727]:
+                    - paragraph [ref=e728]: Fone Sem Fio M10 Bluetooth 5.1 para Esporte À Prova D'água IPX7 com Controle Touch
+                    - paragraph [ref=e729]: R$ 44,20
+                  - generic [ref=e730]:
+                    - img
+                    - text: Disponível
+                - generic [ref=e732]:
+                  - generic [ref=e733]: 287 un.
+                  - generic [ref=e734]: 100%
+            - generic [ref=e737]:
+              - button "Anterior" [disabled]:
+                - img
+                - text: Anterior
+              - generic [ref=e738]: 1-6 de 270
+              - button "Próxima" [ref=e739] [cursor=pointer]:
+                - text: Próxima
+                - img
