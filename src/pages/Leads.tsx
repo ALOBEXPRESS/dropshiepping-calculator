@@ -56,7 +56,7 @@ const Leads: React.FC = () => {
           <LeadConversionFunnel organizationId={organizationId} refreshTrigger={refreshKey} />
         </div>
         <div className="animate-on-load">
-          <TopCustomersList organizationId={organizationId} limit={6} refreshTrigger={refreshKey} />
+          <TopCustomersList organizationId={organizationId} refreshTrigger={refreshKey} />
         </div>
       </div>
 

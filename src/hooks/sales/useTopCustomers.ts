@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { TopCustomer } from '@/types/sales';
 
-export const useTopCustomers = (organizationId: string, limit: number = 6) => {
+export const useTopCustomers = (organizationId: string, limit: number = 50) => {
   const [customers, setCustomers] = useState<TopCustomer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
