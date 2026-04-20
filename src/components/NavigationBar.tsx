@@ -13,7 +13,7 @@
  * - Responsive: hamburger menu on mobile (< 768px)
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Menu, X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
@@ -167,7 +167,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                ref={(el) => (tabRefs.current[tab.id] = el)}
+                ref={(el) => { tabRefs.current[tab.id] = el; }}
                 onClick={() => handleTabClick(tab.id)}
                 onKeyDown={(e) => handleKeyDown(e, tab.id, false)}
                 className={cn(
@@ -226,7 +226,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                ref={(el) => (mobileTabRefs.current[tab.id] = el)}
+                ref={(el) => { mobileTabRefs.current[tab.id] = el; }}
                 onClick={() => handleTabClick(tab.id)}
                 onKeyDown={(e) => handleKeyDown(e, tab.id, true)}
                 className={cn(
