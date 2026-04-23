@@ -219,7 +219,7 @@ const Sales: React.FC = () => {
             />
           </div>
           <div className="animate-on-load">
-            <RevenueReportChart organizationId={organizationId} refreshTrigger={refreshKey} />
+            <RevenueReportChart organizationId={organizationId} refreshTrigger={refreshKey} onOrderDeleted={handleRefresh} />
           </div>
         </div>
 

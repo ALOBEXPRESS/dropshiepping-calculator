@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 interface RevenueReportChartProps {
   organizationId: string;
   refreshTrigger?: number;
+  onOrderDeleted?: () => void;
 }
 
 
@@ -54,7 +55,7 @@ interface OrderDetail {
   total_profit: number;
 }
 
-export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organizationId, refreshTrigger }) => {
+export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organizationId, refreshTrigger, onOrderDeleted }) => {
   const [period, setPeriod] = useState<PeriodFilter>('monthly');
   const { data, loading, error, refetch } = useRevenueReport(organizationId, period);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -355,6 +356,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       
       // Recarregar dados
       await refetch();
+      // Notificar o pai para atualizar KPIs (Pedidos, Clientes, etc.)
+      onOrderDeleted?.();
     } catch (err) {
       console.error('Error deleting order:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
