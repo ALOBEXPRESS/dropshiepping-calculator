@@ -482,7 +482,8 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       refetchClvData();
       refetchMarketplacePerformance();
     }
-  }, [isGlobalSummaryOpen, refreshFinancialSummary, refetchTopProducts, refetchClvData, refetchMarketplacePerformance]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isGlobalSummaryOpen]);
 
   const handleNavigateToProducts = useCallback((event: MouseEvent<HTMLElement>) => {
     const target = event.target as HTMLElement;
