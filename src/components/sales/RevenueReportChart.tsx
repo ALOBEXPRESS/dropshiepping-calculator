@@ -75,6 +75,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [deleting, setDeleting] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
+
   const [openProduto, setOpenProduto] = useState(false);
   const [openMarketplace, setOpenMarketplace] = useState(false);
   
@@ -223,6 +224,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   total_profit: orderProfit,
                   tiktok_sfp_enabled: (order as { tiktok_sfp_enabled?: boolean | string }).tiktok_sfp_enabled === true
                     || String((order as { tiktok_sfp_enabled?: unknown }).tiktok_sfp_enabled) === 'true',
+                  is_free_sample: (order as { is_free_sample?: boolean | string }).is_free_sample === true
+                    || String((order as { is_free_sample?: unknown }).is_free_sample) === 'true',
                 };
 
                 const navHtml = `
@@ -530,6 +533,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             total_profit: orderProfit,
             tiktok_sfp_enabled: (order as { tiktok_sfp_enabled?: boolean | string }).tiktok_sfp_enabled === true
               || String((order as { tiktok_sfp_enabled?: unknown }).tiktok_sfp_enabled) === 'true',
+            is_free_sample: isFreeSample,
           };
 
           // Setas de navegação (só aparece se há mais de 1 pedido)
@@ -747,22 +751,25 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               : 0;
 
             const totalProductCost = totalBaseCost + orderSupplierFee + orderGatewayFee;
+            const isFreeSample = selectedOrder.is_free_sample === true;
             const fixedFee = selectedOrder.marketplace_fixed_fee ?? 0;
-            // marketplace_commission no banco já inclui a taxa fixa (comissão% + taxa fixa)
-            // Separar: comissão percentual = total_amount × commission_rate%
+            // Para amostras grátis: sem custo de marketplace
             const commissionRate = selectedOrder.commission_rate ?? 0;
-            const commissionPercent = commissionRate > 0
+            const commissionPercent = isFreeSample ? 0 : (commissionRate > 0
               ? (selectedOrder.total_amount * commissionRate) / 100
-              : Math.max(0, selectedOrder.marketplace_commission - fixedFee);
-            // Taxa SFP TikTok: 6% sobre preço de venda quando habilitado
-            const sfpEnabled = selectedOrder.tiktok_sfp_enabled === true;
+              : Math.max(0, selectedOrder.marketplace_commission - fixedFee));
+            const sfpEnabled = !isFreeSample && selectedOrder.tiktok_sfp_enabled === true;
             const sfpFee = sfpEnabled ? selectedOrder.total_amount * 0.06 : 0;
-            // subtotal marketplace = comissão% + taxa fixa + SFP + frete + outras despesas
-            const subtotalMarketplace = commissionPercent + fixedFee + sfpFee + selectedOrder.shipping_cost + selectedOrder.other_expenses;
-            const realProfit = selectedOrder.total_amount - totalProductCost - subtotalMarketplace;
+            const subtotalMarketplace = isFreeSample ? 0 : (commissionPercent + fixedFee + sfpFee + selectedOrder.shipping_cost + selectedOrder.other_expenses);
+            const realProfit = isFreeSample ? -totalProductCost : (selectedOrder.total_amount - totalProductCost - subtotalMarketplace);
             const margin = selectedOrder.total_amount > 0
               ? ((realProfit / selectedOrder.total_amount) * 100).toFixed(1) : '0.0';
             const profitPositive = realProfit >= 0;
+
+            // Imagem: usar product_image_url ou fallback para imagem do primeiro produto
+            const heroImage = selectedOrder.product_image_url
+              || (products[0] as { image_url?: string })?.image_url
+              || null;
 
             return (
               <div className="flex flex-col bg-zinc-950 rounded-2xl overflow-hidden max-h-[88vh]">
@@ -787,10 +794,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   </div>
 
                   {/* Imagem com fundo claro para o produto */}
-                  {selectedOrder.product_image_url ? (
+                  {heroImage ? (
                     <div className="h-52 bg-zinc-100 flex items-center justify-center overflow-hidden">
                       <img
-                        src={selectedOrder.product_image_url}
+                        src={heroImage}
                         alt={selectedOrder.product_name || 'Produto'}
                         className="h-full w-full object-contain p-4"
                         onError={(e) => {
@@ -946,7 +953,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                     )}
                   </div>
 
-                  {/* Custo Marketplace */}
+                  {/* Custo Marketplace — oculto para amostras grátis */}
+                  {!isFreeSample && (
                   <div className="rounded-xl border border-orange-900/50 overflow-hidden">
                     <button
                       onClick={() => setOpenMarketplace(v => !v)}
@@ -1003,6 +1011,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       </div>
                     )}
                   </div>
+                  )}
 
                   {/* Lucro Real */}
                   <div className={`rounded-xl px-4 py-4 border ${profitPositive ? 'bg-emerald-950/25 border-emerald-800/40' : 'bg-red-950/25 border-red-800/40'}`}>
