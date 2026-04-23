@@ -1315,6 +1315,10 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       const minPriceVal = productFilters.minPrice ? parseCurrency(productFilters.minPrice) : null;
       const matchesMinPrice = minPriceVal === null || productSellingPrice >= minPriceVal;
 
+      // Filtro de preço máximo de venda
+      const maxPriceVal = productFilters.maxPrice ? parseCurrency(productFilters.maxPrice) : null;
+      const matchesMaxPrice = maxPriceVal === null || productSellingPrice <= maxPriceVal;
+
       const matchesSearch = !normalizedGlobalSearch
         || normalizeText(productNameValue).includes(normalizedGlobalSearch)
         || normalizeText(skuValue).includes(normalizedGlobalSearch)
@@ -1326,7 +1330,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         || normalizeText(skuValue).includes(normalizedProductSearch)
         || normalizeText(supplierValue).includes(normalizedProductSearch)
         || normalizeText(holderValue).includes(normalizedProductSearch);
-      return matchesMarketplace && matchesSupplier && matchesHolder && matchesAccountType && matchesCnpj && matchesVideoModel && matchesStock && matchesAffiliate && matchesCategory && matchesMinProfit && matchesMaxProfit && matchesMinPrice && matchesSearch && matchesLocalSearch;
+      return matchesMarketplace && matchesSupplier && matchesHolder && matchesAccountType && matchesCnpj && matchesVideoModel && matchesStock && matchesAffiliate && matchesCategory && matchesMinProfit && matchesMaxProfit && matchesMinPrice && matchesMaxPrice && matchesSearch && matchesLocalSearch;
     }).sort((a, b) => {
         if (productFilters.priceSort === 'all') return 0;
         
@@ -3851,7 +3855,9 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                           {productFilters.categoryFilter !== 'all' && <div>Categoria: <span className="font-medium">{productFilters.categoryFilter}</span></div>}
                           {productFilters.minProfit && <div>Lucro mínimo: <span className="font-medium">R$ {productFilters.minProfit}</span></div>}
                           {productFilters.maxProfit && <div>Lucro máximo: <span className="font-medium">R$ {productFilters.maxProfit}</span></div>}
-                          {!productFilters.supplier && !productFilters.holder && productFilters.marketplace === 'all' && productFilters.accountType === 'all' && productFilters.affiliateFilter === 'all' && productFilters.categoryFilter === 'all' && !productFilters.minProfit && !productFilters.maxProfit && (
+                          {productFilters.minPrice && <div>Preço mínimo: <span className="font-medium">R$ {productFilters.minPrice}</span></div>}
+                          {productFilters.maxPrice && <div>Preço máximo: <span className="font-medium">R$ {productFilters.maxPrice}</span></div>}
+                          {!productFilters.supplier && !productFilters.holder && productFilters.marketplace === 'all' && productFilters.accountType === 'all' && productFilters.affiliateFilter === 'all' && productFilters.categoryFilter === 'all' && !productFilters.minProfit && !productFilters.maxProfit && !productFilters.minPrice && !productFilters.maxPrice && (
                             <div className="text-zinc-400 italic">Todos os produtos (sem filtros ativos)</div>
                           )}
                         </div>
@@ -3982,13 +3988,22 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                       </SelectContent>
                     </Select>
 
-                    {/* Linha 4: Preço mínimo | Lucro mínimo | Lucro máximo */}
+                    {/* Linha 4: Preço mínimo | Preço máximo | Lucro mínimo | Lucro máximo */}
                     <div className="relative">
                       <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-blue-500">R$</span>
                       <input type="text" inputMode="decimal"
                         value={productFilters.minPrice ?? ''}
                         onChange={(e) => handleProductFilterChange('minPrice', e.target.value.replace(/[^\d.,]/g, ''))}
                         placeholder="Preço mínimo"
+                        className="h-10 w-full rounded-md border border-blue-300 bg-background pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 dark:border-blue-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                      />
+                    </div>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-blue-400">R$</span>
+                      <input type="text" inputMode="decimal"
+                        value={productFilters.maxPrice ?? ''}
+                        onChange={(e) => handleProductFilterChange('maxPrice', e.target.value.replace(/[^\d.,]/g, ''))}
+                        placeholder="Preço máximo"
                         className="h-10 w-full rounded-md border border-blue-300 bg-background pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 dark:border-blue-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
                       />
                     </div>
