@@ -94,6 +94,8 @@ export function useLowMarginProducts(organizationId: string, marginThreshold: nu
 
     if (organizationId) {
       fetchData();
+    } else {
+      setLoading(false);
     }
   }, [organizationId, marginThreshold]);
 

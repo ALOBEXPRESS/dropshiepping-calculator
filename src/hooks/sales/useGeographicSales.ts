@@ -140,6 +140,8 @@ export function useGeographicSales(organizationId: string) {
 
     if (organizationId) {
       fetchData();
+    } else {
+      setLoading(false);
     }
   }, [organizationId]);
 

@@ -79,6 +79,8 @@ export function useRevenueProfitTrend(organizationId: string, days: number = 30)
 
     if (organizationId) {
       fetchData();
+    } else {
+      setLoading(false);
     }
   }, [organizationId, days]);
 

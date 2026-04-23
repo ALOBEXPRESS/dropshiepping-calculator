@@ -110,6 +110,8 @@ export function useMarketplacePerformance(organizationId: string, refreshTrigger
   useEffect(() => {
     if (organizationId) {
       fetchData();
+    } else {
+      setLoading(false);
     }
   }, [organizationId, refreshTrigger, fetchData]);
 
