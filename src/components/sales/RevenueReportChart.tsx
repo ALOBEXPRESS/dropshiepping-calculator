@@ -696,7 +696,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
             const totalProductCost = totalBaseCost + orderSupplierFee + orderGatewayFee;
             const fixedFee = selectedOrder.marketplace_fixed_fee ?? 0;
-            const subtotalMarketplace = selectedOrder.marketplace_commission + fixedFee + selectedOrder.shipping_cost + selectedOrder.other_expenses;
+            // marketplace_commission no banco já inclui a taxa fixa (comissão% + taxa fixa)
+            // Separar: comissão percentual = total_amount × commission_rate%
+            const commissionRate = selectedOrder.commission_rate ?? 0;
+            const commissionPercent = commissionRate > 0
+              ? (selectedOrder.total_amount * commissionRate) / 100
+              : Math.max(0, selectedOrder.marketplace_commission - fixedFee);
+            // subtotal marketplace = comissão% + taxa fixa + frete + outras despesas
+            const subtotalMarketplace = commissionPercent + fixedFee + selectedOrder.shipping_cost + selectedOrder.other_expenses;
             const realProfit = selectedOrder.total_amount - totalProductCost - subtotalMarketplace;
             const margin = selectedOrder.total_amount > 0
               ? ((realProfit / selectedOrder.total_amount) * 100).toFixed(1) : '0.0';
@@ -905,10 +912,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                     </button>
                     {openMarketplace && (
                       <div className="px-4 py-3 space-y-2 bg-zinc-900/40 border-t border-orange-900/30">
-                        {selectedOrder.marketplace_commission > 0 && (
+                        {commissionPercent > 0 && (
                           <div className="flex justify-between text-sm">
-                            <span className="text-zinc-400">Comissão{selectedOrder.commission_rate > 0 ? ` (${selectedOrder.commission_rate}%)` : ''}</span>
-                            <span className="text-orange-400 font-medium tabular-nums">-{formatCurrency(selectedOrder.marketplace_commission)}</span>
+                            <span className="text-zinc-400">Comissão{commissionRate > 0 ? ` (${commissionRate}%)` : ''}</span>
+                            <span className="text-orange-400 font-medium tabular-nums">-{formatCurrency(commissionPercent)}</span>
                           </div>
                         )}
                         {fixedFee > 0 && (
