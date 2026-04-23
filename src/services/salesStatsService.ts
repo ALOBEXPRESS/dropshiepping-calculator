@@ -102,7 +102,15 @@ export async function getGeneralFinancialSummary(): Promise<GeneralFinancialSumm
     }
 
     // Usar o user.id como organization_id (assumindo que cada usuário tem sua própria organização)
-    const organizationId = user.id;
+    // Buscar a organização do usuário via organization_members
+    const { data: memberData } = await supabase
+      .from('organization_members')
+      .select('organization_id')
+      .eq('user_id', user.id)
+      .limit(1)
+      .single();
+    
+    const organizationId = memberData?.organization_id ?? user.id;
 
     // Usar get_revenue_report para obter dados com custos dinâmicos
     const { data: revenueData, error: revenueError } = await supabase
