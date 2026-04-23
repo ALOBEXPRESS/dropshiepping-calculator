@@ -45,11 +45,12 @@ export const useHeroStats = (organizationId: string, refreshTrigger?: number) =>
 
         if (revenueError) throw revenueError;
 
-        // Buscar estatísticas de pedidos para contagem
+        // Buscar estatísticas de pedidos para contagem (apenas com order_date preenchido)
         const { data: ordersData, error: ordersError } = await supabase
           .from('orders')
           .select('customer_id')
-          .eq('organization_id', organizationId);
+          .eq('organization_id', organizationId)
+          .not('order_date', 'is', null);
 
         if (ordersError) throw ordersError;
 
