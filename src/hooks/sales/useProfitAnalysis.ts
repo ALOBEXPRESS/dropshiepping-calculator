@@ -31,11 +31,18 @@ export const useProfitAnalysis = (organizationId: string, refreshTrigger?: numbe
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchProfitAnalysis = async () => {
-      if (!organizationId) { setLoading(false); return; }
+      if (!organizationId) { 
+        if (isMounted) setLoading(false); 
+        return; 
+      }
 
-      setLoading(true);
-      setError(null);
+      if (isMounted) {
+        setLoading(true);
+        setError(null);
+      }
 
       try {
         // Usar get_revenue_report para obter dados com custos dinâmicos
@@ -47,7 +54,7 @@ export const useProfitAnalysis = (organizationId: string, refreshTrigger?: numbe
 
         if (revenueError) throw revenueError;
 
-        if (revenueData && revenueData.length > 0) {
+        if (revenueData && revenueData.length > 0 && isMounted) {
           // Somar total_revenue, total_cost, total_profit de todos os períodos
           interface RevenueDataItem {
             total_revenue?: number;
@@ -90,14 +97,20 @@ export const useProfitAnalysis = (organizationId: string, refreshTrigger?: numbe
           });
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erro ao carregar análise de lucro');
-        console.error('Error fetching profit analysis:', err);
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Erro ao carregar análise de lucro');
+          console.error('Error fetching profit analysis:', err);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     fetchProfitAnalysis();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [organizationId, refreshTrigger]);
 
   return { data, loading, error };

@@ -91,9 +91,18 @@ export const useCustomerLifetimeValue = (organizationId: string, refreshTrigger?
   }, [organizationId]);
 
   useEffect(() => {
-    if (organizationId) { fetchCustomerLTV(); } else { setLoading(false); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId, refreshTrigger]);
+    let isMounted = true;
+    
+    if (organizationId && isMounted) { 
+      fetchCustomerLTV(); 
+    } else if (isMounted) { 
+      setLoading(false); 
+    }
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [organizationId, refreshTrigger, fetchCustomerLTV]);
 
   return { data, loading, error, refetch: fetchCustomerLTV };
 };

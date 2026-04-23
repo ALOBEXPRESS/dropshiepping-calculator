@@ -108,13 +108,18 @@ export function useMarketplacePerformance(organizationId: string, refreshTrigger
     }, [organizationId]);
 
   useEffect(() => {
-    if (organizationId) {
+    let isMounted = true;
+    
+    if (organizationId && isMounted) {
       fetchData();
-    } else {
+    } else if (isMounted) {
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId, refreshTrigger]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [organizationId, refreshTrigger, fetchData]);
 
   return { data, loading, error, refetch: fetchData };
 }
