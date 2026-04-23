@@ -25,6 +25,7 @@ import { AlertCircle, TrendingUp, X, Instagram, Music, Twitter } from "lucide-re
 import { useInfluencers } from '@/hooks/useInfluencers';
 import { useAffiliates } from '@/hooks/useAffiliates';
 import { ProductVariationsSection } from './ProductVariationsSection';
+import { supabase } from '@/lib/supabase';
 
 interface EditProductDialogProps {
   product: ProductItem | null;
@@ -371,6 +372,29 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
   const [orgImpressions] = useState('');
   const [orgClicks] = useState('');
   const [orgSales] = useState('');
+  const [extraImageUrls, setExtraImageUrls] = useState<string[]>([]);
+
+  // Fetch extra image URLs from products_bling when dialog opens
+  useEffect(() => {
+    if (!product?.sku || !isOpen) return;
+    const sku = product.sku;
+    supabase
+      .from('products_bling')
+      .select('image_url,image_url1,image_url2,image_url3,image_url4,image_url5,image_url6,image_url7,image_url8,image_url9,image_url10')
+      .eq('sku', sku)
+      .limit(1)
+      .single()
+      .then(({ data }) => {
+        if (!data) return;
+        const urls = [
+          data.image_url, data.image_url1, data.image_url2, data.image_url3,
+          data.image_url4, data.image_url5, data.image_url6, data.image_url7,
+          data.image_url8, data.image_url9, data.image_url10,
+        ].filter((u): u is string => !!u && u.trim() !== '');
+        // Deduplicate
+        setExtraImageUrls([...new Set(urls)]);
+      });
+  }, [product?.sku, isOpen]);
   const videoModelLabels: Record<NonNullable<ProductItem['videoGenerationLlm']>, string> = {
     veo3: 'Veo3',
     sora2: 'Sora2',
@@ -1061,6 +1085,62 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                         className="w-full"
                         placeholder="https://"
                       />
+                      {/* Preview da imagem principal */}
+                      {formData.imageUrl && (
+                        <div className="mt-2">
+                          <img
+                            src={formData.imageUrl}
+                            alt="Preview do produto"
+                            className="h-32 w-32 rounded-lg object-cover border border-gray-200 dark:border-zinc-700"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          />
+                        </div>
+                      )}
+                      {/* Outras imagens do produto pai (Bling) */}
+                      {extraImageUrls.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                            Outras imagens disponíveis (clique para usar):
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {extraImageUrls.map((url, idx) => (
+                              <div key={idx} className="relative group">
+                                <img
+                                  src={url}
+                                  alt={`Imagem ${idx + 1}`}
+                                  className={`h-16 w-16 rounded-md object-cover border-2 cursor-pointer transition-all ${
+                                    formData.imageUrl === url
+                                      ? 'border-blue-500'
+                                      : 'border-gray-200 dark:border-zinc-700 hover:border-blue-400'
+                                  }`}
+                                  onClick={() => handleChange('imageUrl', url)}
+                                  onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none'; }}
+                                  title={url}
+                                />
+                                <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] text-center rounded-b-md opacity-0 group-hover:opacity-100 transition-opacity px-1 truncate">
+                                  img {idx + 1}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="space-y-1">
+                            {extraImageUrls.map((url, idx) => (
+                              <div key={idx} className="flex items-center gap-2">
+                                <span className="text-xs text-gray-400 shrink-0">img {idx + 1}:</span>
+                                <a
+                                  href={url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-500 hover:underline truncate"
+                                  title={url}
+                                >
+                                  {url}
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -1172,39 +1252,56 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                     <div className="space-y-2">
                       <Label className="text-sm font-medium dark:text-white">
                         Dimensões
-                      </Label>                      <div className="grid grid-cols-4 gap-3">
-                        <Input
-                          type="text"
-                          inputMode="decimal"
-                          value={formData.weight}
-                          onChange={(e) => handleCurrencyChange(e, (val) => handleChange('weight', val))}
-                          placeholder="Peso (kg)"
-                          className="w-full"
-                        />
-                        <Input
-                          type="text"
-                          inputMode="decimal"
-                          value={formData.width}
-                          onChange={(e) => handleCurrencyChange(e, (val) => handleChange('width', val))}
-                          placeholder="Largura (cm)"
-                          className="w-full"
-                        />
-                        <Input
-                          type="text"
-                          inputMode="decimal"
-                          value={formData.height}
-                          onChange={(e) => handleCurrencyChange(e, (val) => handleChange('height', val))}
-                          placeholder="Altura (cm)"
-                          className="w-full"
-                        />
-                        <Input
-                          type="text"
-                          inputMode="decimal"
-                          value={formData.depth}
-                          onChange={(e) => handleCurrencyChange(e, (val) => handleChange('depth', val))}
-                          placeholder="Profundidade (cm)"
-                          className="w-full"
-                        />
+                      </Label>
+                      <div className="grid grid-cols-4 gap-3">
+                        <div>
+                          <Label htmlFor="weight" className="text-xs text-gray-500 dark:text-gray-400 mb-1">Peso (kg)</Label>
+                          <Input
+                            id="weight"
+                            type="text"
+                            inputMode="decimal"
+                            value={formData.weight}
+                            onChange={(e) => handleCurrencyChange(e, (val) => handleChange('weight', val))}
+                            placeholder="0.3"
+                            className="w-full"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="width" className="text-xs text-gray-500 dark:text-gray-400 mb-1">Largura (cm)</Label>
+                          <Input
+                            id="width"
+                            type="text"
+                            inputMode="decimal"
+                            value={formData.width}
+                            onChange={(e) => handleCurrencyChange(e, (val) => handleChange('width', val))}
+                            placeholder="12"
+                            className="w-full"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="height" className="text-xs text-gray-500 dark:text-gray-400 mb-1">Altura (cm)</Label>
+                          <Input
+                            id="height"
+                            type="text"
+                            inputMode="decimal"
+                            value={formData.height}
+                            onChange={(e) => handleCurrencyChange(e, (val) => handleChange('height', val))}
+                            placeholder="8"
+                            className="w-full"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="depth" className="text-xs text-gray-500 dark:text-gray-400 mb-1">Profundidade (cm)</Label>
+                          <Input
+                            id="depth"
+                            type="text"
+                            inputMode="decimal"
+                            value={formData.depth}
+                            onChange={(e) => handleCurrencyChange(e, (val) => handleChange('depth', val))}
+                            placeholder="5"
+                            className="w-full"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
