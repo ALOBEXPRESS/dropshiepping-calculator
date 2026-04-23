@@ -456,7 +456,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const periodData = currentData[dataPointIndex];
         const revenue = Number(periodData.total_revenue);
         const cost = Number(periodData.total_cost);
-        const profit = revenue - cost;
+        // Usar total_profit do banco (já inclui comissão marketplace)
+        const profit = Number(periodData.total_profit);
 
         const ordersCount = periodData.orders_data?.length || 0;
         const profitColor = profit >= 0 ? '#16a34a' : '#dc2626';
@@ -626,7 +627,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         if (orders.length > 0 && orders[currentPage]) {
           return Number(orders[currentPage].total_profit ?? 0);
         }
-        return Number(item.total_revenue) - Number(item.total_cost);
+        // Usar total_profit do período (já inclui todas as taxas)
+        return Number(item.total_profit ?? 0);
       }),
     },
   ];
