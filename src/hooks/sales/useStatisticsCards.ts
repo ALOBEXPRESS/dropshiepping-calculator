@@ -8,7 +8,7 @@ export const useStatisticsCards = (organizationId: string) => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchStats = useCallback(async () => {
-    if (!organizationId) { setLoading(false); return; }
+    if (!organizationId) return;
     
     setLoading(true);
     setError(null);
@@ -29,8 +29,9 @@ export const useStatisticsCards = (organizationId: string) => {
   }, [organizationId]);
 
   useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+    if (organizationId) { fetchStats(); } else { setLoading(false); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [organizationId]);
 
   return { stats, loading, error, refetch: fetchStats };
 };

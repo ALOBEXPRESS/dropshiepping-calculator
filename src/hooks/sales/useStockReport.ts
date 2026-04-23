@@ -8,7 +8,7 @@ export const useStockReport = (organizationId: string) => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchStock = useCallback(async () => {
-    if (!organizationId) { setLoading(false); return; }
+    if (!organizationId) return;
     
     setLoading(true);
     setError(null);
@@ -29,8 +29,9 @@ export const useStockReport = (organizationId: string) => {
   }, [organizationId]);
 
   useEffect(() => {
-    fetchStock();
-  }, [fetchStock]);
+    if (organizationId) { fetchStock(); } else { setLoading(false); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [organizationId]);
 
   return { stock, loading, error, refetch: fetchStock };
 };

@@ -31,7 +31,7 @@ export const useCustomerLifetimeValue = (organizationId: string, refreshTrigger?
   const [error, setError] = useState<string | null>(null);
 
   const fetchCustomerLTV = useCallback(async () => {
-    if (!organizationId) { setLoading(false); return; }
+    if (!organizationId) return;
 
     setLoading(true);
     setError(null);
@@ -91,8 +91,9 @@ export const useCustomerLifetimeValue = (organizationId: string, refreshTrigger?
   }, [organizationId]);
 
   useEffect(() => {
-    fetchCustomerLTV();
-  }, [fetchCustomerLTV, refreshTrigger]);
+    if (organizationId) { fetchCustomerLTV(); } else { setLoading(false); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [organizationId, refreshTrigger]);
 
   return { data, loading, error, refetch: fetchCustomerLTV };
 };

@@ -90,8 +90,9 @@ export const useTopProfitableProducts = (
   }, [organizationId, limit]);
 
   useEffect(() => {
-    fetchTopProfitableProducts();
-  }, [fetchTopProfitableProducts, refreshTrigger]);
+    if (organizationId) { fetchTopProfitableProducts(); } else { setLoading(false); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [organizationId, refreshTrigger]);
 
   return { products, loading, error, refetch: fetchTopProfitableProducts };
 };

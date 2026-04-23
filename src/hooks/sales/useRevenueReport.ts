@@ -8,7 +8,7 @@ export const useRevenueReport = (organizationId: string, period: PeriodFilter) =
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
-    if (!organizationId) { setLoading(false); return; }
+    if (!organizationId) return;
     
     setLoading(true);
     setError(null);
@@ -30,8 +30,9 @@ export const useRevenueReport = (organizationId: string, period: PeriodFilter) =
   }, [organizationId, period]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (organizationId) { fetchData(); } else { setLoading(false); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [organizationId, period]);
 
   return { data, loading, error, refetch: fetchData };
 };

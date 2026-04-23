@@ -8,7 +8,7 @@ export const useTopProducts = (organizationId: string, limit: number = 5) => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchProducts = useCallback(async () => {
-    if (!organizationId) { setLoading(false); return; }
+    if (!organizationId) return;
     
     setLoading(true);
     setError(null);
@@ -30,8 +30,9 @@ export const useTopProducts = (organizationId: string, limit: number = 5) => {
   }, [organizationId, limit]);
 
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    if (organizationId) { fetchProducts(); } else { setLoading(false); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [organizationId, limit]);
 
   return { products, loading, error, refetch: fetchProducts };
 };

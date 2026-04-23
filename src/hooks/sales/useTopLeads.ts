@@ -17,7 +17,7 @@ export const useTopLeads = (organizationId: string, limit: number = 50) => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchLeads = useCallback(async () => {
-    if (!organizationId) { setLoading(false); return; }
+    if (!organizationId) return;
 
     setLoading(true);
     setError(null);
@@ -39,8 +39,9 @@ export const useTopLeads = (organizationId: string, limit: number = 50) => {
   }, [organizationId, limit]);
 
   useEffect(() => {
-    fetchLeads();
-  }, [fetchLeads]);
+    if (organizationId) { fetchLeads(); } else { setLoading(false); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [organizationId, limit]);
 
   return { leads, loading, error, refetch: fetchLeads };
 };

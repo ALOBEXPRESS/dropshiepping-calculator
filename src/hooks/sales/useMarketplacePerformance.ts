@@ -113,7 +113,8 @@ export function useMarketplacePerformance(organizationId: string, refreshTrigger
     } else {
       setLoading(false);
     }
-  }, [organizationId, refreshTrigger, fetchData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [organizationId, refreshTrigger]);
 
   return { data, loading, error, refetch: fetchData };
 }
