@@ -29,7 +29,7 @@ export function useGenderDistribution(
 
   useEffect(() => {
     const fetchGenderDistribution = async () => {
-      if (!organizationId) return;
+      if (!organizationId) { setLoading(false); return; }
 
       setLoading(true);
       setError(null);

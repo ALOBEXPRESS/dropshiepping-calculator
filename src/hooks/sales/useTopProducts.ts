@@ -8,7 +8,7 @@ export const useTopProducts = (organizationId: string, limit: number = 5) => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchProducts = useCallback(async () => {
-    if (!organizationId) return;
+    if (!organizationId) { setLoading(false); return; }
     
     setLoading(true);
     setError(null);

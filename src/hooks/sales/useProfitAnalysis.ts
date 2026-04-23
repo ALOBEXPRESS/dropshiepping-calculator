@@ -32,7 +32,7 @@ export const useProfitAnalysis = (organizationId: string, refreshTrigger?: numbe
 
   useEffect(() => {
     const fetchProfitAnalysis = async () => {
-      if (!organizationId) return;
+      if (!organizationId) { setLoading(false); return; }
 
       setLoading(true);
       setError(null);

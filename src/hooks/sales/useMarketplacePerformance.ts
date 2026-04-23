@@ -16,6 +16,10 @@ export function useMarketplacePerformance(organizationId: string, refreshTrigger
   const [error, setError] = useState<Error | null>(null);
 
   const fetchData = useCallback(async () => {
+      if (!organizationId) {
+        setLoading(false);
+        return;
+      }
       try {
         setLoading(true);
         

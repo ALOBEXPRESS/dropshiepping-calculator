@@ -8,7 +8,7 @@ export const useStatisticsCards = (organizationId: string) => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchStats = useCallback(async () => {
-    if (!organizationId) return;
+    if (!organizationId) { setLoading(false); return; }
     
     setLoading(true);
     setError(null);

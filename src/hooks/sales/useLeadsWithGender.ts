@@ -26,7 +26,7 @@ export function useLeadsWithGender(
 
   useEffect(() => {
     const fetchLeadsWithGender = async () => {
-      if (!organizationId) return;
+      if (!organizationId) { setLoading(false); return; }
 
       setLoading(true);
       setError(null);

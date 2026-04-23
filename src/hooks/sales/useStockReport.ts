@@ -8,7 +8,7 @@ export const useStockReport = (organizationId: string) => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchStock = useCallback(async () => {
-    if (!organizationId) return;
+    if (!organizationId) { setLoading(false); return; }
     
     setLoading(true);
     setError(null);

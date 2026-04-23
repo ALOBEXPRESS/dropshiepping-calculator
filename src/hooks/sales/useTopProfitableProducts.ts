@@ -33,7 +33,7 @@ export const useTopProfitableProducts = (
       });
 
       if (queryError) {
-        // Se a função não existir, fazer query manual
+        // Se a função não existir, fazer query manual com filtro de organização
         const { data: orderItems, error: itemsError } = await supabase
           .from('order_items')
           .select(`
@@ -43,8 +43,10 @@ export const useTopProfitableProducts = (
             profit_margin,
             quantity,
             total_price,
-            order_id
+            order_id,
+            orders!inner(organization_id)
           `)
+          .eq('orders.organization_id', organizationId)
           .order('profit', { ascending: false });
 
         if (itemsError) throw itemsError;

@@ -13,9 +13,9 @@ interface HeroStats {
 }
 
 interface RevenueReportItem {
-  revenue: number;
-  cost: number;
-  profit: number;
+  total_revenue: number;
+  total_cost: number;
+  total_profit: number;
 }
 
 export const useHeroStats = (organizationId: string, refreshTrigger?: number) => {
@@ -30,7 +30,7 @@ export const useHeroStats = (organizationId: string, refreshTrigger?: number) =>
 
   useEffect(() => {
     const fetchStats = async () => {
-      if (!organizationId) return;
+      if (!organizationId) { setLoading(false); return; }
 
       setLoading(true);
       setError(null);
@@ -64,7 +64,7 @@ export const useHeroStats = (organizationId: string, refreshTrigger?: number) =>
 
         // Calcular lucro total somando todos os pedidos do revenue report
         const totalProfit = revenueData?.reduce((sum: number, item: RevenueReportItem) => {
-          return sum + (Number(item.profit) || 0);
+          return sum + (Number(item.total_profit) || 0);
         }, 0) || 0;
 
         const totalOrders = ordersData?.length || 0;

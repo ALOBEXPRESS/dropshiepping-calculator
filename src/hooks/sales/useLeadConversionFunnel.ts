@@ -25,7 +25,7 @@ export const useLeadConversionFunnel = (organizationId: string, refreshTrigger?:
 
   useEffect(() => {
     const fetchLeadFunnel = async () => {
-      if (!organizationId) return;
+      if (!organizationId) { setLoading(false); return; }
 
       setLoading(true);
       setError(null);

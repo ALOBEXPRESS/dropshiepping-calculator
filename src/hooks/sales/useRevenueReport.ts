@@ -8,7 +8,7 @@ export const useRevenueReport = (organizationId: string, period: PeriodFilter) =
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
-    if (!organizationId) return;
+    if (!organizationId) { setLoading(false); return; }
     
     setLoading(true);
     setError(null);

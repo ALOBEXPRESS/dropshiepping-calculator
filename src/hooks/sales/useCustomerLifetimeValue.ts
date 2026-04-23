@@ -31,7 +31,7 @@ export const useCustomerLifetimeValue = (organizationId: string, refreshTrigger?
   const [error, setError] = useState<string | null>(null);
 
   const fetchCustomerLTV = useCallback(async () => {
-    if (!organizationId) return;
+    if (!organizationId) { setLoading(false); return; }
 
     setLoading(true);
     setError(null);
