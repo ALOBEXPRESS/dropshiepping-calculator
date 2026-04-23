@@ -254,6 +254,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       </div>
                     </div>
                     <div style="display:flex;justify-content:space-between;font-size:11px;padding-top:4px;border-top:1px dashed #e5e7eb">
+                      <span style="color:#6b7280">Custo:</span>
+                      <span style="font-weight:600;color:#ef4444">${fmt(Number(order.total_cost ?? 0))}</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:11px;padding-top:2px">
                       <span style="color:#6b7280">Lucro:</span>
                       <span style="font-weight:700;color:${orderProfitColor}">${fmt(orderProfit)}</span>
                     </div>
@@ -588,6 +592,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 </div>
               </div>
               <div style="display:flex;justify-content:space-between;font-size:11px;padding-top:4px;border-top:1px dashed ${dividerColor}">
+                <span style="color:${textSecondary}">Custo:</span>
+                <span style="font-weight:600;color:#ef4444">${formatCurrency(Number(order.total_cost ?? 0))}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding-top:2px">
                 <span style="color:${textSecondary}">Lucro:</span>
                 <span style="font-weight:700;color:${orderProfitColor}">${formatCurrency(orderProfit)}</span>
               </div>
