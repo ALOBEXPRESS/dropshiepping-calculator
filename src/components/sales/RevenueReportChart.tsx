@@ -36,6 +36,7 @@ interface OrderDetail {
   order_number: string;
   marketplace: string;
   marketplace_fixed_fee?: number;
+  is_free_sample?: boolean;
   customer_name?: string;
   product_name?: string;
   product_sku?: string;
@@ -474,6 +475,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             : 'Sem marketplace';
           const customerName = (order as { customer_name?: string }).customer_name || 'Cliente não identificado';
           const orderNumber = order.order_number || 'S/N';
+          const isFreeSample = (order as { is_free_sample?: boolean }).is_free_sample === true
+            || String((order as { is_free_sample?: unknown }).is_free_sample) === 'true';
           
           const productNamesFromItems = (order.products || [])
             .map((p: { name: string }) => p.name)
@@ -485,7 +488,16 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const safeStore = marketplaceName;
           const orderRevenue = Number(order.total_amount ?? 0);
           const orderProfit = Number(order.total_profit ?? 0);
-          const orderProfitColor = orderProfit >= 0 ? '#16a34a' : '#dc2626';
+          const orderProfitColor = isFreeSample ? '#e9d5ff' : (orderProfit >= 0 ? '#16a34a' : '#dc2626');
+
+          // Cores do tema: branco para texto normal, roxo para amostra grátis
+          const textPrimary = isFreeSample ? '#f3e8ff' : '#374151';
+          const textSecondary = isFreeSample ? '#d8b4fe' : '#6b7280';
+          const dividerColor = isFreeSample ? 'rgba(167,139,250,0.3)' : '#f3f4f6';
+          const navBtnBg = isFreeSample ? 'rgba(109,40,217,0.4)' : '#e5e7eb';
+          const navBtnColor = isFreeSample ? '#e9d5ff' : '#374151';
+          const navBtnDisabledBg = isFreeSample ? 'rgba(109,40,217,0.15)' : '#f3f4f6';
+          const navBtnDisabledColor = isFreeSample ? 'rgba(233,213,255,0.3)' : '#d1d5db';
 
           const orderDetailData: OrderDetail = {
             order_id: order.order_id,
@@ -513,39 +525,48 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
           // Setas de navegação (só aparece se há mais de 1 pedido)
           const navHtml = ordersCount > 1 ? `
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid #f3f4f6;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid ${dividerColor};">
               <button
                 data-tooltip-nav
                 data-nav-dir="prev"
                 data-nav-key="${stateKey}"
                 data-nav-max="${ordersCount - 1}"
-                style="background:${currentPage === 0 ? '#f3f4f6' : '#e5e7eb'};color:${currentPage === 0 ? '#d1d5db' : '#374151'};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:${currentPage === 0 ? 'default' : 'pointer'};font-weight:600;line-height:1;"
+                style="background:${currentPage === 0 ? navBtnDisabledBg : navBtnBg};color:${currentPage === 0 ? navBtnDisabledColor : navBtnColor};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:${currentPage === 0 ? 'default' : 'pointer'};font-weight:600;line-height:1;"
                 ${currentPage === 0 ? 'disabled' : ''}
               >‹</button>
-              <span style="font-size:11px;color:#6b7280;font-weight:500">${currentPage + 1} / ${ordersCount} pedido${ordersCount > 1 ? 's' : ''}</span>
+              <span style="font-size:11px;color:${textSecondary};font-weight:500">${currentPage + 1} / ${ordersCount} pedido${ordersCount > 1 ? 's' : ''}</span>
               <button
                 data-tooltip-nav
                 data-nav-dir="next"
                 data-nav-key="${stateKey}"
                 data-nav-max="${ordersCount - 1}"
-                style="background:${currentPage === ordersCount - 1 ? '#f3f4f6' : '#e5e7eb'};color:${currentPage === ordersCount - 1 ? '#d1d5db' : '#374151'};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:${currentPage === ordersCount - 1 ? 'default' : 'pointer'};font-weight:600;line-height:1;"
+                style="background:${currentPage === ordersCount - 1 ? navBtnDisabledBg : navBtnBg};color:${currentPage === ordersCount - 1 ? navBtnDisabledColor : navBtnColor};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:${currentPage === ordersCount - 1 ? 'default' : 'pointer'};font-weight:600;line-height:1;"
                 ${currentPage === ordersCount - 1 ? 'disabled' : ''}
               >›</button>
             </div>
           ` : '';
 
+          // Headline de amostra grátis
+          const freeSampleBadge = isFreeSample ? `
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;padding:5px 8px;background:rgba(109,40,217,0.35);border-radius:6px;border:1px solid rgba(167,139,250,0.4);">
+              <span style="font-size:13px;">🎁</span>
+              <span style="font-size:10px;font-weight:800;color:#e9d5ff;letter-spacing:0.08em;text-transform:uppercase;">Pedido de Amostra Grátis</span>
+            </div>
+          ` : '';
+
           return `
-            <div style="padding-top:6px;border-top:1px solid #f3f4f6;">
+            <div style="padding-top:6px;border-top:1px solid ${dividerColor};">
               ${navHtml}
+              ${freeSampleBadge}
               <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
                 <div style="flex:1;min-width:0">
-                  <div style="font-size:11px;color:#374151;font-weight:600;margin-bottom:2px">${customerName}</div>
-                  <div style="font-size:10px;color:#6b7280;margin-bottom:2px">🏪 ${marketplaceName} • Pedido #${orderNumber}</div>
-                  <div style="font-size:10px;color:#374151;margin-bottom:2px">
+                  <div style="font-size:11px;color:${textPrimary};font-weight:600;margin-bottom:2px">${customerName}</div>
+                  <div style="font-size:10px;color:${textSecondary};margin-bottom:2px">🏪 ${marketplaceName} • Pedido #${orderNumber}</div>
+                  <div style="font-size:10px;color:${textPrimary};margin-bottom:2px">
                     📦 ${mainProductName.length > 28 ? mainProductName.substring(0, 28) + '...' : mainProductName}
                     ${productSku ? ` (SKU: ${productSku})` : ''}
                   </div>
-                  ${productCount > 1 ? `<div style="font-size:10px;color:#9ca3af">+${productCount - 1} produto(s)</div>` : ''}
+                  ${productCount > 1 ? `<div style="font-size:10px;color:${textSecondary}">+${productCount - 1} produto(s)</div>` : ''}
                 </div>
                 <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
                   <button 
@@ -566,42 +587,58 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   >Excluir</button>
                 </div>
               </div>
-              <div style="display:flex;justify-content:space-between;font-size:11px;padding-top:4px;border-top:1px dashed #e5e7eb">
-                <span style="color:#6b7280">Lucro:</span>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding-top:4px;border-top:1px dashed ${dividerColor}">
+                <span style="color:${textSecondary}">Lucro:</span>
                 <span style="font-weight:700;color:${orderProfitColor}">${formatCurrency(orderProfit)}</span>
               </div>
             </div>
           `;
         })() : '';
 
+        // Detectar se o pedido atual é amostra grátis para colorir o tooltip
+        const currentOrderIsFreeSample = order
+          ? (order as { is_free_sample?: boolean | string }).is_free_sample === true
+            || String((order as { is_free_sample?: unknown }).is_free_sample) === 'true'
+          : false;
+        const tooltipBg = currentOrderIsFreeSample
+          ? 'linear-gradient(135deg, #3b0764 0%, #4c1d95 50%, #2e1065 100%)'
+          : '#fff';
+        const tooltipBorder = currentOrderIsFreeSample ? '1px solid rgba(167,139,250,0.5)' : '1px solid #e5e7eb';
+        const tooltipHeaderColor = currentOrderIsFreeSample ? '#e9d5ff' : '#111827';
+        const tooltipSubColor = currentOrderIsFreeSample ? '#c4b5fd' : '#6b7280';
+        const tooltipBadgeBg = currentOrderIsFreeSample ? 'rgba(109,40,217,0.4)' : '#f3f4f6';
+        const tooltipBadgeColor = currentOrderIsFreeSample ? '#e9d5ff' : '#6b7280';
+        const tooltipValueColor = currentOrderIsFreeSample ? '#f3e8ff' : '#111827';
+        const tooltipDivider = currentOrderIsFreeSample ? 'rgba(167,139,250,0.3)' : '#e5e7eb';
+
         return `
-          <div class="apexcharts-tooltip-custom" style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,0.12);min-width:270px;max-width:360px;pointer-events:auto;">
+          <div class="apexcharts-tooltip-custom" style="background:${tooltipBg};border:${tooltipBorder};border-radius:8px;padding:10px 12px;box-shadow:0 4px 24px rgba(109,40,217,0.3);min-width:270px;max-width:360px;pointer-events:auto;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-              <span style="font-weight:600;color:#111827;font-size:13px">${periodData.period_label}</span>
-              <span style="font-size:11px;color:#6b7280;background:#f3f4f6;padding:2px 8px;border-radius:99px;">${ordersCount} pedido${ordersCount !== 1 ? 's' : ''}</span>
+              <span style="font-weight:600;color:${tooltipHeaderColor};font-size:13px">${periodData.period_label}</span>
+              <span style="font-size:11px;color:${tooltipBadgeColor};background:${tooltipBadgeBg};padding:2px 8px;border-radius:99px;">${ordersCount} pedido${ordersCount !== 1 ? 's' : ''}</span>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
               <div style="display:flex;align-items:center;gap:6px">
                 <div style="width:10px;height:10px;border-radius:50%;background:#45B369"></div>
-                <span style="font-size:12px;color:#6b7280">Receita total:</span>
+                <span style="font-size:12px;color:${tooltipSubColor}">Receita total:</span>
               </div>
-              <span style="font-size:12px;font-weight:600;color:#111827">${formatCurrency(revenue)}</span>
+              <span style="font-size:12px;font-weight:600;color:${tooltipValueColor}">${formatCurrency(revenue)}</span>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
               <div style="display:flex;align-items:center;gap:6px">
                 <div style="width:10px;height:10px;border-radius:50%;background:#EF4A00"></div>
-                <span style="font-size:12px;color:#6b7280">Custo total:</span>
+                <span style="font-size:12px;color:${tooltipSubColor}">Custo total:</span>
               </div>
-              <span style="font-size:12px;font-weight:600;color:#111827">${formatCurrency(cost)}</span>
+              <span style="font-size:12px;font-weight:600;color:${tooltipValueColor}">${formatCurrency(cost)}</span>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
               <div style="display:flex;align-items:center;gap:6px">
                 <div style="width:10px;height:10px;border-radius:50%;background:#8b5cf6"></div>
-                <span style="font-size:12px;color:#6b7280">Lucro total:</span>
+                <span style="font-size:12px;color:${tooltipSubColor}">Lucro total:</span>
               </div>
               <span style="font-size:12px;font-weight:700;color:${profitColor}">${formatCurrency(profit)}</span>
             </div>
-            <div style="height:1px;background:#e5e7eb;margin-bottom:6px;"></div>
+            <div style="height:1px;background:${tooltipDivider};margin-bottom:6px;"></div>
             ${orderHtml}
           </div>`;
       },
