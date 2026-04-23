@@ -64,6 +64,7 @@ interface OrderDetail {
   supplier_gateway_fee_value?: string;
   supplier_gateway_fee_type?: string;
   total_profit: number;
+  tiktok_sfp_enabled?: boolean;
 }
 
 export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organizationId, refreshTrigger, onOrderDeleted }) => {
@@ -220,6 +221,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   supplier_gateway_fee_value: (order as { supplier_gateway_fee_value?: string }).supplier_gateway_fee_value,
                   supplier_gateway_fee_type: (order as { supplier_gateway_fee_type?: string }).supplier_gateway_fee_type,
                   total_profit: orderProfit,
+                  tiktok_sfp_enabled: (order as { tiktok_sfp_enabled?: boolean | string }).tiktok_sfp_enabled === true
+                    || String((order as { tiktok_sfp_enabled?: unknown }).tiktok_sfp_enabled) === 'true',
                 };
 
                 const navHtml = `
@@ -525,6 +528,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             supplier_gateway_fee_value: (order as { supplier_gateway_fee_value?: string }).supplier_gateway_fee_value,
             supplier_gateway_fee_type: (order as { supplier_gateway_fee_type?: string }).supplier_gateway_fee_type,
             total_profit: orderProfit,
+            tiktok_sfp_enabled: (order as { tiktok_sfp_enabled?: boolean | string }).tiktok_sfp_enabled === true
+              || String((order as { tiktok_sfp_enabled?: unknown }).tiktok_sfp_enabled) === 'true',
           };
 
           // Setas de navegação (só aparece se há mais de 1 pedido)
@@ -749,8 +754,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const commissionPercent = commissionRate > 0
               ? (selectedOrder.total_amount * commissionRate) / 100
               : Math.max(0, selectedOrder.marketplace_commission - fixedFee);
-            // subtotal marketplace = comissão% + taxa fixa + frete + outras despesas
-            const subtotalMarketplace = commissionPercent + fixedFee + selectedOrder.shipping_cost + selectedOrder.other_expenses;
+            // Taxa SFP TikTok: 6% sobre preço de venda quando habilitado
+            const sfpEnabled = selectedOrder.tiktok_sfp_enabled === true;
+            const sfpFee = sfpEnabled ? selectedOrder.total_amount * 0.06 : 0;
+            // subtotal marketplace = comissão% + taxa fixa + SFP + frete + outras despesas
+            const subtotalMarketplace = commissionPercent + fixedFee + sfpFee + selectedOrder.shipping_cost + selectedOrder.other_expenses;
             const realProfit = selectedOrder.total_amount - totalProductCost - subtotalMarketplace;
             const margin = selectedOrder.total_amount > 0
               ? ((realProfit / selectedOrder.total_amount) * 100).toFixed(1) : '0.0';
@@ -969,6 +977,15 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           <div className="flex justify-between text-sm">
                             <span className="text-zinc-400">Taxa fixa</span>
                             <span className="text-orange-400 font-medium tabular-nums">-{formatCurrency(fixedFee)}</span>
+                          </div>
+                        )}
+                        {sfpFee > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-zinc-400">Taxa de serviço SFP</span>
+                              <span className="text-[10px] text-zinc-600 font-mono">(6% × R${selectedOrder.total_amount.toFixed(2)})</span>
+                            </div>
+                            <span className="text-orange-400 font-medium tabular-nums">-{formatCurrency(sfpFee)}</span>
                           </div>
                         )}
                         {selectedOrder.shipping_cost > 0 && (
