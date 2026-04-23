@@ -837,16 +837,22 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                   <span className="text-zinc-500">Custo base</span>
                                   <span className="text-red-400 tabular-nums">-{formatCurrency(p.baseCost)}</span>
                                 </div>
-                                {p.supplierFee > 0 && (
+                                {p.supFeeVal > 0 && (
                                   <div className="flex justify-between text-xs">
-                                    <span className="text-zinc-500">Taxa fornecedor{p.supFeeType === 'percent' ? ` (${p.supFeeVal}%)` : ''}</span>
+                                    <span className="text-zinc-500">Taxa fornecedor{p.supFeeType === 'percent' ? ` (${p.supFeeVal}%)` : ' (fixo)'}</span>
                                     <span className="text-red-400 tabular-nums">-{formatCurrency(p.supplierFee)}</span>
                                   </div>
                                 )}
-                                {p.gatewayFee > 0 && (
+                                {p.gwFeeVal > 0 && (
                                   <div className="flex justify-between text-xs">
-                                    <span className="text-zinc-500">Gateway fornecedor{p.gwFeeType === 'percent' ? ` (${p.gwFeeVal}%)` : ''}</span>
+                                    <span className="text-zinc-500">Gateway fornecedor{p.gwFeeType === 'percent' ? ` (${p.gwFeeVal}%)` : ' (fixo)'}</span>
                                     <span className="text-red-400 tabular-nums">-{formatCurrency(p.gatewayFee)}</span>
+                                  </div>
+                                )}
+                                {p.totalCost !== p.baseCost && (
+                                  <div className="flex justify-between text-xs border-t border-zinc-800/60 pt-1 mt-1">
+                                    <span className="text-zinc-400 font-medium">Total item</span>
+                                    <span className="text-red-400 font-semibold tabular-nums">-{formatCurrency(p.totalCost)}</span>
                                   </div>
                                 )}
                               </div>
