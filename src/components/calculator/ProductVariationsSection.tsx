@@ -243,12 +243,39 @@ export const ProductVariationsSection: React.FC<ProductVariationsSectionProps> =
             )}
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {/* SKU */}
+              {/* SKU + URL da imagem da variação */}
               {currentVariation.sku && (
-                <div className="rounded-md bg-white px-3 py-2 dark:bg-zinc-900">
-                  <div className="text-xs text-gray-600 dark:text-gray-400">SKU</div>
-                  <div className="font-mono text-sm font-medium text-gray-900 dark:text-white">
-                    {currentVariation.sku}
+                <div className="rounded-md bg-white px-3 py-2 dark:bg-zinc-900 sm:col-span-2 lg:col-span-3">
+                  <div className="flex flex-wrap items-start gap-4">
+                    {/* SKU */}
+                    <div className="shrink-0">
+                      <div className="text-xs text-gray-600 dark:text-gray-400">SKU</div>
+                      <div className="font-mono text-sm font-medium text-gray-900 dark:text-white">
+                        {currentVariation.sku}
+                      </div>
+                    </div>
+                    {/* URL da imagem da variação */}
+                    {currentImages[currentImageIndex] && (
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">URL da imagem</div>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <input
+                            readOnly
+                            value={currentImages[currentImageIndex]}
+                            onClick={(e) => (e.target as HTMLInputElement).select()}
+                            className="flex-1 min-w-0 text-[11px] font-mono text-blue-400 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 cursor-pointer focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/40"
+                            title="Clique para selecionar e copiar"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => navigator.clipboard.writeText(currentImages[currentImageIndex])}
+                            className="shrink-0 text-[10px] text-zinc-400 hover:text-white bg-zinc-700 hover:bg-zinc-600 rounded px-2 py-1 transition-colors whitespace-nowrap"
+                          >
+                            Copiar
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

@@ -1119,8 +1119,8 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                           />
                         </div>
                       )}
-                      {/* Outras imagens do produto pai (Bling) */}
-                      {extraImageUrls.length > 0 && (
+                      {/* Outras imagens do produto pai (Bling) — só para produtos SEM variações */}
+                      {extraImageUrls.length > 0 && !(product?.variations && product.variations.length > 0) && (
                         <div className="mt-4 rounded-lg border border-zinc-700 bg-zinc-900/50 p-3 space-y-3">
                           <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
                             Imagens do Bling — arraste para reordenar, clique para usar
