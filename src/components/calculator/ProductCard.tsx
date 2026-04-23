@@ -1011,6 +1011,25 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                       )}
                     </div>
                   )}
+                  {/* adType badge for Mercado Livre */}
+                  {product.marketplace?.toLowerCase() === 'mercadolivre' && product.adType && product.adType !== 'gratis' && (() => {
+                    const adTypeBadge: Record<string, { label: string; color: string }> = {
+                      classico: { label: 'CLÁSSICO', color: 'bg-yellow-500 text-black' },
+                      premium:  { label: 'PREMIUM',  color: 'bg-blue-600 text-white' },
+                    };
+                    const badge = adTypeBadge[product.adType];
+                    if (!badge) return null;
+                    return (
+                      <div className={`absolute -left-2 -top-2 z-20 rounded px-1.5 py-0.5 text-[9px] font-bold tracking-wide shadow ${badge.color}`}>
+                        {badge.label}
+                      </div>
+                    );
+                  })()}
+                  {product.marketplace?.toLowerCase() === 'mercadolivre' && (!product.adType || product.adType === 'gratis') && (
+                    <div className="absolute -left-2 -top-2 z-20 rounded px-1.5 py-0.5 text-[9px] font-bold tracking-wide shadow bg-gray-500 text-white">
+                      GRÁTIS
+                    </div>
+                  )}
                   {showReputationIllustration && (
                     <div className="absolute -left-2 top-3">
                       <img

@@ -1142,6 +1142,8 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                                     const next = [...prev];
                                     const [moved] = next.splice(from, 1);
                                     next.splice(idx, 0, moved);
+                                    // Auto-set cover: always use position 0 after reorder
+                                    setTimeout(() => handleChange('imageUrl', next[0]), 0);
                                     return next;
                                   });
                                   dragIndexRef.current = null;
