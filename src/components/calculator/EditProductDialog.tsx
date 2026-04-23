@@ -386,11 +386,33 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       .single()
       .then(({ data }) => {
         if (!data) return;
-        const urls = [
+        const raw = [
           data.image_url, data.image_url1, data.image_url2, data.image_url3,
           data.image_url4, data.image_url5, data.image_url6, data.image_url7,
           data.image_url8, data.image_url9, data.image_url10,
-        ].filter((u): u is string => !!u && u.trim() !== '');
+        ];
+        // Sanitize: some fields may be JSON strings like [{"link":"https://..."}]
+        const urls = raw
+          .flatMap((u) => {
+            if (!u || typeof u !== 'string' || !u.trim()) return [];
+            const trimmed = u.trim();
+            // Try to parse as JSON array of {link: string}
+            if (trimmed.startsWith('[')) {
+              try {
+                const parsed = JSON.parse(trimmed) as Array<{ link?: string; url?: string }>;
+                return parsed.map((item) => item.link || item.url || '').filter(Boolean);
+              } catch { /* not JSON */ }
+            }
+            // Try to parse as JSON object
+            if (trimmed.startsWith('{')) {
+              try {
+                const parsed = JSON.parse(trimmed) as { link?: string; url?: string };
+                return [parsed.link || parsed.url || ''].filter(Boolean);
+              } catch { /* not JSON */ }
+            }
+            return [trimmed];
+          })
+          .filter((u) => u.startsWith('http'));
         // Deduplicate
         setExtraImageUrls([...new Set(urls)]);
       });
@@ -993,7 +1015,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
         onClose();
       }
     }}>
-      <DialogContent className="sm:max-w-[920px] max-h-[85vh] overflow-y-auto bg-gray-50 dark:bg-gray-900">
+      <DialogContent className="sm:max-w-[920px] max-h-[85vh] overflow-y-auto overflow-x-hidden bg-gray-50 dark:bg-gray-900">
         <DialogHeader>
           <DialogTitle>Editar Produto</DialogTitle>
           <DialogDescription>
@@ -1091,51 +1113,65 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                           <img
                             src={formData.imageUrl}
                             alt="Preview do produto"
-                            className="h-32 w-32 rounded-lg object-cover border border-gray-200 dark:border-zinc-700"
+                            className="h-24 w-24 rounded-lg object-cover border border-gray-200 dark:border-zinc-700"
                             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                           />
                         </div>
                       )}
                       {/* Outras imagens do produto pai (Bling) */}
                       {extraImageUrls.length > 0 && (
-                        <div className="mt-3 space-y-2">
-                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                            Outras imagens disponíveis (clique para usar):
+                        <div className="mt-4 rounded-lg border border-zinc-700 bg-zinc-900/50 p-3 space-y-3">
+                          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+                            Imagens do Bling — clique para usar
                           </p>
+                          {/* Thumbnails */}
                           <div className="flex flex-wrap gap-2">
                             {extraImageUrls.map((url, idx) => (
-                              <div key={idx} className="relative group">
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => handleChange('imageUrl', url)}
+                                title={`Imagem ${idx + 1}`}
+                                className={`relative h-14 w-14 shrink-0 rounded-md overflow-hidden border-2 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                  formData.imageUrl === url
+                                    ? 'border-blue-500 ring-2 ring-blue-500/40'
+                                    : 'border-zinc-600 hover:border-blue-400'
+                                }`}
+                              >
                                 <img
                                   src={url}
                                   alt={`Imagem ${idx + 1}`}
-                                  className={`h-16 w-16 rounded-md object-cover border-2 cursor-pointer transition-all ${
-                                    formData.imageUrl === url
-                                      ? 'border-blue-500'
-                                      : 'border-gray-200 dark:border-zinc-700 hover:border-blue-400'
-                                  }`}
-                                  onClick={() => handleChange('imageUrl', url)}
-                                  onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none'; }}
-                                  title={url}
+                                  className="h-full w-full object-cover"
+                                  onError={(e) => { (e.target as HTMLImageElement).closest('button')!.style.display = 'none'; }}
                                 />
-                                <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] text-center rounded-b-md opacity-0 group-hover:opacity-100 transition-opacity px-1 truncate">
-                                  img {idx + 1}
-                                </div>
-                              </div>
+                                <span className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[8px] text-center py-0.5">
+                                  {idx + 1}
+                                </span>
+                              </button>
                             ))}
                           </div>
-                          <div className="space-y-1">
+                          {/* Links copiáveis */}
+                          <div className="space-y-1.5">
                             {extraImageUrls.map((url, idx) => (
-                              <div key={idx} className="flex items-center gap-2">
-                                <span className="text-xs text-gray-400 shrink-0">img {idx + 1}:</span>
-                                <a
-                                  href={url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-blue-500 hover:underline truncate"
-                                  title={url}
+                              <div key={idx} className="flex items-center gap-2 min-w-0">
+                                <span className="text-[10px] font-mono text-zinc-500 shrink-0 w-8">
+                                  #{idx + 1}
+                                </span>
+                                <input
+                                  readOnly
+                                  value={url}
+                                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                                  className="flex-1 min-w-0 text-[11px] font-mono text-blue-400 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 cursor-pointer select-all focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/40"
+                                  title="Clique para selecionar e copiar"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => navigator.clipboard.writeText(url)}
+                                  className="shrink-0 text-[10px] text-zinc-400 hover:text-white bg-zinc-700 hover:bg-zinc-600 rounded px-2 py-1 transition-colors"
+                                  title="Copiar URL"
                                 >
-                                  {url}
-                                </a>
+                                  Copiar
+                                </button>
                               </div>
                             ))}
                           </div>
