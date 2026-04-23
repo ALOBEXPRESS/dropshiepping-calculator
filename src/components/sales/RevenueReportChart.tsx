@@ -40,7 +40,17 @@ interface OrderDetail {
   product_name?: string;
   product_sku?: string;
   product_image_url?: string;
-  products?: { name: string; sku?: string }[];
+  products?: {
+    name: string;
+    sku?: string;
+    quantity?: number;
+    unit_price?: number;
+    unit_cost?: number;
+    supplier_fee_value?: string;
+    supplier_fee_type?: string;
+    supplier_gateway_fee_value?: string;
+    supplier_gateway_fee_type?: string;
+  }[];
   total_amount: number;
   total_cost: number;
   product_cost_price?: number;
@@ -65,6 +75,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
   const [openProduto, setOpenProduto] = useState(false);
   const [openMarketplace, setOpenMarketplace] = useState(false);
+  const [openItems, setOpenItems] = useState<Record<number, boolean>>({});
+  const toggleItem = (i: number) => setOpenItems(prev => ({ ...prev, [i]: !prev[i] }));
   
   const chartRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef(data);
@@ -341,6 +353,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       
       // Resetar paginação do tooltip (dados mudaram)
       setTooltipPages({});
+      // Resetar accordions do dialog
+      setOpenProduto(false);
+      setOpenMarketplace(false);
+      setOpenItems({});
       
       // Fechar o tooltip do ApexCharts
       const tooltipEl = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
@@ -642,46 +658,51 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
         <DialogContent className="max-w-lg p-0 overflow-hidden border-0 bg-zinc-950 rounded-2xl shadow-2xl [&>button]:hidden">
           {selectedOrder && (() => {
-            const supplierFee = selectedOrder.supplier_fee_value && Number(selectedOrder.supplier_fee_value) > 0
-              ? selectedOrder.supplier_fee_type === 'percent'
-                ? (selectedOrder.total_amount * Number(selectedOrder.supplier_fee_value)) / 100
-                : Number(selectedOrder.supplier_fee_value)
-              : 0;
-            const gatewayFee = selectedOrder.supplier_gateway_fee_value && Number(selectedOrder.supplier_gateway_fee_value) > 0
-              ? selectedOrder.supplier_gateway_fee_type === 'fixed'
-                ? Number(selectedOrder.supplier_gateway_fee_value)
-                : (selectedOrder.total_amount * Number(selectedOrder.supplier_gateway_fee_value)) / 100
-              : 0;
-            const productCost = selectedOrder.product_cost_price ?? 0;
-            const subtotalProduto = productCost + supplierFee + gatewayFee;
+            const products = selectedOrder.products ?? [];
+            const hasMultipleProducts = products.length > 1;
+
+            // Calcular custos por produto usando os dados de cada item
+            const productItems = products.map(p => {
+              const qty = p.quantity ?? 1;
+              const unitCost = p.unit_cost ?? 0;
+              const unitPrice = p.unit_price ?? 0;
+              const baseCost = unitCost * qty;
+              const totalPrice = unitPrice * qty;
+              const supFeeVal = Number(p.supplier_fee_value ?? 0);
+              const supFeeType = p.supplier_fee_type ?? 'percent';
+              const supplierFee = supFeeVal > 0
+                ? supFeeType === 'percent' ? (totalPrice * supFeeVal) / 100 : supFeeVal : 0;
+              const gwFeeVal = Number(p.supplier_gateway_fee_value ?? 0);
+              const gwFeeType = p.supplier_gateway_fee_type ?? 'fixed';
+              const gatewayFee = gwFeeVal > 0
+                ? gwFeeType === 'fixed' ? gwFeeVal : (totalPrice * gwFeeVal) / 100 : 0;
+              return { name: p.name, sku: p.sku, qty, unitPrice, totalPrice, baseCost, supplierFee, gatewayFee, totalCost: baseCost + supplierFee + gatewayFee, supFeeVal, supFeeType, gwFeeVal, gwFeeType };
+            });
+
+            const totalProductCost = productItems.reduce((s, p) => s + p.totalCost, 0);
             const fixedFee = selectedOrder.marketplace_fixed_fee ?? 0;
             const subtotalMarketplace = selectedOrder.marketplace_commission + fixedFee + selectedOrder.shipping_cost + selectedOrder.other_expenses;
-            const profitPositive = selectedOrder.total_profit >= 0;
+            const realProfit = selectedOrder.total_amount - totalProductCost - subtotalMarketplace;
             const margin = selectedOrder.total_amount > 0
-              ? ((selectedOrder.total_profit / selectedOrder.total_amount) * 100).toFixed(1)
-              : '0.0';
+              ? ((realProfit / selectedOrder.total_amount) * 100).toFixed(1) : '0.0';
+            const profitPositive = realProfit >= 0;
 
             return (
               <div className="flex flex-col bg-zinc-950 rounded-2xl overflow-hidden max-h-[88vh]">
 
-                {/* ── HERO: imagem do produto ── */}
+                {/* ── HERO ── */}
                 <div className="relative flex-shrink-0">
-                  {/* Botão fechar — canto superior direito */}
                   <DialogClose className="absolute top-3 right-3 z-20 w-7 h-7 flex items-center justify-center rounded-full bg-zinc-800/90 hover:bg-zinc-700 border border-zinc-700/60 text-zinc-400 hover:text-white transition-colors cursor-pointer">
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </DialogClose>
-
-                  {/* Badge pedido — canto superior esquerdo */}
                   <div className="absolute top-3 left-3 z-10">
                     <span className="inline-flex items-center gap-1.5 bg-zinc-900/90 backdrop-blur-sm text-zinc-300 text-xs font-mono px-2.5 py-1 rounded-full border border-zinc-700/50">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                       #{selectedOrder.order_number}
                     </span>
                   </div>
-
-                  {/* Badge marketplace — canto superior direito (dentro da imagem) */}
                   <div className="absolute top-3 right-12 z-10">
                     <span className="inline-flex items-center bg-orange-500/90 backdrop-blur-sm text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-lg shadow-orange-900/40">
                       {selectedOrder.marketplace}
@@ -717,13 +738,15 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 {/* ── SCROLLABLE BODY ── */}
                 <div className="overflow-y-auto flex-1 px-4 pb-5 space-y-3">
 
-                  {/* Nome + SKU + cliente (sem badge marketplace — já está na imagem) */}
+                  {/* Nome + cliente */}
                   <div className="pt-2">
                     <h2 className="text-white font-semibold text-sm leading-snug mb-1.5">
-                      {selectedOrder.product_name || 'Produto não identificado'}
+                      {hasMultipleProducts
+                        ? `${products.length} produtos — Pedido #${selectedOrder.order_number}`
+                        : (selectedOrder.product_name || 'Produto não identificado')}
                     </h2>
                     <div className="flex items-center gap-2 flex-wrap">
-                      {selectedOrder.product_sku && (
+                      {!hasMultipleProducts && selectedOrder.product_sku && (
                         <span className="text-[11px] text-zinc-500 font-mono bg-zinc-900 px-2 py-0.5 rounded">
                           SKU: {selectedOrder.product_sku}
                         </span>
@@ -739,22 +762,39 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                     </div>
                   </div>
 
-                  {/* Preço de venda */}
-                  <div className="flex items-center justify-between bg-zinc-900 rounded-xl px-4 py-3 border border-zinc-800/80">
-                    <div className="flex items-center gap-2 text-zinc-400 text-sm">
-                      <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Preço de venda
+                  {/* Preço de venda — accordion por item se múltiplos */}
+                  <div className="rounded-xl border border-zinc-800/80 overflow-hidden">
+                    <div className="flex items-center justify-between bg-zinc-900 px-4 py-3">
+                      <div className="flex items-center gap-2 text-zinc-400 text-sm">
+                        <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Preço de venda {hasMultipleProducts && <span className="text-zinc-600 text-xs ml-1">({products.length} itens)</span>}
+                      </div>
+                      <span className="text-emerald-400 font-bold text-lg tabular-nums">
+                        {formatCurrency(selectedOrder.total_amount)}
+                      </span>
                     </div>
-                    <span className="text-emerald-400 font-bold text-lg tabular-nums">
-                      {formatCurrency(selectedOrder.total_amount)}
-                    </span>
+                    {hasMultipleProducts && (
+                      <div className="border-t border-zinc-800/60 divide-y divide-zinc-800/40">
+                        {productItems.map((p, i) => (
+                          <div key={i} className="flex items-center justify-between px-4 py-2 bg-zinc-900/40">
+                            <div className="flex-1 min-w-0 mr-3">
+                              <p className="text-[11px] text-zinc-300 truncate">{p.name}</p>
+                              {p.sku && <p className="text-[10px] text-zinc-600 font-mono">{p.sku}</p>}
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="text-[12px] text-emerald-400 font-semibold tabular-nums">{formatCurrency(p.totalPrice)}</p>
+                              {p.qty > 1 && <p className="text-[10px] text-zinc-600">{p.qty}× {formatCurrency(p.unitPrice)}</p>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Custo do Produto — Accordion */}
+                  {/* Custo do Produto — accordion por item */}
                   <div className="rounded-xl border border-red-900/50 overflow-hidden">
-                    {/* Header clicável */}
                     <button
                       onClick={() => setOpenProduto(v => !v)}
                       className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-red-950/60 to-zinc-900/60 hover:from-red-950/80 transition-colors cursor-pointer"
@@ -766,47 +806,59 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         <span className="text-red-400 font-semibold text-xs uppercase tracking-wide">Custo do Produto</span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-red-400 font-semibold text-sm tabular-nums">-{formatCurrency(subtotalProduto)}</span>
-                        <svg
-                          className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${openProduto ? 'rotate-180' : ''}`}
-                          fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                        >
+                        <span className="text-red-400 font-semibold text-sm tabular-nums">-{formatCurrency(totalProductCost)}</span>
+                        <svg className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${openProduto ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       </div>
                     </button>
-                    {/* Conteúdo expansível */}
                     {openProduto && (
-                      <div className="px-4 py-3 space-y-2 bg-zinc-900/40 border-t border-red-900/30">
-                        {productCost > 0 && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-zinc-400">Custo base</span>
-                            <span className="text-red-400 font-medium tabular-nums">-{formatCurrency(productCost)}</span>
+                      <div className="bg-zinc-900/40 border-t border-red-900/30 divide-y divide-zinc-800/30">
+                        {productItems.map((p, i) => (
+                          <div key={i}>
+                            <button
+                              onClick={() => toggleItem(i)}
+                              className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-zinc-800/30 transition-colors cursor-pointer"
+                            >
+                              <div className="flex-1 min-w-0 text-left mr-3">
+                                <p className="text-[11px] text-zinc-300 truncate">{p.name}</p>
+                                {p.sku && <p className="text-[10px] text-zinc-600 font-mono">{p.sku}</p>}
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className="text-red-400 text-[12px] font-semibold tabular-nums">-{formatCurrency(p.totalCost)}</span>
+                                <svg className={`w-3 h-3 text-zinc-600 transition-transform ${openItems[i] ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </div>
+                            </button>
+                            {openItems[i] && (
+                              <div className="px-4 pb-2.5 space-y-1.5 bg-zinc-900/60">
+                                <div className="flex justify-between text-xs">
+                                  <span className="text-zinc-500">Custo base</span>
+                                  <span className="text-red-400 tabular-nums">-{formatCurrency(p.baseCost)}</span>
+                                </div>
+                                {p.supplierFee > 0 && (
+                                  <div className="flex justify-between text-xs">
+                                    <span className="text-zinc-500">Taxa fornecedor{p.supFeeType === 'percent' ? ` (${p.supFeeVal}%)` : ''}</span>
+                                    <span className="text-red-400 tabular-nums">-{formatCurrency(p.supplierFee)}</span>
+                                  </div>
+                                )}
+                                {p.gatewayFee > 0 && (
+                                  <div className="flex justify-between text-xs">
+                                    <span className="text-zinc-500">Gateway fornecedor{p.gwFeeType === 'percent' ? ` (${p.gwFeeVal}%)` : ''}</span>
+                                    <span className="text-red-400 tabular-nums">-{formatCurrency(p.gatewayFee)}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
-                        )}
-                        {supplierFee > 0 && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-zinc-400">
-                              Taxa fornecedor{selectedOrder.supplier_fee_type === 'percent' ? ` (${selectedOrder.supplier_fee_value}%)` : ''}
-                            </span>
-                            <span className="text-red-400 font-medium tabular-nums">-{formatCurrency(supplierFee)}</span>
-                          </div>
-                        )}
-                        {gatewayFee > 0 && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-zinc-400">
-                              Gateway fornecedor{selectedOrder.supplier_gateway_fee_type === 'percent' ? ` (${selectedOrder.supplier_gateway_fee_value}%)` : ''}
-                            </span>
-                            <span className="text-red-400 font-medium tabular-nums">-{formatCurrency(gatewayFee)}</span>
-                          </div>
-                        )}
+                        ))}
                       </div>
                     )}
                   </div>
 
-                  {/* Custo Marketplace — Accordion */}
+                  {/* Custo Marketplace */}
                   <div className="rounded-xl border border-orange-900/50 overflow-hidden">
-                    {/* Header clicável */}
                     <button
                       onClick={() => setOpenMarketplace(v => !v)}
                       className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-orange-950/60 to-zinc-900/60 hover:from-orange-950/80 transition-colors cursor-pointer"
@@ -815,28 +867,20 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         <svg className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
-                        <span className="text-orange-400 font-semibold text-xs uppercase tracking-wide">
-                          Custo Marketplace — {selectedOrder.marketplace}
-                        </span>
+                        <span className="text-orange-400 font-semibold text-xs uppercase tracking-wide">Custo Marketplace — {selectedOrder.marketplace}</span>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-orange-400 font-semibold text-sm tabular-nums">-{formatCurrency(subtotalMarketplace)}</span>
-                        <svg
-                          className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${openMarketplace ? 'rotate-180' : ''}`}
-                          fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                        >
+                        <svg className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${openMarketplace ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       </div>
                     </button>
-                    {/* Conteúdo expansível */}
                     {openMarketplace && (
                       <div className="px-4 py-3 space-y-2 bg-zinc-900/40 border-t border-orange-900/30">
                         {selectedOrder.marketplace_commission > 0 && (
                           <div className="flex justify-between text-sm">
-                            <span className="text-zinc-400">
-                              Comissão{selectedOrder.commission_rate > 0 ? ` (${selectedOrder.commission_rate}%)` : ''}
-                            </span>
+                            <span className="text-zinc-400">Comissão{selectedOrder.commission_rate > 0 ? ` (${selectedOrder.commission_rate}%)` : ''}</span>
                             <span className="text-orange-400 font-medium tabular-nums">-{formatCurrency(selectedOrder.marketplace_commission)}</span>
                           </div>
                         )}
@@ -868,7 +912,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       <div>
                         <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-medium mb-0.5">Lucro Real</p>
                         <p className={`text-2xl font-bold tabular-nums ${profitPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {formatCurrency(selectedOrder.total_profit)}
+                          {formatCurrency(realProfit)}
                         </p>
                       </div>
                       <div className="text-right">
