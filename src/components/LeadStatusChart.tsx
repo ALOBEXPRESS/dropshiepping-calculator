@@ -81,10 +81,10 @@ export const LeadStatusChart = React.memo<LeadStatusChartProps>(({ data, recentS
   const sanitizedData = useMemo(() => {
     return data.map(item => ({
       status: item.status || 'unknown',
+      label: item.label || item.status || 'unknown',
       count: item.count ?? 0,
       percentage: item.percentage ?? 0,
       color: item.color || '#a3a3a3',
-      label: item.label || 'Unknown',
     }));
   }, [data]);
 

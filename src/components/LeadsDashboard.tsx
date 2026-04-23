@@ -66,30 +66,31 @@
  * @see {@link ../types/dashboard.ts} for TypeScript interfaces
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import NavigationBar from './NavigationBar';
 import KPICard from './KPICard';
 import WeeklyConversionChart from './WeeklyConversionChart';
 import LeadStatusChart from './LeadStatusChart';
+import TimePeriodFilter from './TimePeriodFilter';
+import MarketplaceFilter from './MarketplaceFilter';
 import { KPICardSkeleton, WeeklyConversionChartSkeleton, LeadStatusChartSkeleton } from './skeletons';
 import EmptyDashboardState from './EmptyDashboardState';
 import DashboardErrorState from './DashboardErrorState';
 import { MOCK_DASHBOARD_DATA } from '../data/mockDashboardData';
-import { DollarSign, CreditCard, Users } from 'lucide-react';
-import type { DashboardData } from '../types/dashboard';
+import { useDashboardData } from '../hooks/useDashboardData';
+import { useMarketplaces } from '../hooks/useMarketplaces';
+import { transformToKPICardProps } from '../utils/transformDashboardData.tsx';
+import { runDashboardDiagnostic } from '../utils/diagnosticDashboard';
+import type { TimePeriod } from '../types/dashboard';
 
 /**
  * Props for LeadsDashboard component
+ * 
+ * Component now manages its own data fetching via useDashboardData hook.
+ * No external props are required.
  */
 export interface LeadsDashboardProps {
-  /** Dashboard data to display */
-  data?: DashboardData | null;
-  /** Loading state */
-  isLoading?: boolean;
-  /** Error state */
-  error?: string | null;
-  /** Callback to retry loading data */
-  onRetry?: () => void;
+  // No props needed - component is self-contained
 }
 
 /**
@@ -97,37 +98,47 @@ export interface LeadsDashboardProps {
  * 
  * Main dashboard container that integrates:
  * - NavigationBar for internal page navigation
- * - KPI cards displaying key metrics
+ * - TimePeriodFilter for selecting time periods
+ * - KPI cards displaying key metrics with real data
  * - Charts with loading, error, and empty states
  * - Responsive grid layout with Tailwind utilities
  * 
  * Handles three states:
  * 1. Loading: Shows skeleton components
  * 2. Error: Shows error state with retry option
- * 3. Empty: Shows empty state when no data available
- * 4. Success: Shows dashboard with data
+ * 3. Success: Shows dashboard with real data
  */
-const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
-  data = MOCK_DASHBOARD_DATA,
-  isLoading = false,
-  error = null,
-  onRetry,
-}) => {
+const LeadsDashboard: React.FC<LeadsDashboardProps> = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'leads' | 'calculator' | 'settings'>('dashboard');
+  const [period, setPeriod] = useState<TimePeriod>('week');
+  const [selectedMarketplace, setSelectedMarketplace] = useState<string | null>(null);
+
+  // Fetch marketplaces list
+  const { marketplaces, isLoading: isLoadingMarketplaces } = useMarketplaces();
+
+  // Fetch dashboard data using React Query hook with marketplace filter
+  const { data, isLoading, isError, error, refetch } = useDashboardData(period, selectedMarketplace);
+
+  // Run diagnostic on mount in development mode
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      console.log('🔍 Running dashboard diagnostic...');
+      runDashboardDiagnostic();
+    }
+  }, []);
+
+  // Transform data to KPI card props
+  const kpiProps = data ? transformToKPICardProps(data) : null;
 
   // Handle error state
-  if (error) {
-    return <DashboardErrorState error={error} onRetry={onRetry} />;
+  if (isError) {
+    return <DashboardErrorState error={error?.message || 'Failed to load dashboard data'} onRetry={refetch} />;
   }
 
   // Handle empty state (no data available)
   if (!isLoading && !data) {
     return <EmptyDashboardState />;
   }
-
-  // Extract data from props or use mocked constants
-  const dashboardData = data || MOCK_DASHBOARD_DATA;
-  const { kpis, metadata } = dashboardData;
 
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
@@ -142,9 +153,24 @@ const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       <main id="main-content" className="pt-20 px-4 md:px-6 pb-8">
         <div className="max-w-7xl mx-auto space-y-6">
           
-          {/* KPI Cards Section */}
+          {/* Filters Section */}
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            <TimePeriodFilter
+              selectedPeriod={period}
+              onPeriodChange={setPeriod}
+              disabled={isLoading}
+            />
+            <MarketplaceFilter
+              marketplaces={marketplaces}
+              selectedMarketplace={selectedMarketplace}
+              onMarketplaceChange={setSelectedMarketplace}
+              disabled={isLoading || isLoadingMarketplaces}
+            />
+          </div>
+
+          {/* KPI Cards Section - Now 5 cards */}
           <section 
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6"
             role="region"
             aria-label="Métricas KPI"
           >
@@ -154,45 +180,26 @@ const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                 <KPICardSkeleton />
                 <KPICardSkeleton />
                 <KPICardSkeleton />
+                <KPICardSkeleton />
+                <KPICardSkeleton />
               </>
             ) : (
-              // Success state: Show actual KPI cards
+              // Success state: Show actual KPI cards with real data
               <>
-                {/* Total Revenue KPI */}
-                <KPICard
-                  title="Receita Total"
-                  value={kpis.totalRevenue.value}
-                  trend={{
-                    direction: kpis.totalRevenue.trend.direction,
-                    percentage: kpis.totalRevenue.trend.percentage
-                  }}
-                  format="currency"
-                  icon={<DollarSign className="w-5 h-5" aria-hidden="true" />}
-                />
+                {/* Revenue KPI */}
+                <KPICard {...kpiProps!.revenue} />
 
-                {/* Marketplace Fees KPI */}
-                <KPICard
-                  title="Taxas de Marketplace"
-                  value={kpis.marketplaceFees.value}
-                  trend={{
-                    direction: kpis.marketplaceFees.trend.direction,
-                    percentage: kpis.marketplaceFees.trend.percentage
-                  }}
-                  format="currency"
-                  icon={<CreditCard className="w-5 h-5" aria-hidden="true" />}
-                />
+                {/* Fees KPI */}
+                <KPICard {...kpiProps!.fees} />
 
-                {/* Total Leads KPI */}
-                <KPICard
-                  title="Total de Leads"
-                  value={kpis.totalLeads.value}
-                  trend={{
-                    direction: kpis.totalLeads.trend.direction,
-                    percentage: kpis.totalLeads.trend.percentage
-                  }}
-                  format="number"
-                  icon={<Users className="w-5 h-5" aria-hidden="true" />}
-                />
+                {/* Profit KPI */}
+                <KPICard {...kpiProps!.profit} />
+
+                {/* Products KPI */}
+                <KPICard {...kpiProps!.products} />
+
+                {/* Customers KPI */}
+                <KPICard {...kpiProps!.customers} />
               </>
             )}
           </section>
@@ -210,18 +217,18 @@ const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                 <LeadStatusChartSkeleton />
               </>
             ) : (
-              // Success state: Show actual charts
+              // Success state: Show actual charts (still using mock data for now)
               <>
                 {/* Weekly Conversion Chart */}
                 <WeeklyConversionChart
-                  data={dashboardData.weeklyConversions}
-                  mostProfitableDay={metadata.mostProfitableDay}
+                  data={MOCK_DASHBOARD_DATA.weeklyConversions}
+                  mostProfitableDay={MOCK_DASHBOARD_DATA.metadata.mostProfitableDay}
                 />
 
                 {/* Lead Status Chart */}
                 <LeadStatusChart
-                  data={dashboardData.leadStatus}
-                  recentSignups={metadata.recentSignups}
+                  data={MOCK_DASHBOARD_DATA.leadStatus}
+                  recentSignups={MOCK_DASHBOARD_DATA.metadata.recentSignups}
                 />
               </>
             )}

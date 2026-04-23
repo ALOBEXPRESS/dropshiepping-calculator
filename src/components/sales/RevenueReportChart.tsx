@@ -68,6 +68,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const chartRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef(data);
   dataRef.current = data;
+  // Estado de paginação por dataPointIndex — controla qual pedido está visível no tooltip
+  const [tooltipPages, setTooltipPages] = useState<Record<number, number>>({});
+  const tooltipPagesRef = useRef(tooltipPages);
+  tooltipPagesRef.current = tooltipPages;
 
   // Adicionar CSS global para manter tooltip visível ao passar mouse sobre ele
   useEffect(() => {
@@ -85,8 +89,24 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       }
     `;
     document.head.appendChild(style);
+
+    // Impedir que cliques dentro do tooltip fechem o tooltip no ApexCharts
+    // O ApexCharts escuta 'mousedown' no document para fechar o tooltip
+    const preventTooltipClose = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('.apexcharts-tooltip')) {
+        e.stopImmediatePropagation();
+        e.stopPropagation();
+      }
+    };
+    // Capturar na fase de captura ANTES do ApexCharts
+    document.addEventListener('mousedown', preventTooltipClose, true);
+    document.addEventListener('touchstart', preventTooltipClose as EventListener, true);
+
     return () => {
       document.head.removeChild(style);
+      document.removeEventListener('mousedown', preventTooltipClose, true);
+      document.removeEventListener('touchstart', preventTooltipClose as EventListener, true);
     };
   }, []);
 
@@ -121,13 +141,129 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const key = navButton.getAttribute('data-nav-key');
         const max = Number(navButton.getAttribute('data-nav-max'));
         if (key) {
-          const current = (window as unknown as Record<string, number>)[key] ?? 0;
+          const dataPointIndex = parseInt(key.replace('tooltip_page_', ''), 10);
+          const current = tooltipPagesRef.current[dataPointIndex] ?? 0;
           const next = dir === 'next' ? Math.min(current + 1, max) : Math.max(current - 1, 0);
-          (window as unknown as Record<string, number>)[key] = next;
-          // Forçar re-render do tooltip via evento sintético no gráfico
-          const chartEl = document.querySelector('.apexcharts-canvas');
-          if (chartEl) {
-            chartEl.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, cancelable: true }));
+
+          // Atualizar estado React
+          setTooltipPages(prev => ({ ...prev, [dataPointIndex]: next }));
+
+          // Atualizar a série do gráfico via ApexCharts API (sem fechar o tooltip)
+          const canvas = document.querySelector('.apexcharts-canvas');
+          if (canvas) {
+            const chartId = (canvas.id || '').replace('apexcharts', '');
+            const ApexChartsGlobal = (window as unknown as { ApexCharts?: { getChartByID: (id: string) => { updateSeries: (s: unknown[], animate?: boolean) => void } | null } }).ApexCharts;
+            if (ApexChartsGlobal && chartId) {
+              const instance = ApexChartsGlobal.getChartByID(chartId);
+              if (instance) {
+                const newSeriesData = dataRef.current.map((item, idx) => {
+                  const page = idx === dataPointIndex ? next : (tooltipPagesRef.current[idx] ?? 0);
+                  const orders = item.orders_data ?? [];
+                  if (orders.length > 0 && orders[page]) {
+                    return Number(orders[page].total_profit ?? 0);
+                  }
+                  return Number(item.total_revenue) - Number(item.total_cost);
+                });
+                instance.updateSeries([{ name: 'Lucro', data: newSeriesData }], false);
+              }
+            }
+          }
+
+          // Atualizar o HTML do tooltip diretamente no DOM (resposta imediata)
+          const tooltipEl = document.querySelector('.apexcharts-tooltip.apexcharts-active');
+          if (tooltipEl) {
+            const currentData = dataRef.current;
+            if (!isNaN(dataPointIndex) && currentData[dataPointIndex]) {
+              const periodData = currentData[dataPointIndex];
+              const ordersCount = periodData.orders_data?.length || 0;
+              const order = periodData.orders_data?.[next];
+
+              if (order) {
+                const marketplaceName = order.marketplace && order.marketplace !== 'null' && order.marketplace !== 'undefined'
+                  ? order.marketplace : 'Sem marketplace';
+                const customerName = (order as { customer_name?: string }).customer_name || 'Cliente não identificado';
+                const orderNumber = order.order_number || 'S/N';
+                const productNamesFromItems = (order.products || []).map((p: { name: string }) => p.name).filter(Boolean) as string[];
+                const mainProductName = (order as { product_name?: string }).product_name || productNamesFromItems[0] || 'Produto não vinculado';
+                const productCount = productNamesFromItems.length;
+                const productSku = (order as { product_sku?: string }).product_sku || ((order.products || [])[0] as { sku?: string })?.sku || null;
+                const orderProfit = Number(order.total_profit ?? 0);
+                const orderProfitColor = orderProfit >= 0 ? '#16a34a' : '#dc2626';
+                const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+                const orderDetailData = {
+                  order_id: order.order_id, order_number: orderNumber, marketplace: marketplaceName,
+                  marketplace_fixed_fee: Number((order as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0),
+                  customer_name: customerName, product_name: mainProductName, product_sku: productSku || undefined,
+                  product_image_url: (order as { product_image_url?: string }).product_image_url || undefined,
+                  products: order.products, total_amount: Number(order.total_amount ?? 0),
+                  total_cost: Number(order.total_cost ?? 0),
+                  product_cost_price: Number((order as { product_cost_price?: number }).product_cost_price ?? 0),
+                  marketplace_commission: Number(order.marketplace_commission ?? 0),
+                  commission_rate: Number(order.commission_rate ?? 0),
+                  shipping_cost: Number(order.shipping_cost ?? 0),
+                  other_expenses: Number(order.other_expenses ?? 0),
+                  supplier_fee_value: (order as { supplier_fee_value?: string }).supplier_fee_value,
+                  supplier_fee_type: (order as { supplier_fee_type?: string }).supplier_fee_type,
+                  supplier_gateway_fee_value: (order as { supplier_gateway_fee_value?: string }).supplier_gateway_fee_value,
+                  supplier_gateway_fee_type: (order as { supplier_gateway_fee_type?: string }).supplier_gateway_fee_type,
+                  total_profit: orderProfit,
+                };
+
+                const navHtml = `
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid #f3f4f6;">
+                    <button data-tooltip-nav data-nav-dir="prev" data-nav-key="${key}" data-nav-max="${ordersCount - 1}"
+                      style="background:${next === 0 ? '#f3f4f6' : '#e5e7eb'};color:${next === 0 ? '#d1d5db' : '#374151'};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:${next === 0 ? 'default' : 'pointer'};font-weight:600;line-height:1;"
+                      ${next === 0 ? 'disabled' : ''}>‹</button>
+                    <span style="font-size:11px;color:#6b7280;font-weight:500">${next + 1} / ${ordersCount} pedido${ordersCount > 1 ? 's' : ''}</span>
+                    <button data-tooltip-nav data-nav-dir="next" data-nav-key="${key}" data-nav-max="${ordersCount - 1}"
+                      style="background:${next === ordersCount - 1 ? '#f3f4f6' : '#e5e7eb'};color:${next === ordersCount - 1 ? '#d1d5db' : '#374151'};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:${next === ordersCount - 1 ? 'default' : 'pointer'};font-weight:600;line-height:1;"
+                      ${next === ordersCount - 1 ? 'disabled' : ''}>›</button>
+                  </div>`;
+
+                const newOrderHtml = `
+                  <div style="padding-top:6px;border-top:1px solid #f3f4f6;">
+                    ${navHtml}
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
+                      <div style="flex:1;min-width:0">
+                        <div style="font-size:11px;color:#374151;font-weight:600;margin-bottom:2px">${customerName}</div>
+                        <div style="font-size:10px;color:#6b7280;margin-bottom:2px">🏪 ${marketplaceName} • Pedido #${orderNumber}</div>
+                        <div style="font-size:10px;color:#374151;margin-bottom:2px">
+                          📦 ${mainProductName.length > 28 ? mainProductName.substring(0, 28) + '...' : mainProductName}
+                          ${productSku ? ` (SKU: ${productSku})` : ''}
+                        </div>
+                        ${productCount > 1 ? `<div style="font-size:10px;color:#9ca3af">+${productCount - 1} produto(s)</div>` : ''}
+                      </div>
+                      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+                        <button data-detail-order-btn data-order-detail='${JSON.stringify(orderDetailData).replace(/'/g, "&apos;")}'
+                          style="background:#3b82f6;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer;font-weight:500;white-space:nowrap;">Detalhar</button>
+                        <button data-delete-order-btn data-order-id="${order.order_id}" data-order-number="${orderNumber}" data-order-store="${marketplaceName}"
+                          style="background:#ef4444;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer;font-weight:500;white-space:nowrap;">Excluir</button>
+                      </div>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:11px;padding-top:4px;border-top:1px dashed #e5e7eb">
+                      <span style="color:#6b7280">Lucro:</span>
+                      <span style="font-weight:700;color:${orderProfitColor}">${fmt(orderProfit)}</span>
+                    </div>
+                  </div>`;
+
+                // Substituir a seção do pedido no tooltip
+                const tooltipInner = tooltipEl.querySelector('.apexcharts-tooltip-custom');
+                if (tooltipInner) {
+                  const divider = tooltipInner.querySelector('div[style*="height:1px"]');
+                  if (divider) {
+                    let sibling = divider.nextElementSibling;
+                    while (sibling) {
+                      const nextSib = sibling.nextElementSibling;
+                      sibling.remove();
+                      sibling = nextSib;
+                    }
+                    divider.insertAdjacentHTML('afterend', newOrderHtml);
+                  }
+                }
+
+              }
+            }
           }
         }
         return;
@@ -156,11 +292,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
     // Adicionar listener no documento para capturar cliques nos botões do tooltip
     document.addEventListener('click', handleTooltipClick, true);
-    document.addEventListener('mousedown', handleTooltipClick, true);
 
     return () => {
       document.removeEventListener('click', handleTooltipClick, true);
-      document.removeEventListener('mousedown', handleTooltipClick, true);
     };
   }, []);
 
@@ -204,6 +338,16 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       setDeleteDialogOpen(false);
       setOrderToDelete(null);
       
+      // Resetar paginação do tooltip (dados mudaram)
+      setTooltipPages({});
+      
+      // Fechar o tooltip do ApexCharts
+      const tooltipEl = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
+      if (tooltipEl) {
+        tooltipEl.style.opacity = '0';
+        tooltipEl.classList.remove('apexcharts-active');
+      }
+      
       // Mostrar toast de sucesso
       toast.success('Métrica excluída com sucesso!', {
         description: `O pedido ${orderToDelete.number} foi removido do sistema.`,
@@ -240,12 +384,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       width: 2,
     },
     markers: {
-      size: 5,
-      colors: ['#45B369', '#EF4A00'],
+      size: 6,
+      colors: ['#8b5cf6'],
       strokeColors: '#fff',
       strokeWidth: 2,
       hover: {
-        size: 7,
+        size: 8,
       },
     },
     fill: {
@@ -253,11 +397,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       gradient: {
         shadeIntensity: 1,
         opacityFrom: 0.4,
-        opacityTo: 0.1,
+        opacityTo: 0.05,
         stops: [0, 90, 100],
       },
     },
-    colors: ['#45B369', '#EF4A00'],
+    colors: ['#8b5cf6'],
     xaxis: {
       categories: data.map((item) => item.period_label),
       labels: {
@@ -301,12 +445,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const ordersCount = periodData.orders_data?.length || 0;
         const profitColor = profit >= 0 ? '#16a34a' : '#dc2626';
 
-        // Estado de paginação do tooltip por período (persiste via window)
+        // Estado de paginação do tooltip por período (via estado React)
         const stateKey = `tooltip_page_${dataPointIndex}`;
-        if (!(window as unknown as Record<string, number>)[stateKey]) {
-          (window as unknown as Record<string, number>)[stateKey] = 0;
-        }
-        const currentPage: number = (window as unknown as Record<string, number>)[stateKey];
+        const currentPage: number = tooltipPagesRef.current[dataPointIndex] ?? 0;
         const order = periodData.orders_data?.[currentPage];
 
         // Gerar HTML de um único pedido (paginado)
@@ -454,17 +595,23 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       labels: {
         colors: '#6b7280',
       },
+      markers: {
+        fillColors: ['#8b5cf6'],
+      },
     },
   };
 
   const chartSeries = [
     {
-      name: 'Receita',
-      data: data.map((item) => Number(item.total_revenue)),
-    },
-    {
-      name: 'Custo',
-      data: data.map((item) => Number(item.total_cost)),
+      name: 'Lucro',
+      data: data.map((item, idx) => {
+        const currentPage = tooltipPages[idx] ?? 0;
+        const orders = item.orders_data ?? [];
+        if (orders.length > 0 && orders[currentPage]) {
+          return Number(orders[currentPage].total_profit ?? 0);
+        }
+        return Number(item.total_revenue) - Number(item.total_cost);
+      }),
     },
   ];
 
@@ -814,7 +961,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
       {data.length > 0 ? (
         <div ref={chartRef} className="relative">
-          <Chart key={JSON.stringify(data.map(d => d.period_label + d.total_cost))} options={chartOptions} series={chartSeries} type="area" height={300} />
+          <Chart key={`${JSON.stringify(data.map(d => d.period_label + '_' + d.total_revenue))}`} options={chartOptions} series={chartSeries} type="area" height={300} />
         </div>
       ) : (
         <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">

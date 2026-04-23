@@ -1,0 +1,639 @@
+/**
+ * Dashboard Service
+ * 
+ * Service layer for fetching and calculating dashboard KPI data from Supabase.
+ * Handles data queries, date range calculations, and growth trend calculations.
+ * 
+ * Features:
+ * - Fetches profit, orders, customers, and products data
+ * - Calculates growth trends comparing current vs previous periods
+ * - Filters data by organization_id for multi-tenancy
+ * - Handles errors with descriptive messages
+ */
+
+import { supabase } from '../lib/supabase';
+import { calculatePeriodRanges as calculatePeriodRangesUtil } from '../utils/dateRangeCalculator';
+import { calculateGrowth as calculateGrowthUtil } from '../utils/growthCalculator';
+import type { 
+  TimePeriod, 
+  DateRange, 
+  PeriodData, 
+  DashboardKPIData
+} from '../types/dashboard';
+
+/**
+ * Dashboard Service class
+ * 
+ * Provides static methods for fetching and calculating dashboard data.
+ * All methods handle errors gracefully and log issues for debugging.
+ */
+export class DashboardService {
+  /**
+   * Calculate date ranges for current and previous periods
+   * 
+   * @param period - The time period to calculate ranges for
+   * @returns PeriodData containing current and previous date ranges
+   * 
+   * @example
+   * const ranges = DashboardService.calculatePeriodRanges('week');
+   * console.log(ranges.current.start); // Monday 00:00:00 of current week
+   */
+  static calculatePeriodRanges(period: TimePeriod): PeriodData {
+    try {
+      return calculatePeriodRangesUtil(period);
+    } catch (error) {
+      console.error('[DashboardService] Error calculating period ranges:', error);
+      throw new Error(`Failed to calculate period ranges: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Calculate growth percentage between current and previous values
+   * 
+   * @param current - Current period value
+   * @param previous - Previous period value
+   * @returns Growth percentage rounded to 1 decimal place, or null if previous is 0
+   * 
+   * @example
+   * const growth = DashboardService.calculateGrowth(150, 100); // returns 50.0
+   * const growth = DashboardService.calculateGrowth(100, 0); // returns null
+   */
+  static calculateGrowth(current: number, previous: number): number | null {
+    try {
+      return calculateGrowthUtil(current, previous);
+    } catch (error) {
+      console.error('[DashboardService] Error calculating growth:', error);
+      throw new Error(`Failed to calculate growth: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Fetch revenue data (sum of total_amount from orders table)
+   * 
+   * Queries the orders table for the current and previous periods,
+   * sums the total_amount column, and returns both values.
+   * 
+   * @param currentRange - Date range for current period
+   * @param previousRange - Date range for previous period
+   * @param marketplaceId - Optional marketplace ID to filter by
+   * @returns Object with current and previous revenue totals
+   * 
+   * @throws Error if database query fails or user is not authenticated
+   */
+  static async fetchRevenueData(
+    currentRange: DateRange,
+    previousRange: DateRange,
+    marketplaceId?: string | null
+  ): Promise<{ current: number; previous: number }> {
+    try {
+      // Get authenticated user for organization_id
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.error('[DashboardService] Error fetching user:', userError);
+        throw new Error('User not authenticated');
+      }
+
+      const organizationId = user.id;
+
+      // Build queries with optional marketplace filter
+      let currentQuery = supabase
+        .from('orders')
+        .select('total_amount')
+        .eq('organization_id', organizationId)
+        .gte('order_date', currentRange.start.toISOString())
+        .lte('order_date', currentRange.end.toISOString());
+
+      let previousQuery = supabase
+        .from('orders')
+        .select('total_amount')
+        .eq('organization_id', organizationId)
+        .gte('order_date', previousRange.start.toISOString())
+        .lte('order_date', previousRange.end.toISOString());
+
+      // Add marketplace filter if provided
+      if (marketplaceId) {
+        currentQuery = currentQuery.eq('marketplace_id', marketplaceId);
+        previousQuery = previousQuery.eq('marketplace_id', marketplaceId);
+      }
+
+      // Execute parallel queries
+      const [currentResult, previousResult] = await Promise.all([
+        currentQuery,
+        previousQuery
+      ]);
+
+      // Check for errors
+      if (currentResult.error) {
+        console.error('[DashboardService] Error fetching current period revenue:', currentResult.error);
+        throw new Error(`Failed to fetch current period revenue: ${currentResult.error.message}`);
+      }
+
+      if (previousResult.error) {
+        console.error('[DashboardService] Error fetching previous period revenue:', previousResult.error);
+        throw new Error(`Failed to fetch previous period revenue: ${previousResult.error.message}`);
+      }
+
+      // Sum revenue values
+      const currentRevenue = currentResult.data?.reduce((sum, row) => {
+        return sum + (row.total_amount ?? 0);
+      }, 0) ?? 0;
+
+      const previousRevenue = previousResult.data?.reduce((sum, row) => {
+        return sum + (row.total_amount ?? 0);
+      }, 0) ?? 0;
+
+      console.log('[DashboardService] Revenue data fetched:', {
+        current: currentRevenue,
+        previous: previousRevenue,
+        currentCount: currentResult.data?.length ?? 0,
+        previousCount: previousResult.data?.length ?? 0,
+        marketplaceId: marketplaceId || 'all'
+      });
+
+      return { 
+        current: currentRevenue, 
+        previous: previousRevenue 
+      };
+    } catch (error) {
+      console.error('[DashboardService] Error fetching revenue data:', error);
+      throw new Error(`Failed to fetch revenue data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Fetch marketplace fees data (sum of marketplace_commission from orders table)
+   * 
+   * @param currentRange - Date range for current period
+   * @param previousRange - Date range for previous period
+   * @param marketplaceId - Optional marketplace ID to filter by
+   * @returns Object with current and previous fees totals
+   * 
+   * @throws Error if database query fails or user is not authenticated
+   */
+  static async fetchFeesData(
+    currentRange: DateRange,
+    previousRange: DateRange,
+    marketplaceId?: string | null
+  ): Promise<{ current: number; previous: number }> {
+    try {
+      // Get authenticated user for organization_id
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.error('[DashboardService] Error fetching user:', userError);
+        throw new Error('User not authenticated');
+      }
+
+      const organizationId = user.id;
+
+      // Build queries with optional marketplace filter
+      let currentQuery = supabase
+        .from('orders')
+        .select('marketplace_commission')
+        .eq('organization_id', organizationId)
+        .gte('order_date', currentRange.start.toISOString())
+        .lte('order_date', currentRange.end.toISOString());
+
+      let previousQuery = supabase
+        .from('orders')
+        .select('marketplace_commission')
+        .eq('organization_id', organizationId)
+        .gte('order_date', previousRange.start.toISOString())
+        .lte('order_date', previousRange.end.toISOString());
+
+      // Add marketplace filter if provided
+      if (marketplaceId) {
+        currentQuery = currentQuery.eq('marketplace_id', marketplaceId);
+        previousQuery = previousQuery.eq('marketplace_id', marketplaceId);
+      }
+
+      // Execute parallel queries
+      const [currentResult, previousResult] = await Promise.all([
+        currentQuery,
+        previousQuery
+      ]);
+
+      // Check for errors
+      if (currentResult.error) {
+        console.error('[DashboardService] Error fetching current period fees:', currentResult.error);
+        throw new Error(`Failed to fetch current period fees: ${currentResult.error.message}`);
+      }
+
+      if (previousResult.error) {
+        console.error('[DashboardService] Error fetching previous period fees:', previousResult.error);
+        throw new Error(`Failed to fetch previous period fees: ${previousResult.error.message}`);
+      }
+
+      // Sum fees values
+      const currentFees = currentResult.data?.reduce((sum, row) => {
+        return sum + (row.marketplace_commission ?? 0);
+      }, 0) ?? 0;
+
+      const previousFees = previousResult.data?.reduce((sum, row) => {
+        return sum + (row.marketplace_commission ?? 0);
+      }, 0) ?? 0;
+
+      console.log('[DashboardService] Fees data fetched:', {
+        current: currentFees,
+        previous: previousFees,
+        currentCount: currentResult.data?.length ?? 0,
+        previousCount: previousResult.data?.length ?? 0,
+        marketplaceId: marketplaceId || 'all'
+      });
+
+      return { 
+        current: currentFees, 
+        previous: previousFees 
+      };
+    } catch (error) {
+      console.error('[DashboardService] Error fetching fees data:', error);
+      throw new Error(`Failed to fetch fees data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+   * 
+   * Queries the orders table for the current and previous periods,
+   * sums the profit column (treating NULL as 0), and returns both values.
+   * 
+   * @param currentRange - Date range for current period
+   * @param previousRange - Date range for previous period
+   * @returns Object with current and previous profit totals
+   * 
+   * @throws Error if database query fails or user is not authenticated
+   */
+  static async fetchProfitData(
+    currentRange: DateRange,
+    previousRange: DateRange
+  ): Promise<{ current: number; previous: number }> {
+    try {
+      // Get authenticated user for organization_id
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.error('[DashboardService] Error fetching user:', userError);
+        throw new Error('User not authenticated');
+      }
+
+      const organizationId = user.id;
+
+      // Execute parallel queries for current and previous periods
+      const [currentResult, previousResult] = await Promise.all([
+        // Query current period
+        supabase
+          .from('orders')
+          .select('total_profit')
+          .eq('organization_id', organizationId)
+          .gte('order_date', currentRange.start.toISOString())
+          .lte('order_date', currentRange.end.toISOString()),
+        
+        // Query previous period
+        supabase
+          .from('orders')
+          .select('total_profit')
+          .eq('organization_id', organizationId)
+          .gte('order_date', previousRange.start.toISOString())
+          .lte('order_date', previousRange.end.toISOString())
+      ]);
+
+      // Check for errors
+      if (currentResult.error) {
+        console.error('[DashboardService] Error fetching current period profit:', currentResult.error);
+        throw new Error(`Failed to fetch current period profit: ${currentResult.error.message}`);
+      }
+
+      if (previousResult.error) {
+        console.error('[DashboardService] Error fetching previous period profit:', previousResult.error);
+        throw new Error(`Failed to fetch previous period profit: ${previousResult.error.message}`);
+      }
+
+      // Sum profit values, treating NULL as 0
+      const currentProfit = currentResult.data?.reduce((sum, row) => {
+        return sum + (row.total_profit ?? 0);
+      }, 0) ?? 0;
+
+      const previousProfit = previousResult.data?.reduce((sum, row) => {
+        return sum + (row.total_profit ?? 0);
+      }, 0) ?? 0;
+
+      console.log('[DashboardService] Profit data fetched:', {
+        current: currentProfit,
+        previous: previousProfit,
+        currentCount: currentResult.data?.length ?? 0,
+        previousCount: previousResult.data?.length ?? 0
+      });
+
+      return { 
+        current: currentProfit, 
+        previous: previousProfit 
+      };
+    } catch (error) {
+      console.error('[DashboardService] Error fetching profit data:', error);
+      throw new Error(`Failed to fetch profit data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Fetch orders count
+   * 
+   * Counts total orders in the current and previous periods.
+   * Uses Supabase count with head: true for efficiency.
+   * 
+   * @param currentRange - Date range for current period
+   * @param previousRange - Date range for previous period
+   * @returns Object with current and previous order counts
+   * 
+   * @throws Error if database query fails or user is not authenticated
+   */
+  static async fetchOrdersData(
+    currentRange: DateRange,
+    previousRange: DateRange
+  ): Promise<{ current: number; previous: number }> {
+    try {
+      // Get authenticated user for organization_id
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.error('[DashboardService] Error fetching user:', userError);
+        throw new Error('User not authenticated');
+      }
+
+      const organizationId = user.id;
+
+      // Execute parallel queries for current and previous periods
+      // Use count with head: true for efficiency (doesn't fetch data, just counts)
+      const [currentResult, previousResult] = await Promise.all([
+        // Query current period
+        supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true })
+          .eq('organization_id', organizationId)
+          .gte('order_date', currentRange.start.toISOString())
+          .lte('order_date', currentRange.end.toISOString()),
+        
+        // Query previous period
+        supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true })
+          .eq('organization_id', organizationId)
+          .gte('order_date', previousRange.start.toISOString())
+          .lte('order_date', previousRange.end.toISOString())
+      ]);
+
+      // Check for errors
+      if (currentResult.error) {
+        console.error('[DashboardService] Error fetching current period orders count:', currentResult.error);
+        throw new Error(`Failed to fetch current period orders count: ${currentResult.error.message}`);
+      }
+
+      if (previousResult.error) {
+        console.error('[DashboardService] Error fetching previous period orders count:', previousResult.error);
+        throw new Error(`Failed to fetch previous period orders count: ${previousResult.error.message}`);
+      }
+
+      // Get counts from results
+      const currentCount = currentResult.count ?? 0;
+      const previousCount = previousResult.count ?? 0;
+
+      console.log('[DashboardService] Orders data fetched:', {
+        current: currentCount,
+        previous: previousCount
+      });
+
+      return { 
+        current: currentCount, 
+        previous: previousCount 
+      };
+    } catch (error) {
+      console.error('[DashboardService] Error fetching orders data:', error);
+      throw new Error(`Failed to fetch orders data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Fetch unique customers count
+   * 
+   * Counts unique customers (distinct customer_id) in the current and previous periods.
+   * Excludes NULL customer_id values.
+   * 
+   * @param currentRange - Date range for current period
+   * @param previousRange - Date range for previous period
+   * @returns Object with current and previous unique customer counts
+   * 
+   * @throws Error if database query fails or user is not authenticated
+   */
+  static async fetchCustomersData(
+    currentRange: DateRange,
+    previousRange: DateRange
+  ): Promise<{ current: number; previous: number }> {
+    try {
+      // Get authenticated user for organization_id
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.error('[DashboardService] Error fetching user:', userError);
+        throw new Error('User not authenticated');
+      }
+
+      const organizationId = user.id;
+
+      // Execute parallel queries for current and previous periods
+      const [currentResult, previousResult] = await Promise.all([
+        // Query current period - fetch customer_id values
+        supabase
+          .from('orders')
+          .select('customer_id')
+          .eq('organization_id', organizationId)
+          .not('customer_id', 'is', null)
+          .gte('order_date', currentRange.start.toISOString())
+          .lte('order_date', currentRange.end.toISOString()),
+        
+        // Query previous period - fetch customer_id values
+        supabase
+          .from('orders')
+          .select('customer_id')
+          .eq('organization_id', organizationId)
+          .not('customer_id', 'is', null)
+          .gte('order_date', previousRange.start.toISOString())
+          .lte('order_date', previousRange.end.toISOString())
+      ]);
+
+      // Check for errors
+      if (currentResult.error) {
+        console.error('[DashboardService] Error fetching current period customers:', currentResult.error);
+        throw new Error(`Failed to fetch current period customers: ${currentResult.error.message}`);
+      }
+
+      if (previousResult.error) {
+        console.error('[DashboardService] Error fetching previous period customers:', previousResult.error);
+        throw new Error(`Failed to fetch previous period customers: ${previousResult.error.message}`);
+      }
+
+      // Count unique customers using Set
+      const currentUniqueCustomers = new Set(
+        currentResult.data?.map(row => row.customer_id) ?? []
+      ).size;
+
+      const previousUniqueCustomers = new Set(
+        previousResult.data?.map(row => row.customer_id) ?? []
+      ).size;
+
+      console.log('[DashboardService] Customers data fetched:', {
+        current: currentUniqueCustomers,
+        previous: previousUniqueCustomers,
+        currentTotal: currentResult.data?.length ?? 0,
+        previousTotal: previousResult.data?.length ?? 0
+      });
+
+      return { 
+        current: currentUniqueCustomers, 
+        previous: previousUniqueCustomers 
+      };
+    } catch (error) {
+      console.error('[DashboardService] Error fetching customers data:', error);
+      throw new Error(`Failed to fetch customers data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Fetch products count (excluding variations)
+   * 
+   * Counts products from the products table only.
+   * Product variations are linked via product_id FK and not counted separately.
+   * Returns the same count for current and previous (products don't change by period).
+   * 
+   * @returns Object with current and previous product counts (same value)
+   * 
+   * @throws Error if database query fails or user is not authenticated
+   */
+  static async fetchProductsData(): Promise<{ current: number; previous: number }> {
+    try {
+      // Get authenticated user for organization_id
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.error('[DashboardService] Error fetching user:', userError);
+        throw new Error('User not authenticated');
+      }
+
+      const organizationId = user.id;
+
+      // Count products from products table only (exclude variations)
+      // Use count with head: true for efficiency (doesn't fetch data, just counts)
+      // Note: products_variations are linked via product_id FK, not counted separately
+      const { count, error } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', organizationId);
+
+      // Check for errors
+      if (error) {
+        console.error('[DashboardService] Error fetching products count:', error);
+        throw new Error(`Failed to fetch products count: ${error.message}`);
+      }
+
+      const productsCount = count ?? 0;
+
+      console.log('[DashboardService] Products data fetched:', {
+        count: productsCount,
+        organizationId
+      });
+
+      // Return same count for current and previous (products don't change by period)
+      return { 
+        current: productsCount, 
+        previous: productsCount 
+      };
+    } catch (error) {
+      console.error('[DashboardService] Error fetching products data:', error);
+      throw new Error(`Failed to fetch products data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Main entry point - fetch all dashboard data
+   * 
+   * Orchestrates fetching all KPI data for the selected period:
+   * 1. Calculates date ranges for current and previous periods
+   * 2. Fetches all metrics in parallel (profit, orders, customers, products)
+   * 3. Calculates growth percentages for each metric
+   * 4. Returns complete dashboard data
+   * 
+   * @param period - The time period to fetch data for
+   * @returns Complete dashboard KPI data with growth trends
+   * 
+   * @throws Error if any data fetching or calculation fails
+   * 
+   * @example
+   * const data = await DashboardService.fetchDashboardData('week');
+   * console.log(data.profit.current); // Current week profit
+   * console.log(data.profit.growth); // Growth percentage vs previous week
+   */
+  static async fetchDashboardData(period: TimePeriod): Promise<DashboardKPIData> {
+    try {
+      console.log('[DashboardService] fetchDashboardData called with period:', period);
+
+      // Calculate date ranges for current and previous periods
+      const ranges = this.calculatePeriodRanges(period);
+
+      console.log('[DashboardService] Date ranges calculated:', {
+        current: {
+          start: ranges.current.start.toISOString(),
+          end: ranges.current.end.toISOString()
+        },
+        previous: {
+          start: ranges.previous.start.toISOString(),
+          end: ranges.previous.end.toISOString()
+        }
+      });
+
+      // Execute all fetch methods in parallel using Promise.all for optimal performance
+      const [profitData, ordersData, customersData, productsData] = await Promise.all([
+        this.fetchProfitData(ranges.current, ranges.previous),
+        this.fetchOrdersData(ranges.current, ranges.previous),
+        this.fetchCustomersData(ranges.current, ranges.previous),
+        this.fetchProductsData()
+      ]);
+
+      console.log('[DashboardService] All data fetched successfully:', {
+        profit: profitData,
+        orders: ordersData,
+        customers: customersData,
+        products: productsData
+      });
+
+      // Calculate growth for each metric
+      const profitGrowth = this.calculateGrowth(profitData.current, profitData.previous);
+      const ordersGrowth = this.calculateGrowth(ordersData.current, ordersData.previous);
+      const customersGrowth = this.calculateGrowth(customersData.current, customersData.previous);
+      const productsGrowth = this.calculateGrowth(productsData.current, productsData.previous);
+
+      console.log('[DashboardService] Growth calculations completed:', {
+        profitGrowth,
+        ordersGrowth,
+        customersGrowth,
+        productsGrowth
+      });
+
+      // Return complete dashboard data with all metrics and growth trends
+      return {
+        profit: {
+          current: profitData.current,
+          previous: profitData.previous,
+          growth: profitGrowth
+        },
+        orders: {
+          current: ordersData.current,
+          previous: ordersData.previous,
+          growth: ordersGrowth
+        },
+        customers: {
+          current: customersData.current,
+          previous: customersData.previous,
+          growth: customersGrowth
+        },
+        products: {
+          current: productsData.current,
+          previous: productsData.previous,
+          growth: productsGrowth
+        }
+      };
+    } catch (error) {
+      console.error('[DashboardService] Error fetching dashboard data:', error);
+      throw new Error(`Failed to fetch dashboard data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+}

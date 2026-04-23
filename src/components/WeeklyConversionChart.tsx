@@ -138,10 +138,10 @@ export const WeeklyConversionChart = React.memo(({ data, mostProfitableDay }: We
   // Memoize data sanitization to prevent recalculation on every render
   const sanitizedData = useMemo(() => {
     return data.map(item => ({
-      week: item.week || 'N/A',
+      day: item.day || 'N/A',
       fees: item.fees ?? 0,
       revenue: item.revenue ?? 0,
-      netProfit: item.netProfit ?? 0,
+      profit: item.profit ?? 0,
     }));
   }, [data]);
 
@@ -153,9 +153,9 @@ export const WeeklyConversionChart = React.memo(({ data, mostProfitableDay }: We
       (acc, item) => ({
         fees: acc.fees + item.fees,
         revenue: acc.revenue + item.revenue,
-        netProfit: acc.netProfit + item.netProfit,
+        profit: acc.profit + item.profit,
       }),
-      { fees: 0, revenue: 0, netProfit: 0 }
+      { fees: 0, revenue: 0, profit: 0 }
     );
   }, [sanitizedData]);
 
@@ -173,7 +173,7 @@ export const WeeklyConversionChart = React.memo(({ data, mostProfitableDay }: We
           >
             <HatchPattern />
             <XAxis
-              dataKey="week"
+              dataKey="day"
               stroke="#a3a3a3"
               tick={{ fill: '#a3a3a3' }}
               axisLine={{ stroke: '#404040' }}
@@ -196,7 +196,7 @@ export const WeeklyConversionChart = React.memo(({ data, mostProfitableDay }: We
                 const keyMap: Record<string, keyof typeof totals> = {
                   'Taxas': 'fees',
                   'Receita': 'revenue',
-                  'Lucro Líquido': 'netProfit'
+                  'Lucro Líquido': 'profit'
                 };
                 const key = keyMap[value];
                 const total = key ? totals[key] : 0;
@@ -220,7 +220,7 @@ export const WeeklyConversionChart = React.memo(({ data, mostProfitableDay }: We
               aria-label="Receita"
             />
             <Bar
-              dataKey="netProfit"
+              dataKey="profit"
               stackId="a"
               fill="url(#hatch)"
               name="Lucro Líquido"
