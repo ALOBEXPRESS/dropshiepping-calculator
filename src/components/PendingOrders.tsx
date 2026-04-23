@@ -49,8 +49,23 @@ interface PendingOrdersProps {
 
 export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, onReturnFromFreeSample }) => {
   const { organizationId } = useSettings();
-  const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>(() => {
+    // Inicializar com cache do sessionStorage para evitar flash de loading ao voltar para a página
+    try {
+      const cached = sessionStorage.getItem('pendingOrders_cache');
+      return cached ? (JSON.parse(cached) as PendingOrder[]) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [loading, setLoading] = useState(() => {
+    // Só mostrar loading se não tiver cache
+    try {
+      return !sessionStorage.getItem('pendingOrders_cache');
+    } catch {
+      return true;
+    }
+  });
   const [processing, setProcessing] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +78,9 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
 
   useEffect(() => {
     if (organizationId) {
-      loadPendingOrders();
+      // Se já tem cache, faz refresh silencioso (sem mostrar loading)
+      const hasCached = (() => { try { return !!sessionStorage.getItem('pendingOrders_cache'); } catch { return false; } })();
+      loadPendingOrders(hasCached);
     }
   }, [organizationId]);
 
@@ -104,8 +121,8 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
     });
   };
 
-  const loadPendingOrders = async () => {
-    setLoading(true);
+  const loadPendingOrders = async (silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const { data, error: fetchError } = await supabase
@@ -114,10 +131,15 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
         .order('order_date', { ascending: false });
 
       if (fetchError) throw fetchError;
-      setPendingOrders(data || []);
+      const orders = data || [];
+      setPendingOrders(orders);
+      // Salvar no cache para próxima visita
+      try {
+        sessionStorage.setItem('pendingOrders_cache', JSON.stringify(orders));
+      } catch { /* ignore */ }
     } catch (err) {
       console.error('Error loading pending orders:', err);
-      setError('Erro ao carregar vendas pendentes');
+      if (!silent) setError('Erro ao carregar vendas pendentes');
     } finally {
       setLoading(false);
     }
@@ -212,7 +234,11 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
 
       if (deleteError) throw deleteError;
 
-      setPendingOrders((prev) => prev.filter((o) => o.bling_order_id !== blingOrderId));
+      setPendingOrders((prev) => {
+        const updated = prev.filter((o) => o.bling_order_id !== blingOrderId);
+        try { sessionStorage.setItem('pendingOrders_cache', JSON.stringify(updated)); } catch { /* ignore */ }
+        return updated;
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Erro ao excluir pedido';
       setError(msg);
@@ -284,7 +310,7 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
           </p>
         </div>
         <Button
-          onClick={loadPendingOrders}
+          onClick={() => loadPendingOrders(false)}
           variant="outline"
           size="sm"
           disabled={loading}

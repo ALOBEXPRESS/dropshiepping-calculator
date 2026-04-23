@@ -75,8 +75,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
   const [openProduto, setOpenProduto] = useState(false);
   const [openMarketplace, setOpenMarketplace] = useState(false);
-  const [openItems, setOpenItems] = useState<Record<number, boolean>>({});
-  const toggleItem = (i: number) => setOpenItems(prev => ({ ...prev, [i]: !prev[i] }));
   
   const chartRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef(data);
@@ -356,7 +354,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       // Resetar accordions do dialog
       setOpenProduto(false);
       setOpenMarketplace(false);
-      setOpenItems({});
       
       // Fechar o tooltip do ApexCharts
       const tooltipEl = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
@@ -662,24 +659,33 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const hasMultipleProducts = products.length > 1;
 
             // Calcular custos por produto usando os dados de cada item
+            // Taxas do fornecedor são do pedido (nível order), não por produto
+            const orderSupFeeVal = Number(selectedOrder.supplier_fee_value ?? 0);
+            const orderSupFeeType = selectedOrder.supplier_fee_type ?? 'percent';
+            const orderGwFeeVal = Number(selectedOrder.supplier_gateway_fee_value ?? 0);
+            const orderGwFeeType = selectedOrder.supplier_gateway_fee_type ?? 'fixed';
+
             const productItems = products.map(p => {
               const qty = p.quantity ?? 1;
               const unitCost = p.unit_cost ?? 0;
               const unitPrice = p.unit_price ?? 0;
               const baseCost = unitCost * qty;
               const totalPrice = unitPrice * qty;
-              const supFeeVal = Number(p.supplier_fee_value ?? 0);
-              const supFeeType = p.supplier_fee_type ?? 'percent';
-              const supplierFee = supFeeVal > 0
-                ? supFeeType === 'percent' ? (totalPrice * supFeeVal) / 100 : supFeeVal : 0;
-              const gwFeeVal = Number(p.supplier_gateway_fee_value ?? 0);
-              const gwFeeType = p.supplier_gateway_fee_type ?? 'fixed';
-              const gatewayFee = gwFeeVal > 0
-                ? gwFeeType === 'fixed' ? gwFeeVal : (totalPrice * gwFeeVal) / 100 : 0;
-              return { name: p.name, sku: p.sku, qty, unitPrice, totalPrice, baseCost, supplierFee, gatewayFee, totalCost: baseCost + supplierFee + gatewayFee, supFeeVal, supFeeType, gwFeeVal, gwFeeType };
+              return { name: p.name, sku: p.sku, qty, unitPrice, totalPrice, baseCost };
             });
 
-            const totalProductCost = productItems.reduce((s, p) => s + p.totalCost, 0);
+            const totalBaseCost = productItems.reduce((s, p) => s + p.baseCost, 0);
+
+            // Taxa do fornecedor aplicada sobre o custo total (percent) ou valor fixo único
+            const orderSupplierFee = orderSupFeeVal > 0
+              ? orderSupFeeType === 'percent' ? (totalBaseCost * orderSupFeeVal) / 100 : orderSupFeeVal
+              : 0;
+            // Gateway do fornecedor: fixo (único) ou percent sobre custo total
+            const orderGatewayFee = orderGwFeeVal > 0
+              ? orderGwFeeType === 'fixed' ? orderGwFeeVal : (totalBaseCost * orderGwFeeVal) / 100
+              : 0;
+
+            const totalProductCost = totalBaseCost + orderSupplierFee + orderGatewayFee;
             const fixedFee = selectedOrder.marketplace_fixed_fee ?? 0;
             const subtotalMarketplace = selectedOrder.marketplace_commission + fixedFee + selectedOrder.shipping_cost + selectedOrder.other_expenses;
             const realProfit = selectedOrder.total_amount - totalProductCost - subtotalMarketplace;
@@ -813,52 +819,36 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       </div>
                     </button>
                     {openProduto && (
-                      <div className="bg-zinc-900/40 border-t border-red-900/30 divide-y divide-zinc-800/30">
-                        {productItems.map((p, i) => (
-                          <div key={i}>
-                            <button
-                              onClick={() => toggleItem(i)}
-                              className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-zinc-800/30 transition-colors cursor-pointer"
-                            >
+                      <div className="bg-zinc-900/40 border-t border-red-900/30">
+                        {/* Itens — apenas custo base por produto */}
+                        <div className="divide-y divide-zinc-800/30">
+                          {productItems.map((p, i) => (
+                            <div key={i} className="flex items-center justify-between px-4 py-2.5">
                               <div className="flex-1 min-w-0 text-left mr-3">
                                 <p className="text-[11px] text-zinc-300 truncate">{p.name}</p>
                                 {p.sku && <p className="text-[10px] text-zinc-600 font-mono">{p.sku}</p>}
                               </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <span className="text-red-400 text-[12px] font-semibold tabular-nums">-{formatCurrency(p.totalCost)}</span>
-                                <svg className={`w-3 h-3 text-zinc-600 transition-transform ${openItems[i] ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
+                              <span className="text-red-400 text-[12px] font-semibold tabular-nums shrink-0">-{formatCurrency(p.baseCost)}</span>
+                            </div>
+                          ))}
+                        </div>
+                        {/* Taxas do fornecedor — aplicadas sobre o total do pedido */}
+                        {(orderSupplierFee > 0 || orderGatewayFee > 0) && (
+                          <div className="border-t border-red-900/30 px-4 py-2.5 space-y-1.5">
+                            {orderSupplierFee > 0 && (
+                              <div className="flex justify-between text-xs">
+                                <span className="text-zinc-500">Taxa fornecedor{orderSupFeeType === 'percent' ? ` (${orderSupFeeVal}%)` : ' (fixo)'}</span>
+                                <span className="text-red-400 tabular-nums">-{formatCurrency(orderSupplierFee)}</span>
                               </div>
-                            </button>
-                            {openItems[i] && (
-                              <div className="px-4 pb-2.5 space-y-1.5 bg-zinc-900/60">
-                                <div className="flex justify-between text-xs">
-                                  <span className="text-zinc-500">Custo base</span>
-                                  <span className="text-red-400 tabular-nums">-{formatCurrency(p.baseCost)}</span>
-                                </div>
-                                {p.supFeeVal > 0 && (
-                                  <div className="flex justify-between text-xs">
-                                    <span className="text-zinc-500">Taxa fornecedor{p.supFeeType === 'percent' ? ` (${p.supFeeVal}%)` : ' (fixo)'}</span>
-                                    <span className="text-red-400 tabular-nums">-{formatCurrency(p.supplierFee)}</span>
-                                  </div>
-                                )}
-                                {p.gwFeeVal > 0 && (
-                                  <div className="flex justify-between text-xs">
-                                    <span className="text-zinc-500">Gateway fornecedor{p.gwFeeType === 'percent' ? ` (${p.gwFeeVal}%)` : ' (fixo)'}</span>
-                                    <span className="text-red-400 tabular-nums">-{formatCurrency(p.gatewayFee)}</span>
-                                  </div>
-                                )}
-                                {p.totalCost !== p.baseCost && (
-                                  <div className="flex justify-between text-xs border-t border-zinc-800/60 pt-1 mt-1">
-                                    <span className="text-zinc-400 font-medium">Total item</span>
-                                    <span className="text-red-400 font-semibold tabular-nums">-{formatCurrency(p.totalCost)}</span>
-                                  </div>
-                                )}
+                            )}
+                            {orderGatewayFee > 0 && (
+                              <div className="flex justify-between text-xs">
+                                <span className="text-zinc-500">Gateway fornecedor{orderGwFeeType === 'percent' ? ` (${orderGwFeeVal}%)` : ' (fixo)'}</span>
+                                <span className="text-red-400 tabular-nums">-{formatCurrency(orderGatewayFee)}</span>
                               </div>
                             )}
                           </div>
-                        ))}
+                        )}
                       </div>
                     )}
                   </div>
