@@ -659,12 +659,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const hasMultipleProducts = products.length > 1;
 
             // Calcular custos por produto usando os dados de cada item
-            // Taxas do fornecedor são do pedido (nível order), não por produto
-            const orderSupFeeVal = Number(selectedOrder.supplier_fee_value ?? 0);
-            const orderSupFeeType = selectedOrder.supplier_fee_type ?? 'percent';
-            const orderGwFeeVal = Number(selectedOrder.supplier_gateway_fee_value ?? 0);
-            const orderGwFeeType = selectedOrder.supplier_gateway_fee_type ?? 'fixed';
-
             const productItems = products.map(p => {
               const qty = p.quantity ?? 1;
               const unitCost = p.unit_cost ?? 0;
@@ -676,13 +670,28 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
             const totalBaseCost = productItems.reduce((s, p) => s + p.baseCost, 0);
 
-            // Taxa do fornecedor aplicada sobre o custo total (percent) ou valor fixo único
-            const orderSupplierFee = orderSupFeeVal > 0
-              ? orderSupFeeType === 'percent' ? (totalBaseCost * orderSupFeeVal) / 100 : orderSupFeeVal
+            // Taxas do fornecedor: derivar do produto que tem taxa configurada (o RPC usa MIN() no nível do pedido, que pega 0)
+            // Buscar o produto com maior taxa percentual e o maior gateway fixo
+            const supFeeProduct = products.reduce((best, p) => {
+              const v = Number(p.supplier_fee_value ?? 0);
+              return v > Number(best?.supplier_fee_value ?? 0) ? p : best;
+            }, products[0]);
+            const gwFeeProduct = products.reduce((best, p) => {
+              const v = Number(p.supplier_gateway_fee_value ?? 0);
+              return v > Number(best?.supplier_gateway_fee_value ?? 0) ? p : best;
+            }, products[0]);
+
+            const supFeeVal = Number(supFeeProduct?.supplier_fee_value ?? 0);
+            const supFeeType = supFeeProduct?.supplier_fee_type ?? 'percent';
+            const gwFeeVal = Number(gwFeeProduct?.supplier_gateway_fee_value ?? 0);
+            const gwFeeType = gwFeeProduct?.supplier_gateway_fee_type ?? 'fixed';
+
+            // Taxa % aplicada sobre custo total; gateway fixo aplicado uma vez
+            const orderSupplierFee = supFeeVal > 0
+              ? supFeeType === 'percent' ? (totalBaseCost * supFeeVal) / 100 : supFeeVal
               : 0;
-            // Gateway do fornecedor: fixo (único) ou percent sobre custo total
-            const orderGatewayFee = orderGwFeeVal > 0
-              ? orderGwFeeType === 'fixed' ? orderGwFeeVal : (totalBaseCost * orderGwFeeVal) / 100
+            const orderGatewayFee = gwFeeVal > 0
+              ? gwFeeType === 'fixed' ? gwFeeVal : (totalBaseCost * gwFeeVal) / 100
               : 0;
 
             const totalProductCost = totalBaseCost + orderSupplierFee + orderGatewayFee;
@@ -832,21 +841,43 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             </div>
                           ))}
                         </div>
-                        {/* Taxas do fornecedor — aplicadas sobre o total do pedido */}
+                        {/* Taxas do fornecedor — aplicadas sobre o custo total */}
                         {(orderSupplierFee > 0 || orderGatewayFee > 0) && (
-                          <div className="border-t border-red-900/30 px-4 py-2.5 space-y-1.5">
+                          <div className="border-t border-red-900/40 bg-red-950/20 px-4 py-3 space-y-2">
+                            <p className="text-[10px] font-semibold text-red-500/70 uppercase tracking-widest mb-1">Taxas do Fornecedor</p>
                             {orderSupplierFee > 0 && (
-                              <div className="flex justify-between text-xs">
-                                <span className="text-zinc-500">Taxa fornecedor{orderSupFeeType === 'percent' ? ` (${orderSupFeeVal}%)` : ' (fixo)'}</span>
-                                <span className="text-red-400 tabular-nums">-{formatCurrency(orderSupplierFee)}</span>
+                              <div className="flex justify-between items-center">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="w-1 h-1 rounded-full bg-red-500/60 shrink-0" />
+                                  <span className="text-xs text-zinc-400">
+                                    Taxa fornecedor
+                                    {supFeeType === 'percent'
+                                      ? <span className="ml-1 text-[10px] text-zinc-600 font-mono">({supFeeVal}% × R${totalBaseCost.toFixed(2)})</span>
+                                      : <span className="ml-1 text-[10px] text-zinc-600 font-mono">(fixo)</span>}
+                                  </span>
+                                </div>
+                                <span className="text-red-400 text-xs font-semibold tabular-nums">-{formatCurrency(orderSupplierFee)}</span>
                               </div>
                             )}
                             {orderGatewayFee > 0 && (
-                              <div className="flex justify-between text-xs">
-                                <span className="text-zinc-500">Gateway fornecedor{orderGwFeeType === 'percent' ? ` (${orderGwFeeVal}%)` : ' (fixo)'}</span>
-                                <span className="text-red-400 tabular-nums">-{formatCurrency(orderGatewayFee)}</span>
+                              <div className="flex justify-between items-center">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="w-1 h-1 rounded-full bg-red-500/60 shrink-0" />
+                                  <span className="text-xs text-zinc-400">
+                                    Gateway fornecedor
+                                    {gwFeeType === 'percent'
+                                      ? <span className="ml-1 text-[10px] text-zinc-600 font-mono">({gwFeeVal}%)</span>
+                                      : <span className="ml-1 text-[10px] text-zinc-600 font-mono">(fixo)</span>}
+                                  </span>
+                                </div>
+                                <span className="text-red-400 text-xs font-semibold tabular-nums">-{formatCurrency(orderGatewayFee)}</span>
                               </div>
                             )}
+                            {/* Subtotal custo produto */}
+                            <div className="flex justify-between items-center pt-1.5 border-t border-red-900/30">
+                              <span className="text-[11px] text-zinc-400 font-medium">Subtotal custo</span>
+                              <span className="text-red-400 text-[12px] font-bold tabular-nums">-{formatCurrency(totalProductCost)}</span>
+                            </div>
                           </div>
                         )}
                       </div>
