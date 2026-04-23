@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -373,6 +373,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
   const [orgClicks] = useState('');
   const [orgSales] = useState('');
   const [extraImageUrls, setExtraImageUrls] = useState<string[]>([]);
+  const dragIndexRef = useRef<number | null>(null);
 
   // Fetch extra image URLs from products_bling when dialog opens
   useEffect(() => {
@@ -1122,17 +1123,33 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                       {extraImageUrls.length > 0 && (
                         <div className="mt-4 rounded-lg border border-zinc-700 bg-zinc-900/50 p-3 space-y-3">
                           <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
-                            Imagens do Bling — clique para usar
+                            Imagens do Bling — arraste para reordenar, clique para usar
                           </p>
-                          {/* Thumbnails */}
+                          {/* Thumbnails com drag-and-drop */}
                           <div className="flex flex-wrap gap-2">
                             {extraImageUrls.map((url, idx) => (
                               <button
-                                key={idx}
+                                key={url}
                                 type="button"
+                                draggable
+                                onDragStart={() => { dragIndexRef.current = idx; }}
+                                onDragOver={(e) => { e.preventDefault(); }}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  const from = dragIndexRef.current;
+                                  if (from === null || from === idx) return;
+                                  setExtraImageUrls(prev => {
+                                    const next = [...prev];
+                                    const [moved] = next.splice(from, 1);
+                                    next.splice(idx, 0, moved);
+                                    return next;
+                                  });
+                                  dragIndexRef.current = null;
+                                }}
+                                onDragEnd={() => { dragIndexRef.current = null; }}
                                 onClick={() => handleChange('imageUrl', url)}
-                                title={`Imagem ${idx + 1}`}
-                                className={`relative h-14 w-14 shrink-0 rounded-md overflow-hidden border-2 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                title={`Imagem ${idx + 1} — arraste para reordenar`}
+                                className={`relative h-14 w-14 shrink-0 rounded-md overflow-hidden border-2 transition-all cursor-grab active:cursor-grabbing focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                                   formData.imageUrl === url
                                     ? 'border-blue-500 ring-2 ring-blue-500/40'
                                     : 'border-zinc-600 hover:border-blue-400'
@@ -1141,19 +1158,21 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                                 <img
                                   src={url}
                                   alt={`Imagem ${idx + 1}`}
-                                  className="h-full w-full object-cover"
+                                  className="h-full w-full object-cover pointer-events-none"
                                   onError={(e) => { (e.target as HTMLImageElement).closest('button')!.style.display = 'none'; }}
                                 />
-                                <span className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[8px] text-center py-0.5">
+                                <span className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[8px] text-center py-0.5 pointer-events-none">
                                   {idx + 1}
                                 </span>
+                                {/* drag handle indicator */}
+                                <span className="absolute top-0.5 right-0.5 text-white/60 text-[8px] pointer-events-none">⠿</span>
                               </button>
                             ))}
                           </div>
-                          {/* Links copiáveis */}
+                          {/* Links copiáveis — ordem sincronizada com thumbnails */}
                           <div className="space-y-1.5">
                             {extraImageUrls.map((url, idx) => (
-                              <div key={idx} className="flex items-center gap-2 min-w-0">
+                              <div key={url} className="flex items-center gap-2 min-w-0">
                                 <span className="text-[10px] font-mono text-zinc-500 shrink-0 w-8">
                                   #{idx + 1}
                                 </span>
@@ -1161,7 +1180,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                                   readOnly
                                   value={url}
                                   onClick={(e) => (e.target as HTMLInputElement).select()}
-                                  className="flex-1 min-w-0 text-[11px] font-mono text-blue-400 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 cursor-pointer select-all focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/40"
+                                  className="flex-1 min-w-0 text-[11px] font-mono text-blue-400 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 cursor-pointer focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/40"
                                   title="Clique para selecionar e copiar"
                                 />
                                 <button
