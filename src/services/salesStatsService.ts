@@ -112,57 +112,43 @@ export async function getGeneralFinancialSummary(): Promise<GeneralFinancialSumm
     
     const organizationId = memberData?.organization_id ?? user.id;
 
-    // Usar get_revenue_report para obter dados com custos dinâmicos
-    const { data: revenueData, error: revenueError } = await supabase
-      .rpc('get_revenue_report', { 
-        p_organization_id: organizationId,
-        p_period: 'monthly'
-      });
-
-    if (revenueError) {
-      console.error('Erro ao buscar revenue report:', revenueError);
-      return {
-        total_profit: 0,
-        total_sales: 0,
-        estimated_expenses: 0
-      };
-    }
-
-    if (!revenueData || revenueData.length === 0) {
-      return {
-        total_profit: 0,
-        total_sales: 0,
-        estimated_expenses: 0
-      };
-    }
-
-    // Somar total_profit de todos os períodos
-    interface PeriodData {
-      total_profit?: number;
-      orders_count?: number;
-    }
-    const totalProfit = revenueData.reduce((sum: number, period: PeriodData) => 
-      sum + (Number(period.total_profit) || 0), 0);
-
-    // Total de vendas = soma de orders_count de todos os períodos
-    const totalSales = revenueData.reduce((sum: number, period: PeriodData) => 
-      sum + (Number(period.orders_count) || 0), 0);
-    
-    // Buscar despesas (comissões, frete, outras) da tabela orders
+    // Buscar pedidos processados da tabela orders
     const { data: ordersData, error: ordersError } = await supabase
       .from('orders')
-      .select('marketplace_commission, shipping_cost, other_expenses')
+      .select('profit, marketplace_commission, shipping_cost, other_expenses')
       .eq('organization_id', organizationId)
       .not('processed_at', 'is', null);
 
     if (ordersError) {
       console.error('Erro ao buscar orders:', ordersError);
+      return {
+        total_profit: 0,
+        total_sales: 0,
+        estimated_expenses: 0
+      };
     }
 
-    const totalExpenses = ordersData?.reduce((sum, o) => 
+    if (!ordersData || ordersData.length === 0) {
+      console.log('Nenhum pedido processado encontrado');
+      return {
+        total_profit: 0,
+        total_sales: 0,
+        estimated_expenses: 0
+      };
+    }
+
+    // Calcular totais
+    const totalProfit = ordersData.reduce((sum, o) => 
+      sum + (Number(o.profit) || 0), 0);
+
+    const totalSales = ordersData.length;
+
+    const totalExpenses = ordersData.reduce((sum, o) => 
       sum + (Number(o.marketplace_commission) || 0) + 
       (Number(o.shipping_cost) || 0) + 
-      (Number(o.other_expenses) || 0), 0) || 0;
+      (Number(o.other_expenses) || 0), 0);
+
+    console.log('Resumo financeiro calculado:', { totalProfit, totalSales, totalExpenses });
 
     return {
       total_profit: totalProfit,
