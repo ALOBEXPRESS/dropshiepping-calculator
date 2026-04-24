@@ -685,7 +685,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     );
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   const organicMetrics = useMemo(() => getUpdatedMetrics(), [
     getUpdatedMetrics,
   ]);

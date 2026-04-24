@@ -752,9 +752,28 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
             const totalProductCost = totalBaseCost + orderSupplierFee + orderGatewayFee;
             const isFreeSample = selectedOrder.is_free_sample === true;
-            const fixedFee = selectedOrder.marketplace_fixed_fee ?? 0;
+            
+            // Calcular taxas da Shopee baseado no preço de venda
+            const getShopeeRates = (price: number): { commission: number; fixed: number } => {
+              if (price <= 79.99) return { commission: 20, fixed: 4 };
+              if (price <= 99.99) return { commission: 14, fixed: 16 };
+              if (price <= 199.99) return { commission: 14, fixed: 20 };
+              if (price <= 499.99) return { commission: 14, fixed: 26 };
+              return { commission: 14, fixed: 26 };
+            };
+            
+            // Determinar taxas baseado no marketplace
+            let fixedFee = selectedOrder.marketplace_fixed_fee ?? 0;
+            let commissionRate = selectedOrder.commission_rate ?? 0;
+            
+            // Se for Shopee, calcular taxas baseadas no preço de venda
+            if (selectedOrder.marketplace?.toLowerCase() === 'shopee') {
+              const shopeeRates = getShopeeRates(selectedOrder.total_amount);
+              commissionRate = shopeeRates.commission;
+              fixedFee = shopeeRates.fixed;
+            }
+            
             // Para amostras grátis: sem custo de marketplace
-            const commissionRate = selectedOrder.commission_rate ?? 0;
             const commissionPercent = isFreeSample ? 0 : (commissionRate > 0
               ? (selectedOrder.total_amount * commissionRate) / 100
               : Math.max(0, selectedOrder.marketplace_commission - fixedFee));
