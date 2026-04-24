@@ -602,7 +602,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               </div>
               <div style="display:flex;justify-content:space-between;font-size:11px;padding-top:4px;border-top:1px dashed ${dividerColor}">
                 <span style="color:${textSecondary}">Custo:</span>
-                <span style="font-weight:600;color:#ef4444">${formatCurrency(Number(order.total_cost ?? 0))}</span>
+                <span style="font-weight:600;color:#ef4444">${formatCurrency(Math.abs(Number(order.total_cost ?? 0)))}</span>
               </div>
               <div style="display:flex;justify-content:space-between;font-size:11px;padding-top:2px">
                 <span style="color:${textSecondary}">Lucro:</span>
@@ -767,9 +767,15 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const profitPositive = realProfit >= 0;
 
             // Imagem: usar product_image_url ou fallback para imagem do primeiro produto
-            const heroImage = selectedOrder.product_image_url
+            // Garantir que a URL da imagem seja válida
+            let heroImage = selectedOrder.product_image_url
               || (products[0] as { image_url?: string })?.image_url
               || null;
+            
+            // Validar se a URL da imagem é válida (não vazia, não 'null', não 'undefined')
+            if (heroImage && (heroImage === 'null' || heroImage === 'undefined' || heroImage.trim() === '')) {
+              heroImage = null;
+            }
 
             return (
               <div className="flex flex-col bg-zinc-950 rounded-2xl overflow-hidden max-h-[88vh]">
