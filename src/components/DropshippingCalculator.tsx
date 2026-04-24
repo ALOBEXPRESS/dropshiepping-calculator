@@ -65,6 +65,7 @@ import { useMarketplacePerformance } from '../hooks/sales/useMarketplacePerforma
 import { useGeneralFinancialSummary } from '../hooks/useSalesStats';
 import ElectricBorder from './ui/electric-border';
 import { toast } from 'sonner';
+import { useTheme } from './ThemeProvider';
 
 gsap.registerPlugin(useGSAP);
 
@@ -462,6 +463,13 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
 
   // Hook para buscar resumo financeiro real do Bling
   const { summary: blingFinancialSummary, refresh: refreshFinancialSummary } = useGeneralFinancialSummary();
+  const { theme } = useTheme();
+  const isDarkMode = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    if (theme === 'dark') return true;
+    if (theme === 'light') return false;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }, [theme]);
 
   // Hook para análise de lucro detalhada (breakdown de custos)
   const { data: profitAnalysis } = useProfitAnalysis(organizationId ?? '');
@@ -3804,7 +3812,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
             </div>
             {showProductsList ? (
               <ElectricBorder
-                color="#1a1a1a"
+                color={isDarkMode ? '#fe2c55' : '#1a1a1a'}
                 speed={0.8}
                 chaos={0.1}
                 borderRadius={16}

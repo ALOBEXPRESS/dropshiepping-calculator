@@ -115,7 +115,7 @@ export async function getGeneralFinancialSummary(): Promise<GeneralFinancialSumm
     // Buscar pedidos processados da tabela orders
     const { data: ordersData, error: ordersError } = await supabase
       .from('orders')
-      .select('profit, marketplace_commission, shipping_cost, other_expenses')
+      .select('total_profit, marketplace_commission, shipping_cost, other_expenses')
       .eq('organization_id', organizationId)
       .not('processed_at', 'is', null);
 
@@ -139,7 +139,7 @@ export async function getGeneralFinancialSummary(): Promise<GeneralFinancialSumm
 
     // Calcular totais
     const totalProfit = ordersData.reduce((sum, o) => 
-      sum + (Number(o.profit) || 0), 0);
+      sum + (Number(o.total_profit) || 0), 0);
 
     const totalSales = ordersData.length;
 
