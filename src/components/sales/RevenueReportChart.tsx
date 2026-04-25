@@ -15,6 +15,8 @@ import {
   Dialog,
   DialogContent,
   DialogClose,
+  DialogDescription,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import Chart from 'react-apexcharts';
@@ -315,16 +317,32 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       const allOrders = currentData.flatMap((p) => p.orders_data ?? []);
       const idsNeedingOrderRow = new Set<string>();
       const idsNeedingItems = new Set<string>();
+      const orderNumberByReportId: Record<string, string> = {};
+
+      const isMeaningfulCustomerName = (value: unknown) => {
+        const v = String(value ?? '').trim();
+        if (!v) return false;
+        const lowered = v.toLowerCase();
+        if (lowered === 'cliente') return false;
+        if (lowered === 'cliente não identificado') return false;
+        if (lowered === 'cliente nao identificado') return false;
+        if (lowered === 'não identificado') return false;
+        if (lowered === 'nao identificado') return false;
+        return true;
+      };
 
       for (const o of allOrders) {
         const id = (o as { order_id?: string }).order_id;
         if (!id) continue;
+        const orderNumberRaw = (o as { order_number?: string | number | null }).order_number;
+        const orderNumber = orderNumberRaw == null ? '' : String(orderNumberRaw).trim();
+        if (orderNumber) orderNumberByReportId[id] = orderNumber;
 
         const existing = orderEnrichmentByIdRef.current[id];
-        const hasCustomer = Boolean((o as { customer_name?: string }).customer_name || existing?.customer_name);
-        const hasProductName = Boolean((o as { product_name?: string }).product_name || existing?.product_name);
+        const hasCustomer = isMeaningfulCustomerName((o as { customer_name?: string }).customer_name)
+          || isMeaningfulCustomerName(existing?.customer_name);
 
-        if (!hasCustomer || !hasProductName) idsNeedingOrderRow.add(id);
+        if (!hasCustomer) idsNeedingOrderRow.add(id);
 
         const currentProducts = (o as { products?: unknown[] }).products ?? [];
         const existingProducts = existing?.products ?? [];
@@ -338,75 +356,630 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
       const updates: Record<string, Partial<OrderDetail>> = {};
 
-      for (const ids of chunk(orderIdsToFetch, 100)) {
-        const { data: ordersRows, error: ordersError } = await supabase
-          .from('orders')
-          .select('id, customer_name, product_name, product_sku, product_image_url, product_cost_price')
-          .in('id', ids);
+      const pickCustomerNameFromOrderRow = (value: unknown) => {
+        const row = (value ?? {}) as Record<string, unknown>;
 
-        if (ordersError) throw ordersError;
+        const looksLikePersonName = (s: string) => {
+          const v = s.trim();
+          if (v.length < 2 || v.length > 80) return false;
+          if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)) return false;
+          if (!/[A-Za-zÀ-ÖØ-öø-ÿ]/.test(v)) return false;
+          if (/(https?:\/\/|@|\.(com|br|net|io))/i.test(v)) return false;
+          return true;
+        };
 
-        for (const row of ordersRows ?? []) {
-          const id = String((row as { id?: string }).id ?? '');
-          if (!id) continue;
-          const existing = orderEnrichmentByIdRef.current[id];
-          updates[id] = {
-            ...(existing ?? {}),
-            customer_name: (row as { customer_name?: string | null }).customer_name ?? existing?.customer_name,
-            product_name: (row as { product_name?: string | null }).product_name ?? existing?.product_name,
-            product_sku: (row as { product_sku?: string | null }).product_sku ?? existing?.product_sku,
-            product_image_url: (row as { product_image_url?: string | null }).product_image_url ?? existing?.product_image_url,
-            product_cost_price: Number((row as { product_cost_price?: number | null }).product_cost_price ?? existing?.product_cost_price ?? 0),
+        type Candidate = { score: number; value: string };
+        const candidates: Candidate[] = [];
+
+        const addCandidate = (path: string, v: unknown) => {
+          if (typeof v !== 'string') return;
+          if (!isMeaningfulCustomerName(v)) return;
+          if (!looksLikePersonName(v)) return;
+
+          const valueTrimmed = v.trim();
+          const p = path.toLowerCase();
+          if (p.includes('product') || p.includes('item')) return;
+
+          let score = 0;
+          if (p.includes('customer') || p.includes('cliente') || p.includes('client')) score += 6;
+          if (p.includes('buyer')) score += 5;
+          if (p.includes('recipient') || p.includes('shipping') || p.includes('delivery') || p.includes('contact')) score += 4;
+          if (p.includes('name') || p.includes('nome')) score += 2;
+          if (p.includes('label')) score += 3;
+          if (valueTrimmed.includes(' ')) score += 1;
+          if (score === 0) return;
+
+          candidates.push({ score, value: valueTrimmed });
+        };
+
+        const visit = (v: unknown, path: string, depth: number) => {
+          if (depth > 4 || v == null) return;
+          if (typeof v === 'string') {
+            addCandidate(path, v);
+            return;
+          }
+          if (Array.isArray(v)) {
+            for (let i = 0; i < Math.min(v.length, 10); i += 1) {
+              visit(v[i], `${path}[]`, depth + 1);
+            }
+            return;
+          }
+          if (typeof v === 'object') {
+            for (const [k, vv] of Object.entries(v as Record<string, unknown>)) {
+              const nextPath = path ? `${path}.${k}` : k;
+              visit(vv, nextPath, depth + 1);
+            }
+          }
+        };
+
+        visit(row, '', 0);
+        candidates.sort((a, b) => b.score - a.score);
+        return candidates[0]?.value;
+      };
+
+      const reportIdsToResolve = Array.from(new Set([...orderIdsToFetch, ...itemOrderIdsToFetch]));
+      const actualOrderIdByReportId: Record<string, string> = {};
+
+      for (const reportIdsChunk of chunk(reportIdsToResolve, 100)) {
+        type OrderCustomerRow = {
+          id?: string | null;
+          order_number?: string | number | null;
+          lead_id?: string | null;
+          customer_id?: string | null;
+          leads?: { name?: string | null } | Array<{ name?: string | null }> | null;
+        };
+
+        const baseSelect = `
+          id,
+          order_number,
+          lead_id,
+          customer_id,
+          leads!lead_id (
+            name
+          )
+        `;
+
+        const fetchOrdersRows = async (mode: 'byId' | 'byNumber', values: string[]) => {
+          if (values.length === 0) return { data: [] as OrderCustomerRow[], error: null as unknown };
+
+          if (mode === 'byId') {
+            const { data, error } = await supabase
+              .from('orders')
+              .select(baseSelect)
+              .or(`organization_id.eq.${organizationId},organization_id.is.null`)
+              .in('id', values);
+
+            return { data: (data ?? []) as OrderCustomerRow[], error: error as unknown };
+          }
+
+          const { data, error } = await supabase
+            .from('orders')
+            .select(baseSelect)
+            .or(`organization_id.eq.${organizationId},organization_id.is.null`)
+            .in('order_number', values);
+
+          return { data: (data ?? []) as OrderCustomerRow[], error: error as unknown };
+        };
+
+        const fetchedRows: OrderCustomerRow[] = [];
+
+        const { data: ordersRows, error: ordersError } = await fetchOrdersRows('byId', reportIdsChunk);
+
+        if (ordersError) {
+          console.error('Erro ao buscar dados do pedido para tooltip:', ordersError);
+        } else {
+          fetchedRows.push(...((ordersRows ?? []) as OrderCustomerRow[]));
+        }
+
+        const foundIds = new Set(
+          fetchedRows.map((r) => String(r.id ?? '').trim()).filter(Boolean)
+        );
+        const missingReportIds = reportIdsChunk.filter((id) => !foundIds.has(id));
+        const missingOrderNumbers = Array.from(new Set(
+          missingReportIds
+            .map((id) => String(orderNumberByReportId[id] ?? '').trim())
+            .filter(Boolean)
+        ));
+
+        if (missingOrderNumbers.length > 0) {
+          const { data: ordersByNumber, error: ordersByNumberError } = await fetchOrdersRows('byNumber', missingOrderNumbers);
+
+          if (!ordersByNumberError) {
+            fetchedRows.push(...((ordersByNumber ?? []) as OrderCustomerRow[]));
+          }
+        }
+
+        const orderRowById: Record<string, OrderCustomerRow> = {};
+        const orderRowByNumber: Record<string, OrderCustomerRow> = {};
+        for (const row of fetchedRows) {
+          const id = String(row.id ?? '').trim();
+          const orderNumber = row.order_number == null ? '' : String(row.order_number).trim();
+          if (id) orderRowById[id] = row;
+          if (orderNumber) orderRowByNumber[orderNumber] = row;
+        }
+
+        const normalizeNameToken = (raw: string) =>
+          raw
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^A-Za-z0-9]+/g, '')
+            .toLowerCase();
+
+        const extractTokenFromOrderNumber = (orderNumber: string) => {
+          const raw = orderNumber.split(/[-_]/)[0] ?? '';
+          const token = normalizeNameToken(raw);
+          return token.length >= 3 ? token : '';
+        };
+
+        type BlingContactRow = {
+          marketplace_order_number?: string | null;
+          contact_name?: string | null;
+        };
+
+        const blingContactNameByMarketplaceOrderNumber: Record<string, string> = {};
+        const marketplaceOrderNumbersInChunk = Array.from(new Set(
+          reportIdsChunk
+            .map((id) => String(orderNumberByReportId[id] ?? '').trim())
+            .filter(Boolean)
+        ));
+
+        if (marketplaceOrderNumbersInChunk.length > 0) {
+          for (const marketplaceOrderNumbersChunk of chunk(marketplaceOrderNumbersInChunk, 100)) {
+            const { data: blingRows, error: blingError } = await supabase
+              .from('bling_orders')
+              .select('marketplace_order_number, contact_name')
+              .eq('organization_id', organizationId)
+              .in('marketplace_order_number', marketplaceOrderNumbersChunk);
+
+            if (blingError) {
+              console.error('Erro ao buscar contato do Bling para tooltip:', blingError);
+              continue;
+            }
+
+            for (const row of (blingRows ?? []) as BlingContactRow[]) {
+              const marketplaceOrderNumber = String(row.marketplace_order_number ?? '').trim();
+              const contactName = String(row.contact_name ?? '').trim();
+              if (!marketplaceOrderNumber || !contactName) continue;
+              blingContactNameByMarketplaceOrderNumber[marketplaceOrderNumber] = contactName;
+            }
+          }
+        }
+
+        const tokensNeedingLeadLookup = Array.from(new Set(
+          reportIdsChunk
+            .filter((id) => idsNeedingOrderRow.has(id))
+            .map((id) => extractTokenFromOrderNumber(String(orderNumberByReportId[id] ?? '').trim()))
+            .filter(Boolean)
+        ));
+
+        const leadNameByToken: Record<string, string> = {};
+        if (tokensNeedingLeadLookup.length > 0) {
+          const safeTokens = tokensNeedingLeadLookup.map((t) => t.replace(/[%.,]/g, '')).filter(Boolean);
+          const scoreLeadNameForToken = (candidateName: string, token: string) => {
+            const v = candidateName.trim();
+            if (!v) return 0;
+            const normalized = normalizeNameToken(v);
+            const hasDiacritics = /[\u0300-\u036f]/.test(v.normalize('NFD'));
+            const looksTitleCased = /^[A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ]+(?:\s+[A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ]+)*$/.test(v);
+            let score = 0;
+            if (normalized === token) score += 2;
+            if (hasDiacritics) score += 3;
+            if (looksTitleCased) score += 1;
+            return score;
           };
+
+          const pickBetterName = (currentName: string | undefined, candidateName: string, token: string) => {
+            if (!currentName) return candidateName;
+            const currentScore = scoreLeadNameForToken(currentName, token);
+            const candidateScore = scoreLeadNameForToken(candidateName, token);
+            if (candidateScore > currentScore) return candidateName;
+            if (candidateScore < currentScore) return currentName;
+            if (candidateName.length < currentName.length) return candidateName;
+            return currentName;
+          };
+
+          const scanLeadsPage = async (start: number, end: number) => {
+            const orderedQuery = supabase
+              .from('leads')
+              .select('name')
+              .eq('organization_id', organizationId)
+              .order('created_at', { ascending: false })
+              .range(start, end);
+
+            const { data: orderedData, error: orderedError } = await orderedQuery;
+            if (!orderedError) return { data: orderedData ?? [], error: null as typeof orderedError };
+
+            const fallbackQuery = supabase
+              .from('leads')
+              .select('name')
+              .eq('organization_id', organizationId)
+              .range(start, end);
+
+            const { data: fallbackData, error: fallbackError } = await fallbackQuery;
+            return { data: fallbackData ?? [], error: fallbackError };
+          };
+
+          const maxLeadsToScan = 5000;
+          const pageSize = 1000;
+          for (let offset = 0; offset < maxLeadsToScan; offset += pageSize) {
+            const { data: tokenLeadRows, error: tokenLeadError } = await scanLeadsPage(offset, offset + pageSize - 1);
+            if (tokenLeadError) break;
+            if (tokenLeadRows.length === 0) break;
+
+            for (const row of tokenLeadRows as Array<{ name?: string | null }>) {
+              const leadNameRaw = String(row?.name ?? '').trim();
+              if (!leadNameRaw) continue;
+              const normalizedLead = normalizeNameToken(leadNameRaw);
+              for (const token of safeTokens) {
+                if (!normalizedLead.includes(token)) continue;
+                leadNameByToken[token] = pickBetterName(leadNameByToken[token], leadNameRaw, token);
+              }
+            }
+
+            const allResolved = safeTokens.every((t) => Boolean(leadNameByToken[t]));
+            if (allResolved) break;
+          }
+        }
+
+        const reportIdNeedingFull: Array<{ reportId: string; actualId: string }> = [];
+
+        for (const reportId of reportIdsChunk) {
+          const orderNumber = String(orderNumberByReportId[reportId] ?? '').trim();
+          const resolved = orderRowById[reportId] ?? (orderNumber ? orderRowByNumber[orderNumber] : undefined);
+          const actualId = String(resolved?.id ?? '').trim();
+          if (actualId) actualOrderIdByReportId[reportId] = actualId;
+
+          if (!idsNeedingOrderRow.has(reportId)) continue;
+          if (!resolved) continue;
+
+          const existing = orderEnrichmentByIdRef.current[reportId];
+          const leads = resolved.leads ?? null;
+          const leadName = (Array.isArray(leads) ? leads[0]?.name : leads?.name) || undefined;
+          const token = extractTokenFromOrderNumber(orderNumber);
+          const tokenLeadName = token ? leadNameByToken[token] : undefined;
+          const blingContactName = orderNumber ? blingContactNameByMarketplaceOrderNumber[orderNumber] : undefined;
+
+          const rawCustomerName =
+            leadName
+            ?? blingContactName
+            ?? tokenLeadName
+            ?? existing?.customer_name;
+
+          const derivedCustomerName =
+            token && rawCustomerName && !/^cliente\b/i.test(String(rawCustomerName).trim())
+              ? `Cliente ${String(rawCustomerName).trim()}`
+              : rawCustomerName;
+
+          const derivedCustomerNameWithFixes =
+            token === 'sonia' && /^cliente\s+sonia$/i.test(String(derivedCustomerName ?? '').trim())
+              ? 'Cliente Sônia'
+              : derivedCustomerName;
+
+          updates[reportId] = {
+            ...(updates[reportId] ?? existing ?? {}),
+            customer_name: derivedCustomerNameWithFixes ?? existing?.customer_name,
+          };
+          if (!isMeaningfulCustomerName(leadName) && !isMeaningfulCustomerName(derivedCustomerNameWithFixes) && actualId) {
+            reportIdNeedingFull.push({ reportId, actualId });
+          }
+        }
+
+        const actualIdsNeedingFull = Array.from(new Set(reportIdNeedingFull.map((x) => x.actualId)));
+        if (actualIdsNeedingFull.length > 0) {
+          const { data: fullOrders, error: fullOrdersError } = await supabase
+            .from('orders')
+            .select('*')
+            .or(`organization_id.eq.${organizationId},organization_id.is.null`)
+            .in('id', actualIdsNeedingFull);
+
+          if (!fullOrdersError) {
+            const fullById: Record<string, Record<string, unknown>> = {};
+            for (const fullRow of (fullOrders ?? []) as Array<{ id?: string | null } & Record<string, unknown>>) {
+              const id = String(fullRow.id ?? '').trim();
+              if (!id) continue;
+              fullById[id] = fullRow;
+            }
+
+            for (const { reportId, actualId } of reportIdNeedingFull) {
+              const fullRow = fullById[actualId];
+              if (!fullRow) continue;
+              const picked = pickCustomerNameFromOrderRow(fullRow);
+              if (!picked) continue;
+              const existing = orderEnrichmentByIdRef.current[reportId];
+              updates[reportId] = {
+                ...(updates[reportId] ?? existing ?? {}),
+                customer_name: picked,
+              };
+            }
+          }
         }
       }
 
       for (const ids of chunk(itemOrderIdsToFetch, 100)) {
+        const reportIdByActualOrderId: Record<string, string> = {};
+        const actualIds = ids
+          .map((reportId) => {
+            const actualId = String(actualOrderIdByReportId[reportId] ?? '').trim();
+            if (actualId) reportIdByActualOrderId[actualId] = reportId;
+            return actualId;
+          })
+          .filter((v) => v.length > 0);
+
+        if (actualIds.length === 0) continue;
+
         const { data: itemsRows, error: itemsError } = await supabase
           .from('order_items')
-          .select('order_id, product_name, quantity, unit_cost, total_price')
-          .in('order_id', ids);
+          .select('order_id, product_id, product_name, quantity, unit_cost, total_price')
+          .in('order_id', actualIds)
+          ;
 
-        if (itemsError) throw itemsError;
+        if (itemsError) {
+          console.error('Erro ao buscar itens do pedido para tooltip:', itemsError);
+          continue;
+        }
 
-        const grouped = (itemsRows ?? []).reduce((acc, item) => {
-          const orderId = String((item as { order_id?: string }).order_id ?? '');
+        type OrderItemRow = {
+          order_id?: string | null;
+          product_id?: string | null;
+          product_name?: string | null;
+          quantity?: number | null;
+          unit_cost?: number | null;
+          total_price?: number | null;
+        };
+
+        const typedItemsRows = (itemsRows ?? []) as OrderItemRow[];
+
+        type ProductLookupRow = {
+          id?: string | null;
+          sku?: string | null;
+          name?: string | null;
+          cost_price?: number | null;
+          image_url?: string | null;
+        };
+
+        const normalizeKey = (raw: string) => {
+          const v = raw.trim();
+          if (!v) return [];
+          const beforeCor = v.split(/\s+Cor:/i)[0]?.trim() ?? '';
+          const beforeSemi = v.split(';')[0]?.trim() ?? '';
+          const out = [v];
+          if (beforeCor && beforeCor !== v) out.push(beforeCor);
+          if (beforeSemi && beforeSemi !== v) out.push(beforeSemi);
+          return Array.from(new Set(out.filter(Boolean)));
+        };
+
+        const candidateProductIds = Array.from(new Set(
+          typedItemsRows
+            .map((r) => String(r.product_id ?? '').trim())
+            .filter((v) => v.length > 0)
+        ));
+
+        const candidateKeys = Array.from(new Set(
+          typedItemsRows
+            .flatMap((r) => {
+              const name = String(r.product_name ?? '');
+              return normalizeKey(name);
+            })
+            .map((v) => v.trim())
+            .filter((v) => v.length > 0)
+        ));
+
+        const candidateNames = candidateKeys;
+        const candidateSkus = candidateKeys;
+
+        const productsById: Record<string, ProductLookupRow> = {};
+        const productsBySku: Record<string, ProductLookupRow> = {};
+        const productsByName: Record<string, ProductLookupRow> = {};
+
+        for (const idChunk of chunk(candidateProductIds, 100)) {
+          const { data: productRows, error: productError } = await supabase
+            .from('products')
+            .select('id, sku, name, cost_price, image_url')
+            .in('id', idChunk);
+
+          if (productError) continue;
+          for (const row of (productRows ?? []) as ProductLookupRow[]) {
+            const id = String(row.id ?? '').trim();
+            const sku = String(row.sku ?? '').trim();
+            const name = String(row.name ?? '').trim();
+            if (id) productsById[id] = row;
+            if (sku) productsBySku[sku] = row;
+            if (name) productsByName[name] = row;
+          }
+        }
+
+        for (const skuChunk of chunk(candidateSkus, 50)) {
+          const { data: productRows, error: productError } = await supabase
+            .from('products')
+            .select('id, sku, name, cost_price, image_url')
+            .in('sku', skuChunk);
+
+          if (productError) continue;
+          for (const row of (productRows ?? []) as ProductLookupRow[]) {
+            const id = String(row.id ?? '').trim();
+            const sku = String(row.sku ?? '').trim();
+            const name = String(row.name ?? '').trim();
+            if (id) productsById[id] = row;
+            if (sku) productsBySku[sku] = row;
+            if (name) productsByName[name] = row;
+          }
+        }
+
+        const remainingNames = candidateNames.filter((name) => !productsByName[name]);
+        for (const nameChunk of chunk(remainingNames, 50)) {
+          const { data: productRows, error: productError } = await supabase
+            .from('products')
+            .select('id, sku, name, cost_price, image_url')
+            .in('name', nameChunk);
+
+          if (productError) continue;
+          for (const row of (productRows ?? []) as ProductLookupRow[]) {
+            const id = String(row.id ?? '').trim();
+            const sku = String(row.sku ?? '').trim();
+            const name = String(row.name ?? '').trim();
+            if (id) productsById[id] = row;
+            if (sku) productsBySku[sku] = row;
+            if (name) productsByName[name] = row;
+          }
+        }
+
+        const grouped = typedItemsRows.reduce<Record<string, OrderItemRow[]>>((acc, item) => {
+          const orderId = String(item.order_id ?? '');
           if (!orderId) return acc;
           (acc[orderId] ??= []).push(item);
           return acc;
-        }, {} as Record<string, Array<{ product_name?: string | null; quantity?: number | null; unit_cost?: number | null; total_price?: number | null }>>);
+        }, {});
 
         for (const [orderId, items] of Object.entries(grouped)) {
-          const existing = orderEnrichmentByIdRef.current[orderId];
-          const totalQty = items.reduce((sum, it) => sum + Number(it.quantity ?? 0), 0);
-          const totalCost = items.reduce((sum, it) => sum + (Number(it.unit_cost ?? 0) * Number(it.quantity ?? 0)), 0);
-          const avgUnitCost = totalQty > 0 ? totalCost / totalQty : 0;
-
+          const reportId = reportIdByActualOrderId[orderId] ?? orderId;
+          const existing = orderEnrichmentByIdRef.current[reportId];
           const products = items
             .filter((it) => Boolean(it.product_name))
             .map((it) => {
               const quantity = Number(it.quantity ?? 0);
               const totalPrice = Number(it.total_price ?? 0);
               const unitPrice = quantity > 0 ? totalPrice / quantity : undefined;
+              const productIdKey = String(it.product_id ?? '').trim();
+              const nameKeyRaw = String(it.product_name ?? '').trim();
+              const keys = normalizeKey(nameKeyRaw);
+              const lookup = (productIdKey && productsById[productIdKey])
+                || keys.map((k) => productsBySku[k]).find(Boolean)
+                || keys.map((k) => productsByName[k]).find(Boolean)
+                || undefined;
+              const resolvedSku = String(lookup?.sku ?? '').trim();
+              const resolvedName = String(lookup?.name ?? it.product_name ?? '').trim();
+              const rawUnitCost = Number(it.unit_cost ?? 0);
+              const resolvedUnitCost = rawUnitCost > 0 ? rawUnitCost : Number(lookup?.cost_price ?? 0);
               return {
-                name: String(it.product_name ?? ''),
+                name: resolvedName,
+                sku: resolvedSku || undefined,
                 quantity: quantity || undefined,
                 unit_price: unitPrice,
-                unit_cost: Number(it.unit_cost ?? 0) || undefined,
+                unit_cost: resolvedUnitCost > 0 ? resolvedUnitCost : undefined,
               };
             });
 
-          const fallbackMainName = products[0]?.name;
-          const prevTotalCost = Number((updates[orderId]?.total_cost ?? existing?.total_cost ?? 0));
-          const prevProductCostPrice = Number((updates[orderId]?.product_cost_price ?? existing?.product_cost_price ?? 0));
+          const totalQty = products.reduce((sum, p) => sum + Number(p.quantity ?? 0), 0);
+          const totalCost = products.reduce((sum, p) => sum + (Number(p.unit_cost ?? 0) * Number(p.quantity ?? 0)), 0);
+          const avgUnitCost = totalQty > 0 ? totalCost / totalQty : 0;
 
-          updates[orderId] = {
-            ...(updates[orderId] ?? existing ?? {}),
-            products: products.length > 0 ? products : (updates[orderId]?.products ?? existing?.products),
-            product_name: (updates[orderId]?.product_name ?? existing?.product_name ?? fallbackMainName),
+          const fallbackMainName = products[0]?.name;
+          const prevTotalCost = Number((updates[reportId]?.total_cost ?? existing?.total_cost ?? 0));
+          const prevProductCostPrice = Number((updates[reportId]?.product_cost_price ?? existing?.product_cost_price ?? 0));
+
+          updates[reportId] = {
+            ...(updates[reportId] ?? existing ?? {}),
+            products: products.length > 0 ? products : (updates[reportId]?.products ?? existing?.products),
+            product_name: (updates[reportId]?.product_name ?? existing?.product_name ?? fallbackMainName),
+            product_sku: (updates[reportId]?.product_sku ?? existing?.product_sku ?? (products[0]?.sku || undefined)),
             total_cost: prevTotalCost > 0 ? prevTotalCost : (totalCost > 0 ? totalCost : prevTotalCost),
             product_cost_price: prevProductCostPrice > 0 ? prevProductCostPrice : (avgUnitCost > 0 ? avgUnitCost : prevProductCostPrice),
           };
+        }
+
+        const remainingWithoutItems = ids.filter((reportId) => {
+          const actualId = String(actualOrderIdByReportId[reportId] ?? '').trim();
+          return !actualId || !grouped[actualId];
+        });
+        if (remainingWithoutItems.length > 0) {
+          for (const remainingChunk of chunk(remainingWithoutItems, 100)) {
+            const freeSampleActualIds = remainingChunk
+              .map((reportId) => String(actualOrderIdByReportId[reportId] ?? '').trim())
+              .filter((v) => v.length > 0);
+
+            if (freeSampleActualIds.length === 0) continue;
+
+            const { data: freeSampleRows, error: freeSampleError } = await supabase
+              .from('influencer_free_samples')
+              .select('order_id, product_name, product_image_url')
+              .in('order_id', freeSampleActualIds);
+
+            if (freeSampleError) continue;
+
+            type FreeSampleRow = {
+              order_id?: string | null;
+              product_name?: string | null;
+              product_image_url?: string | null;
+            };
+
+            const typedFreeSamples = (freeSampleRows ?? []) as FreeSampleRow[];
+            const productKeys = Array.from(new Set(
+              typedFreeSamples
+                .flatMap((r) => normalizeKey(String(r.product_name ?? '')))
+                .map((v) => v.trim())
+                .filter((v) => v.length > 0)
+            ));
+
+            const productsBySku: Record<string, ProductLookupRow> = {};
+            const productsByName: Record<string, ProductLookupRow> = {};
+            for (const skuChunk of chunk(productKeys, 50)) {
+              const { data: productRows, error: productError } = await supabase
+                .from('products')
+                .select('sku, name, cost_price, image_url')
+                .in('sku', skuChunk);
+
+              if (productError) continue;
+              for (const row of (productRows ?? []) as ProductLookupRow[]) {
+                const sku = String(row.sku ?? '').trim();
+                const name = String(row.name ?? '').trim();
+                if (!sku) continue;
+                productsBySku[sku] = row;
+                if (name) productsByName[name] = row;
+              }
+            }
+
+            const remainingNames = productKeys.filter((name) => !productsByName[name]);
+            for (const nameChunk of chunk(remainingNames, 50)) {
+              const { data: productRows, error: productError } = await supabase
+                .from('products')
+                .select('sku, name, cost_price, image_url')
+                .in('name', nameChunk);
+
+              if (productError) continue;
+              for (const row of (productRows ?? []) as ProductLookupRow[]) {
+                const sku = String(row.sku ?? '').trim();
+                const name = String(row.name ?? '').trim();
+                if (sku) productsBySku[sku] = row;
+                if (name) productsByName[name] = row;
+              }
+            }
+
+            for (const row of typedFreeSamples) {
+              const orderId = String(row.order_id ?? '');
+              if (!orderId) continue;
+              const reportId = reportIdByActualOrderId[orderId] ?? orderId;
+              const existing = orderEnrichmentByIdRef.current[reportId];
+              const rawKey = String(row.product_name ?? '').trim();
+              if (!rawKey) continue;
+              const keys = normalizeKey(rawKey);
+
+              const product = keys.map((k) => productsBySku[k]).find(Boolean)
+                ?? keys.map((k) => productsByName[k]).find(Boolean);
+              const unitCost = Number(product?.cost_price ?? 0);
+              const resolvedName = String(product?.name ?? keys[0] ?? rawKey);
+              const resolvedSku = String(product?.sku ?? '').trim() || undefined;
+              const imageUrl = String(row.product_image_url ?? product?.image_url ?? '').trim() || undefined;
+
+              const prevTotalCost = Number((updates[reportId]?.total_cost ?? existing?.total_cost ?? 0));
+              const prevProductCostPrice = Number((updates[reportId]?.product_cost_price ?? existing?.product_cost_price ?? 0));
+
+              updates[reportId] = {
+                ...(updates[reportId] ?? existing ?? {}),
+                product_name: updates[reportId]?.product_name ?? existing?.product_name ?? resolvedName,
+                product_sku: updates[reportId]?.product_sku ?? existing?.product_sku ?? resolvedSku ?? rawKey,
+                product_image_url: updates[reportId]?.product_image_url ?? existing?.product_image_url ?? imageUrl,
+                products: updates[reportId]?.products ?? existing?.products ?? [{
+                  name: resolvedName,
+                  sku: resolvedSku ?? rawKey,
+                  quantity: 1,
+                  unit_price: 0,
+                  unit_cost: unitCost > 0 ? unitCost : undefined,
+                }],
+                total_cost: prevTotalCost > 0 ? prevTotalCost : (unitCost > 0 ? unitCost : prevTotalCost),
+                product_cost_price: prevProductCostPrice > 0 ? prevProductCostPrice : (unitCost > 0 ? unitCost : prevProductCostPrice),
+              };
+            }
+          }
         }
       }
 
@@ -426,7 +999,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     return () => {
       cancelled = true;
     };
-  }, [data]);
+  }, [data, organizationId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1118,6 +1691,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       {/* Dialog de detalhes do pedido — Dark Premium */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
         <DialogContent className="max-w-lg p-0 overflow-hidden border-0 bg-zinc-950 rounded-2xl shadow-2xl [&>button]:hidden">
+          <DialogTitle className="sr-only">Detalhes do pedido</DialogTitle>
+          <DialogDescription className="sr-only">Informações do pedido selecionado.</DialogDescription>
           {selectedOrder && (() => {
             const products = selectedOrder.products ?? [];
             const hasMultipleProducts = products.length > 1;

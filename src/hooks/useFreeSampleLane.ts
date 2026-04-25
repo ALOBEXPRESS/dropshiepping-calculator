@@ -86,7 +86,7 @@ export function useFreeSampleLane(
         // Step 2: Mark the order as a free sample
         const { error: updateError } = await supabase
           .from('orders')
-          .update({ is_free_sample: true, total_profit: 0, total_cost: 0, profit_margin: 0 })
+          .update({ is_free_sample: true })
           .eq('id', orderId);
 
         if (updateError) {

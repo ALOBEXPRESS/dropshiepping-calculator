@@ -66,6 +66,13 @@ const fetchWithRetry: typeof fetch = async (input, init) => {
     return res;
 
   } catch (error) {
+    const isAborted = init?.signal?.aborted
+      || (error instanceof DOMException && error.name === 'AbortError')
+      || String((error as { message?: string }).message ?? '').toLowerCase().includes('aborted');
+    if (isAborted) {
+      throw error;
+    }
+
     if (error instanceof TypeError) {
       await wait(500);
       try {
