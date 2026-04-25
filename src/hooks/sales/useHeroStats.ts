@@ -17,12 +17,9 @@ interface OrderWithProducts {
   customer_id: string;
   total_amount: number;
   marketplace: string;
-  commission_rate: number;
-  marketplace_fixed_fee: number;
   shipping_cost: number;
   other_expenses: number;
   marketplace_commission: number;
-  tiktok_sfp_enabled: boolean;
   is_free_sample: boolean;
   order_date: string;
   products: {
@@ -82,22 +79,26 @@ const calculateOrderProfit = (order: OrderWithProducts): number => {
   const totalProductCost = totalBaseCost + orderSupplierFee + orderGatewayFee;
   
   // Calcular taxas do marketplace
-  let commissionRate = Number(order.commission_rate ?? 0);
-  let fixedFee = Number(order.marketplace_fixed_fee ?? 0);
+  let commissionRate = 0;
+  let fixedFee = 0;
   
   // Se for Shopee, calcular taxas baseadas no preço de venda
   if (order.marketplace?.toLowerCase() === 'shopee') {
     const shopeeRates = getShopeeRates(totalAmount);
     commissionRate = shopeeRates.commission;
     fixedFee = shopeeRates.fixed;
+  } else {
+    // Para outros marketplaces, usar a comissão já calculada
+    commissionRate = 0;
+    fixedFee = 0;
   }
   
   const commissionPercent = isFreeSample ? 0 : (commissionRate > 0
     ? (totalAmount * commissionRate) / 100
-    : Math.max(0, order.marketplace_commission - fixedFee));
+    : Math.max(0, order.marketplace_commission));
   
-  const sfpEnabled = !isFreeSample && order.tiktok_sfp_enabled === true;
-  const sfpFee = sfpEnabled ? totalAmount * 0.06 : 0;
+  // TikTok SFP não está mais na tabela, então removemos
+  const sfpFee = 0;
   
   const subtotalMarketplace = isFreeSample ? 0 : (
     commissionPercent + 
@@ -123,7 +124,7 @@ const getDateRange = (period: 'daily' | 'weekly' | 'monthly' | 'yearly') => {
   const previousEnd = new Date(now);
   
   switch (period) {
-    case 'daily':
+    case 'daily': {
       // Hoje
       currentStart.setHours(0, 0, 0, 0);
       currentEnd.setHours(23, 59, 59, 999);
@@ -133,7 +134,8 @@ const getDateRange = (period: 'daily' | 'weekly' | 'monthly' | 'yearly') => {
       previousEnd.setDate(previousEnd.getDate() - 1);
       previousEnd.setHours(23, 59, 59, 999);
       break;
-    case 'weekly':
+    }
+    case 'weekly': {
       // Esta semana (domingo a sábado)
       const dayOfWeek = now.getDay();
       currentStart.setDate(now.getDate() - dayOfWeek);
@@ -145,7 +147,8 @@ const getDateRange = (period: 'daily' | 'weekly' | 'monthly' | 'yearly') => {
       previousEnd.setDate(currentStart.getDate() - 1);
       previousEnd.setHours(23, 59, 59, 999);
       break;
-    case 'monthly':
+    }
+    case 'monthly': {
       // Este mês
       currentStart.setDate(1);
       currentStart.setHours(0, 0, 0, 0);
@@ -157,7 +160,8 @@ const getDateRange = (period: 'daily' | 'weekly' | 'monthly' | 'yearly') => {
       previousEnd.setDate(0); // Último dia do mês anterior
       previousEnd.setHours(23, 59, 59, 999);
       break;
-    case 'yearly':
+    }
+    case 'yearly': {
       // Este ano
       currentStart.setMonth(0, 1);
       currentStart.setHours(0, 0, 0, 0);
@@ -169,6 +173,7 @@ const getDateRange = (period: 'daily' | 'weekly' | 'monthly' | 'yearly') => {
       previousEnd.setFullYear(previousEnd.getFullYear() - 1, 11, 31);
       previousEnd.setHours(23, 59, 59, 999);
       break;
+    }
   }
   
   return {
@@ -201,16 +206,13 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
         const { data: currentOrders, error: currentOrdersError } = await supabase
           .from('orders')
           .select(`
-            order_id,
+            id,
             customer_id,
             total_amount,
-            marketplace,
-            commission_rate,
-            marketplace_fixed_fee,
+            marketplace:marketplaces(name),
             shipping_cost,
             other_expenses,
             marketplace_commission,
-            tiktok_sfp_enabled,
             is_free_sample,
             order_date
           `)
@@ -222,7 +224,7 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
         if (currentOrdersError) throw currentOrdersError;
 
         // Buscar itens dos pedidos com informações dos produtos
-        const orderIds = (currentOrders || []).map(o => o.order_id);
+        const orderIds = (currentOrders || []).map(o => o.id);
         const { data: orderItems, error: itemsError } = await supabase
           .from('order_items')
           .select(`
@@ -241,25 +243,30 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
         if (itemsError) throw itemsError;
 
         // Agrupar itens por pedido
-        const itemsByOrder = (orderItems || []).reduce((acc: any, item: any) => {
-          if (!acc[item.order_id]) acc[item.order_id] = [];
-          acc[item.order_id].push({
+        const itemsByOrder = (orderItems || []).reduce((acc: Record<string, unknown[]>, item: Record<string, unknown>) => {
+          const orderId = item.order_id as string;
+          if (!acc[orderId]) acc[orderId] = [];
+          acc[orderId].push({
             quantity: item.quantity,
             unit_cost: item.unit_cost,
-            supplier_fee_value: item.products?.supplier_fee_value || '0',
-            supplier_fee_type: item.products?.supplier_fee_type || 'percent',
-            supplier_gateway_fee_value: item.products?.supplier_gateway_fee_value || '0',
-            supplier_gateway_fee_type: item.products?.supplier_gateway_fee_type || 'fixed'
+            supplier_fee_value: (item.products as Record<string, unknown>)?.supplier_fee_value || '0',
+            supplier_fee_type: (item.products as Record<string, unknown>)?.supplier_fee_type || 'percent',
+            supplier_gateway_fee_value: (item.products as Record<string, unknown>)?.supplier_gateway_fee_value || '0',
+            supplier_gateway_fee_type: (item.products as Record<string, unknown>)?.supplier_gateway_fee_type || 'fixed'
           });
           return acc;
         }, {});
 
         // Processar pedidos atuais
         const processedCurrentOrders = (currentOrders || [])
-          .filter(order => itemsByOrder[order.order_id]?.length > 0)
+          .filter(order => itemsByOrder[order.id]?.length > 0)
           .map(order => ({
             ...order,
-            products: itemsByOrder[order.order_id] || []
+            order_id: order.id,
+            marketplace: Array.isArray(order.marketplace) && order.marketplace.length > 0 
+              ? order.marketplace[0].name 
+              : '',
+            products: itemsByOrder[order.id] || []
           })) as OrderWithProducts[];
 
         console.log('📊 Pedidos processados:', processedCurrentOrders.length);
@@ -283,7 +290,7 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
         // Buscar pedidos do período anterior
         const { data: previousOrders, error: previousOrdersError } = await supabase
           .from('orders')
-          .select('order_id, customer_id')
+          .select('id, customer_id')
           .eq('organization_id', organizationId)
           .gte('order_date', dateRange.previous.start)
           .lte('order_date', dateRange.previous.end)
