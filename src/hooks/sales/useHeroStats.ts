@@ -197,7 +197,7 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
       try {
         const dateRange = getDateRange(period);
         
-        // Buscar pedidos do período atual com produtos
+        // Buscar pedidos do período atual
         const { data: currentOrders, error: currentOrdersError } = await supabase
           .from('orders')
           .select(`
@@ -212,17 +212,7 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
             marketplace_commission,
             tiktok_sfp_enabled,
             is_free_sample,
-            order_date,
-            order_items!inner(
-              quantity,
-              unit_cost,
-              products!inner(
-                supplier_fee_value,
-                supplier_fee_type,
-                supplier_gateway_fee_value,
-                supplier_gateway_fee_type
-              )
-            )
+            order_date
           `)
           .eq('organization_id', organizationId)
           .gte('order_date', dateRange.current.start)
@@ -230,6 +220,65 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
           .not('order_date', 'is', null);
 
         if (currentOrdersError) throw currentOrdersError;
+
+        // Buscar itens dos pedidos com informações dos produtos
+        const orderIds = (currentOrders || []).map(o => o.order_id);
+        const { data: orderItems, error: itemsError } = await supabase
+          .from('order_items')
+          .select(`
+            order_id,
+            quantity,
+            unit_cost,
+            products!inner(
+              supplier_fee_value,
+              supplier_fee_type,
+              supplier_gateway_fee_value,
+              supplier_gateway_fee_type
+            )
+          `)
+          .in('order_id', orderIds);
+
+        if (itemsError) throw itemsError;
+
+        // Agrupar itens por pedido
+        const itemsByOrder = (orderItems || []).reduce((acc: any, item: any) => {
+          if (!acc[item.order_id]) acc[item.order_id] = [];
+          acc[item.order_id].push({
+            quantity: item.quantity,
+            unit_cost: item.unit_cost,
+            supplier_fee_value: item.products?.supplier_fee_value || '0',
+            supplier_fee_type: item.products?.supplier_fee_type || 'percent',
+            supplier_gateway_fee_value: item.products?.supplier_gateway_fee_value || '0',
+            supplier_gateway_fee_type: item.products?.supplier_gateway_fee_type || 'fixed'
+          });
+          return acc;
+        }, {});
+
+        // Processar pedidos atuais
+        const processedCurrentOrders = (currentOrders || [])
+          .filter(order => itemsByOrder[order.order_id]?.length > 0)
+          .map(order => ({
+            ...order,
+            products: itemsByOrder[order.order_id] || []
+          })) as OrderWithProducts[];
+
+        console.log('📊 Pedidos processados:', processedCurrentOrders.length);
+        console.log('📊 Detalhes dos pedidos:', processedCurrentOrders.map(o => ({
+          order_id: o.order_id,
+          marketplace: o.marketplace,
+          total_amount: o.total_amount,
+          is_free_sample: o.is_free_sample,
+          products_count: o.products.length
+        })));
+
+        // Calcular lucro total
+        const totalProfit = processedCurrentOrders.reduce((sum, order) => {
+          const profit = calculateOrderProfit(order);
+          console.log(`💰 Pedido ${order.order_id}: Lucro = R$ ${profit.toFixed(2)}`);
+          return sum + profit;
+        }, 0);
+
+        console.log('💰 Lucro total calculado:', totalProfit);
 
         // Buscar pedidos do período anterior
         const { data: previousOrders, error: previousOrdersError } = await supabase
@@ -249,24 +298,6 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
           .eq('organization_id', organizationId);
 
         if (productsError) throw productsError;
-
-        // Processar pedidos atuais
-        const processedCurrentOrders = (currentOrders || []).map(order => ({
-          ...order,
-          products: (order.order_items || []).map((item: any) => ({
-            quantity: item.quantity,
-            unit_cost: item.unit_cost,
-            supplier_fee_value: item.products?.supplier_fee_value || '0',
-            supplier_fee_type: item.products?.supplier_fee_type || 'percent',
-            supplier_gateway_fee_value: item.products?.supplier_gateway_fee_value || '0',
-            supplier_gateway_fee_type: item.products?.supplier_gateway_fee_type || 'fixed'
-          }))
-        })) as OrderWithProducts[];
-
-        // Calcular lucro total
-        const totalProfit = processedCurrentOrders.reduce((sum, order) => {
-          return sum + calculateOrderProfit(order);
-        }, 0);
 
         // Calcular clientes únicos
         const currentUniqueCustomers = new Set(
