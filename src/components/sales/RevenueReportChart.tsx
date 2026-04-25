@@ -32,6 +32,8 @@ interface RevenueReportChartProps {
   organizationId: string;
   refreshTrigger?: number;
   onOrderDeleted?: () => void;
+  period?: PeriodFilter;
+  onPeriodChange?: (period: PeriodFilter) => void;
 }
 
 
@@ -71,8 +73,8 @@ interface OrderDetail {
   tiktok_sfp_enabled?: boolean;
 }
 
-export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organizationId, refreshTrigger, onOrderDeleted }) => {
-  const [period, setPeriod] = useState<PeriodFilter>('monthly');
+export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organizationId, refreshTrigger, onOrderDeleted, period: externalPeriod, onPeriodChange }) => {
+  const [period, setPeriod] = useState<PeriodFilter>(externalPeriod || 'monthly');
   const { data, loading, error, refetch } = useRevenueReport(organizationId, period);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<{ id: string; number: string; store: string } | null>(null);
@@ -84,6 +86,21 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [affiliateByOrderId, setAffiliateByOrderId] = useState<Record<string, boolean>>({});
   const affiliateByOrderIdRef = useRef<Record<string, boolean>>({});
   affiliateByOrderIdRef.current = affiliateByOrderId;
+
+  // Sincronizar período externo com interno
+  useEffect(() => {
+    if (externalPeriod && externalPeriod !== period) {
+      setPeriod(externalPeriod);
+    }
+  }, [externalPeriod]);
+
+  // Notificar mudança de período para o componente pai
+  const handlePeriodChange = useCallback((newPeriod: PeriodFilter) => {
+    setPeriod(newPeriod);
+    if (onPeriodChange) {
+      onPeriodChange(newPeriod);
+    }
+  }, [onPeriodChange]);
   const marketplacesForResolution = useMemo<Marketplace[]>(() => {
     if (marketplaces.length > 0) return marketplaces;
     return [{
@@ -2229,7 +2246,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             </div>
           </div>
         </div>
-        <Select value={period} onValueChange={(value) => setPeriod(value as PeriodFilter)}>
+        <Select value={period} onValueChange={(value) => handlePeriodChange(value as PeriodFilter)}>
           <SelectTrigger className="w-[140px] border-gray-200 dark:border-zinc-800">
             <SelectValue />
           </SelectTrigger>

@@ -26,7 +26,7 @@ const Sales: React.FC = () => {
   const { organizationId, loading, settingsError, retrySettings } = useSettings();
   const containerRef = useRef<HTMLDivElement>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [period] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
+  const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
   const { stats } = useHeroStats(organizationId || '', period, refreshKey);
 
   // Free sample lane state — rehydrated from sessionStorage
@@ -221,7 +221,13 @@ const Sales: React.FC = () => {
             />
           </div>
           <div className="animate-on-load">
-            <RevenueReportChart organizationId={organizationId} refreshTrigger={refreshKey} onOrderDeleted={handleRefresh} />
+            <RevenueReportChart 
+              organizationId={organizationId} 
+              refreshTrigger={refreshKey} 
+              onOrderDeleted={handleRefresh}
+              period={period}
+              onPeriodChange={setPeriod}
+            />
           </div>
         </div>
 
