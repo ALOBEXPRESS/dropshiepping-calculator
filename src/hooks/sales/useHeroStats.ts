@@ -209,7 +209,7 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
             id,
             customer_id,
             total_amount,
-            marketplace:marketplaces(name),
+            marketplace_id,
             shipping_cost,
             other_expenses,
             marketplace_commission,
@@ -222,6 +222,21 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
           .not('order_date', 'is', null);
 
         if (currentOrdersError) throw currentOrdersError;
+
+        // Buscar marketplaces para os pedidos (incluindo marketplaces de sistema)
+        const marketplaceIds = [...new Set((currentOrders || []).map(o => o.marketplace_id).filter(Boolean))];
+        const { data: marketplaces, error: marketplacesError } = await supabase
+          .from('marketplaces')
+          .select('id, name')
+          .in('id', marketplaceIds);
+
+        if (marketplacesError) throw marketplacesError;
+
+        // Criar um map de marketplace_id -> name
+        const marketplaceMap = (marketplaces || []).reduce((acc: Record<string, string>, m: { id: string; name: string }) => {
+          acc[m.id] = m.name;
+          return acc;
+        }, {});
 
         // Buscar itens dos pedidos com informações dos produtos
         const orderIds = (currentOrders || []).map(o => o.id);
@@ -260,32 +275,21 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
         // Processar pedidos atuais
         const processedCurrentOrders = (currentOrders || [])
           .filter(order => itemsByOrder[order.id]?.length > 0)
-          .map(order => ({
-            ...order,
-            order_id: order.id,
-            marketplace: Array.isArray(order.marketplace) && order.marketplace.length > 0 
-              ? order.marketplace[0].name 
-              : '',
-            products: itemsByOrder[order.id] || []
-          })) as OrderWithProducts[];
-
-        console.log('📊 Pedidos processados:', processedCurrentOrders.length);
-        console.log('📊 Detalhes dos pedidos:', processedCurrentOrders.map(o => ({
-          order_id: o.order_id,
-          marketplace: o.marketplace,
-          total_amount: o.total_amount,
-          is_free_sample: o.is_free_sample,
-          products_count: o.products.length
-        })));
+          .map(order => {
+            const marketplaceName = order.marketplace_id ? marketplaceMap[order.marketplace_id] || '' : '';
+            return {
+              ...order,
+              order_id: order.id,
+              marketplace: marketplaceName,
+              products: itemsByOrder[order.id] || []
+            };
+          }) as OrderWithProducts[];
 
         // Calcular lucro total
         const totalProfit = processedCurrentOrders.reduce((sum, order) => {
           const profit = calculateOrderProfit(order);
-          console.log(`💰 Pedido ${order.order_id}: Lucro = R$ ${profit.toFixed(2)}`);
           return sum + profit;
         }, 0);
-
-        console.log('💰 Lucro total calculado:', totalProfit);
 
         // Buscar pedidos do período anterior
         const { data: previousOrders, error: previousOrdersError } = await supabase
