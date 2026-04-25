@@ -261,6 +261,172 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [tooltipPages, setTooltipPages] = useState<Record<number, number>>({});
   const tooltipPagesRef = useRef(tooltipPages);
   tooltipPagesRef.current = tooltipPages;
+  const [orderEnrichmentById, setOrderEnrichmentById] = useState<Record<string, Partial<OrderDetail>>>({});
+  const orderEnrichmentByIdRef = useRef(orderEnrichmentById);
+  orderEnrichmentByIdRef.current = orderEnrichmentById;
+
+  const mergeOrderForTooltip = useCallback((order: unknown) => {
+    const o = order as {
+      order_id?: string;
+      total_cost?: number | string | null;
+      product_cost_price?: number | string | null;
+      products?: unknown[];
+    };
+    const orderId = o?.order_id;
+    if (!orderId) return order;
+
+    const enrichment = orderEnrichmentByIdRef.current[orderId];
+    if (!enrichment) return order;
+
+    const mergedProducts = (Array.isArray(o.products) && o.products.length > 0)
+      ? o.products
+      : (enrichment.products?.length ? enrichment.products : o.products);
+
+    const orderTotalCost = Number(o.total_cost ?? 0);
+    const enrichmentTotalCost = Number(enrichment.total_cost ?? 0);
+    const mergedTotalCost = orderTotalCost > 0 ? orderTotalCost : (enrichmentTotalCost > 0 ? enrichmentTotalCost : orderTotalCost);
+
+    const orderProductCostPrice = Number(o.product_cost_price ?? 0);
+    const enrichmentProductCostPrice = Number(enrichment.product_cost_price ?? 0);
+    const mergedProductCostPrice = orderProductCostPrice > 0
+      ? orderProductCostPrice
+      : (enrichmentProductCostPrice > 0 ? enrichmentProductCostPrice : orderProductCostPrice);
+
+    return {
+      ...(order as object),
+      ...enrichment,
+      products: mergedProducts,
+      total_cost: mergedTotalCost,
+      product_cost_price: mergedProductCostPrice,
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const chunk = <T,>(arr: T[], size: number) => {
+      const out: T[][] = [];
+      for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+      return out;
+    };
+
+    const fetchEnrichment = async () => {
+      const currentData = dataRef.current ?? [];
+      const allOrders = currentData.flatMap((p) => p.orders_data ?? []);
+      const idsNeedingOrderRow = new Set<string>();
+      const idsNeedingItems = new Set<string>();
+
+      for (const o of allOrders) {
+        const id = (o as { order_id?: string }).order_id;
+        if (!id) continue;
+
+        const existing = orderEnrichmentByIdRef.current[id];
+        const hasCustomer = Boolean((o as { customer_name?: string }).customer_name || existing?.customer_name);
+        const hasProductName = Boolean((o as { product_name?: string }).product_name || existing?.product_name);
+
+        if (!hasCustomer || !hasProductName) idsNeedingOrderRow.add(id);
+
+        const currentProducts = (o as { products?: unknown[] }).products ?? [];
+        const existingProducts = existing?.products ?? [];
+        if ((currentProducts as unknown[]).length === 0 && existingProducts.length === 0) idsNeedingItems.add(id);
+      }
+
+      const orderIdsToFetch = Array.from(idsNeedingOrderRow);
+      const itemOrderIdsToFetch = Array.from(idsNeedingItems);
+
+      if (orderIdsToFetch.length === 0 && itemOrderIdsToFetch.length === 0) return;
+
+      const updates: Record<string, Partial<OrderDetail>> = {};
+
+      for (const ids of chunk(orderIdsToFetch, 100)) {
+        const { data: ordersRows, error: ordersError } = await supabase
+          .from('orders')
+          .select('id, customer_name, product_name, product_sku, product_image_url, product_cost_price')
+          .in('id', ids);
+
+        if (ordersError) throw ordersError;
+
+        for (const row of ordersRows ?? []) {
+          const id = String((row as { id?: string }).id ?? '');
+          if (!id) continue;
+          const existing = orderEnrichmentByIdRef.current[id];
+          updates[id] = {
+            ...(existing ?? {}),
+            customer_name: (row as { customer_name?: string | null }).customer_name ?? existing?.customer_name,
+            product_name: (row as { product_name?: string | null }).product_name ?? existing?.product_name,
+            product_sku: (row as { product_sku?: string | null }).product_sku ?? existing?.product_sku,
+            product_image_url: (row as { product_image_url?: string | null }).product_image_url ?? existing?.product_image_url,
+            product_cost_price: Number((row as { product_cost_price?: number | null }).product_cost_price ?? existing?.product_cost_price ?? 0),
+          };
+        }
+      }
+
+      for (const ids of chunk(itemOrderIdsToFetch, 100)) {
+        const { data: itemsRows, error: itemsError } = await supabase
+          .from('order_items')
+          .select('order_id, product_name, quantity, unit_cost, total_price')
+          .in('order_id', ids);
+
+        if (itemsError) throw itemsError;
+
+        const grouped = (itemsRows ?? []).reduce((acc, item) => {
+          const orderId = String((item as { order_id?: string }).order_id ?? '');
+          if (!orderId) return acc;
+          (acc[orderId] ??= []).push(item);
+          return acc;
+        }, {} as Record<string, Array<{ product_name?: string | null; quantity?: number | null; unit_cost?: number | null; total_price?: number | null }>>);
+
+        for (const [orderId, items] of Object.entries(grouped)) {
+          const existing = orderEnrichmentByIdRef.current[orderId];
+          const totalQty = items.reduce((sum, it) => sum + Number(it.quantity ?? 0), 0);
+          const totalCost = items.reduce((sum, it) => sum + (Number(it.unit_cost ?? 0) * Number(it.quantity ?? 0)), 0);
+          const avgUnitCost = totalQty > 0 ? totalCost / totalQty : 0;
+
+          const products = items
+            .filter((it) => Boolean(it.product_name))
+            .map((it) => {
+              const quantity = Number(it.quantity ?? 0);
+              const totalPrice = Number(it.total_price ?? 0);
+              const unitPrice = quantity > 0 ? totalPrice / quantity : undefined;
+              return {
+                name: String(it.product_name ?? ''),
+                quantity: quantity || undefined,
+                unit_price: unitPrice,
+                unit_cost: Number(it.unit_cost ?? 0) || undefined,
+              };
+            });
+
+          const fallbackMainName = products[0]?.name;
+          const prevTotalCost = Number((updates[orderId]?.total_cost ?? existing?.total_cost ?? 0));
+          const prevProductCostPrice = Number((updates[orderId]?.product_cost_price ?? existing?.product_cost_price ?? 0));
+
+          updates[orderId] = {
+            ...(updates[orderId] ?? existing ?? {}),
+            products: products.length > 0 ? products : (updates[orderId]?.products ?? existing?.products),
+            product_name: (updates[orderId]?.product_name ?? existing?.product_name ?? fallbackMainName),
+            total_cost: prevTotalCost > 0 ? prevTotalCost : (totalCost > 0 ? totalCost : prevTotalCost),
+            product_cost_price: prevProductCostPrice > 0 ? prevProductCostPrice : (avgUnitCost > 0 ? avgUnitCost : prevProductCostPrice),
+          };
+        }
+      }
+
+      if (cancelled) return;
+      if (Object.keys(updates).length === 0) return;
+
+      setOrderEnrichmentById((prev) => ({
+        ...prev,
+        ...updates,
+      }));
+    };
+
+    fetchEnrichment().catch((err) => {
+      console.error('Erro ao enriquecer pedidos para tooltip:', err);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [data]);
 
   useEffect(() => {
     let cancelled = false;
@@ -373,7 +539,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       Number(o.commission_rate ?? 0),
                       Number(o.marketplace_fixed_fee ?? 0)
                     );
-                    return computeOrderRealProfit(orders[page], cfg).realProfit;
+                    const mergedOrder = mergeOrderForTooltip(orders[page]);
+                    return computeOrderRealProfit(mergedOrder, cfg).realProfit;
                   }
                   return Number(item.total_profit ?? 0);
                 });
@@ -407,13 +574,20 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 );
                 const marketplaceName = resolvedMarketplaceConfig?.name
                   ?? (hasExplicitMarketplace ? rawMarketplace : 'Sem marketplace');
-                const customerName = (order as { customer_name?: string }).customer_name || 'Cliente não identificado';
+                const mergedOrder = mergeOrderForTooltip(order) as unknown as {
+                  customer_name?: string;
+                  product_name?: string;
+                  product_sku?: string;
+                  products?: Array<{ name: string; sku?: string }>;
+                };
+                const customerName = mergedOrder.customer_name || 'Cliente não identificado';
                 const orderNumber = order.order_number || 'S/N';
-                const productNamesFromItems = (order.products || []).map((p: { name: string }) => p.name).filter(Boolean) as string[];
-                const mainProductName = (order as { product_name?: string }).product_name || productNamesFromItems[0] || 'Produto não vinculado';
+                const productsForDisplay = mergedOrder.products ?? [];
+                const productNamesFromItems = productsForDisplay.map((p) => p.name).filter(Boolean) as string[];
+                const mainProductName = mergedOrder.product_name || productNamesFromItems[0] || 'Produto não vinculado';
                 const productCount = productNamesFromItems.length;
-                const productSku = (order as { product_sku?: string }).product_sku || ((order.products || [])[0] as { sku?: string })?.sku || null;
-                const { realProfit, isFreeSample } = computeOrderRealProfit(order, resolvedMarketplaceConfig);
+                const productSku = mergedOrder.product_sku || (productsForDisplay[0]?.sku ?? null);
+                const { realProfit, isFreeSample } = computeOrderRealProfit(mergedOrder, resolvedMarketplaceConfig);
                 const profitLabel = realProfit >= 0 ? 'Lucro:' : 'Prejuízo:';
                 const profitValue = realProfit >= 0
                   ? formatCurrency(realProfit)
@@ -432,10 +606,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   order_id: order.order_id, order_number: orderNumber, marketplace: marketplaceName,
                   marketplace_fixed_fee: Number(resolvedMarketplaceConfig?.fixed_fee ?? (order as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0),
                   customer_name: customerName, product_name: mainProductName, product_sku: productSku || undefined,
-                  product_image_url: (order as { product_image_url?: string }).product_image_url || undefined,
-                  products: order.products, total_amount: Number(order.total_amount ?? 0),
-                  total_cost: Number(order.total_cost ?? 0),
-                  product_cost_price: Number((order as { product_cost_price?: number }).product_cost_price ?? 0),
+                  product_image_url: (mergedOrder as { product_image_url?: string }).product_image_url
+                    || undefined,
+                  products: (mergedOrder as { products?: unknown[] }).products,
+                  total_amount: Number(order.total_amount ?? 0),
+                  total_cost: Number((mergedOrder as { total_cost?: number | string | null }).total_cost ?? 0),
+                  product_cost_price: Number((mergedOrder as { product_cost_price?: number | string | null }).product_cost_price ?? 0),
                   marketplace_commission: Number(order.marketplace_commission ?? 0),
                   commission_rate: Number(resolvedMarketplaceConfig?.commission_rate ?? order.commission_rate ?? 0),
                   shipping_cost: Number(order.shipping_cost ?? 0),
@@ -513,9 +689,15 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const orderDataStr = detailButton.getAttribute('data-order-detail');
         if (orderDataStr) {
           try {
-            const orderData = JSON.parse(orderDataStr);
-            setSelectedOrder(orderData);
-            setCameFromAffiliate(Boolean(affiliateByOrderIdRef.current?.[orderData.order_id]));
+            const orderData = JSON.parse(orderDataStr) as OrderDetail;
+            const enrichment = orderEnrichmentByIdRef.current[orderData.order_id];
+            const merged: OrderDetail = {
+              ...orderData,
+              ...(enrichment ?? {}),
+              products: (enrichment?.products?.length ? enrichment.products : orderData.products),
+            };
+            setSelectedOrder(merged);
+            setCameFromAffiliate(Boolean(affiliateByOrderIdRef.current?.[merged.order_id]));
             setOpenProduto(false);
             setOpenMarketplace(false);
             setDetailDialogOpen(true);
@@ -532,7 +714,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     return () => {
       document.removeEventListener('click', handleTooltipClick, true);
     };
-  }, [computeOrderRealProfit, normalizeMarketplace, resolveMarketplaceConfig]);
+  }, [computeOrderRealProfit, mergeOrderForTooltip, normalizeMarketplace, resolveMarketplaceConfig]);
 
   // Refetch quando refreshTrigger mudar (apenas se for > 0)
   React.useEffect(() => {
@@ -696,6 +878,15 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
         // Gerar HTML de um único pedido (paginado)
         const { orderInnerHtml, orderIsFreeSample } = order ? (() => {
+          const mergedOrder = mergeOrderForTooltip(order) as unknown as {
+            customer_name?: string;
+            product_name?: string;
+            product_sku?: string;
+            product_image_url?: string;
+            total_cost?: number | string | null;
+            product_cost_price?: number | string | null;
+            products?: Array<{ name: string; sku?: string }>;
+          };
           const rawMarketplace = (order as { marketplace?: string }).marketplace ?? '';
           const normalizedRawMarketplace = normalizeMarketplace(rawMarketplace);
           const hasExplicitMarketplace = !!rawMarketplace
@@ -709,23 +900,23 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           );
           const marketplaceName = resolvedMarketplaceConfig?.name
             ?? (hasExplicitMarketplace ? rawMarketplace : 'Sem marketplace');
-          const customerName = (order as { customer_name?: string }).customer_name || 'Cliente não identificado';
+          const customerName = mergedOrder.customer_name || 'Cliente não identificado';
           const orderNumber = order.order_number || 'S/N';
 
-          const { realProfit, isFreeSample } = computeOrderRealProfit(order, resolvedMarketplaceConfig);
+          const { realProfit, isFreeSample } = computeOrderRealProfit(mergedOrder, resolvedMarketplaceConfig);
           const profitColor = isFreeSample ? '#e9d5ff' : (realProfit >= 0 ? '#16a34a' : '#dc2626');
           const profitLabel = realProfit >= 0 ? 'Lucro:' : 'Prejuízo:';
           const profitValue = realProfit >= 0
             ? formatCurrency(realProfit)
             : `- ${formatCurrency(Math.abs(realProfit))}`;
 
-          const productNamesFromItems = (order.products || [])
-            .map((p: { name: string }) => p.name)
+          const productsForDisplay = mergedOrder.products ?? [];
+          const productNamesFromItems = productsForDisplay
+            .map((p) => p.name)
             .filter(Boolean) as string[];
-          const mainProductName = (order as { product_name?: string }).product_name || productNamesFromItems[0] || 'Produto não vinculado';
+          const mainProductName = mergedOrder.product_name || productNamesFromItems[0] || 'Produto não vinculado';
           const productCount = productNamesFromItems.length;
-          const productSku = (order as { product_sku?: string }).product_sku ||
-            ((order.products || [])[0] as { sku?: string })?.sku || null;
+          const productSku = mergedOrder.product_sku || (productsForDisplay[0]?.sku ?? null);
           const safeStore = marketplaceName;
           const orderRevenue = Number(order.total_amount ?? 0);
 
@@ -746,11 +937,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             customer_name: customerName,
             product_name: mainProductName,
             product_sku: productSku || undefined,
-            product_image_url: (order as { product_image_url?: string }).product_image_url || undefined,
-            products: order.products,
+            product_image_url: mergedOrder.product_image_url || undefined,
+            products: mergedOrder.products as OrderDetail['products'],
             total_amount: orderRevenue,
-            total_cost: Number(order.total_cost ?? 0),
-            product_cost_price: Number((order as { product_cost_price?: number }).product_cost_price ?? 0),
+            total_cost: Number(mergedOrder.total_cost ?? 0),
+            product_cost_price: Number(mergedOrder.product_cost_price ?? 0),
             marketplace_commission: Number(order.marketplace_commission ?? 0),
             commission_rate: Number(resolvedMarketplaceConfig?.commission_rate ?? order.commission_rate ?? 0),
             shipping_cost: Number(order.shipping_cost ?? 0),
@@ -895,7 +1086,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             Number(o.commission_rate ?? 0),
             Number(o.marketplace_fixed_fee ?? 0)
           );
-          return computeOrderRealProfit(orders[currentPage], cfg).realProfit;
+          const mergedOrder = mergeOrderForTooltip(orders[currentPage]);
+          return computeOrderRealProfit(mergedOrder, cfg).realProfit;
         }
         // Usar total_profit do período (já inclui todas as taxas)
         return Number(item.total_profit ?? 0);
