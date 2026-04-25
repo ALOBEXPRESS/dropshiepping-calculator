@@ -108,7 +108,8 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
 
   useEffect(() => {
     fetchStats();
-  }, [organizationId, refreshTrigger, fetchStats]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [organizationId, refreshTrigger]);
 
   // Calcular ângulos para o donut chart
   const maleAngle = (stats.malePercentage / 100) * 360;
