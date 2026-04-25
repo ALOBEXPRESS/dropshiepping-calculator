@@ -102,6 +102,7 @@ interface HeroSectionProps {
     customersChange?: number;
     productsChange?: number;
   };
+  period?: 'daily' | 'weekly' | 'monthly' | 'yearly';
   hasPendingOrders?: boolean;
   onRefresh?: () => void;
   onExport?: () => void;
@@ -110,6 +111,7 @@ interface HeroSectionProps {
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ 
   stats,
+  period = 'monthly',
   hasPendingOrders = false,
   onRefresh,
   onExport,
@@ -121,6 +123,41 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       currency: 'BRL',
     }).format(value);
   };
+
+  // Função para obter o label do período anterior
+  const getPreviousPeriodLabel = () => {
+    switch (period) {
+      case 'daily':
+        return 'vs. ontem';
+      case 'weekly':
+        return 'vs. semana passada';
+      case 'monthly':
+        return 'vs. mês passado';
+      case 'yearly':
+        return 'vs. ano passado';
+      default:
+        return 'vs. período anterior';
+    }
+  };
+
+  // Função para obter o label do período atual
+  const getCurrentPeriodLabel = () => {
+    switch (period) {
+      case 'daily':
+        return 'hoje';
+      case 'weekly':
+        return 'esta semana';
+      case 'monthly':
+        return 'este mês';
+      case 'yearly':
+        return 'este ano';
+      default:
+        return 'período atual';
+    }
+  };
+
+  const previousPeriodLabel = getPreviousPeriodLabel();
+  const currentPeriodLabel = getCurrentPeriodLabel();
 
   return (
     <div className="space-y-4">
@@ -182,7 +219,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           label="Lucro Total"
           value={formatCurrency(stats.totalRevenue)}
           trend={stats.revenueChange}
-          trendLabel="vs. período anterior"
+          trendLabel={previousPeriodLabel}
           icon={<DollarSign className="w-6 h-6 text-white" />}
           iconColor="from-green-500 to-green-600"
         />
@@ -191,7 +228,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           label="Pedidos"
           value={stats.totalOrders}
           trend={stats.ordersChange}
-          trendLabel="esta semana"
+          trendLabel={currentPeriodLabel}
           icon={<ShoppingCart className="w-6 h-6 text-white" />}
           iconColor="from-blue-500 to-blue-600"
         />
@@ -200,7 +237,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           label="Clientes"
           value={stats.totalCustomers}
           trend={stats.customersChange}
-          trendLabel="esta semana"
+          trendLabel={currentPeriodLabel}
           icon={<Users className="w-6 h-6 text-white" />}
           iconColor="from-purple-500 to-purple-600"
         />
@@ -209,7 +246,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           label="Produtos"
           value={stats.totalProducts}
           trend={stats.productsChange}
-          trendLabel="esta semana"
+          trendLabel={currentPeriodLabel}
           icon={<Package className="w-6 h-6 text-white" />}
           iconColor="from-orange-500 to-orange-600"
         />

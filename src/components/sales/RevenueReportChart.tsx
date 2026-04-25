@@ -344,9 +344,22 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
         if (!hasCustomer) idsNeedingOrderRow.add(id);
 
-        const currentProducts = (o as { products?: unknown[] }).products ?? [];
+        const isFreeSample = (o as { is_free_sample?: boolean | string }).is_free_sample === true
+          || String((o as { is_free_sample?: unknown }).is_free_sample ?? '') === 'true';
+        const currentProducts = (o as { products?: unknown[] | null }).products ?? [];
         const existingProducts = existing?.products ?? [];
-        if ((currentProducts as unknown[]).length === 0 && existingProducts.length === 0) idsNeedingItems.add(id);
+        const productsToInspect = ((currentProducts as unknown[])?.length ? (currentProducts as unknown[]) : existingProducts) as unknown[];
+        const hasSupplierFeeConfigured =
+          productsToInspect.some((p) => Number((p as { supplier_fee_value?: unknown }).supplier_fee_value ?? 0) > 0)
+          || productsToInspect.some((p) => Number((p as { supplier_gateway_fee_value?: unknown }).supplier_gateway_fee_value ?? 0) > 0)
+          || Number((o as { supplier_fee_value?: unknown }).supplier_fee_value ?? 0) > 0
+          || Number((o as { supplier_gateway_fee_value?: unknown }).supplier_gateway_fee_value ?? 0) > 0;
+
+        const needsItems =
+          ((currentProducts as unknown[]).length === 0 && existingProducts.length === 0)
+          || (isFreeSample && !hasSupplierFeeConfigured);
+
+        if (needsItems) idsNeedingItems.add(id);
       }
 
       const orderIdsToFetch = Array.from(idsNeedingOrderRow);
@@ -735,6 +748,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           name?: string | null;
           cost_price?: number | null;
           image_url?: string | null;
+          supplier_fee_value?: number | null;
+          supplier_fee_type?: string | null;
+          supplier_gateway_fee_value?: number | null;
+          supplier_gateway_fee_type?: string | null;
         };
 
         const normalizeKey = (raw: string) => {
@@ -774,7 +791,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         for (const idChunk of chunk(candidateProductIds, 100)) {
           const { data: productRows, error: productError } = await supabase
             .from('products')
-            .select('id, sku, name, cost_price, image_url')
+            .select('id, sku, name, cost_price, image_url, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
             .in('id', idChunk);
 
           if (productError) continue;
@@ -791,7 +808,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         for (const skuChunk of chunk(candidateSkus, 50)) {
           const { data: productRows, error: productError } = await supabase
             .from('products')
-            .select('id, sku, name, cost_price, image_url')
+            .select('id, sku, name, cost_price, image_url, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
             .in('sku', skuChunk);
 
           if (productError) continue;
@@ -809,7 +826,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         for (const nameChunk of chunk(remainingNames, 50)) {
           const { data: productRows, error: productError } = await supabase
             .from('products')
-            .select('id, sku, name, cost_price, image_url')
+            .select('id, sku, name, cost_price, image_url, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
             .in('name', nameChunk);
 
           if (productError) continue;
@@ -856,6 +873,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 quantity: quantity || undefined,
                 unit_price: unitPrice,
                 unit_cost: resolvedUnitCost > 0 ? resolvedUnitCost : undefined,
+                supplier_fee_value: lookup?.supplier_fee_value != null ? String(lookup.supplier_fee_value) : undefined,
+                supplier_fee_type: lookup?.supplier_fee_type != null ? String(lookup.supplier_fee_type) : undefined,
+                supplier_gateway_fee_value: lookup?.supplier_gateway_fee_value != null ? String(lookup.supplier_gateway_fee_value) : undefined,
+                supplier_gateway_fee_type: lookup?.supplier_gateway_fee_type != null ? String(lookup.supplier_gateway_fee_type) : undefined,
               };
             });
 
@@ -915,7 +936,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             for (const skuChunk of chunk(productKeys, 50)) {
               const { data: productRows, error: productError } = await supabase
                 .from('products')
-                .select('sku, name, cost_price, image_url')
+                .select('sku, name, cost_price, image_url, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
                 .in('sku', skuChunk);
 
               if (productError) continue;
@@ -932,7 +953,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             for (const nameChunk of chunk(remainingNames, 50)) {
               const { data: productRows, error: productError } = await supabase
                 .from('products')
-                .select('sku, name, cost_price, image_url')
+                .select('sku, name, cost_price, image_url, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
                 .in('name', nameChunk);
 
               if (productError) continue;
@@ -974,6 +995,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   quantity: 1,
                   unit_price: 0,
                   unit_cost: unitCost > 0 ? unitCost : undefined,
+                  supplier_fee_value: product?.supplier_fee_value != null ? String(product.supplier_fee_value) : undefined,
+                  supplier_fee_type: product?.supplier_fee_type != null ? String(product.supplier_fee_type) : undefined,
+                  supplier_gateway_fee_value: product?.supplier_gateway_fee_value != null ? String(product.supplier_gateway_fee_value) : undefined,
+                  supplier_gateway_fee_type: product?.supplier_gateway_fee_type != null ? String(product.supplier_gateway_fee_type) : undefined,
                 }],
                 total_cost: prevTotalCost > 0 ? prevTotalCost : (unitCost > 0 ? unitCost : prevTotalCost),
                 product_cost_price: prevProductCostPrice > 0 ? prevProductCostPrice : (unitCost > 0 ? unitCost : prevProductCostPrice),
@@ -1084,7 +1109,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const max = Number(navButton.getAttribute('data-nav-max'));
         if (key) {
           const dataPointIndex = parseInt(key.replace('tooltip_page_', ''), 10);
-          const current = tooltipPagesRef.current[dataPointIndex] ?? 0;
+          const currentUnsafe = tooltipPagesRef.current[dataPointIndex] ?? 0;
+          const current = Number.isFinite(max) ? Math.min(currentUnsafe, max) : currentUnsafe;
           const next = dir === 'next' ? Math.min(current + 1, max) : Math.max(current - 1, 0);
 
           // Atualizar estado React
@@ -1099,8 +1125,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               const instance = ApexChartsGlobal.getChartByID(chartId);
               if (instance) {
                 const newSeriesData = dataRef.current.map((item, idx) => {
-                  const page = idx === dataPointIndex ? next : (tooltipPagesRef.current[idx] ?? 0);
+                  const pageUnsafe = idx === dataPointIndex ? next : (tooltipPagesRef.current[idx] ?? 0);
                   const orders = item.orders_data ?? [];
+                  const page = orders.length > 0 ? Math.min(pageUnsafe, orders.length - 1) : 0;
                   if (orders.length > 0 && orders[page]) {
                     const o = orders[page] as unknown as {
                       marketplace?: string;
@@ -1131,7 +1158,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             if (!isNaN(dataPointIndex) && currentData[dataPointIndex]) {
               const periodData = currentData[dataPointIndex];
               const ordersCount = periodData.orders_data?.length || 0;
-              const order = periodData.orders_data?.[next];
+              const safeNext = ordersCount > 0 ? Math.min(next, ordersCount - 1) : 0;
+              const order = periodData.orders_data?.[safeNext];
 
               if (order) {
                 const rawMarketplace = (order as { marketplace?: string }).marketplace ?? '';
@@ -1362,9 +1390,42 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     }
   };
 
-  const totalRevenue = data.reduce((sum, item) => sum + Number(item.total_revenue), 0);
-  const totalCost = data.reduce((sum, item) => sum + Number(item.total_cost), 0);
-  const totalProfit = data.reduce((sum, item) => sum + Number(item.total_profit), 0);
+  // Recalcular totais considerando custos reais do marketplace
+  const recalculatedData = useMemo(() => {
+    return data.map(item => {
+      const orders = item.orders_data || [];
+      let totalRevenue = 0;
+      let totalCost = 0;
+      let totalProfit = 0;
+
+      orders.forEach((order: unknown) => {
+        const o = order as OrderDetail;
+        const enrichment = orderEnrichmentById[o.order_id] || {};
+        const mergedOrder = { ...o, ...enrichment };
+        
+        // Calcular lucro real usando a mesma lógica do modal
+        const profitResult = computeOrderRealProfit(mergedOrder, undefined, affiliateByOrderId[o.order_id]);
+        const realProfit = typeof profitResult === 'number' ? profitResult : profitResult.realProfit;
+        
+        totalRevenue += Number(o.total_amount ?? 0);
+        totalProfit += realProfit;
+      });
+
+      // Custo = Receita - Lucro
+      totalCost = totalRevenue - totalProfit;
+
+      return {
+        ...item,
+        total_revenue: totalRevenue,
+        total_cost: totalCost,
+        total_profit: totalProfit
+      };
+    });
+  }, [data, orderEnrichmentById, affiliateByOrderId, computeOrderRealProfit]);
+
+  const totalRevenue = recalculatedData.reduce((sum, item) => sum + Number(item.total_revenue), 0);
+  const totalCost = recalculatedData.reduce((sum, item) => sum + Number(item.total_cost), 0);
+  const totalProfit = recalculatedData.reduce((sum, item) => sum + Number(item.total_profit), 0);
 
 
   const chartOptions: ApexOptions = {
@@ -1407,7 +1468,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     },
     colors: ['#8b5cf6'],
     xaxis: {
-      categories: data.map((item) => item.period_label),
+      categories: recalculatedData.map((item) => item.period_label),
       labels: {
         style: {
           colors: '#6b7280',
@@ -1446,7 +1507,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
         // Estado de paginação do tooltip por período (via estado React)
         const stateKey = `tooltip_page_${dataPointIndex}`;
-        const currentPage: number = tooltipPagesRef.current[dataPointIndex] ?? 0;
+        const currentPageUnsafe: number = tooltipPagesRef.current[dataPointIndex] ?? 0;
+        const currentPage = ordersCount > 0 ? Math.min(currentPageUnsafe, ordersCount - 1) : 0;
         const order = periodData.orders_data?.[currentPage];
 
         // Gerar HTML de um único pedido (paginado)
@@ -1645,9 +1707,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const chartSeries = [
     {
       name: 'Lucro',
-      data: data.map((item, idx) => {
-        const currentPage = tooltipPages[idx] ?? 0;
+      data: recalculatedData.map((item, idx) => {
+        const currentPageUnsafe = tooltipPages[idx] ?? 0;
         const orders = item.orders_data ?? [];
+        const currentPage = orders.length > 0 ? Math.min(currentPageUnsafe, orders.length - 1) : 0;
         if (orders.length > 0 && orders[currentPage]) {
           const o = orders[currentPage] as unknown as {
             marketplace?: string;
@@ -1662,7 +1725,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const mergedOrder = mergeOrderForTooltip(orders[currentPage]);
           return computeOrderRealProfit(mergedOrder, cfg).realProfit;
         }
-        // Usar total_profit do período (já inclui todas as taxas)
+        // Usar total_profit recalculado
         return Number(item.total_profit ?? 0);
       }),
     },

@@ -26,7 +26,8 @@ const Sales: React.FC = () => {
   const { organizationId, loading, settingsError, retrySettings } = useSettings();
   const containerRef = useRef<HTMLDivElement>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const { stats } = useHeroStats(organizationId || '', refreshKey);
+  const [period] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
+  const { stats } = useHeroStats(organizationId || '', period, refreshKey);
 
   // Free sample lane state — rehydrated from sessionStorage
   const [freeSampleOrders, setFreeSampleOrders] = useState<PendingOrder[]>(() => {
@@ -214,6 +215,7 @@ const Sales: React.FC = () => {
           <div className="animate-on-load">
             <HeroSection 
               stats={stats}
+              period={period}
               hasPendingOrders={false}
               compact={true}
             />

@@ -12,13 +12,172 @@ interface HeroStats {
   productsChange?: number;
 }
 
-interface RevenueReportItem {
-  total_revenue: number;
-  total_cost: number;
-  total_profit: number;
+interface OrderWithProducts {
+  order_id: string;
+  customer_id: string;
+  total_amount: number;
+  marketplace: string;
+  commission_rate: number;
+  marketplace_fixed_fee: number;
+  shipping_cost: number;
+  other_expenses: number;
+  marketplace_commission: number;
+  tiktok_sfp_enabled: boolean;
+  is_free_sample: boolean;
+  order_date: string;
+  products: {
+    quantity: number;
+    unit_cost: number;
+    supplier_fee_value: string;
+    supplier_fee_type: string;
+    supplier_gateway_fee_value: string;
+    supplier_gateway_fee_type: string;
+  }[];
 }
 
-export const useHeroStats = (organizationId: string, refreshTrigger?: number) => {
+// Função para calcular taxas da Shopee baseado no preço
+const getShopeeRates = (price: number): { commission: number; fixed: number } => {
+  if (price <= 79.99) return { commission: 20, fixed: 4 };
+  if (price <= 99.99) return { commission: 14, fixed: 16 };
+  if (price <= 199.99) return { commission: 14, fixed: 20 };
+  if (price <= 499.99) return { commission: 14, fixed: 26 };
+  return { commission: 14, fixed: 26 };
+};
+
+// Função para calcular o lucro real de um pedido
+const calculateOrderProfit = (order: OrderWithProducts): number => {
+  const totalAmount = Number(order.total_amount ?? 0);
+  const isFreeSample = order.is_free_sample === true;
+  
+  // Calcular custo base dos produtos
+  const totalBaseCost = order.products.reduce((sum, p) => {
+    const qty = Number(p.quantity ?? 1);
+    const unitCost = Number(p.unit_cost ?? 0);
+    return sum + unitCost * qty;
+  }, 0);
+  
+  // Calcular taxas do fornecedor
+  const supFeeProduct = order.products.reduce((best, p) => {
+    const v = Number(p.supplier_fee_value ?? 0);
+    return v > Number(best?.supplier_fee_value ?? 0) ? p : best;
+  }, order.products[0]);
+  
+  const gwFeeProduct = order.products.reduce((best, p) => {
+    const v = Number(p.supplier_gateway_fee_value ?? 0);
+    return v > Number(best?.supplier_gateway_fee_value ?? 0) ? p : best;
+  }, order.products[0]);
+  
+  const supFeeVal = Number(supFeeProduct?.supplier_fee_value ?? 0);
+  const supFeeType = supFeeProduct?.supplier_fee_type ?? 'percent';
+  const gwFeeVal = Number(gwFeeProduct?.supplier_gateway_fee_value ?? 0);
+  const gwFeeType = gwFeeProduct?.supplier_gateway_fee_type ?? 'fixed';
+  
+  const orderSupplierFee = supFeeVal > 0
+    ? supFeeType === 'percent' ? (totalBaseCost * supFeeVal) / 100 : supFeeVal
+    : 0;
+  const orderGatewayFee = gwFeeVal > 0
+    ? gwFeeType === 'fixed' ? gwFeeVal : (totalBaseCost * gwFeeVal) / 100
+    : 0;
+  
+  const totalProductCost = totalBaseCost + orderSupplierFee + orderGatewayFee;
+  
+  // Calcular taxas do marketplace
+  let commissionRate = Number(order.commission_rate ?? 0);
+  let fixedFee = Number(order.marketplace_fixed_fee ?? 0);
+  
+  // Se for Shopee, calcular taxas baseadas no preço de venda
+  if (order.marketplace?.toLowerCase() === 'shopee') {
+    const shopeeRates = getShopeeRates(totalAmount);
+    commissionRate = shopeeRates.commission;
+    fixedFee = shopeeRates.fixed;
+  }
+  
+  const commissionPercent = isFreeSample ? 0 : (commissionRate > 0
+    ? (totalAmount * commissionRate) / 100
+    : Math.max(0, order.marketplace_commission - fixedFee));
+  
+  const sfpEnabled = !isFreeSample && order.tiktok_sfp_enabled === true;
+  const sfpFee = sfpEnabled ? totalAmount * 0.06 : 0;
+  
+  const subtotalMarketplace = isFreeSample ? 0 : (
+    commissionPercent + 
+    fixedFee + 
+    sfpFee + 
+    Number(order.shipping_cost ?? 0) + 
+    Number(order.other_expenses ?? 0)
+  );
+  
+  const realProfit = isFreeSample 
+    ? -totalProductCost 
+    : (totalAmount - totalProductCost - subtotalMarketplace);
+  
+  return realProfit;
+};
+
+// Função para obter range de datas baseado no período
+const getDateRange = (period: 'daily' | 'weekly' | 'monthly' | 'yearly') => {
+  const now = new Date();
+  const currentStart = new Date(now);
+  const currentEnd = new Date(now);
+  const previousStart = new Date(now);
+  const previousEnd = new Date(now);
+  
+  switch (period) {
+    case 'daily':
+      // Hoje
+      currentStart.setHours(0, 0, 0, 0);
+      currentEnd.setHours(23, 59, 59, 999);
+      // Ontem
+      previousStart.setDate(previousStart.getDate() - 1);
+      previousStart.setHours(0, 0, 0, 0);
+      previousEnd.setDate(previousEnd.getDate() - 1);
+      previousEnd.setHours(23, 59, 59, 999);
+      break;
+    case 'weekly':
+      // Esta semana (domingo a sábado)
+      const dayOfWeek = now.getDay();
+      currentStart.setDate(now.getDate() - dayOfWeek);
+      currentStart.setHours(0, 0, 0, 0);
+      currentEnd.setHours(23, 59, 59, 999);
+      // Semana passada
+      previousStart.setDate(currentStart.getDate() - 7);
+      previousStart.setHours(0, 0, 0, 0);
+      previousEnd.setDate(currentStart.getDate() - 1);
+      previousEnd.setHours(23, 59, 59, 999);
+      break;
+    case 'monthly':
+      // Este mês
+      currentStart.setDate(1);
+      currentStart.setHours(0, 0, 0, 0);
+      currentEnd.setMonth(currentEnd.getMonth() + 1, 0);
+      currentEnd.setHours(23, 59, 59, 999);
+      // Mês passado
+      previousStart.setMonth(previousStart.getMonth() - 1, 1);
+      previousStart.setHours(0, 0, 0, 0);
+      previousEnd.setDate(0); // Último dia do mês anterior
+      previousEnd.setHours(23, 59, 59, 999);
+      break;
+    case 'yearly':
+      // Este ano
+      currentStart.setMonth(0, 1);
+      currentStart.setHours(0, 0, 0, 0);
+      currentEnd.setMonth(11, 31);
+      currentEnd.setHours(23, 59, 59, 999);
+      // Ano passado
+      previousStart.setFullYear(previousStart.getFullYear() - 1, 0, 1);
+      previousStart.setHours(0, 0, 0, 0);
+      previousEnd.setFullYear(previousEnd.getFullYear() - 1, 11, 31);
+      previousEnd.setHours(23, 59, 59, 999);
+      break;
+  }
+  
+  return {
+    current: { start: currentStart.toISOString(), end: currentEnd.toISOString() },
+    previous: { start: previousStart.toISOString(), end: previousEnd.toISOString() }
+  };
+};
+
+export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'monthly', refreshTrigger?: number) => {
   const [stats, setStats] = useState<HeroStats>({
     totalRevenue: 0,
     totalOrders: 0,
@@ -36,23 +195,52 @@ export const useHeroStats = (organizationId: string, refreshTrigger?: number) =>
       setError(null);
 
       try {
-        // Usar get_revenue_report para obter lucro total com custos dinâmicos
-        const { data: revenueData, error: revenueError } = await supabase
-          .rpc('get_revenue_report', { 
-            p_organization_id: organizationId,
-            p_period: 'monthly'
-          });
-
-        if (revenueError) throw revenueError;
-
-        // Buscar estatísticas de pedidos para contagem (apenas com order_date preenchido)
-        const { data: ordersData, error: ordersError } = await supabase
+        const dateRange = getDateRange(period);
+        
+        // Buscar pedidos do período atual com produtos
+        const { data: currentOrders, error: currentOrdersError } = await supabase
           .from('orders')
-          .select('customer_id')
+          .select(`
+            order_id,
+            customer_id,
+            total_amount,
+            marketplace,
+            commission_rate,
+            marketplace_fixed_fee,
+            shipping_cost,
+            other_expenses,
+            marketplace_commission,
+            tiktok_sfp_enabled,
+            is_free_sample,
+            order_date,
+            order_items!inner(
+              quantity,
+              unit_cost,
+              products!inner(
+                supplier_fee_value,
+                supplier_fee_type,
+                supplier_gateway_fee_value,
+                supplier_gateway_fee_type
+              )
+            )
+          `)
           .eq('organization_id', organizationId)
+          .gte('order_date', dateRange.current.start)
+          .lte('order_date', dateRange.current.end)
           .not('order_date', 'is', null);
 
-        if (ordersError) throw ordersError;
+        if (currentOrdersError) throw currentOrdersError;
+
+        // Buscar pedidos do período anterior
+        const { data: previousOrders, error: previousOrdersError } = await supabase
+          .from('orders')
+          .select('order_id, customer_id')
+          .eq('organization_id', organizationId)
+          .gte('order_date', dateRange.previous.start)
+          .lte('order_date', dateRange.previous.end)
+          .not('order_date', 'is', null);
+
+        if (previousOrdersError) throw previousOrdersError;
 
         // Buscar total de produtos
         const { count: productsCount, error: productsError } = await supabase
@@ -62,23 +250,58 @@ export const useHeroStats = (organizationId: string, refreshTrigger?: number) =>
 
         if (productsError) throw productsError;
 
-        // Calcular lucro total somando todos os pedidos do revenue report
-        const totalProfit = revenueData?.reduce((sum: number, item: RevenueReportItem) => {
-          return sum + (Number(item.total_profit) || 0);
-        }, 0) || 0;
+        // Processar pedidos atuais
+        const processedCurrentOrders = (currentOrders || []).map(order => ({
+          ...order,
+          products: (order.order_items || []).map((item: any) => ({
+            quantity: item.quantity,
+            unit_cost: item.unit_cost,
+            supplier_fee_value: item.products?.supplier_fee_value || '0',
+            supplier_fee_type: item.products?.supplier_fee_type || 'percent',
+            supplier_gateway_fee_value: item.products?.supplier_gateway_fee_value || '0',
+            supplier_gateway_fee_type: item.products?.supplier_gateway_fee_type || 'fixed'
+          }))
+        })) as OrderWithProducts[];
 
-        const totalOrders = ordersData?.length || 0;
-        const uniqueCustomers = new Set(ordersData?.map(order => order.customer_id).filter(Boolean));
-        const totalCustomers = uniqueCustomers.size;
+        // Calcular lucro total
+        const totalProfit = processedCurrentOrders.reduce((sum, order) => {
+          return sum + calculateOrderProfit(order);
+        }, 0);
+
+        // Calcular clientes únicos
+        const currentUniqueCustomers = new Set(
+          processedCurrentOrders
+            .map(order => order.customer_id)
+            .filter(Boolean)
+        );
+        const previousUniqueCustomers = new Set(
+          (previousOrders || [])
+            .map(order => order.customer_id)
+            .filter(Boolean)
+        );
+
+        const totalOrders = processedCurrentOrders.length;
+        const previousTotalOrders = (previousOrders || []).length;
+        const totalCustomers = currentUniqueCustomers.size;
+        const previousTotalCustomers = previousUniqueCustomers.size;
+
+        // Calcular mudanças percentuais
+        const ordersChange = previousTotalOrders > 0 
+          ? ((totalOrders - previousTotalOrders) / previousTotalOrders) * 100 
+          : 0;
+        const customersChange = previousTotalCustomers > 0 
+          ? ((totalCustomers - previousTotalCustomers) / previousTotalCustomers) * 100 
+          : 0;
 
         setStats({
-          totalRevenue: totalProfit, // Agora é lucro, não receita
+          totalRevenue: totalProfit,
           totalOrders,
           totalCustomers,
           totalProducts: productsCount || 0,
-          ordersChange: totalOrders,
-          customersChange: totalCustomers,
-          productsChange: productsCount || 0,
+          revenueChange: 0, // Pode ser calculado se necessário
+          ordersChange: Math.round(ordersChange),
+          customersChange: Math.round(customersChange),
+          productsChange: 0, // Produtos não mudam por período
         });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erro ao carregar estatísticas');
@@ -89,7 +312,7 @@ export const useHeroStats = (organizationId: string, refreshTrigger?: number) =>
     };
 
     fetchStats();
-  }, [organizationId, refreshTrigger]);
+  }, [organizationId, period, refreshTrigger]);
 
   return { stats, loading, error };
 };
