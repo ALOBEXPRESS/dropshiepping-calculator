@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useSettings } from '@/contexts/SettingsContext';
 import { Loader2, CheckCircle, AlertCircle, Package, ChevronLeft, ChevronRight, Trash2, GripVertical } from 'lucide-react';
 import { ProcessOrderModal } from './ProcessOrderModal';
+import { useAutoGenderClassification } from '@/hooks/useAutoGenderClassification';
 import type { PendingOrder } from '@/types/pendingOrder';
 
 // Importar ícones dos marketplaces
@@ -39,6 +40,9 @@ interface ProcessResult {
   total_profit?: number;
   profit_margin?: number;
   order_number?: string;
+  lead_needs_classification?: boolean;
+  lead_id?: string;
+  lead_name?: string;
 }
 
 interface PendingOrdersProps {
@@ -49,6 +53,7 @@ interface PendingOrdersProps {
 
 export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, onReturnFromFreeSample }) => {
   const { organizationId } = useSettings();
+  const { handlePostOrderProcessing } = useAutoGenderClassification();
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>(() => {
     // Inicializar com cache do sessionStorage para evitar flash de loading ao voltar para a página
     try {
@@ -184,6 +189,9 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
 
       if (result.success) {
         console.log('🎉 Pedido processado com sucesso!');
+        
+        // Classificar gênero automaticamente se necessário
+        await handlePostOrderProcessing(result);
         
         // Remover o pedido da lista
         setPendingOrders((prev) =>

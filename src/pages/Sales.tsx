@@ -8,6 +8,8 @@ import {
   AnalyticsTabs,
   LowMarginProductsAlert,
   PaymentTransactions,
+  GenderClassificationFunnel,
+  GenderClassificationJobButton,
 } from '@/components/sales';
 import { RealtimeStatusBadge } from '@/components/sales/RealtimeStatusBadge';
 import { PendingOrders } from '@/components/PendingOrders';
@@ -231,9 +233,17 @@ const Sales: React.FC = () => {
           </div>
         </div>
 
-        {/* Coluna 2 - Estatísticas de Clientes (ocupa 1/3) */}
+        {/* Coluna 2 - Funil de Classificação de Gênero (ocupa 1/3) */}
         <div className="animate-on-load h-full">
-          <CustomersStatistics organizationId={organizationId} refreshTrigger={refreshKey} />
+          <GenderClassificationFunnel 
+            organizationId={organizationId} 
+            refreshTrigger={refreshKey}
+            onClassifyClick={() => {
+              // Abrir modal ou executar classificação em lote
+              const button = document.querySelector('[data-gender-classify-button]') as HTMLButtonElement;
+              if (button) button.click();
+            }}
+          />
         </div>
       </div>
 
@@ -250,6 +260,18 @@ const Sales: React.FC = () => {
       </div>
 
       {/* Produtos Lucrativos removido — agora está no Resumo Financeiro Geral */}
+
+      {/* Botão escondido para classificação em lote (acionado pelo funil) */}
+      <div className="hidden">
+        <GenderClassificationJobButton
+          organizationId={organizationId}
+          onComplete={(summary) => {
+            console.log('Classificação concluída:', summary);
+            handleRefresh();
+          }}
+          data-gender-classify-button
+        />
+      </div>
 
       {/* Alertas de Margem Baixa + Relatório de Estoque */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
