@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -16,6 +16,7 @@ import {
   DialogContent,
   DialogClose,
 } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import Chart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
 import { useRevenueReport } from '@/hooks/sales/useRevenueReport';
@@ -23,6 +24,7 @@ import { supabase } from '@/lib/supabase';
 import { Loader2, Trash2 } from 'lucide-react';
 import type { PeriodFilter } from '@/types/sales';
 import { toast } from 'sonner';
+import { ReferenceService, type Marketplace } from '@/services/referenceService';
 
 interface RevenueReportChartProps {
   organizationId: string;
@@ -75,6 +77,177 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [deleting, setDeleting] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
+  const [marketplaces, setMarketplaces] = useState<Marketplace[]>([]);
+  const [cameFromAffiliate, setCameFromAffiliate] = useState(false);
+  const [affiliateByOrderId, setAffiliateByOrderId] = useState<Record<string, boolean>>({});
+  const affiliateByOrderIdRef = useRef<Record<string, boolean>>({});
+  affiliateByOrderIdRef.current = affiliateByOrderId;
+  const marketplacesForResolution = useMemo<Marketplace[]>(() => {
+    if (marketplaces.length > 0) return marketplaces;
+    return [{
+      id: 'fallback-shopee',
+      name: 'Shopee',
+      commission_rate: 20,
+      fixed_fee: 4,
+      affiliate_commission_rate: 10,
+      has_monthly_fee: false,
+      monthly_fee_value: 0,
+      is_system: true,
+      account_type: null,
+    }];
+  }, [marketplaces]);
+
+  const normalizeMarketplace = useCallback((value: string) => value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '')
+    .trim(), []);
+
+  const resolveMarketplaceConfig = useCallback((
+    rawMarketplace: string | null | undefined,
+    commissionRateValue: number | null | undefined,
+    fixedFeeValue: number | null | undefined
+  ) => {
+    const raw = rawMarketplace ?? '';
+    const normalizedRaw = normalizeMarketplace(raw);
+    const hasExplicit = !!raw
+      && normalizedRaw !== 'null'
+      && normalizedRaw !== 'undefined'
+      && normalizedRaw !== 'semmarketplace';
+
+    const commissionRate = Number(commissionRateValue ?? 0);
+    const fixedFee = Number(fixedFeeValue ?? 0);
+    const shopee = marketplacesForResolution.find((mp) => normalizeMarketplace(mp.name) === 'shopee');
+
+    if (!hasExplicit) {
+      if (marketplacesForResolution.length === 1) return marketplacesForResolution[0];
+      if (shopee && commissionRate === 0 && fixedFee === 0) return shopee;
+    }
+
+    const byName = hasExplicit
+      ? marketplacesForResolution.find((mp) => normalizeMarketplace(mp.name) === normalizedRaw)
+      : undefined;
+    if (byName) return byName;
+
+    const byExactRates = !hasExplicit
+      ? marketplacesForResolution.find((mp) => {
+        const rateMatches = Math.abs(Number(mp.commission_rate ?? 0) - commissionRate) < 0.0001;
+        const fixedMatches = Math.abs(Number(mp.fixed_fee ?? 0) - fixedFee) < 0.01;
+        return rateMatches && fixedMatches && (Number(mp.commission_rate ?? 0) > 0 || Number(mp.fixed_fee ?? 0) > 0);
+      })
+      : undefined;
+    if (byExactRates) return byExactRates;
+
+    const byRateOnly = !hasExplicit
+      ? marketplacesForResolution.find((mp) => {
+        const rateMatches = Math.abs(Number(mp.commission_rate ?? 0) - commissionRate) < 0.0001;
+        return rateMatches && Number(mp.commission_rate ?? 0) > 0;
+      })
+      : undefined;
+    if (byRateOnly) return byRateOnly;
+
+    const byFixedOnly = !hasExplicit
+      ? marketplacesForResolution.find((mp) => {
+        const fixedMatches = Math.abs(Number(mp.fixed_fee ?? 0) - fixedFee) < 0.01;
+        return fixedMatches && Number(mp.fixed_fee ?? 0) > 0;
+      })
+      : undefined;
+    if (byFixedOnly) return byFixedOnly;
+
+    return undefined;
+  }, [marketplacesForResolution, normalizeMarketplace]);
+
+  const computeOrderRealProfit = useCallback((
+    order: unknown,
+    marketplaceConfig: Marketplace | undefined,
+    cameFromAffiliateOverride?: boolean
+  ) => {
+    const o = order as {
+      order_id?: string;
+      total_amount?: number;
+      shipping_cost?: number;
+      other_expenses?: number;
+      marketplace_commission?: number;
+      commission_rate?: number;
+      marketplace_fixed_fee?: number;
+      products?: {
+        quantity?: number;
+        unit_cost?: number;
+        supplier_fee_value?: string;
+        supplier_fee_type?: string;
+        supplier_gateway_fee_value?: string;
+        supplier_gateway_fee_type?: string;
+      }[];
+      tiktok_sfp_enabled?: boolean | string;
+      is_free_sample?: boolean | string;
+    };
+
+    const totalAmount = Number(o.total_amount ?? 0);
+    const isFreeSample = o.is_free_sample === true || String(o.is_free_sample ?? '') === 'true';
+    const products = o.products ?? [];
+
+    const totalBaseCost = products.reduce((sum, p) => {
+      const qty = Number(p.quantity ?? 1);
+      const unitCost = Number(p.unit_cost ?? 0);
+      return sum + unitCost * qty;
+    }, 0);
+
+    const supFeeProduct = products.reduce((best, p) => {
+      const v = Number(p.supplier_fee_value ?? 0);
+      return v > Number(best?.supplier_fee_value ?? 0) ? p : best;
+    }, products[0]);
+
+    const gwFeeProduct = products.reduce((best, p) => {
+      const v = Number(p.supplier_gateway_fee_value ?? 0);
+      return v > Number(best?.supplier_gateway_fee_value ?? 0) ? p : best;
+    }, products[0]);
+
+    const supFeeVal = Number(supFeeProduct?.supplier_fee_value ?? 0);
+    const supFeeType = supFeeProduct?.supplier_fee_type ?? 'percent';
+    const gwFeeVal = Number(gwFeeProduct?.supplier_gateway_fee_value ?? 0);
+    const gwFeeType = gwFeeProduct?.supplier_gateway_fee_type ?? 'fixed';
+
+    const orderSupplierFee = supFeeVal > 0
+      ? (supFeeType === 'percent' ? (totalBaseCost * supFeeVal) / 100 : supFeeVal)
+      : 0;
+    const orderGatewayFee = gwFeeVal > 0
+      ? (gwFeeType === 'fixed' ? gwFeeVal : (totalBaseCost * gwFeeVal) / 100)
+      : 0;
+
+    const totalProductCost = totalBaseCost + orderSupplierFee + orderGatewayFee;
+
+    const fixedFee = Number(marketplaceConfig?.fixed_fee ?? o.marketplace_fixed_fee ?? 0);
+    const commissionRate = Number(marketplaceConfig?.commission_rate ?? o.commission_rate ?? 0);
+    const affiliateRate = Number(marketplaceConfig?.affiliate_commission_rate ?? 0);
+
+    const cameFromAffiliate = cameFromAffiliateOverride ?? Boolean(o.order_id && affiliateByOrderIdRef.current?.[o.order_id]);
+    const affiliateCommission = isFreeSample
+      ? 0
+      : (cameFromAffiliate && affiliateRate > 0 ? (totalAmount * affiliateRate) / 100 : 0);
+
+    const sfpEnabled = o.tiktok_sfp_enabled === true || String(o.tiktok_sfp_enabled ?? '') === 'true';
+    const sfpFee = isFreeSample ? 0 : (sfpEnabled ? totalAmount * 0.06 : 0);
+
+    const commissionPercent = isFreeSample
+      ? 0
+      : (commissionRate > 0
+        ? (totalAmount * commissionRate) / 100
+        : Math.max(0, Number(o.marketplace_commission ?? 0) - fixedFee));
+
+    const shipping = Number(o.shipping_cost ?? 0);
+    const other = Number(o.other_expenses ?? 0);
+    const subtotalMarketplace = isFreeSample
+      ? 0
+      : (commissionPercent + fixedFee + sfpFee + shipping + other + affiliateCommission);
+
+    const realProfit = totalAmount - totalProductCost - subtotalMarketplace;
+
+    return {
+      realProfit,
+      isFreeSample,
+    };
+  }, []);
 
   const [openProduto, setOpenProduto] = useState(false);
   const [openMarketplace, setOpenMarketplace] = useState(false);
@@ -82,10 +255,26 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const chartRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef(data);
   dataRef.current = data;
+  const periodRef = useRef(period);
+  periodRef.current = period;
   // Estado de paginação por dataPointIndex — controla qual pedido está visível no tooltip
   const [tooltipPages, setTooltipPages] = useState<Record<number, number>>({});
   const tooltipPagesRef = useRef(tooltipPages);
   tooltipPagesRef.current = tooltipPages;
+
+  useEffect(() => {
+    let cancelled = false;
+    ReferenceService.getMarketplaces(organizationId)
+      .then((list) => {
+        if (!cancelled) setMarketplaces(list || []);
+      })
+      .catch(() => {
+        if (!cancelled) setMarketplaces([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [organizationId]);
 
   // Adicionar CSS global para manter tooltip visível ao passar mouse sobre ele
   useEffect(() => {
@@ -174,11 +363,23 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   const page = idx === dataPointIndex ? next : (tooltipPagesRef.current[idx] ?? 0);
                   const orders = item.orders_data ?? [];
                   if (orders.length > 0 && orders[page]) {
-                    return Number(orders[page].total_profit ?? 0);
+                    const o = orders[page] as unknown as {
+                      marketplace?: string;
+                      commission_rate?: number;
+                      marketplace_fixed_fee?: number;
+                    };
+                    const cfg = resolveMarketplaceConfig(
+                      o.marketplace,
+                      Number(o.commission_rate ?? 0),
+                      Number(o.marketplace_fixed_fee ?? 0)
+                    );
+                    return computeOrderRealProfit(orders[page], cfg).realProfit;
                   }
-                  return Number(item.total_revenue) - Number(item.total_cost);
+                  return Number(item.total_profit ?? 0);
                 });
-                instance.updateSeries([{ name: 'Lucro', data: newSeriesData }], false);
+                const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
+                const shouldAnimate = !reduceMotion && (periodRef.current === 'monthly' || periodRef.current === 'yearly');
+                instance.updateSeries([{ name: 'Lucro', data: newSeriesData }], shouldAnimate);
               }
             }
           }
@@ -193,96 +394,108 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               const order = periodData.orders_data?.[next];
 
               if (order) {
-                const marketplaceName = order.marketplace && order.marketplace !== 'null' && order.marketplace !== 'undefined'
-                  ? order.marketplace : 'Sem marketplace';
+                const rawMarketplace = (order as { marketplace?: string }).marketplace ?? '';
+                const normalizedRawMarketplace = normalizeMarketplace(rawMarketplace);
+                const hasExplicitMarketplace = !!rawMarketplace
+                  && normalizedRawMarketplace !== 'null'
+                  && normalizedRawMarketplace !== 'undefined'
+                  && normalizedRawMarketplace !== 'semmarketplace';
+                const resolvedMarketplaceConfig = resolveMarketplaceConfig(
+                  (order as { marketplace?: string }).marketplace,
+                  Number((order as { commission_rate?: number }).commission_rate ?? 0),
+                  Number((order as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0)
+                );
+                const marketplaceName = resolvedMarketplaceConfig?.name
+                  ?? (hasExplicitMarketplace ? rawMarketplace : 'Sem marketplace');
                 const customerName = (order as { customer_name?: string }).customer_name || 'Cliente não identificado';
                 const orderNumber = order.order_number || 'S/N';
                 const productNamesFromItems = (order.products || []).map((p: { name: string }) => p.name).filter(Boolean) as string[];
                 const mainProductName = (order as { product_name?: string }).product_name || productNamesFromItems[0] || 'Produto não vinculado';
                 const productCount = productNamesFromItems.length;
                 const productSku = (order as { product_sku?: string }).product_sku || ((order.products || [])[0] as { sku?: string })?.sku || null;
-                const orderProfit = Number(order.total_profit ?? 0);
-                const orderProfitColor = orderProfit >= 0 ? '#16a34a' : '#dc2626';
-                const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                const { realProfit, isFreeSample } = computeOrderRealProfit(order, resolvedMarketplaceConfig);
+                const profitLabel = realProfit >= 0 ? 'Lucro:' : 'Prejuízo:';
+                const profitValue = realProfit >= 0
+                  ? formatCurrency(realProfit)
+                  : `- ${formatCurrency(Math.abs(realProfit))}`;
+                const profitColor = isFreeSample ? '#e9d5ff' : (realProfit >= 0 ? '#16a34a' : '#dc2626');
+
+                const textPrimary = isFreeSample ? '#f3e8ff' : '#374151';
+                const textSecondary = isFreeSample ? '#d8b4fe' : '#6b7280';
+                const dividerColor = isFreeSample ? 'rgba(167,139,250,0.3)' : 'rgba(2,6,23,0.08)';
+                const navBtnBg = isFreeSample ? 'rgba(109,40,217,0.4)' : '#e5e7eb';
+                const navBtnColor = isFreeSample ? '#e9d5ff' : '#374151';
+                const navBtnDisabledBg = isFreeSample ? 'rgba(109,40,217,0.15)' : 'rgba(2,6,23,0.06)';
+                const navBtnDisabledColor = isFreeSample ? 'rgba(233,213,255,0.3)' : '#d1d5db';
 
                 const orderDetailData = {
                   order_id: order.order_id, order_number: orderNumber, marketplace: marketplaceName,
-                  marketplace_fixed_fee: Number((order as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0),
+                  marketplace_fixed_fee: Number(resolvedMarketplaceConfig?.fixed_fee ?? (order as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0),
                   customer_name: customerName, product_name: mainProductName, product_sku: productSku || undefined,
                   product_image_url: (order as { product_image_url?: string }).product_image_url || undefined,
                   products: order.products, total_amount: Number(order.total_amount ?? 0),
                   total_cost: Number(order.total_cost ?? 0),
                   product_cost_price: Number((order as { product_cost_price?: number }).product_cost_price ?? 0),
                   marketplace_commission: Number(order.marketplace_commission ?? 0),
-                  commission_rate: Number(order.commission_rate ?? 0),
+                  commission_rate: Number(resolvedMarketplaceConfig?.commission_rate ?? order.commission_rate ?? 0),
                   shipping_cost: Number(order.shipping_cost ?? 0),
                   other_expenses: Number(order.other_expenses ?? 0),
                   supplier_fee_value: (order as { supplier_fee_value?: string }).supplier_fee_value,
                   supplier_fee_type: (order as { supplier_fee_type?: string }).supplier_fee_type,
                   supplier_gateway_fee_value: (order as { supplier_gateway_fee_value?: string }).supplier_gateway_fee_value,
                   supplier_gateway_fee_type: (order as { supplier_gateway_fee_type?: string }).supplier_gateway_fee_type,
-                  total_profit: orderProfit,
+                  total_profit: realProfit,
                   tiktok_sfp_enabled: (order as { tiktok_sfp_enabled?: boolean | string }).tiktok_sfp_enabled === true
                     || String((order as { tiktok_sfp_enabled?: unknown }).tiktok_sfp_enabled) === 'true',
-                  is_free_sample: (order as { is_free_sample?: boolean | string }).is_free_sample === true
-                    || String((order as { is_free_sample?: unknown }).is_free_sample) === 'true',
+                  is_free_sample: isFreeSample,
                 };
 
                 const navHtml = `
-                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid #f3f4f6;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid ${dividerColor};">
                     <button data-tooltip-nav data-nav-dir="prev" data-nav-key="${key}" data-nav-max="${ordersCount - 1}"
-                      style="background:${next === 0 ? '#f3f4f6' : '#e5e7eb'};color:${next === 0 ? '#d1d5db' : '#374151'};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:${next === 0 ? 'default' : 'pointer'};font-weight:600;line-height:1;"
+                      style="background:${next === 0 ? navBtnDisabledBg : navBtnBg};color:${next === 0 ? navBtnDisabledColor : navBtnColor};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:${next === 0 ? 'default' : 'pointer'};font-weight:600;line-height:1;"
                       ${next === 0 ? 'disabled' : ''}>‹</button>
-                    <span style="font-size:11px;color:#6b7280;font-weight:500">${next + 1} / ${ordersCount} pedido${ordersCount > 1 ? 's' : ''}</span>
+                    <span style="font-size:11px;color:${textSecondary};font-weight:500">${next + 1} / ${ordersCount} pedido${ordersCount > 1 ? 's' : ''}</span>
                     <button data-tooltip-nav data-nav-dir="next" data-nav-key="${key}" data-nav-max="${ordersCount - 1}"
-                      style="background:${next === ordersCount - 1 ? '#f3f4f6' : '#e5e7eb'};color:${next === ordersCount - 1 ? '#d1d5db' : '#374151'};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:${next === ordersCount - 1 ? 'default' : 'pointer'};font-weight:600;line-height:1;"
+                      style="background:${next === ordersCount - 1 ? navBtnDisabledBg : navBtnBg};color:${next === ordersCount - 1 ? navBtnDisabledColor : navBtnColor};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:${next === ordersCount - 1 ? 'default' : 'pointer'};font-weight:600;line-height:1;"
                       ${next === ordersCount - 1 ? 'disabled' : ''}>›</button>
                   </div>`;
 
-                const newOrderHtml = `
-                  <div style="padding-top:6px;border-top:1px solid #f3f4f6;">
-                    ${navHtml}
-                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
-                      <div style="flex:1;min-width:0">
-                        <div style="font-size:11px;color:#374151;font-weight:600;margin-bottom:2px">${customerName}</div>
-                        <div style="font-size:10px;color:#6b7280;margin-bottom:2px">🏪 ${marketplaceName} • Pedido #${orderNumber}</div>
-                        <div style="font-size:10px;color:#374151;margin-bottom:2px">
-                          📦 ${mainProductName.length > 28 ? mainProductName.substring(0, 28) + '...' : mainProductName}
-                          ${productSku ? ` (SKU: ${productSku})` : ''}
-                        </div>
-                        ${productCount > 1 ? `<div style="font-size:10px;color:#9ca3af">+${productCount - 1} produto(s)</div>` : ''}
-                      </div>
-                      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
-                        <button data-detail-order-btn data-order-detail='${JSON.stringify(orderDetailData).replace(/'/g, "&apos;")}'
-                          style="background:#3b82f6;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer;font-weight:500;white-space:nowrap;">Detalhar</button>
-                        <button data-delete-order-btn data-order-id="${order.order_id}" data-order-number="${orderNumber}" data-order-store="${marketplaceName}"
-                          style="background:#ef4444;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer;font-weight:500;white-space:nowrap;">Excluir</button>
-                      </div>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;font-size:11px;padding-top:4px;border-top:1px dashed #e5e7eb">
-                      <span style="color:#6b7280">Custo:</span>
-                      <span style="font-weight:600;color:#ef4444">${fmt(Number(order.total_cost ?? 0))}</span>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;font-size:11px;padding-top:2px">
-                      <span style="color:#6b7280">Lucro:</span>
-                      <span style="font-weight:700;color:${orderProfitColor}">${fmt(orderProfit)}</span>
-                    </div>
-                  </div>`;
+                const freeSampleBadge = isFreeSample ? `
+                  <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;padding:5px 8px;background:rgba(109,40,217,0.35);border-radius:6px;border:1px solid rgba(167,139,250,0.4);">
+                    <span style="font-size:13px;">🎁</span>
+                    <span style="font-size:10px;font-weight:800;color:#e9d5ff;letter-spacing:0.08em;text-transform:uppercase;">Pedido de Amostra Grátis</span>
+                  </div>
+                ` : '';
 
-                // Substituir a seção do pedido no tooltip
-                const tooltipInner = tooltipEl.querySelector('.apexcharts-tooltip-custom');
-                if (tooltipInner) {
-                  const divider = tooltipInner.querySelector('div[style*="height:1px"]');
-                  if (divider) {
-                    let sibling = divider.nextElementSibling;
-                    while (sibling) {
-                      const nextSib = sibling.nextElementSibling;
-                      sibling.remove();
-                      sibling = nextSib;
-                    }
-                    divider.insertAdjacentHTML('afterend', newOrderHtml);
-                  }
-                }
+                const newOrderInnerHtml = `
+                  ${navHtml}
+                  ${freeSampleBadge}
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:11px;color:${textPrimary};font-weight:600;margin-bottom:2px">${customerName}</div>
+                      <div style="font-size:10px;color:${textSecondary};margin-bottom:2px">🏪 ${marketplaceName} • Pedido #${orderNumber}</div>
+                      <div style="font-size:10px;color:${textPrimary};margin-bottom:2px">
+                        📦 ${mainProductName.length > 28 ? mainProductName.substring(0, 28) + '...' : mainProductName}
+                        ${productSku ? ` (SKU: ${productSku})` : ''}
+                      </div>
+                      ${productCount > 1 ? `<div style="font-size:10px;color:${textSecondary}">+${productCount - 1} produto(s)</div>` : ''}
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+                      <button data-detail-order-btn data-order-detail='${JSON.stringify(orderDetailData).replace(/'/g, "&apos;")}'
+                        style="background:#3b82f6;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer;font-weight:500;white-space:nowrap;">Detalhar</button>
+                      <button data-delete-order-btn data-order-id="${order.order_id}" data-order-number="${orderNumber}" data-order-store="${marketplaceName}"
+                        style="background:#ef4444;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer;font-weight:500;white-space:nowrap;">Excluir</button>
+                    </div>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;font-size:11px;padding-top:6px;border-top:1px solid ${dividerColor}">
+                    <span style="color:${textSecondary};font-weight:600">${profitLabel}</span>
+                    <span style="font-weight:800;color:${profitColor}">${profitValue}</span>
+                  </div>
+                `;
+
+                const orderRoot = tooltipEl.querySelector('[data-tooltip-order-root]') as HTMLElement | null;
+                if (orderRoot) orderRoot.innerHTML = newOrderInnerHtml;
 
               }
             }
@@ -302,6 +515,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           try {
             const orderData = JSON.parse(orderDataStr);
             setSelectedOrder(orderData);
+            setCameFromAffiliate(Boolean(affiliateByOrderIdRef.current?.[orderData.order_id]));
             setOpenProduto(false);
             setOpenMarketplace(false);
             setDetailDialogOpen(true);
@@ -318,7 +532,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     return () => {
       document.removeEventListener('click', handleTooltipClick, true);
     };
-  }, []);
+  }, [computeOrderRealProfit, normalizeMarketplace, resolveMarketplaceConfig]);
 
   // Refetch quando refreshTrigger mudar (apenas se for > 0)
   React.useEffect(() => {
@@ -404,6 +618,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       toolbar: { show: false },
       zoom: { enabled: false },
       fontFamily: 'inherit',
+      animations: {
+        enabled: (period === 'monthly' || period === 'yearly') && (typeof window === 'undefined'
+          ? true
+          : !(window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false)),
+        speed: 350,
+        animateGradually: { enabled: false },
+        dynamicAnimation: { enabled: true, speed: 350 },
+      },
     },
     dataLabels: { enabled: false },
     stroke: {
@@ -413,8 +635,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     markers: {
       size: 6,
       colors: ['#8b5cf6'],
-      strokeColors: '#fff',
-      strokeWidth: 2,
+      strokeColors: '#ede9fe',
+      strokeWidth: 1,
       hover: {
         size: 8,
       },
@@ -465,13 +687,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const currentData = dataRef.current;
         if (!currentData[dataPointIndex]) return '';
         const periodData = currentData[dataPointIndex];
-        const revenue = Number(periodData.total_revenue);
-        const cost = Number(periodData.total_cost);
-        // Usar total_profit do banco (já inclui comissão marketplace)
-        const profit = Number(periodData.total_profit);
-
         const ordersCount = periodData.orders_data?.length || 0;
-        const profitColor = profit >= 0 ? '#16a34a' : '#dc2626';
 
         // Estado de paginação do tooltip por período (via estado React)
         const stateKey = `tooltip_page_${dataPointIndex}`;
@@ -479,41 +695,54 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const order = periodData.orders_data?.[currentPage];
 
         // Gerar HTML de um único pedido (paginado)
-        const orderHtml = order ? (() => {
-          const marketplaceName = order.marketplace && order.marketplace !== 'null' && order.marketplace !== 'undefined'
-            ? order.marketplace 
-            : 'Sem marketplace';
+        const { orderInnerHtml, orderIsFreeSample } = order ? (() => {
+          const rawMarketplace = (order as { marketplace?: string }).marketplace ?? '';
+          const normalizedRawMarketplace = normalizeMarketplace(rawMarketplace);
+          const hasExplicitMarketplace = !!rawMarketplace
+            && normalizedRawMarketplace !== 'null'
+            && normalizedRawMarketplace !== 'undefined'
+            && normalizedRawMarketplace !== 'semmarketplace';
+          const resolvedMarketplaceConfig = resolveMarketplaceConfig(
+            (order as { marketplace?: string }).marketplace,
+            Number((order as { commission_rate?: number }).commission_rate ?? 0),
+            Number((order as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0)
+          );
+          const marketplaceName = resolvedMarketplaceConfig?.name
+            ?? (hasExplicitMarketplace ? rawMarketplace : 'Sem marketplace');
           const customerName = (order as { customer_name?: string }).customer_name || 'Cliente não identificado';
           const orderNumber = order.order_number || 'S/N';
-          const isFreeSample = (order as { is_free_sample?: boolean }).is_free_sample === true
-            || String((order as { is_free_sample?: unknown }).is_free_sample) === 'true';
-          
+
+          const { realProfit, isFreeSample } = computeOrderRealProfit(order, resolvedMarketplaceConfig);
+          const profitColor = isFreeSample ? '#e9d5ff' : (realProfit >= 0 ? '#16a34a' : '#dc2626');
+          const profitLabel = realProfit >= 0 ? 'Lucro:' : 'Prejuízo:';
+          const profitValue = realProfit >= 0
+            ? formatCurrency(realProfit)
+            : `- ${formatCurrency(Math.abs(realProfit))}`;
+
           const productNamesFromItems = (order.products || [])
             .map((p: { name: string }) => p.name)
             .filter(Boolean) as string[];
           const mainProductName = (order as { product_name?: string }).product_name || productNamesFromItems[0] || 'Produto não vinculado';
           const productCount = productNamesFromItems.length;
-          const productSku = (order as { product_sku?: string }).product_sku || 
+          const productSku = (order as { product_sku?: string }).product_sku ||
             ((order.products || [])[0] as { sku?: string })?.sku || null;
           const safeStore = marketplaceName;
           const orderRevenue = Number(order.total_amount ?? 0);
-          const orderProfit = Number(order.total_profit ?? 0);
-          const orderProfitColor = isFreeSample ? '#e9d5ff' : (orderProfit >= 0 ? '#16a34a' : '#dc2626');
 
           // Cores do tema: branco para texto normal, roxo para amostra grátis
           const textPrimary = isFreeSample ? '#f3e8ff' : '#374151';
           const textSecondary = isFreeSample ? '#d8b4fe' : '#6b7280';
-          const dividerColor = isFreeSample ? 'rgba(167,139,250,0.3)' : '#f3f4f6';
+          const dividerColor = isFreeSample ? 'rgba(167,139,250,0.3)' : 'rgba(2,6,23,0.08)';
           const navBtnBg = isFreeSample ? 'rgba(109,40,217,0.4)' : '#e5e7eb';
           const navBtnColor = isFreeSample ? '#e9d5ff' : '#374151';
-          const navBtnDisabledBg = isFreeSample ? 'rgba(109,40,217,0.15)' : '#f3f4f6';
+          const navBtnDisabledBg = isFreeSample ? 'rgba(109,40,217,0.15)' : 'rgba(2,6,23,0.06)';
           const navBtnDisabledColor = isFreeSample ? 'rgba(233,213,255,0.3)' : '#d1d5db';
 
           const orderDetailData: OrderDetail = {
             order_id: order.order_id,
             order_number: orderNumber,
             marketplace: marketplaceName,
-            marketplace_fixed_fee: Number((order as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0),
+            marketplace_fixed_fee: Number(resolvedMarketplaceConfig?.fixed_fee ?? (order as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0),
             customer_name: customerName,
             product_name: mainProductName,
             product_sku: productSku || undefined,
@@ -523,14 +752,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             total_cost: Number(order.total_cost ?? 0),
             product_cost_price: Number((order as { product_cost_price?: number }).product_cost_price ?? 0),
             marketplace_commission: Number(order.marketplace_commission ?? 0),
-            commission_rate: Number(order.commission_rate ?? 0),
+            commission_rate: Number(resolvedMarketplaceConfig?.commission_rate ?? order.commission_rate ?? 0),
             shipping_cost: Number(order.shipping_cost ?? 0),
             other_expenses: Number(order.other_expenses ?? 0),
             supplier_fee_value: (order as { supplier_fee_value?: string }).supplier_fee_value,
             supplier_fee_type: (order as { supplier_fee_type?: string }).supplier_fee_type,
             supplier_gateway_fee_value: (order as { supplier_gateway_fee_value?: string }).supplier_gateway_fee_value,
             supplier_gateway_fee_type: (order as { supplier_gateway_fee_type?: string }).supplier_gateway_fee_type,
-            total_profit: orderProfit,
+            total_profit: realProfit,
             tiktok_sfp_enabled: (order as { tiktok_sfp_enabled?: boolean | string }).tiktok_sfp_enabled === true
               || String((order as { tiktok_sfp_enabled?: unknown }).tiktok_sfp_enabled) === 'true',
             is_free_sample: isFreeSample,
@@ -567,8 +796,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             </div>
           ` : '';
 
-          return `
-            <div style="padding-top:6px;border-top:1px solid ${dividerColor};">
+          return {
+            orderIsFreeSample: isFreeSample,
+            orderInnerHtml: `
               ${navHtml}
               ${freeSampleBadge}
               <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
@@ -600,63 +830,39 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   >Excluir</button>
                 </div>
               </div>
-              <div style="display:flex;justify-content:space-between;font-size:11px;padding-top:4px;border-top:1px dashed ${dividerColor}">
-                <span style="color:${textSecondary}">Custo:</span>
-                <span style="font-weight:600;color:#ef4444">${formatCurrency(Math.abs(Number(order.total_cost ?? 0)))}</span>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding-top:6px;border-top:1px solid ${dividerColor}">
+                <span style="color:${textSecondary};font-weight:600">${profitLabel}</span>
+                <span style="font-weight:800;color:${profitColor}">${profitValue}</span>
               </div>
-              <div style="display:flex;justify-content:space-between;font-size:11px;padding-top:2px">
-                <span style="color:${textSecondary}">Lucro:</span>
-                <span style="font-weight:700;color:${orderProfitColor}">${formatCurrency(orderProfit)}</span>
-              </div>
-            </div>
-          `;
-        })() : '';
+            `,
+          };
+        })() : { orderInnerHtml: '', orderIsFreeSample: false };
 
         // Detectar se o pedido atual é amostra grátis para colorir o tooltip
-        const currentOrderIsFreeSample = order
-          ? (order as { is_free_sample?: boolean | string }).is_free_sample === true
-            || String((order as { is_free_sample?: unknown }).is_free_sample) === 'true'
-          : false;
+        const currentOrderIsFreeSample = orderIsFreeSample;
         const tooltipBg = currentOrderIsFreeSample
           ? 'linear-gradient(135deg, #3b0764 0%, #4c1d95 50%, #2e1065 100%)'
-          : '#fff';
-        const tooltipBorder = currentOrderIsFreeSample ? '1px solid rgba(167,139,250,0.5)' : '1px solid #e5e7eb';
+          : 'rgba(255,255,255,0.98)';
+        const tooltipBorder = currentOrderIsFreeSample
+          ? '1px solid rgba(167,139,250,0.5)'
+          : '1px solid rgba(2,6,23,0.08)';
+        const tooltipShadow = currentOrderIsFreeSample
+          ? '0 8px 34px rgba(109,40,217,0.35)'
+          : '0 18px 50px rgba(2,6,23,0.14)';
         const tooltipHeaderColor = currentOrderIsFreeSample ? '#e9d5ff' : '#111827';
         const tooltipSubColor = currentOrderIsFreeSample ? '#c4b5fd' : '#6b7280';
-        const tooltipBadgeBg = currentOrderIsFreeSample ? 'rgba(109,40,217,0.4)' : '#f3f4f6';
+        const tooltipBadgeBg = currentOrderIsFreeSample ? 'rgba(109,40,217,0.4)' : 'rgba(2,6,23,0.06)';
         const tooltipBadgeColor = currentOrderIsFreeSample ? '#e9d5ff' : '#6b7280';
-        const tooltipValueColor = currentOrderIsFreeSample ? '#f3e8ff' : '#111827';
-        const tooltipDivider = currentOrderIsFreeSample ? 'rgba(167,139,250,0.3)' : '#e5e7eb';
 
         return `
-          <div class="apexcharts-tooltip-custom" style="background:${tooltipBg};border:${tooltipBorder};border-radius:8px;padding:10px 12px;box-shadow:0 4px 24px rgba(109,40,217,0.3);min-width:270px;max-width:360px;pointer-events:auto;">
+          <div class="apexcharts-tooltip-custom" style="background:${tooltipBg};border:${tooltipBorder};border-radius:12px;padding:10px 12px;box-shadow:${tooltipShadow};backdrop-filter:blur(10px);min-width:270px;max-width:360px;pointer-events:auto;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
               <span style="font-weight:600;color:${tooltipHeaderColor};font-size:13px">${periodData.period_label}</span>
               <span style="font-size:11px;color:${tooltipBadgeColor};background:${tooltipBadgeBg};padding:2px 8px;border-radius:99px;">${ordersCount} pedido${ordersCount !== 1 ? 's' : ''}</span>
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-              <div style="display:flex;align-items:center;gap:6px">
-                <div style="width:10px;height:10px;border-radius:50%;background:#45B369"></div>
-                <span style="font-size:12px;color:${tooltipSubColor}">Receita total:</span>
-              </div>
-              <span style="font-size:12px;font-weight:600;color:${tooltipValueColor}">${formatCurrency(revenue)}</span>
+            <div data-tooltip-order-root style="padding-top:6px;margin-top:6px;">
+              ${orderInnerHtml || `<div style="font-size:11px;color:${tooltipSubColor}">Sem pedidos</div>`}
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-              <div style="display:flex;align-items:center;gap:6px">
-                <div style="width:10px;height:10px;border-radius:50%;background:#EF4A00"></div>
-                <span style="font-size:12px;color:${tooltipSubColor}">Custo total:</span>
-              </div>
-              <span style="font-size:12px;font-weight:600;color:${tooltipValueColor}">${formatCurrency(cost)}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-              <div style="display:flex;align-items:center;gap:6px">
-                <div style="width:10px;height:10px;border-radius:50%;background:#8b5cf6"></div>
-                <span style="font-size:12px;color:${tooltipSubColor}">Lucro total:</span>
-              </div>
-              <span style="font-size:12px;font-weight:700;color:${profitColor}">${formatCurrency(profit)}</span>
-            </div>
-            <div style="height:1px;background:${tooltipDivider};margin-bottom:6px;"></div>
-            ${orderHtml}
           </div>`;
       },
     },
@@ -679,7 +885,17 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const currentPage = tooltipPages[idx] ?? 0;
         const orders = item.orders_data ?? [];
         if (orders.length > 0 && orders[currentPage]) {
-          return Number(orders[currentPage].total_profit ?? 0);
+          const o = orders[currentPage] as unknown as {
+            marketplace?: string;
+            commission_rate?: number;
+            marketplace_fixed_fee?: number;
+          };
+          const cfg = resolveMarketplaceConfig(
+            o.marketplace,
+            Number(o.commission_rate ?? 0),
+            Number(o.marketplace_fixed_fee ?? 0)
+          );
+          return computeOrderRealProfit(orders[currentPage], cfg).realProfit;
         }
         // Usar total_profit do período (já inclui todas as taxas)
         return Number(item.total_profit ?? 0);
@@ -713,6 +929,21 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           {selectedOrder && (() => {
             const products = selectedOrder.products ?? [];
             const hasMultipleProducts = products.length > 1;
+            const rawMarketplace = selectedOrder.marketplace ?? '';
+            const normalizedRawMarketplace = normalizeMarketplace(rawMarketplace);
+            const hasExplicitMarketplace = !!rawMarketplace
+              && normalizedRawMarketplace !== 'null'
+              && normalizedRawMarketplace !== 'undefined'
+              && normalizedRawMarketplace !== 'semmarketplace';
+
+            const resolvedMarketplaceConfig = resolveMarketplaceConfig(
+              selectedOrder.marketplace,
+              selectedOrder.commission_rate,
+              selectedOrder.marketplace_fixed_fee
+            );
+
+            const resolvedMarketplaceName = resolvedMarketplaceConfig?.name
+              ?? (hasExplicitMarketplace ? rawMarketplace : 'Sem marketplace');
 
             // Calcular custos por produto usando os dados de cada item
             const productItems = products.map(p => {
@@ -753,33 +984,22 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const totalProductCost = totalBaseCost + orderSupplierFee + orderGatewayFee;
             const isFreeSample = selectedOrder.is_free_sample === true;
             
-            // Calcular taxas da Shopee baseado no preço de venda
-            const getShopeeRates = (price: number): { commission: number; fixed: number } => {
-              if (price <= 79.99) return { commission: 20, fixed: 4 };
-              if (price <= 99.99) return { commission: 14, fixed: 16 };
-              if (price <= 199.99) return { commission: 14, fixed: 20 };
-              if (price <= 499.99) return { commission: 14, fixed: 26 };
-              return { commission: 14, fixed: 26 };
-            };
-            
-            // Determinar taxas baseado no marketplace
-            let fixedFee = selectedOrder.marketplace_fixed_fee ?? 0;
-            let commissionRate = selectedOrder.commission_rate ?? 0;
-            
-            // Se for Shopee, calcular taxas baseadas no preço de venda
-            if (selectedOrder.marketplace?.toLowerCase() === 'shopee') {
-              const shopeeRates = getShopeeRates(selectedOrder.total_amount);
-              commissionRate = shopeeRates.commission;
-              fixedFee = shopeeRates.fixed;
-            }
+            const fixedFee = Number(resolvedMarketplaceConfig?.fixed_fee ?? selectedOrder.marketplace_fixed_fee ?? 0);
+            const commissionRate = Number(resolvedMarketplaceConfig?.commission_rate ?? selectedOrder.commission_rate ?? 0);
+            const affiliateRate = Number(resolvedMarketplaceConfig?.affiliate_commission_rate ?? 0);
             
             // Para amostras grátis: sem custo de marketplace
             const commissionPercent = isFreeSample ? 0 : (commissionRate > 0
               ? (selectedOrder.total_amount * commissionRate) / 100
               : Math.max(0, selectedOrder.marketplace_commission - fixedFee));
+            const affiliateCommission = isFreeSample
+              ? 0
+              : (cameFromAffiliate && affiliateRate > 0
+                ? (selectedOrder.total_amount * affiliateRate) / 100
+                : 0);
             const sfpEnabled = !isFreeSample && selectedOrder.tiktok_sfp_enabled === true;
             const sfpFee = sfpEnabled ? selectedOrder.total_amount * 0.06 : 0;
-            const subtotalMarketplace = isFreeSample ? 0 : (commissionPercent + fixedFee + sfpFee + selectedOrder.shipping_cost + selectedOrder.other_expenses);
+            const subtotalMarketplace = isFreeSample ? 0 : (commissionPercent + affiliateCommission + fixedFee + sfpFee + selectedOrder.shipping_cost + selectedOrder.other_expenses);
             const realProfit = isFreeSample ? -totalProductCost : (selectedOrder.total_amount - totalProductCost - subtotalMarketplace);
             const margin = selectedOrder.total_amount > 0
               ? ((realProfit / selectedOrder.total_amount) * 100).toFixed(1) : '0.0';
@@ -814,7 +1034,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   </div>
                   <div className="absolute top-3 right-12 z-10">
                     <span className="inline-flex items-center bg-orange-500/90 backdrop-blur-sm text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-lg shadow-orange-900/40">
-                      {selectedOrder.marketplace}
+                      {resolvedMarketplaceName}
                     </span>
                   </div>
 
@@ -872,7 +1092,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   </div>
 
                   {/* Preço de venda — accordion por item se múltiplos */}
-                  <div className="rounded-xl border border-zinc-800/80 overflow-hidden">
+                  <div className="rounded-xl overflow-hidden bg-zinc-900/30">
                     <div className="flex items-center justify-between bg-zinc-900 px-4 py-3">
                       <div className="flex items-center gap-2 text-zinc-400 text-sm">
                         <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -903,7 +1123,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   </div>
 
                   {/* Custo do Produto — accordion por item */}
-                  <div className="rounded-xl border border-red-900/50 overflow-hidden">
+                  <div className="rounded-xl overflow-hidden bg-red-950/15">
                     <button
                       onClick={() => setOpenProduto(v => !v)}
                       className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-red-950/60 to-zinc-900/60 hover:from-red-950/80 transition-colors cursor-pointer"
@@ -922,7 +1142,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       </div>
                     </button>
                     {openProduto && (
-                      <div className="bg-zinc-900/40 border-t border-red-900/30">
+                      <div className="bg-zinc-900/40 border-t border-red-950/20">
                         {/* Itens — apenas custo base por produto */}
                         <div className="divide-y divide-zinc-800/30">
                           {productItems.map((p, i) => (
@@ -937,7 +1157,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         </div>
                         {/* Taxas do fornecedor — aplicadas sobre o custo total */}
                         {(orderSupplierFee > 0 || orderGatewayFee > 0) && (
-                          <div className="border-t border-red-900/40 bg-red-950/20 px-4 py-3 space-y-2">
+                          <div className="border-t border-red-950/30 bg-red-950/15 px-4 py-3 space-y-2">
                             <p className="text-[10px] font-semibold text-red-500/70 uppercase tracking-widest mb-1">Taxas do Fornecedor</p>
                             {orderSupplierFee > 0 && (
                               <div className="flex justify-between items-center">
@@ -968,7 +1188,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                               </div>
                             )}
                             {/* Subtotal custo produto */}
-                            <div className="flex justify-between items-center pt-1.5 border-t border-red-900/30">
+                            <div className="flex justify-between items-center pt-1.5 border-t border-red-950/20">
                               <span className="text-[11px] text-zinc-400 font-medium">Subtotal custo</span>
                               <span className="text-red-400 text-[12px] font-bold tabular-nums">-{formatCurrency(totalProductCost)}</span>
                             </div>
@@ -980,7 +1200,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
                   {/* Custo Marketplace — oculto para amostras grátis */}
                   {!isFreeSample && (
-                  <div className="rounded-xl border border-orange-900/50 overflow-hidden">
+                  <div className="rounded-xl overflow-hidden bg-orange-950/15">
                     <button
                       onClick={() => setOpenMarketplace(v => !v)}
                       className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-orange-950/60 to-zinc-900/60 hover:from-orange-950/80 transition-colors cursor-pointer"
@@ -989,7 +1209,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         <svg className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
-                        <span className="text-orange-400 font-semibold text-xs uppercase tracking-wide">Custo Marketplace — {selectedOrder.marketplace}</span>
+                        <span className="text-orange-400 font-semibold text-xs uppercase tracking-wide">Custo Marketplace — {resolvedMarketplaceName}</span>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-orange-400 font-semibold text-sm tabular-nums">-{formatCurrency(subtotalMarketplace)}</span>
@@ -999,11 +1219,35 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       </div>
                     </button>
                     {openMarketplace && (
-                      <div className="px-4 py-3 space-y-2 bg-zinc-900/40 border-t border-orange-900/30">
+                      <div className="px-4 py-3 space-y-2 bg-zinc-900/40 border-t border-orange-950/20">
                         {commissionPercent > 0 && (
                           <div className="flex justify-between text-sm">
                             <span className="text-zinc-400">Comissão{commissionRate > 0 ? ` (${commissionRate}%)` : ''}</span>
                             <span className="text-orange-400 font-medium tabular-nums">-{formatCurrency(commissionPercent)}</span>
+                          </div>
+                        )}
+                        {affiliateRate > 0 && (
+                          <div className="flex items-center justify-between pt-2 mt-2 border-t border-orange-950/20">
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                checked={cameFromAffiliate}
+                                onCheckedChange={(v) => {
+                                  const checked = v === true;
+                                  setCameFromAffiliate(checked);
+                                  if (selectedOrder?.order_id) {
+                                    setAffiliateByOrderId((prev) => ({ ...prev, [selectedOrder.order_id]: checked }));
+                                  }
+                                }}
+                              />
+                              <span className="text-zinc-400 text-sm select-none">Veio por afiliado</span>
+                            </div>
+                            <span className="text-[11px] text-zinc-600 font-mono">{affiliateRate}%</span>
+                          </div>
+                        )}
+                        {affiliateCommission > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-zinc-400">Comissão afiliado ({affiliateRate}%)</span>
+                            <span className="text-orange-400 font-medium tabular-nums">-{formatCurrency(affiliateCommission)}</span>
                           </div>
                         )}
                         {fixedFee > 0 && (
