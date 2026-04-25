@@ -291,10 +291,20 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
           return sum + profit;
         }, 0);
 
-        // Buscar pedidos do período anterior
-        const { data: previousOrders, error: previousOrdersError } = await supabase
+        // Buscar pedidos do período anterior para calcular lucro anterior
+        const { data: previousOrdersData, error: previousOrdersError } = await supabase
           .from('orders')
-          .select('id, customer_id')
+          .select(`
+            id,
+            customer_id,
+            total_amount,
+            marketplace_id,
+            shipping_cost,
+            other_expenses,
+            marketplace_commission,
+            is_free_sample,
+            order_date
+          `)
           .eq('organization_id', organizationId)
           .gte('order_date', dateRange.previous.start)
           .lte('order_date', dateRange.previous.end)
@@ -302,13 +312,82 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
 
         if (previousOrdersError) throw previousOrdersError;
 
-        // Buscar total de produtos
+        // Buscar itens dos pedidos anteriores
+        const previousOrderIds = (previousOrdersData || []).map(o => o.id);
+        let previousTotalProfit = 0;
+        
+        if (previousOrderIds.length > 0) {
+          const { data: previousOrderItems, error: previousItemsError } = await supabase
+            .from('order_items')
+            .select(`
+              order_id,
+              quantity,
+              unit_cost,
+              products!inner(
+                supplier_fee_value,
+                supplier_fee_type,
+                supplier_gateway_fee_value,
+                supplier_gateway_fee_type
+              )
+            `)
+            .in('order_id', previousOrderIds);
+
+          if (!previousItemsError) {
+            // Agrupar itens por pedido anterior
+            const previousItemsByOrder = (previousOrderItems || []).reduce((acc: Record<string, unknown[]>, item: Record<string, unknown>) => {
+              const orderId = item.order_id as string;
+              if (!acc[orderId]) acc[orderId] = [];
+              acc[orderId].push({
+                quantity: item.quantity,
+                unit_cost: item.unit_cost,
+                supplier_fee_value: (item.products as Record<string, unknown>)?.supplier_fee_value || '0',
+                supplier_fee_type: (item.products as Record<string, unknown>)?.supplier_fee_type || 'percent',
+                supplier_gateway_fee_value: (item.products as Record<string, unknown>)?.supplier_gateway_fee_value || '0',
+                supplier_gateway_fee_type: (item.products as Record<string, unknown>)?.supplier_gateway_fee_type || 'fixed'
+              });
+              return acc;
+            }, {});
+
+            // Processar pedidos anteriores
+            const processedPreviousOrders = (previousOrdersData || [])
+              .filter(order => previousItemsByOrder[order.id]?.length > 0)
+              .map(order => {
+                const marketplaceName = order.marketplace_id ? marketplaceMap[order.marketplace_id] || '' : '';
+                return {
+                  ...order,
+                  order_id: order.id,
+                  marketplace: marketplaceName,
+                  products: previousItemsByOrder[order.id] || []
+                };
+              }) as OrderWithProducts[];
+
+            // Calcular lucro total do período anterior
+            previousTotalProfit = processedPreviousOrders.reduce((sum, order) => {
+              const profit = calculateOrderProfit(order);
+              return sum + profit;
+            }, 0);
+          }
+        }
+
+        // Buscar total de produtos do período atual
         const { count: productsCount, error: productsError } = await supabase
           .from('products')
           .select('*', { count: 'exact', head: true })
-          .eq('organization_id', organizationId);
+          .eq('organization_id', organizationId)
+          .gte('created_at', dateRange.current.start)
+          .lte('created_at', dateRange.current.end);
 
         if (productsError) throw productsError;
+
+        // Buscar total de produtos do período anterior
+        const { count: previousProductsCount, error: previousProductsError } = await supabase
+          .from('products')
+          .select('*', { count: 'exact', head: true })
+          .eq('organization_id', organizationId)
+          .gte('created_at', dateRange.previous.start)
+          .lte('created_at', dateRange.previous.end);
+
+        if (previousProductsError) throw previousProductsError;
 
         // Calcular clientes únicos
         const currentUniqueCustomers = new Set(
@@ -317,33 +396,42 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
             .filter(Boolean)
         );
         const previousUniqueCustomers = new Set(
-          (previousOrders || [])
+          (previousOrdersData || [])
             .map(order => order.customer_id)
             .filter(Boolean)
         );
 
         const totalOrders = processedCurrentOrders.length;
-        const previousTotalOrders = (previousOrders || []).length;
+        const previousTotalOrders = (previousOrdersData || []).length;
         const totalCustomers = currentUniqueCustomers.size;
         const previousTotalCustomers = previousUniqueCustomers.size;
 
         // Calcular mudanças percentuais
+        const revenueChange = previousTotalProfit !== 0
+          ? ((totalProfit - previousTotalProfit) / Math.abs(previousTotalProfit)) * 100
+          : (totalProfit !== 0 ? 100 : 0);
+        
         const ordersChange = previousTotalOrders > 0 
           ? ((totalOrders - previousTotalOrders) / previousTotalOrders) * 100 
-          : 0;
+          : (totalOrders > 0 ? 100 : 0);
+        
         const customersChange = previousTotalCustomers > 0 
           ? ((totalCustomers - previousTotalCustomers) / previousTotalCustomers) * 100 
-          : 0;
+          : (totalCustomers > 0 ? 100 : 0);
+        
+        const productsChange = (previousProductsCount || 0) > 0
+          ? (((productsCount || 0) - (previousProductsCount || 0)) / (previousProductsCount || 0)) * 100
+          : ((productsCount || 0) > 0 ? 100 : 0);
 
         setStats({
           totalRevenue: totalProfit,
           totalOrders,
           totalCustomers,
           totalProducts: productsCount || 0,
-          revenueChange: 0, // Pode ser calculado se necessário
+          revenueChange: Math.round(revenueChange),
           ordersChange: Math.round(ordersChange),
           customersChange: Math.round(customersChange),
-          productsChange: 0, // Produtos não mudam por período
+          productsChange: Math.round(productsChange),
         });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erro ao carregar estatísticas');
