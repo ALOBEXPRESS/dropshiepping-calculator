@@ -92,7 +92,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     if (externalPeriod && externalPeriod !== period) {
       setPeriod(externalPeriod);
     }
-  }, [externalPeriod]);
+  }, [externalPeriod, period]);
 
   // Notificar mudança de período para o componente pai
   const handlePeriodChange = useCallback((newPeriod: PeriodFilter) => {

@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useSettings } from '@/contexts/SettingsContext';
 import {
   RevenueReportChart,
-  CustomersStatistics,
   StockReportTable,
   HeroSection,
   AnalyticsTabs,

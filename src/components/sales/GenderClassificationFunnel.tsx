@@ -108,12 +108,11 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
 
   useEffect(() => {
     fetchStats();
-  }, [organizationId, refreshTrigger]);
+  }, [organizationId, refreshTrigger, fetchStats]);
 
   // Calcular ângulos para o donut chart
   const maleAngle = (stats.malePercentage / 100) * 360;
   const femaleAngle = (stats.femalePercentage / 100) * 360;
-  const unclassifiedAngle = (stats.unclassifiedPercentage / 100) * 360;
 
   // Criar path do SVG para o donut chart
   const createArc = (startAngle: number, endAngle: number, radius: number, innerRadius: number) => {
