@@ -1407,12 +1407,42 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const profitResult = computeOrderRealProfit(mergedOrder, undefined, affiliateByOrderId[o.order_id]);
         const realProfit = typeof profitResult === 'number' ? profitResult : profitResult.realProfit;
         
+        // Calcular custo do produto (base + taxas do fornecedor)
+        const products = mergedOrder.products || [];
+        const totalBaseCost = products.reduce((sum, p) => {
+          const qty = Number(p.quantity ?? 1);
+          const unitCost = Number(p.unit_cost ?? 0);
+          return sum + unitCost * qty;
+        }, 0);
+
+        const supFeeProduct = products.reduce((best, p) => {
+          const v = Number(p.supplier_fee_value ?? 0);
+          return v > Number(best?.supplier_fee_value ?? 0) ? p : best;
+        }, products[0]);
+
+        const gwFeeProduct = products.reduce((best, p) => {
+          const v = Number(p.supplier_gateway_fee_value ?? 0);
+          return v > Number(best?.supplier_gateway_fee_value ?? 0) ? p : best;
+        }, products[0]);
+
+        const supFeeVal = Number(supFeeProduct?.supplier_fee_value ?? 0);
+        const supFeeType = supFeeProduct?.supplier_fee_type ?? 'percent';
+        const gwFeeVal = Number(gwFeeProduct?.supplier_gateway_fee_value ?? 0);
+        const gwFeeType = gwFeeProduct?.supplier_gateway_fee_type ?? 'fixed';
+
+        const orderSupplierFee = supFeeVal > 0
+          ? (supFeeType === 'percent' ? (totalBaseCost * supFeeVal) / 100 : supFeeVal)
+          : 0;
+        const orderGatewayFee = gwFeeVal > 0
+          ? (gwFeeType === 'fixed' ? gwFeeVal : (totalBaseCost * gwFeeVal) / 100)
+          : 0;
+
+        const totalProductCost = totalBaseCost + orderSupplierFee + orderGatewayFee;
+        
         totalRevenue += Number(o.total_amount ?? 0);
+        totalCost += totalProductCost;
         totalProfit += realProfit;
       });
-
-      // Custo = Receita - Lucro
-      totalCost = totalRevenue - totalProfit;
 
       return {
         ...item,
