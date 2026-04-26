@@ -67,25 +67,41 @@ export const useLeadConversionFunnel = (
         }
 
         // Construir query com filtro de data se necessário
+        // Busca leads que foram criados no período OU que tiveram pedidos no período
         const query = supabase
           .from('leads')
           .select(`
             id,
             total_orders,
             created_at,
-            orders!lead_id (id)
+            orders!lead_id (id, order_date, processed_at)
           `)
           .eq('organization_id', organizationId);
-
-        if (startDate) {
-          query.gte('created_at', startDate.toISOString());
-        }
 
         if (marketplaceId) {
           query.eq('marketplace_id', marketplaceId);
         }
 
-        const { data: leads, error: leadsError } = await query;
+        const { data: allLeads, error: leadsError } = await query;
+
+        if (leadsError) throw leadsError;
+
+        // Filtrar leads baseado no período
+        let leads = allLeads;
+        if (startDate && allLeads) {
+          leads = allLeads.filter(lead => {
+            // Incluir se o lead foi criado no período
+            const createdInPeriod = new Date(lead.created_at) >= startDate;
+            
+            // OU se teve algum pedido processado no período
+            const hasOrderInPeriod = Array.isArray(lead.orders) && lead.orders.some(order => {
+              if (!order.order_date) return false;
+              return new Date(order.order_date) >= startDate;
+            });
+            
+            return createdInPeriod || hasOrderInPeriod;
+          });
+        }
 
         if (leadsError) throw leadsError;
 
