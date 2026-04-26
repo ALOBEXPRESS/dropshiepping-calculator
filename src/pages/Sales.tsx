@@ -9,6 +9,7 @@ import {
   PaymentTransactions,
   GenderClassificationFunnel,
   GenderClassificationJobButton,
+  CustomersStatistics,
 } from '@/components/sales';
 import { RealtimeStatusBadge } from '@/components/sales/RealtimeStatusBadge';
 import { PendingOrders } from '@/components/PendingOrders';
@@ -209,7 +210,7 @@ const Sales: React.FC = () => {
         </div>
       )}
 
-      {/* Layout principal: Coluna 1 (KPIs + Gráfico) | Coluna 2 (Estatísticas de Clientes) */}
+      {/* Layout principal: Coluna 1 (KPIs + Gráfico) | Coluna 2 (Funis de Leads) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Coluna 1 - KPIs + Revenue Chart (ocupa 2/3) */}
         <div className="lg:col-span-2 flex flex-col gap-6">
@@ -232,17 +233,28 @@ const Sales: React.FC = () => {
           </div>
         </div>
 
-        {/* Coluna 2 - Funil de Classificação de Gênero (ocupa 1/3) */}
-        <div className="animate-on-load h-full">
-          <GenderClassificationFunnel 
-            organizationId={organizationId} 
-            refreshTrigger={refreshKey}
-            onClassifyClick={() => {
-              // Abrir modal ou executar classificação em lote
-              const button = document.querySelector('[data-gender-classify-button]') as HTMLButtonElement;
-              if (button) button.click();
-            }}
-          />
+        {/* Coluna 2 - Funis de Leads (ocupa 1/3) */}
+        <div className="flex flex-col gap-6">
+          {/* Funil de Classificação de Gênero */}
+          <div className="animate-on-load">
+            <GenderClassificationFunnel 
+              organizationId={organizationId} 
+              refreshTrigger={refreshKey}
+              onClassifyClick={() => {
+                // Abrir modal ou executar classificação em lote
+                const button = document.querySelector('[data-gender-classify-button]') as HTMLButtonElement;
+                if (button) button.click();
+              }}
+            />
+          </div>
+          
+          {/* Funil de Conversão de Leads */}
+          <div className="animate-on-load">
+            <CustomersStatistics 
+              organizationId={organizationId} 
+              refreshTrigger={refreshKey}
+            />
+          </div>
         </div>
       </div>
 
