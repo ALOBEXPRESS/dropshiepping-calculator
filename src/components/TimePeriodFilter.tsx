@@ -6,7 +6,7 @@
  * 
  * ## Features:
  * - Five period buttons: Dia, Semana, Mês, Ano, Total
- * - Active state styling (orange #FF4D00 background, white text)
+ * - Active state styling (rosa vibrante #fe2c55 background, white text)
  * - Inactive state styling (transparent background, gray #a3a3a3 text)
  * - Disabled state during data loading
  * - Keyboard navigation support (Tab, Enter, Space, Arrow keys)
@@ -66,7 +66,7 @@ const periodOptions: PeriodOption[] = [
  * TimePeriodFilter Component
  * 
  * Displays a horizontal row of period filter buttons with:
- * - Active state: orange background (#FF4D00), white text
+ * - Active state: rosa vibrante background (#fe2c55), white text
  * - Inactive state: transparent background, gray text (#a3a3a3)
  * - Hover state: subtle brightness increase
  * - Disabled state: reduced opacity, no interaction
@@ -177,11 +177,11 @@ export const TimePeriodFilter: React.FC<TimePeriodFilterProps> = ({
                 className={cn(
                   // Base styles
                   'px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-200',
-                  'focus:outline-none focus:ring-2 focus:ring-[#FF4D00] focus:ring-offset-2 focus:ring-offset-[#0f0f0f]',
+                  'focus:outline-none focus:ring-2 focus:ring-[#fe2c55] focus:ring-offset-2 focus:ring-offset-[#0f0f0f]',
                   'whitespace-nowrap',
                   
                   // Active state
-                  isActive && !disabled && 'bg-[#FF4D00] text-white shadow-lg',
+                  isActive && !disabled && 'bg-[#fe2c55] text-white shadow-lg',
                   
                   // Inactive state
                   !isActive && !disabled && 'bg-transparent text-[#a3a3a3] hover:bg-[#1c1c1c] hover:text-white',

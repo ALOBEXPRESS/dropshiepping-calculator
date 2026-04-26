@@ -75,7 +75,7 @@ const LeadsDashboard: React.FC<LeadsDashboardProps> = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 p-4 sm:p-6">
       <main className="max-w-7xl mx-auto space-y-6">
           
-          {/* Filters Section */}
+          {/* Filters Section - Para os Funis de Leads */}
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
             <TimePeriodFilter
               selectedPeriod={period}
@@ -90,7 +90,7 @@ const LeadsDashboard: React.FC<LeadsDashboardProps> = () => {
             />
           </div>
 
-          {/* Funis de Leads Section */}
+          {/* Funis de Leads Section - Refletem o filtro de período */}
           {organizationId && (
             <section 
               className="grid grid-cols-1 lg:grid-cols-2 gap-6"
@@ -128,21 +128,6 @@ const LeadsDashboard: React.FC<LeadsDashboardProps> = () => {
               />
             </div>
           )}
-          
-          {/* Filters Section */}
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-            <TimePeriodFilter
-              selectedPeriod={period}
-              onPeriodChange={setPeriod}
-              disabled={isLoading}
-            />
-            <MarketplaceFilter
-              marketplaces={marketplaces}
-              selectedMarketplace={selectedMarketplace}
-              onMarketplaceChange={setSelectedMarketplace}
-              disabled={isLoading || isLoadingMarketplaces}
-            />
-          </div>
 
           {/* KPI Cards Section - Now 5 cards */}
           <section 

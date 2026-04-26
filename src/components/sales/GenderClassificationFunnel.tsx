@@ -315,7 +315,7 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
         <div className="mt-4">
           <Button
             onClick={onClassifyClick}
-            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold shadow-lg shadow-orange-500/30 transition-all duration-200"
+            className="w-full bg-gradient-to-r from-[#fe2c55] to-[#ff1744] hover:from-[#ff1744] hover:to-[#fe2c55] text-white font-semibold shadow-lg shadow-[#fe2c55]/30 transition-all duration-200"
           >
             <Sparkles className="w-4 h-4 mr-2" />
             Classificar {stats.unclassified} Leads Pendentes
