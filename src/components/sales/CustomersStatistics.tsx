@@ -8,6 +8,7 @@ interface CustomersStatisticsProps {
   organizationId: string;
   refreshTrigger?: number;
   period?: 'day' | 'week' | 'month' | 'year' | 'total';
+  marketplaceId?: string | null;
 }
 
 // Map gradient class → solid hex for recharts (which can't use Tailwind gradients)
@@ -22,8 +23,9 @@ export const CustomersStatistics: React.FC<CustomersStatisticsProps> = ({
   organizationId,
   refreshTrigger,
   period = 'total',
+  marketplaceId = null,
 }) => {
-  const { data, loading, error } = useLeadConversionFunnel(organizationId, refreshTrigger, period);
+  const { data, loading, error } = useLeadConversionFunnel(organizationId, refreshTrigger, period, marketplaceId);
 
   const chartData = data.stages
     .filter((s) => s.count > 0)

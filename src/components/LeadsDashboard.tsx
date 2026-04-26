@@ -35,7 +35,7 @@ export interface LeadsDashboardProps {
  */
 const LeadsDashboard: React.FC<LeadsDashboardProps> = () => {
   const { organizationId } = useSettings();
-  const [period, setPeriod] = useState<TimePeriod>('week');
+  const [period, setPeriod] = useState<TimePeriod>('total');
   const [selectedMarketplace, setSelectedMarketplace] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -102,6 +102,7 @@ const LeadsDashboard: React.FC<LeadsDashboardProps> = () => {
                 organizationId={organizationId} 
                 refreshTrigger={refreshKey}
                 period={period}
+                marketplaceId={selectedMarketplace}
                 onClassifyClick={() => {
                   const button = document.querySelector('[data-gender-classify-button]') as HTMLButtonElement;
                   if (button) button.click();
@@ -113,6 +114,7 @@ const LeadsDashboard: React.FC<LeadsDashboardProps> = () => {
                 organizationId={organizationId} 
                 refreshTrigger={refreshKey}
                 period={period}
+                marketplaceId={selectedMarketplace}
               />
             </section>
           )}

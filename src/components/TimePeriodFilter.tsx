@@ -55,11 +55,11 @@ interface PeriodOption {
 }
 
 const periodOptions: PeriodOption[] = [
+  { id: 'total', label: 'Total' },
   { id: 'day', label: 'Dia' },
   { id: 'week', label: 'Semana' },
   { id: 'month', label: 'Mês' },
   { id: 'year', label: 'Ano' },
-  { id: 'total', label: 'Total' },
 ];
 
 /**

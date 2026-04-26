@@ -17,7 +17,8 @@ interface LeadConversionFunnel {
 export const useLeadConversionFunnel = (
   organizationId: string, 
   refreshTrigger?: number,
-  period: 'day' | 'week' | 'month' | 'year' | 'total' = 'total'
+  period: 'day' | 'week' | 'month' | 'year' | 'total' = 'total',
+  marketplaceId?: string | null
 ) => {
   const [data, setData] = useState<LeadConversionFunnel>({
     stages: [],
@@ -78,6 +79,10 @@ export const useLeadConversionFunnel = (
 
         if (startDate) {
           query.gte('created_at', startDate.toISOString());
+        }
+
+        if (marketplaceId) {
+          query.eq('marketplace_id', marketplaceId);
         }
 
         const { data: leads, error: leadsError } = await query;
@@ -161,7 +166,7 @@ export const useLeadConversionFunnel = (
     };
 
     fetchLeadFunnel();
-  }, [organizationId, refreshTrigger, period]);
+  }, [organizationId, refreshTrigger, period, marketplaceId]);
 
   return { data, loading, error };
 };

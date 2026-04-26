@@ -44,6 +44,7 @@ interface GenderClassificationFunnelProps {
   onClassifyClick?: () => void;
   className?: string;
   period?: 'day' | 'week' | 'month' | 'year' | 'total';
+  marketplaceId?: string | null;
 }
 
 export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProps> = ({
@@ -51,7 +52,8 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
   refreshTrigger,
   onClassifyClick,
   className,
-  period = 'total'
+  period = 'total',
+  marketplaceId = null
 }) => {
   const [stats, setStats] = useState<GenderStats>({
     total: 0,
@@ -113,6 +115,10 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
         query.gte('created_at', startDate.toISOString());
       }
 
+      if (marketplaceId) {
+        query.eq('marketplace_id', marketplaceId);
+      }
+
       const { data, error: fetchError } = await query;
 
       if (fetchError) throw fetchError;
@@ -148,7 +154,7 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
   useEffect(() => {
     fetchStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId, refreshTrigger, period]);
+  }, [organizationId, refreshTrigger, period, marketplaceId]);
 
   // Calcular ângulos para o donut chart
   const maleAngle = (stats.malePercentage / 100) * 360;
