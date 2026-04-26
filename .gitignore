@@ -101,17 +101,24 @@ desktop.ini
 # N8N Workflows (contain hardcoded secrets)
 src/hooks/n8n/
 
+# Test files (keep local only)
+src/test/
+
 # Large documentation files
 docs/
 
 # Documentation files (keep local only)
 AGENTS.md
 CLAUDE.md
+ORGANIZACAO_RAIZ_COMPLETA.md
 CSS_PACK_CATALOGO_COMPLETO.md
 GEMINI.md
 GUIA_RAPIDO_CSS_PACK.md
 MELHORIAS_CSS_COMPLETO_COM_URLS.md
 task-10-verification.md
+ORGANIZACAO_DOCS_COMPLETA.md
+dashboard-snapshot.md
+test-screenshots/
 
 # Playwright MCP folder
 .playwright-mcp/
