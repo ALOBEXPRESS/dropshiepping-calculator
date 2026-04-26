@@ -57,8 +57,8 @@ export const AffiliateCommissionChart: React.FC<AffiliateCommissionChartProps> =
     ? data 
     : data.filter(item => item.affiliate_name === selectedAffiliate);
 
-  // Preparar dados para o gráfico
-  const chartData = filteredData.slice(0, 20);
+  // Preparar dados para o gráfico - Mostrar mais produtos
+  const chartData = filteredData.slice(0, 50);
 
   // Estado para largura do container
   const [containerWidth, setContainerWidth] = React.useState(800);
@@ -75,8 +75,8 @@ export const AffiliateCommissionChart: React.FC<AffiliateCommissionChartProps> =
     return () => window.removeEventListener('resize', updateWidth);
   }, []);
 
-  // Calcular largura do gráfico e se tem scroll
-  const chartWidth = Math.max(800, chartData.length * 60);
+  // Calcular largura do gráfico e se tem scroll - Aumentar largura por produto
+  const chartWidth = Math.max(1200, chartData.length * 80);
   const hasScroll = chartWidth > containerWidth;
   const maxOffset = hasScroll ? chartWidth - containerWidth : 0;
 
@@ -106,7 +106,7 @@ export const AffiliateCommissionChart: React.FC<AffiliateCommissionChartProps> =
     plotOptions: {
       bar: {
         horizontal: false,
-        columnWidth: '70%',
+        columnWidth: '60%',
         borderRadius: 4,
         dataLabels: {
           position: 'top',

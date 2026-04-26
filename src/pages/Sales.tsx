@@ -216,7 +216,7 @@ const Sales: React.FC = () => {
         />
       </div>
 
-      {/* Layout principal: Grid 2:1 consistente */}
+      {/* Layout principal: Grid 2:1 com KPIs + Revenue Chart + Transações */}
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 mb-6">
         {/* Coluna 1 - KPIs + Revenue Chart (ocupa 2/3) */}
         <div className="flex flex-col gap-6">
@@ -239,24 +239,16 @@ const Sales: React.FC = () => {
           </div>
         </div>
 
-        {/* Coluna 2 - Espaço vazio alinhado (ocupa 1/3) */}
-        <div className="hidden lg:block" />
-      </div>
-
-      {/* Análises Detalhadas (Tabs) + Transações — mesma grade 2:1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 mb-6">
-        {/* Coluna 1 - Tabs: Produtos / Pedidos / Distribuição (ocupa 2/3) */}
-        {/* Coluna 1 - Tabs: Produtos / Pedidos / Distribuição (ocupa 2/3) */}
-        <div className="animate-on-load">
-          <AnalyticsTabs organizationId={organizationId} refreshTrigger={refreshKey} />
-        </div>
-        {/* Coluna 2 - Transações com formas de pagamento (ocupa 1/3) */}
+        {/* Coluna 2 - Transações com formas de pagamento (ocupa 1/3) - Alinhado ao topo */}
         <div className="animate-on-load">
           <PaymentTransactions organizationId={organizationId} refreshTrigger={refreshKey} />
         </div>
       </div>
 
-      {/* Produtos Lucrativos removido — agora está no Resumo Financeiro Geral */}
+      {/* Análises Detalhadas (Tabs) - Largura total */}
+      <div className="mb-6 animate-on-load">
+        <AnalyticsTabs organizationId={organizationId} refreshTrigger={refreshKey} />
+      </div>
 
       {/* Alertas de Margem Baixa + Relatório de Estoque */}
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 mb-6">
