@@ -104,6 +104,21 @@ src/hooks/n8n/
 # Large documentation files
 docs/
 
+# Documentation files (keep local only)
+AGENTS.md
+CLAUDE.md
+CSS_PACK_CATALOGO_COMPLETO.md
+GEMINI.md
+GUIA_RAPIDO_CSS_PACK.md
+MELHORIAS_CSS_COMPLETO_COM_URLS.md
+task-10-verification.md
+
+# Playwright MCP folder
+.playwright-mcp/
+
+# Scripts folder
+scripts/
+
 # Kiro, Cursor, Claude & Trae configs (local only)
 .kiro/
 .trae/

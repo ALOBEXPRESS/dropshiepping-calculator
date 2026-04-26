@@ -1,8 +1,0 @@
-- generic [ref=e2]:
-  - region "Notifications alt+T":
-    - list:
-      - listitem [ref=e41]:
-        - img [ref=e43]
-        - generic [ref=e45]:
-          - generic [ref=e46]: Login realizado com sucesso!
-          - generic [ref=e47]: Redirecionando para o dashboard...
