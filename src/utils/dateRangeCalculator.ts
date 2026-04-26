@@ -181,9 +181,11 @@ function calculateYearRanges(referenceDate: Date): PeriodData {
  * Previous: N/A (no previous period for total)
  */
 function calculateTotalRanges(): PeriodData {
-  // All time: from epoch to far future
+  // All time: from epoch to 100 years in the future (reasonable range for database queries)
   const currentStart = new Date(0); // Unix epoch (1970-01-01)
-  const currentEnd = new Date(9999, 11, 31, 23, 59, 59, 999); // Far future
+  const currentEnd = new Date();
+  currentEnd.setFullYear(currentEnd.getFullYear() + 100); // 100 years from now
+  currentEnd.setHours(23, 59, 59, 999);
   
   // No previous period for total
   const previousStart = new Date(0);
