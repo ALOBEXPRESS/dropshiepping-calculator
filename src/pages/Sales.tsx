@@ -7,9 +7,6 @@ import {
   AnalyticsTabs,
   LowMarginProductsAlert,
   PaymentTransactions,
-  GenderClassificationFunnel,
-  GenderClassificationJobButton,
-  CustomersStatistics,
   AffiliateCommissionChart,
 } from '@/components/sales';
 import { RealtimeStatusBadge } from '@/components/sales/RealtimeStatusBadge';
@@ -238,40 +235,12 @@ const Sales: React.FC = () => {
         <div className="hidden lg:block" />
       </div>
 
-      {/* Segunda linha: Affiliate Chart + Funis de Leads alinhados */}
-      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 mb-6">
-        {/* Coluna 1 - Affiliate Chart (ocupa 2/3) */}
-        <div className="animate-on-load">
-          <AffiliateCommissionChart 
-            organizationId={organizationId} 
-            refreshTrigger={refreshKey}
-          />
-        </div>
-
-        {/* Coluna 2 - Funis de Leads (ocupa 1/3) - Alinhados com o topo e base do Affiliate Chart */}
-        <div className="flex flex-col gap-6">
-          {/* Funil de Classificação de Gênero */}
-          <div className="animate-on-load flex-1">
-            <GenderClassificationFunnel 
-              organizationId={organizationId} 
-              refreshTrigger={refreshKey}
-              onClassifyClick={() => {
-                // Abrir modal ou executar classificação em lote
-                const button = document.querySelector('[data-gender-classify-button]') as HTMLButtonElement;
-                if (button) button.click();
-              }}
-              className="h-full"
-            />
-          </div>
-          
-          {/* Funil de Conversão de Leads */}
-          <div className="animate-on-load flex-1">
-            <CustomersStatistics 
-              organizationId={organizationId} 
-              refreshTrigger={refreshKey}
-            />
-          </div>
-        </div>
+      {/* Segunda linha: Affiliate Chart em largura total */}
+      <div className="mb-6 animate-on-load">
+        <AffiliateCommissionChart 
+          organizationId={organizationId} 
+          refreshTrigger={refreshKey}
+        />
       </div>
 
       {/* Análises Detalhadas (Tabs) + Transações — mesma grade 2:1 */}
@@ -288,18 +257,6 @@ const Sales: React.FC = () => {
       </div>
 
       {/* Produtos Lucrativos removido — agora está no Resumo Financeiro Geral */}
-
-      {/* Botão escondido para classificação em lote (acionado pelo funil) */}
-      <div className="hidden">
-        <GenderClassificationJobButton
-          organizationId={organizationId}
-          onComplete={(summary) => {
-            console.log('Classificação concluída:', summary);
-            handleRefresh();
-          }}
-          data-gender-classify-button
-        />
-      </div>
 
       {/* Alertas de Margem Baixa + Relatório de Estoque */}
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 mb-6">
