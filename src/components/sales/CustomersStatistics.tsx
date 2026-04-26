@@ -33,18 +33,16 @@ export const CustomersStatistics: React.FC<CustomersStatisticsProps> = ({
 
   if (loading) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800 h-full">
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-        </div>
+      <Card className="p-6 border-gray-100 dark:border-zinc-800 h-full flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </Card>
     );
   }
 
   if (error) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800 h-full">
-        <div className="text-center text-red-500 py-8">{error}</div>
+      <Card className="p-6 border-gray-100 dark:border-zinc-800 h-full flex items-center justify-center">
+        <div className="text-center text-red-500">{error}</div>
       </Card>
     );
   }

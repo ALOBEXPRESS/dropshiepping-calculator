@@ -143,18 +143,16 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
 
   if (loading) {
     return (
-      <Card className={cn("p-6 border-gray-200 dark:border-zinc-800", className)}>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-        </div>
+      <Card className={cn("p-6 border-gray-200 dark:border-zinc-800 h-full flex items-center justify-center", className)}>
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </Card>
     );
   }
 
   if (error) {
     return (
-      <Card className={cn("p-6 border-gray-200 dark:border-zinc-800", className)}>
-        <div className="text-center text-red-500 py-8">{error}</div>
+      <Card className={cn("p-6 border-gray-200 dark:border-zinc-800 h-full flex items-center justify-center", className)}>
+        <div className="text-center text-red-500">{error}</div>
       </Card>
     );
   }
