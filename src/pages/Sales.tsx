@@ -239,7 +239,7 @@ const Sales: React.FC = () => {
       </div>
 
       {/* Segunda linha: Affiliate Chart + Funis de Leads alinhados */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 lg:grid-rows-1">
         {/* Coluna 1 - Affiliate Chart (ocupa 2/3) */}
         <div className="lg:col-span-2 animate-on-load">
           <AffiliateCommissionChart 
@@ -249,9 +249,9 @@ const Sales: React.FC = () => {
         </div>
 
         {/* Coluna 2 - Funis de Leads (ocupa 1/3) - Alinhados com o topo e base do Affiliate Chart */}
-        <div className="grid grid-rows-2 gap-6">
+        <div className="lg:col-span-1 flex flex-col gap-6">
           {/* Funil de Classificação de Gênero */}
-          <div className="animate-on-load">
+          <div className="animate-on-load flex-1">
             <GenderClassificationFunnel 
               organizationId={organizationId} 
               refreshTrigger={refreshKey}
@@ -265,7 +265,7 @@ const Sales: React.FC = () => {
           </div>
           
           {/* Funil de Conversão de Leads */}
-          <div className="animate-on-load">
+          <div className="animate-on-load flex-1">
             <CustomersStatistics 
               organizationId={organizationId} 
               refreshTrigger={refreshKey}
