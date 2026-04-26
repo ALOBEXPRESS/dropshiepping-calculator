@@ -211,10 +211,10 @@ const Sales: React.FC = () => {
         </div>
       )}
 
-      {/* Layout principal: Grid com alinhamento preciso */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      {/* Layout principal: Grid 2:1 consistente */}
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 mb-6">
         {/* Coluna 1 - KPIs + Revenue Chart (ocupa 2/3) */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
+        <div className="flex flex-col gap-6">
           <div className="animate-on-load">
             <HeroSection 
               stats={stats}
@@ -234,7 +234,7 @@ const Sales: React.FC = () => {
           </div>
         </div>
 
-        {/* Coluna 2 - Vazia para manter o grid (ocupa 1/3) */}
+        {/* Coluna 2 - Espaço vazio alinhado (ocupa 1/3) */}
         <div className="hidden lg:block" />
       </div>
 
@@ -274,10 +274,11 @@ const Sales: React.FC = () => {
         </div>
       </div>
 
-      {/* Análises Detalhadas (Tabs) + Transações — mesma grade 3 colunas do hero */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      {/* Análises Detalhadas (Tabs) + Transações — mesma grade 2:1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 mb-6">
         {/* Coluna 1 - Tabs: Produtos / Pedidos / Distribuição (ocupa 2/3) */}
-        <div className="lg:col-span-2 animate-on-load">
+        {/* Coluna 1 - Tabs: Produtos / Pedidos / Distribuição (ocupa 2/3) */}
+        <div className="animate-on-load">
           <AnalyticsTabs organizationId={organizationId} refreshTrigger={refreshKey} />
         </div>
         {/* Coluna 2 - Transações com formas de pagamento (ocupa 1/3) */}
@@ -301,9 +302,9 @@ const Sales: React.FC = () => {
       </div>
 
       {/* Alertas de Margem Baixa + Relatório de Estoque */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 mb-6">
         {/* Coluna 1 - Alertas de Margem Baixa (ocupa 2/3) */}
-        <div className="lg:col-span-2 animate-on-load">
+        <div className="animate-on-load">
           <LowMarginProductsAlert organizationId={organizationId} />
         </div>
         {/* Coluna 2 - Relatório de Estoque (ocupa 1/3) */}
