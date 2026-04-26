@@ -1,0 +1,763 @@
+- generic [ref=e2]:
+  - region "Notifications alt+T"
+  - generic [ref=e783]:
+    - complementary [ref=e784]:
+      - generic [ref=e785]:
+        - generic [ref=e786]:
+          - img "Logo" [ref=e787]
+          - button [ref=e788] [cursor=pointer]:
+            - img
+        - list [ref=e789]:
+          - listitem [ref=e790]:
+            - generic [ref=e791] [cursor=pointer]:
+              - img
+              - generic [ref=e792]: Painel
+              - img
+            - list [ref=e793]:
+              - listitem [ref=e794]:
+                - link "Calculadora" [ref=e795] [cursor=pointer]:
+                  - /url: /
+                  - text: Calculadora
+              - listitem [ref=e797]:
+                - link "Produtos" [ref=e798] [cursor=pointer]:
+                  - /url: /produtos
+                  - text: Produtos
+              - listitem [ref=e800]:
+                - link "Vendas" [ref=e801] [cursor=pointer]:
+                  - /url: /vendas
+                  - text: Vendas
+              - listitem [ref=e803]:
+                - link "Leads" [ref=e804] [cursor=pointer]:
+                  - /url: /leads
+                  - text: Leads
+    - generic [ref=e806]:
+      - banner [ref=e807]:
+        - search [ref=e809]:
+          - generic:
+            - img
+          - textbox "Pesquisar produtos" [ref=e810]:
+            - /placeholder: Pesquisar produtos...
+        - generic [ref=e811]:
+          - button [ref=e812] [cursor=pointer]:
+            - img
+          - button [ref=e813] [cursor=pointer]:
+            - img
+          - button "Notificações" [ref=e814] [cursor=pointer]:
+            - img
+          - generic [ref=e815] [cursor=pointer]:
+            - img "@shadcn" [ref=e817]
+            - generic [ref=e818]:
+              - paragraph [ref=e819]: Admin User
+              - paragraph [ref=e820]: Admin
+      - generic [ref=e821]:
+        - generic [ref=e822]:
+          - generic [ref=e823]:
+            - heading "Dashboard de Vendas" [level=1] [ref=e824]
+            - paragraph [ref=e825]: Visão completa do desempenho
+          - generic [ref=e826]:
+            - generic "Tempo real indisponível — usando polling a cada 30s" [ref=e827]:
+              - img
+              - text: Polling
+            - generic [ref=e828]:
+              - combobox [ref=e829] [cursor=pointer]:
+                - generic [ref=e830]:
+                  - img
+                  - generic: Últimos 30 dias
+                - img
+              - generic [ref=e831]:
+                - img
+                - generic [ref=e832]: 27 mar - 26 abr 2026
+            - button "Atualizar dados do dashboard" [ref=e833] [cursor=pointer]:
+              - img
+              - text: Atualizar
+        - search "Filtros de vendas" [ref=e835]:
+          - generic [ref=e836]:
+            - generic [ref=e837]: Data inicial
+            - textbox "Filtrar por data inicial" [ref=e838]
+          - generic [ref=e839]:
+            - generic [ref=e840]: Data final
+            - textbox "Filtrar por data final" [ref=e841]
+          - generic [ref=e842]:
+            - generic [ref=e843]: Marketplace
+            - textbox "Filtrar por marketplace" [ref=e844]:
+              - /placeholder: ID do canal
+        - generic [ref=e846]:
+          - generic [ref=e847]:
+            - generic [ref=e848]:
+              - heading "Vendas a Processar" [level=2] [ref=e849]
+              - paragraph [ref=e850]: 3 vendas pendentes
+            - button "Atualizar" [ref=e851] [cursor=pointer]
+          - generic [ref=e853]:
+            - generic [ref=e854]:
+              - generic [ref=e855]:
+                - img
+                - generic [ref=e856]: Arraste para Amostras Grátis
+              - generic [ref=e857]:
+                - 'img "Produto do pedido #134" [ref=e858]'
+                - img "TikTok" [ref=e860]
+              - generic [ref=e861]:
+                - generic [ref=e862]:
+                  - generic [ref=e863]: "Pedido #134"
+                  - generic [ref=e864]:
+                    - generic [ref=e865]: 15/04/2026
+                    - generic [ref=e866]: 11:00
+                - paragraph [ref=e868]: viviane soares
+                - generic [ref=e869]:
+                  - generic [ref=e870]:
+                    - paragraph [ref=e871]: Valor Total
+                    - paragraph [ref=e872]: R$ 29,00
+                  - generic [ref=e873]:
+                    - paragraph [ref=e874]: Itens
+                    - paragraph [ref=e875]: "1"
+                - generic [ref=e876]: "Comissão: 6%"
+              - generic [ref=e877]:
+                - button "PROCESSAR LUCRO" [ref=e878] [cursor=pointer]
+                - button "Excluir pedido" [ref=e879] [cursor=pointer]:
+                  - img
+            - generic [ref=e880]:
+              - generic [ref=e881]:
+                - img
+                - generic [ref=e882]: Arraste para Amostras Grátis
+              - generic [ref=e883]:
+                - 'img "Produto do pedido #135" [ref=e884]'
+                - img "TikTok" [ref=e886]
+              - generic [ref=e887]:
+                - generic [ref=e888]:
+                  - generic [ref=e889]: "Pedido #135"
+                  - generic [ref=e890]:
+                    - generic [ref=e891]: 15/04/2026
+                    - generic [ref=e892]: 11:01
+                - paragraph [ref=e894]: Mariana Alves
+                - generic [ref=e895]:
+                  - generic [ref=e896]:
+                    - paragraph [ref=e897]: Valor Total
+                    - paragraph [ref=e898]: R$ 24,90
+                  - generic [ref=e899]:
+                    - paragraph [ref=e900]: Itens
+                    - paragraph [ref=e901]: "1"
+                - generic [ref=e902]: "Comissão: 6%"
+              - generic [ref=e903]:
+                - button "PROCESSAR LUCRO" [ref=e904] [cursor=pointer]
+                - button "Excluir pedido" [ref=e905] [cursor=pointer]:
+                  - img
+            - generic [ref=e906]:
+              - generic [ref=e907]:
+                - img
+                - generic [ref=e908]: Arraste para Amostras Grátis
+              - generic [ref=e909]:
+                - generic [ref=e910]:
+                  - img
+                - img "TikTok" [ref=e912]
+              - generic [ref=e913]:
+                - generic [ref=e914]:
+                  - generic [ref=e915]: "Pedido #136"
+                  - generic [ref=e916]:
+                    - generic [ref=e917]: 15/04/2026
+                    - generic [ref=e918]: 11:04
+                - paragraph [ref=e920]: Rebeca Rosado
+                - generic [ref=e921]:
+                  - generic [ref=e922]:
+                    - paragraph [ref=e923]: Valor Total
+                    - paragraph [ref=e924]: R$ 14,90
+                  - generic [ref=e925]:
+                    - paragraph [ref=e926]: Itens
+                    - paragraph [ref=e927]: "0"
+                - generic [ref=e928]: "Comissão: 6%"
+              - generic [ref=e929]:
+                - button "PROCESSAR LUCRO" [ref=e930] [cursor=pointer]
+                - button "Excluir pedido" [ref=e931] [cursor=pointer]:
+                  - img
+        - generic [ref=e933]:
+          - generic [ref=e934]:
+            - generic [ref=e935]:
+              - img
+              - heading "Amostras Grátis — Influenciadores" [level=2] [ref=e936]
+            - generic [ref=e937]: 0 pedidos
+          - generic [ref=e939]:
+            - generic [ref=e940]:
+              - img
+            - generic [ref=e941]:
+              - paragraph [ref=e942]: Nenhum pedido na fila de amostras grátis
+              - paragraph [ref=e943]: Arraste um pedido de cima para cá para enviá-lo como amostra grátis.
+        - generic [ref=e945]:
+          - generic [ref=e946]:
+            - generic [ref=e947]:
+              - heading "Relatório de Comissão de Afiliado" [level=3] [ref=e948]
+              - generic [ref=e949]:
+                - generic [ref=e950]:
+                  - paragraph [ref=e951]: Total de Produtos
+                  - paragraph [ref=e952]: "145"
+                - generic [ref=e953]:
+                  - paragraph [ref=e954]: Comissão Média
+                  - paragraph [ref=e955]: 10.0%
+                - generic [ref=e956]:
+                  - paragraph [ref=e957]: Estoque Total
+                  - paragraph [ref=e958]: "14289"
+            - generic [ref=e959]:
+              - combobox [ref=e960] [cursor=pointer]:
+                - generic: Todos os Marketplaces
+                - img
+              - combobox [ref=e961] [cursor=pointer]:
+                - generic: Todos os Afiliados
+                - img
+          - generic [ref=e962]:
+            - button "Rolar para direita" [ref=e964] [cursor=pointer]:
+              - img
+            - generic [ref=e968]:
+              - img "bar chart with 1 data series" [ref=e969]:
+                - generic [ref=e971]:
+                  - generic [ref=e974]:
+                    - generic:
+                      - generic:
+                        - generic: 10.5%
+                      - generic:
+                        - generic: 10.5%
+                      - generic:
+                        - generic: 10.5%
+                      - generic:
+                        - generic: 10.5%
+                      - generic:
+                        - generic: 10.5%
+                      - generic:
+                        - generic: 10.5%
+                      - generic:
+                        - generic: 10.5%
+                      - generic:
+                        - generic: 10.5%
+                      - generic:
+                        - generic: 10.5%
+                      - generic:
+                        - generic: 10.5%
+                      - generic:
+                        - generic: 10.5%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                      - generic:
+                        - generic: 10.0%
+                  - generic [ref=e1027]:
+                    - 'generic "Camisa Feminina Baby... (Estoque: 0)" [ref=e1028]'
+                    - 'generic "Camisa Feminina Baby... (Estoque: 0)" [ref=e1029]'
+                    - 'generic "Relógio Feminino Ele... (Estoque: 40)" [ref=e1030]'
+                    - 'generic "Camisa Feminina Baby... (Estoque: 0)" [ref=e1031]'
+                    - 'generic "Bolsa PodLinda Jéssi... (Estoque: 0)" [ref=e1032]'
+                    - 'generic "Sapato Feminino Orto... (Estoque: 4)" [ref=e1033]'
+                    - 'generic "Camisa Feminina Baby... (Estoque: 0)" [ref=e1034]'
+                    - 'generic "Camisa Feminina Baby... (Estoque: 0)" [ref=e1035]'
+                    - 'generic "Chuveirinho Bico Are... (Estoque: 4)" [ref=e1036]'
+                    - 'generic "Bolsa Podlinda Anne (Estoque: 0)" [ref=e1037]'
+                    - 'generic "Baby Look Stitch Sit... (Estoque: 0)" [ref=e1038]'
+                    - 'generic "Camisa Feminina Baby... (Estoque: 0)" [ref=e1039]'
+                    - 'generic "Camisa Feminina Baby... (Estoque: 0)" [ref=e1040]'
+                    - 'generic "Camisa Feminina Baby... (Estoque: 0)" [ref=e1041]'
+                    - 'generic "Bloco de Anotações F... (Estoque: 232)" [ref=e1042]'
+                    - 'generic "Camisa Feminina Baby... (Estoque: 0)" [ref=e1043]'
+                    - 'generic "Camisa Feminina Baby... (Estoque: 0)" [ref=e1044]'
+                    - 'generic "Bolsa Podlinda Anne (Estoque: 0)" [ref=e1045]'
+                    - 'generic "Camisa Feminina Baby... (Estoque: 0)" [ref=e1046]'
+                    - 'generic "Bolsa PodLinda Jéssi... (Estoque: 0)" [ref=e1047]'
+                    - 'generic "Camisa Feminina Baby... (Estoque: 0)" [ref=e1048]'
+                    - 'generic "Câmera Fotográfica p... (Estoque: 276)" [ref=e1049]'
+                    - 'generic "Caneca Térmica 350ml... (Estoque: 0)" [ref=e1050]'
+                    - 'generic "Camisa Feminina Baby... (Estoque: 0)" [ref=e1051]'
+                    - 'generic "Copo Térmico 800ml c... (Estoque: 201)" [ref=e1052]'
+                    - 'generic "Cabo Kaidi 2M Flat F... (Estoque: 0)" [ref=e1053]'
+                    - 'generic "Fone Inpods I12 Sem ... (Estoque: 15)" [ref=e1054]'
+                    - 'generic "Mini Processador Por... (Estoque: 0)" [ref=e1055]'
+                    - 'generic "Tumbler Térmico 900m... (Estoque: 0)" [ref=e1056]'
+                    - 'generic "Jogo de Facas Comple... (Estoque: 205)" [ref=e1057]'
+                    - 'generic "Fone Sem Fio M10 Blu... (Estoque: 287)" [ref=e1058]'
+                    - 'generic "Copo Cuia Térmica pa... (Estoque: 0)" [ref=e1059]'
+                    - 'generic "Camisa Feminina Baby... (Estoque: 0)" [ref=e1060]'
+                    - 'generic "Aspirador de Pó Port... (Estoque: 200)" [ref=e1061]'
+                    - 'generic "Brinquedo Anti-Stres... (Estoque: 231)" [ref=e1062]'
+                    - 'generic "Camisa Feminina Baby... (Estoque: 0)" [ref=e1063]'
+                    - 'generic "Mini caixinha de som (Estoque: 0)" [ref=e1064]'
+                    - 'generic "Copo Cuia Termica 35... (Estoque: 0)" [ref=e1065]'
+                    - 'generic "Camisa Feminina Baby... (Estoque: 0)" [ref=e1066]'
+                    - 'generic "Caneta com Led - kit... (Estoque: 278)" [ref=e1067]'
+                    - 'generic "Camiseta California ... (Estoque: 0)" [ref=e1068]'
+                    - 'generic "Camiseta Bitcoin Pou... (Estoque: 0)" [ref=e1069]'
+                    - 'generic "Cabo Tipo C 4.8A Ref... (Estoque: 234)" [ref=e1070]'
+                    - 'generic "Mouse Sem Fio Wirele... (Estoque: 243)" [ref=e1071]'
+                    - 'generic "Camiseta Tematica Ro... (Estoque: 0)" [ref=e1072]'
+                    - 'generic "Amolador de Facas pa... (Estoque: 228)" [ref=e1073]'
+                    - 'generic "Carregador 2 Saídas ... (Estoque: 203)" [ref=e1074]'
+                    - 'generic "Copo Térmico 260ml I... (Estoque: 0)" [ref=e1075]'
+                    - 'generic "Cabo Carregador 3 Me... (Estoque: 256)" [ref=e1076]'
+                    - 'generic "Brinquedo Bolha de S... (Estoque: 10)" [ref=e1077]'
+                - generic [ref=e1078]:
+                  - generic [ref=e1079]:
+                    - generic "17.0%" [ref=e1080]
+                    - generic "16.0%" [ref=e1081]
+                    - generic "15.0%" [ref=e1082]
+                    - generic "14.0%" [ref=e1083]
+                    - generic "13.0%" [ref=e1084]
+                    - generic "12.0%" [ref=e1085]
+                    - generic "11.0%" [ref=e1086]
+                    - generic "10.0%" [ref=e1087]
+                    - generic "9.0%" [ref=e1088]
+                    - generic "8.0%" [ref=e1089]
+                    - generic "7.0%" [ref=e1090]
+                    - generic "6.0%" [ref=e1091]
+                    - generic "5.0%" [ref=e1092]
+                    - generic "4.0%" [ref=e1093]
+                    - generic "3.0%" [ref=e1094]
+                    - generic "2.0%" [ref=e1095]
+                    - generic "1.0%" [ref=e1096]
+                    - generic "0.0%" [ref=e1097]
+                  - generic [ref=e1099]: Comissão de Afiliado (%)
+              - tooltip: ●
+        - generic [ref=e1100]:
+          - generic [ref=e1101]:
+            - region "Indicadores principais de desempenho" [ref=e1104]:
+              - 'article "Lucro Total: -R$ 19,24, Aumento de 100%" [ref=e1494]':
+                - generic [ref=e1106]:
+                  - generic:
+                    - img
+                  - generic "Aumento de 100%" [ref=e1495]:
+                    - img
+                    - text: +100%
+                - paragraph [ref=e1107]: Lucro Total
+                - paragraph [ref=e1108]: "-R$ 19,24"
+                - paragraph [ref=e1109]: vs. mês passado
+              - 'article "Pedidos: 2, Aumento de 100%" [ref=e1496]':
+                - generic [ref=e1111]:
+                  - generic:
+                    - img
+                  - generic "Aumento de 100%" [ref=e1497]:
+                    - img
+                    - text: +100%
+                - paragraph [ref=e1112]: Pedidos
+                - paragraph [ref=e1113]: "2"
+                - paragraph [ref=e1114]: este mês
+              - 'article "Clientes: 2, Aumento de 100%" [ref=e1498]':
+                - generic [ref=e1116]:
+                  - generic:
+                    - img
+                  - generic "Aumento de 100%" [ref=e1499]:
+                    - img
+                    - text: +100%
+                - paragraph [ref=e1117]: Clientes
+                - paragraph [ref=e1118]: "2"
+                - paragraph [ref=e1119]: este mês
+              - 'article "Produtos: 40, Diminuição de 83%" [ref=e1500]':
+                - generic [ref=e1121]:
+                  - generic:
+                    - img
+                  - generic "Diminuição de 83%" [ref=e1501]:
+                    - img
+                    - text: 83%
+                - paragraph [ref=e1122]: Produtos
+                - paragraph [ref=e1123]: "40"
+                - paragraph [ref=e1124]: este mês
+            - generic [ref=e1126]:
+              - generic [ref=e1127]:
+                - generic [ref=e1128]:
+                  - heading "Relatório de Receita" [level=3] [ref=e1129]
+                  - generic [ref=e1130]:
+                    - generic [ref=e1131]:
+                      - paragraph [ref=e1132]: Receita
+                      - paragraph [ref=e1133]: R$ 22,90
+                    - generic [ref=e1134]:
+                      - paragraph [ref=e1135]: Custo
+                      - paragraph [ref=e1136]: R$ 33,56
+                    - generic [ref=e1137]:
+                      - paragraph [ref=e1138]: Lucro
+                      - paragraph [ref=e1139]: "-R$ 19,24"
+                - combobox [ref=e1140] [cursor=pointer]:
+                  - generic: Mensal
+                  - img
+              - generic [ref=e1143]:
+                - img "area chart with 1 data series" [ref=e1144]:
+                  - generic "Apr" [ref=e1157]
+                  - generic [ref=e1159]:
+                    - generic "-R$ 2,00" [ref=e1160]
+                    - generic "-R$ 2,50" [ref=e1161]
+                    - generic "-R$ 3,00" [ref=e1162]
+                    - generic "-R$ 3,50" [ref=e1163]
+                    - generic "-R$ 4,00" [ref=e1164]
+                    - generic "-R$ 4,50" [ref=e1165]
+                - tooltip: ●
+          - generic [ref=e1167]:
+            - generic [ref=e1168]:
+              - heading "Transações" [level=3] [ref=e1169]
+              - combobox [ref=e1170] [cursor=pointer]:
+                - generic: Este Mês
+                - img
+            - generic [ref=e1171]:
+              - generic [ref=e1172]:
+                - img [ref=e1174]
+                - generic [ref=e1177]:
+                  - paragraph [ref=e1178]: Outro
+                  - paragraph [ref=e1179]: Cliente
+                - generic [ref=e1180]:
+                  - paragraph [ref=e1181]: +R$ 22,90
+                  - generic [ref=e1182]: "#SONIA-001"
+              - generic [ref=e1183]:
+                - img [ref=e1185]
+                - generic [ref=e1188]:
+                  - paragraph [ref=e1189]: Outro
+                  - paragraph [ref=e1190]: BRUNA ROMERO
+                - generic [ref=e1191]:
+                  - paragraph [ref=e1192]: +R$ 0,00
+                  - generic [ref=e1193]: "#144"
+        - generic [ref=e1195]:
+          - generic [ref=e1196]:
+            - tablist [ref=e1197]:
+              - tab "Produtos Mais Vendidos" [selected] [ref=e1198] [cursor=pointer]:
+                - img
+                - generic [ref=e1199]: Produtos Mais Vendidos
+              - tab "Pedidos Recentes" [ref=e1200] [cursor=pointer]:
+                - img
+                - generic [ref=e1201]: Pedidos Recentes
+              - tab "Distribuição" [ref=e1202] [cursor=pointer]:
+                - img
+                - generic [ref=e1203]: Distribuição
+              - tab "Transações" [ref=e1204] [cursor=pointer]:
+                - img
+                - generic [ref=e1205]: Transações
+            - button "Ver Todos" [ref=e1206] [cursor=pointer]:
+              - text: Ver Todos
+              - img
+          - tabpanel "Produtos Mais Vendidos" [ref=e1207]:
+            - generic [ref=e1208]:
+              - generic [ref=e1209]:
+                - generic [ref=e1210]:
+                  - generic [ref=e1211]:
+                    - img
+                  - generic [ref=e1212]:
+                    - heading "Produtos Mais Vendidos" [level=3] [ref=e1213]
+                    - paragraph [ref=e1214]: 2 unidades vendidas no total
+                - button "Ver Todos" [ref=e1215] [cursor=pointer]
+              - table [ref=e1217]:
+                - rowgroup [ref=e1218]:
+                  - row "Ranking Produto Preço Vendidos Pedidos Receita" [ref=e1219]:
+                    - columnheader "Ranking" [ref=e1220]
+                    - columnheader "Produto" [ref=e1221]
+                    - columnheader "Preço" [ref=e1222]
+                    - columnheader "Vendidos" [ref=e1223]
+                    - columnheader "Pedidos" [ref=e1224]
+                    - columnheader "Receita" [ref=e1225]
+                - rowgroup [ref=e1226]:
+                  - row "1 Chinelo Masculino Brasil 10 Chinelo Masculino Brasil 10 R$ 29,90 1 1 R$ 0,00" [ref=e1227]:
+                    - cell "1" [ref=e1228]:
+                      - generic [ref=e1229]: "1"
+                    - cell "Chinelo Masculino Brasil 10 Chinelo Masculino Brasil 10" [ref=e1230]:
+                      - generic [ref=e1231]:
+                        - img "Chinelo Masculino Brasil 10" [ref=e1233]
+                        - paragraph [ref=e1235]: Chinelo Masculino Brasil 10
+                    - cell "R$ 29,90" [ref=e1236]:
+                      - paragraph [ref=e1237]: R$ 29,90
+                    - cell "1" [ref=e1238]:
+                      - paragraph [ref=e1241]: "1"
+                    - cell "1" [ref=e1242]:
+                      - generic [ref=e1243]: "1"
+                    - cell "R$ 0,00" [ref=e1244]:
+                      - paragraph [ref=e1245]: R$ 0,00
+                  - row "2 Chinelo Killer Point Masculino Tira TPU Palmilha Anatomica Borracha 37 ao 44 Chinelo Killer Point Masculino Tira TPU Palmilha Anatomica Borracha 37 ao 44 R$ 38,90 1 1 R$ 22,90" [ref=e1246]:
+                    - cell "2" [ref=e1247]:
+                      - generic [ref=e1248]: "2"
+                    - cell "Chinelo Killer Point Masculino Tira TPU Palmilha Anatomica Borracha 37 ao 44 Chinelo Killer Point Masculino Tira TPU Palmilha Anatomica Borracha 37 ao 44" [ref=e1249]:
+                      - generic [ref=e1250]:
+                        - img "Chinelo Killer Point Masculino Tira TPU Palmilha Anatomica Borracha 37 ao 44" [ref=e1252]
+                        - paragraph [ref=e1254]: Chinelo Killer Point Masculino Tira TPU Palmilha Anatomica Borracha 37 ao 44
+                    - cell "R$ 38,90" [ref=e1255]:
+                      - paragraph [ref=e1256]: R$ 38,90
+                    - cell "1" [ref=e1257]:
+                      - paragraph [ref=e1260]: "1"
+                    - cell "1" [ref=e1261]:
+                      - generic [ref=e1262]: "1"
+                    - cell "R$ 22,90" [ref=e1263]:
+                      - paragraph [ref=e1264]: R$ 22,90
+                  - row "3 Blusa Moletom Baralho Blusa Moletom Baralho R$ 99,90 0 0 R$ 0,00" [ref=e1265]:
+                    - cell "3" [ref=e1266]:
+                      - generic [ref=e1267]: "3"
+                    - cell "Blusa Moletom Baralho Blusa Moletom Baralho" [ref=e1268]:
+                      - generic [ref=e1269]:
+                        - img "Blusa Moletom Baralho" [ref=e1271]
+                        - paragraph [ref=e1273]: Blusa Moletom Baralho
+                    - cell "R$ 99,90" [ref=e1274]:
+                      - paragraph [ref=e1275]: R$ 99,90
+                    - cell "0" [ref=e1276]:
+                      - paragraph [ref=e1278]: "0"
+                    - cell "0" [ref=e1279]:
+                      - generic [ref=e1280]: "0"
+                    - cell "R$ 0,00" [ref=e1281]:
+                      - paragraph [ref=e1282]: R$ 0,00
+                  - row "4 Kit Garrafa Térmica Urso com Xícaras Kit Garrafa Térmica Urso com Xícaras R$ 54,90 0 0 R$ 0,00" [ref=e1283]:
+                    - cell "4" [ref=e1284]:
+                      - generic [ref=e1285]: "4"
+                    - cell "Kit Garrafa Térmica Urso com Xícaras Kit Garrafa Térmica Urso com Xícaras" [ref=e1286]:
+                      - generic [ref=e1287]:
+                        - img "Kit Garrafa Térmica Urso com Xícaras" [ref=e1289]
+                        - paragraph [ref=e1291]: Kit Garrafa Térmica Urso com Xícaras
+                    - cell "R$ 54,90" [ref=e1292]:
+                      - paragraph [ref=e1293]: R$ 54,90
+                    - cell "0" [ref=e1294]:
+                      - paragraph [ref=e1296]: "0"
+                    - cell "0" [ref=e1297]:
+                      - generic [ref=e1298]: "0"
+                    - cell "R$ 0,00" [ref=e1299]:
+                      - paragraph [ref=e1300]: R$ 0,00
+                  - row "5 Camisa Feminina Baby Look Lindinha Camisa Feminina Baby Look Lindinha TikTok R$ 55,90 0 0 R$ 0,00" [ref=e1301]:
+                    - cell "5" [ref=e1302]:
+                      - generic [ref=e1303]: "5"
+                    - cell "Camisa Feminina Baby Look Lindinha Camisa Feminina Baby Look Lindinha TikTok" [ref=e1304]:
+                      - generic [ref=e1305]:
+                        - img "Camisa Feminina Baby Look Lindinha" [ref=e1307]
+                        - generic [ref=e1308]:
+                          - paragraph [ref=e1309]: Camisa Feminina Baby Look Lindinha
+                          - paragraph [ref=e1310]: TikTok
+                    - cell "R$ 55,90" [ref=e1311]:
+                      - paragraph [ref=e1312]: R$ 55,90
+                    - cell "0" [ref=e1313]:
+                      - paragraph [ref=e1315]: "0"
+                    - cell "0" [ref=e1316]:
+                      - generic [ref=e1317]: "0"
+                    - cell "R$ 0,00" [ref=e1318]:
+                      - paragraph [ref=e1319]: R$ 0,00
+                  - row "6 Cabo Carregador Tipo C V8 Cabo De Dados Micro Usb Cabo Carregador Tipo C V8 Cabo De Dados Micro Usb R$ 18,99 0 0 R$ 0,00" [ref=e1320]:
+                    - cell "6" [ref=e1321]:
+                      - generic [ref=e1322]: "6"
+                    - cell "Cabo Carregador Tipo C V8 Cabo De Dados Micro Usb Cabo Carregador Tipo C V8 Cabo De Dados Micro Usb" [ref=e1323]:
+                      - generic [ref=e1324]:
+                        - img "Cabo Carregador Tipo C V8 Cabo De Dados Micro Usb" [ref=e1326]
+                        - paragraph [ref=e1328]: Cabo Carregador Tipo C V8 Cabo De Dados Micro Usb
+                    - cell "R$ 18,99" [ref=e1329]:
+                      - paragraph [ref=e1330]: R$ 18,99
+                    - cell "0" [ref=e1331]:
+                      - paragraph [ref=e1333]: "0"
+                    - cell "0" [ref=e1334]:
+                      - generic [ref=e1335]: "0"
+                    - cell "R$ 0,00" [ref=e1336]:
+                      - paragraph [ref=e1337]: R$ 0,00
+              - generic [ref=e1338]:
+                - paragraph [ref=e1339]: Página 1 de 10
+                - generic [ref=e1340]:
+                  - button "Anterior" [disabled]:
+                    - img
+                    - text: Anterior
+                  - button "Próxima" [ref=e1341] [cursor=pointer]:
+                    - text: Próxima
+                    - img
+        - generic [ref=e1342]:
+          - generic [ref=e1344]:
+            - generic [ref=e1345]:
+              - generic [ref=e1346]:
+                - img
+                - text: Produtos com Margem Baixa
+              - generic [ref=e1347]: Produtos com margem de lucro abaixo de 20%
+            - generic [ref=e1348]:
+              - generic [ref=e1349]:
+                - generic [ref=e1350]:
+                  - generic [ref=e1351]:
+                    - img
+                    - paragraph [ref=e1352]: Críticos
+                  - paragraph [ref=e1353]: "2"
+                  - paragraph [ref=e1354]: Margem < 10%
+                - generic [ref=e1355]:
+                  - generic [ref=e1356]:
+                    - img
+                    - paragraph [ref=e1357]: Atenção
+                  - paragraph [ref=e1358]: "0"
+                  - paragraph [ref=e1359]: Margem 10-20%
+              - generic [ref=e1360]:
+                - generic [ref=e1361]:
+                  - generic [ref=e1362]:
+                    - paragraph [ref=e1364]: Chinelo Killer Point Masculino
+                    - generic [ref=e1365]: Crítico
+                  - generic [ref=e1366]:
+                    - generic [ref=e1367]:
+                      - paragraph [ref=e1368]: Margem
+                      - paragraph [ref=e1369]: 0.0%
+                    - generic [ref=e1370]:
+                      - paragraph [ref=e1371]: Lucro
+                      - paragraph [ref=e1372]: R$ 8,00
+                    - generic [ref=e1373]:
+                      - paragraph [ref=e1374]: Vendidos
+                      - paragraph [ref=e1375]: "1"
+                    - generic [ref=e1376]:
+                      - paragraph [ref=e1377]: Receita
+                      - paragraph [ref=e1378]: R$ 22,90
+                  - paragraph [ref=e1380]:
+                    - img
+                    - text: Considere revisar o preço ou fornecedor deste produto
+                - generic [ref=e1381]:
+                  - generic [ref=e1382]:
+                    - paragraph [ref=e1384]: Chinelo Masculino Brasil 10 Cor:Branco;Tamanho:37/38
+                    - generic [ref=e1385]: Crítico
+                  - generic [ref=e1386]:
+                    - generic [ref=e1387]:
+                      - paragraph [ref=e1388]: Margem
+                      - paragraph [ref=e1389]: 0.0%
+                    - generic [ref=e1390]:
+                      - paragraph [ref=e1391]: Lucro
+                      - paragraph [ref=e1392]: "-R$ 15,77"
+                    - generic [ref=e1393]:
+                      - paragraph [ref=e1394]: Vendidos
+                      - paragraph [ref=e1395]: "1"
+                    - generic [ref=e1396]:
+                      - paragraph [ref=e1397]: Receita
+                      - paragraph [ref=e1398]: R$ 0,00
+                  - paragraph [ref=e1400]:
+                    - img
+                    - text: Considere revisar o preço ou fornecedor deste produto
+          - generic [ref=e1402]:
+            - generic [ref=e1403]:
+              - heading "Relatório de Estoque" [level=3] [ref=e1404]
+              - generic [ref=e1405]: Página 1 de 48
+            - generic [ref=e1406]:
+              - generic [ref=e1407]:
+                - generic [ref=e1408]:
+                  - img "Garrafa Coelho Fofa 680ml com Canudo para Crianças Escola e Passeios" [ref=e1410]
+                  - generic [ref=e1411]:
+                    - paragraph [ref=e1412]: Garrafa Coelho Fofa 680ml com Canudo para Crianças Escola e Passeios
+                    - paragraph [ref=e1413]: R$ 44,20
+                  - generic [ref=e1414]:
+                    - img
+                    - text: Disponível
+                - generic [ref=e1416]:
+                  - generic [ref=e1417]: 402 un.
+                  - generic [ref=e1418]: 100%
+              - generic [ref=e1421]:
+                - generic [ref=e1422]:
+                  - img "Umidificador de Mesa Cápsula Espacial para Quarto Escritório e Home Office LED" [ref=e1424]
+                  - generic [ref=e1425]:
+                    - paragraph [ref=e1426]: Umidificador de Mesa Cápsula Espacial para Quarto Escritório e Home Office LED
+                    - paragraph [ref=e1427]: R$ 69,90
+                  - generic [ref=e1428]:
+                    - img
+                    - text: Disponível
+                - generic [ref=e1430]:
+                  - generic [ref=e1431]: 297 un.
+                  - generic [ref=e1432]: 100%
+              - generic [ref=e1435]:
+                - generic [ref=e1436]:
+                  - img "Mini Aparador de Pelos Elétrico USB Compacto para Rosto e Acabamento Preciso" [ref=e1438]
+                  - generic [ref=e1439]:
+                    - paragraph [ref=e1440]: Mini Aparador de Pelos Elétrico USB Compacto para Rosto e Acabamento Preciso
+                    - paragraph [ref=e1441]: R$ 37,00
+                  - generic [ref=e1442]:
+                    - img
+                    - text: Disponível
+                - generic [ref=e1444]:
+                  - generic [ref=e1445]: 292 un.
+                  - generic [ref=e1446]: 100%
+              - generic [ref=e1449]:
+                - generic [ref=e1450]:
+                  - img "Carregador MagSafe Portátil iPhone 12 13 14 Sem Fio Rápido e Compacto" [ref=e1452]
+                  - generic [ref=e1453]:
+                    - paragraph [ref=e1454]: Carregador MagSafe Portátil iPhone 12 13 14 Sem Fio Rápido e Compacto
+                    - paragraph [ref=e1455]: R$ 50,00
+                  - generic [ref=e1456]:
+                    - img
+                    - text: Disponível
+                - generic [ref=e1458]:
+                  - generic [ref=e1459]: 289 un.
+                  - generic [ref=e1460]: 100%
+              - generic [ref=e1463]:
+                - generic [ref=e1464]:
+                  - img "Jogo de Facas Colorido 6 Peças para Cozinha Gourmet Presente Criativo e Funcional" [ref=e1466]
+                  - generic [ref=e1467]:
+                    - paragraph [ref=e1468]: Jogo de Facas Colorido 6 Peças para Cozinha Gourmet Presente Criativo e Funcional
+                    - paragraph [ref=e1469]: R$ 41,30
+                  - generic [ref=e1470]:
+                    - img
+                    - text: Disponível
+                - generic [ref=e1472]:
+                  - generic [ref=e1473]: 289 un.
+                  - generic [ref=e1474]: 100%
+              - generic [ref=e1477]:
+                - generic [ref=e1478]:
+                  - img "Mini Ventilador Climatizador De Ar Com Reservatorio Para Agua" [ref=e1480]
+                  - generic [ref=e1481]:
+                    - paragraph [ref=e1482]: Mini Ventilador Climatizador De Ar Com Reservatorio Para Agua
+                    - paragraph [ref=e1483]: R$ 69,90
+                  - generic [ref=e1484]:
+                    - img
+                    - text: Disponível
+                - generic [ref=e1486]:
+                  - generic [ref=e1487]: 287 un.
+                  - generic [ref=e1488]: 100%
+            - generic [ref=e1491]:
+              - button "Anterior" [disabled]:
+                - img
+                - text: Anterior
+              - generic [ref=e1492]: 1-6 de 286
+              - button "Próxima" [ref=e1493] [cursor=pointer]:
+                - text: Próxima
+                - img
