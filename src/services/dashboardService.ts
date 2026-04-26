@@ -331,7 +331,19 @@ export class DashboardService {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) throw new Error('User not authenticated');
 
-      const organizationId = user.id;
+      // Buscar o organization_id do usuário na tabela organization_members
+      const { data: memberData, error: memberError } = await supabase
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (memberError || !memberData) {
+        console.error('[DashboardService] Error fetching organization:', memberError);
+        return [];
+      }
+
+      const organizationId = memberData.organization_id;
 
       const { data, error } = await supabase
         .from('marketplaces')
@@ -344,7 +356,7 @@ export class DashboardService {
       return data || [];
     } catch (error) {
       console.error('[DashboardService] Error fetching marketplaces:', error);
-      throw error;
+      return [];
     }
   }
 }
