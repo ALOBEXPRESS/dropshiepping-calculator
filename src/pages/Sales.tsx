@@ -208,6 +208,14 @@ const Sales: React.FC = () => {
         </div>
       )}
 
+      {/* Relatório de Comissão de Afiliados - Largura total */}
+      <div className="mb-6 animate-on-load">
+        <AffiliateCommissionChart 
+          organizationId={organizationId} 
+          refreshTrigger={refreshKey}
+        />
+      </div>
+
       {/* Layout principal: Grid 2:1 consistente */}
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 mb-6">
         {/* Coluna 1 - KPIs + Revenue Chart (ocupa 2/3) */}
@@ -233,14 +241,6 @@ const Sales: React.FC = () => {
 
         {/* Coluna 2 - Espaço vazio alinhado (ocupa 1/3) */}
         <div className="hidden lg:block" />
-      </div>
-
-      {/* Segunda linha: Affiliate Chart em largura total */}
-      <div className="mb-6 animate-on-load">
-        <AffiliateCommissionChart 
-          organizationId={organizationId} 
-          refreshTrigger={refreshKey}
-        />
       </div>
 
       {/* Análises Detalhadas (Tabs) + Transações — mesma grade 2:1 */}
