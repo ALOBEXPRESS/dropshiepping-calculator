@@ -10,6 +10,7 @@ import {
   GenderClassificationFunnel,
   GenderClassificationJobButton,
   CustomersStatistics,
+  AffiliateCommissionChart,
 } from '@/components/sales';
 import { RealtimeStatusBadge } from '@/components/sales/RealtimeStatusBadge';
 import { PendingOrders } from '@/components/PendingOrders';
@@ -229,6 +230,12 @@ const Sales: React.FC = () => {
               onOrderDeleted={handleRefresh}
               period={period}
               onPeriodChange={setPeriod}
+            />
+          </div>
+          <div className="animate-on-load">
+            <AffiliateCommissionChart 
+              organizationId={organizationId} 
+              refreshTrigger={refreshKey}
             />
           </div>
         </div>

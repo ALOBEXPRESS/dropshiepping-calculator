@@ -25,3 +25,4 @@ export { GenderFilterBar } from './GenderFilterBar';
 export { GenderClassificationJobButton } from './GenderClassificationJobButton';
 export { GenderLeadsList } from './GenderLeadsList';
 export { GenderClassificationFunnel } from './GenderClassificationFunnel';
+export { AffiliateCommissionChart } from './AffiliateCommissionChart';
