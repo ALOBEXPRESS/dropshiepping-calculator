@@ -211,9 +211,9 @@ const Sales: React.FC = () => {
         </div>
       )}
 
-      {/* Layout principal: Grid com 3 colunas - Alinhamento no topo */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6" style={{ alignItems: 'start' }}>
-        {/* Coluna 1 - KPIs + Revenue Chart + Affiliate Chart (ocupa 2/3) */}
+      {/* Layout principal: Grid com alinhamento preciso */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        {/* Coluna 1 - KPIs + Revenue Chart (ocupa 2/3) */}
         <div className="lg:col-span-2 flex flex-col gap-6">
           <div className="animate-on-load">
             <HeroSection 
@@ -232,18 +232,26 @@ const Sales: React.FC = () => {
               onPeriodChange={setPeriod}
             />
           </div>
-          <div className="animate-on-load">
-            <AffiliateCommissionChart 
-              organizationId={organizationId} 
-              refreshTrigger={refreshKey}
-            />
-          </div>
         </div>
 
-        {/* Coluna 2 - Funis de Leads (ocupa 1/3) - Alinhados com o topo do AffiliateCommissionChart */}
+        {/* Coluna 2 - Vazia para manter o grid (ocupa 1/3) */}
+        <div className="hidden lg:block" />
+      </div>
+
+      {/* Segunda linha: Affiliate Chart + Funis de Leads alinhados */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        {/* Coluna 1 - Affiliate Chart (ocupa 2/3) */}
+        <div className="lg:col-span-2 animate-on-load">
+          <AffiliateCommissionChart 
+            organizationId={organizationId} 
+            refreshTrigger={refreshKey}
+          />
+        </div>
+
+        {/* Coluna 2 - Funis de Leads (ocupa 1/3) - Alinhados com o topo e base do Affiliate Chart */}
         <div className="flex flex-col gap-6">
           {/* Funil de Classificação de Gênero */}
-          <div className="animate-on-load">
+          <div className="animate-on-load flex-1">
             <GenderClassificationFunnel 
               organizationId={organizationId} 
               refreshTrigger={refreshKey}
@@ -256,7 +264,7 @@ const Sales: React.FC = () => {
           </div>
           
           {/* Funil de Conversão de Leads */}
-          <div className="animate-on-load">
+          <div className="animate-on-load flex-1">
             <CustomersStatistics 
               organizationId={organizationId} 
               refreshTrigger={refreshKey}
