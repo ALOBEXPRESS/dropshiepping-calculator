@@ -50,8 +50,8 @@ export const CustomersStatistics: React.FC<CustomersStatisticsProps> = ({
   }
 
   return (
-    <Card className="p-6 border-gray-100 dark:border-zinc-800 h-full">
-      <div className="flex items-center justify-between mb-6">
+    <Card className="p-6 border-gray-100 dark:border-zinc-800 h-full flex flex-col">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             Funil de Leads
@@ -63,10 +63,10 @@ export const CustomersStatistics: React.FC<CustomersStatisticsProps> = ({
       </div>
 
       {chartData.length > 0 ? (
-        <div className="space-y-6">
+        <div className="space-y-4 flex-1 flex flex-col">
           {/* Donut Chart */}
-          <div className="relative flex items-center justify-center">
-            <ResponsiveContainer width="100%" height={220}>
+          <div className="relative flex items-center justify-center flex-1">
+            <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie
                   data={chartData}
@@ -106,11 +106,11 @@ export const CustomersStatistics: React.FC<CustomersStatisticsProps> = ({
           </div>
 
           {/* Legenda */}
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {data.stages.map((stage) => (
               <div
                 key={stage.stage}
-                className="flex items-center justify-between py-1.5 border-b border-gray-100 dark:border-zinc-800 last:border-0"
+                className="flex items-center justify-between py-1 border-b border-gray-100 dark:border-zinc-800 last:border-0"
               >
                 <div className="flex items-center gap-2.5">
                   <div

@@ -249,9 +249,9 @@ const Sales: React.FC = () => {
         </div>
 
         {/* Coluna 2 - Funis de Leads (ocupa 1/3) - Alinhados com o topo e base do Affiliate Chart */}
-        <div className="flex flex-col gap-6">
+        <div className="grid grid-rows-2 gap-6">
           {/* Funil de Classificação de Gênero */}
-          <div className="animate-on-load flex-1">
+          <div className="animate-on-load">
             <GenderClassificationFunnel 
               organizationId={organizationId} 
               refreshTrigger={refreshKey}
@@ -260,11 +260,12 @@ const Sales: React.FC = () => {
                 const button = document.querySelector('[data-gender-classify-button]') as HTMLButtonElement;
                 if (button) button.click();
               }}
+              className="h-full"
             />
           </div>
           
           {/* Funil de Conversão de Leads */}
-          <div className="animate-on-load flex-1">
+          <div className="animate-on-load">
             <CustomersStatistics 
               organizationId={organizationId} 
               refreshTrigger={refreshKey}

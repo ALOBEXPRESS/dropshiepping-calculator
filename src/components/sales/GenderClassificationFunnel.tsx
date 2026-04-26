@@ -160,9 +160,9 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
   }
 
   return (
-    <Card className={cn("p-6 border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900", className)}>
+    <Card className={cn("p-6 border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col", className)}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1" style={{ fontFamily: "'Fira Sans', sans-serif" }}>
             Funil de Leads
@@ -182,7 +182,7 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
       </div>
 
       {/* Donut Chart + Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 flex-1">
         {/* Donut Chart */}
         <div className="flex items-center justify-center">
           <div className="relative w-48 h-48">
@@ -292,7 +292,7 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
       </div>
 
       {/* Taxa de Conversão */}
-      <div className="p-4 rounded-lg bg-gradient-to-r from-blue-50 to-pink-50 dark:from-blue-950/20 dark:to-pink-950/20 border border-blue-200 dark:border-blue-800/30">
+      <div className="p-3 rounded-lg bg-gradient-to-r from-blue-50 to-pink-50 dark:from-blue-950/20 dark:to-pink-950/20 border border-blue-200 dark:border-blue-800/30">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -314,7 +314,7 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
 
       {/* CTA Button */}
       {stats.unclassified > 0 && onClassifyClick && (
-        <div className="mt-6">
+        <div className="mt-4">
           <Button
             onClick={onClassifyClick}
             className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold shadow-lg shadow-orange-500/30 transition-all duration-200"
