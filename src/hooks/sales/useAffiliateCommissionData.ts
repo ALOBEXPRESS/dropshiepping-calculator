@@ -132,6 +132,7 @@ export const useAffiliateCommissionData = (organizationId: string, refreshTrigge
 
   return {
     data: filteredData,
+    allData: data, // Dados originais sem filtro de marketplace
     marketplaces,
     selectedMarketplace,
     setSelectedMarketplace,

@@ -211,9 +211,9 @@ const Sales: React.FC = () => {
         </div>
       )}
 
-      {/* Layout principal: Coluna 1 (KPIs + Gráfico) | Coluna 2 (Funis de Leads) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        {/* Coluna 1 - KPIs + Revenue Chart (ocupa 2/3) */}
+      {/* Layout principal: Grid com 3 colunas - Alinhamento no topo */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6" style={{ alignItems: 'start' }}>
+        {/* Coluna 1 - KPIs + Revenue Chart + Affiliate Chart (ocupa 2/3) */}
         <div className="lg:col-span-2 flex flex-col gap-6">
           <div className="animate-on-load">
             <HeroSection 
@@ -240,7 +240,7 @@ const Sales: React.FC = () => {
           </div>
         </div>
 
-        {/* Coluna 2 - Funis de Leads (ocupa 1/3) */}
+        {/* Coluna 2 - Funis de Leads (ocupa 1/3) - Alinhados com o topo do AffiliateCommissionChart */}
         <div className="flex flex-col gap-6">
           {/* Funil de Classificação de Gênero */}
           <div className="animate-on-load">

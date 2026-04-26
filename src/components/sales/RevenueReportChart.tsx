@@ -27,6 +27,7 @@ import { Loader2, Trash2 } from 'lucide-react';
 import type { PeriodFilter } from '@/types/sales';
 import { toast } from 'sonner';
 import { ReferenceService, type Marketplace } from '@/services/referenceService';
+import { AffiliateAccordion } from './AffiliateAccordion';
 
 interface RevenueReportChartProps {
   organizationId: string;
@@ -47,6 +48,7 @@ interface OrderDetail {
   product_name?: string;
   product_sku?: string;
   product_image_url?: string;
+  affiliate_id?: string | null;
   products?: {
     name: string;
     sku?: string;
@@ -2157,6 +2159,25 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       </div>
                     )}
                   </div>
+                  )}
+
+                  {/* Accordion de Afiliados */}
+                  {selectedOrder?.order_id && selectedOrder?.marketplace && (
+                    <AffiliateAccordion
+                      orderId={selectedOrder.order_id}
+                      marketplaceId={resolvedMarketplaceConfig?.id || ''}
+                      organizationId={organizationId}
+                      currentAffiliateId={selectedOrder.affiliate_id}
+                      onAffiliateChange={(affiliateId) => {
+                        // Atualizar o estado local se necessário
+                        if (selectedOrder) {
+                          setSelectedOrder({
+                            ...selectedOrder,
+                            affiliate_id: affiliateId,
+                          });
+                        }
+                      }}
+                    />
                   )}
 
                   {/* Lucro Real */}

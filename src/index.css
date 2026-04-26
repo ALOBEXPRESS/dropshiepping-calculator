@@ -18,6 +18,18 @@
   }
   .scrollbar-thin::-webkit-scrollbar {
     width: 5px;
+    height: 8px;
+  }
+  .scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
+    background-color: rgb(209 213 219);
+    border-radius: 9999px;
+  }
+  .dark .scrollbar-thumb-zinc-700::-webkit-scrollbar-thumb {
+    background-color: rgb(63 63 70);
+    border-radius: 9999px;
+  }
+  .scrollbar-track-transparent::-webkit-scrollbar-track {
+    background-color: transparent;
   }
   .scrollbar-thumb-white\/30::-webkit-scrollbar-thumb {
     background-color: rgba(255, 255, 255, 0.3);
@@ -539,4 +551,12 @@ th {
 /* GSAP initial state — prevents flash before animation runs */
 .product-field {
   opacity: 0;
+}
+
+/* Dashboard Sales Layout - Alinhamento dos Funis */
+@media (min-width: 1024px) {
+  /* Garantir que o grid alinhe no topo */
+  .grid.lg\:grid-cols-3 {
+    align-items: start !important;
+  }
 }
