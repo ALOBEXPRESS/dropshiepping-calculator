@@ -564,7 +564,13 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                                        if (checked) {
                                            const toAdd = mktAffiliates
                                                .filter(a => !affiliates.some(aff => aff.name === a.name))
-                                               .map(a => ({ id: crypto.randomUUID(), name: a.name, percentage: (a.marketplace_commission_rate ?? a.percentage).toString(), marketplaceName }));
+                                               .map(a => ({ 
+                                                   id: crypto.randomUUID(), 
+                                                   name: a.name, 
+                                                   percentage: (a.marketplace_commission_rate ?? a.percentage).toString(), 
+                                                   marketplaceName,
+                                                   username: a.tiktok || undefined
+                                               }));
                                            setAffiliates([...affiliates, ...toAdd]);
                                        } else {
                                            setAffiliates(affiliates.filter(aff => !mktAffiliates.some(a => a.name === aff.name)));
@@ -619,7 +625,8 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                                                                                    id: crypto.randomUUID(),
                                                                                    name: affiliateDB.name,
                                                                                    percentage: (affiliateDB.marketplace_commission_rate ?? affiliateDB.percentage).toString(),
-                                                                                   marketplaceName
+                                                                                   marketplaceName,
+                                                                                   username: affiliateDB.tiktok || undefined
                                                                                }]);
                                                                            } else {
                                                                                setAffiliates(affiliates.filter(aff => aff.name !== affiliateDB.name));

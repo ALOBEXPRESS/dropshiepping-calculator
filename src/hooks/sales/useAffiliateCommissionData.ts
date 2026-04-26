@@ -10,6 +10,8 @@ export interface AffiliateCommissionProduct {
   marketplace_id: string;
   commission_rate: number;
   max_affiliate_percentage: number;
+  affiliate_name?: string;
+  affiliate_username?: string;
 }
 
 export interface MarketplaceOption {
@@ -67,6 +69,7 @@ export const useAffiliateCommissionData = (organizationId: string, refreshTrigge
             name: string;
             percentage: string;
             marketplaceName: string;
+            username?: string;
           }> | null;
 
           if (!affiliates || affiliates.length === 0) continue;
@@ -76,8 +79,15 @@ export const useAffiliateCommissionData = (organizationId: string, refreshTrigge
             ...affiliates.map(a => parseFloat(a.percentage || '0'))
           );
 
+          // Pegar o afiliado com a maior comissão
+          const topAffiliate = affiliates.reduce((best, current) => {
+            const currentPercentage = parseFloat(current.percentage || '0');
+            const bestPercentage = parseFloat(best.percentage || '0');
+            return currentPercentage > bestPercentage ? current : best;
+          }, affiliates[0]);
+
           // Pegar o marketplace do afiliado (pode ser diferente do marketplace_id do produto)
-          const affiliateMarketplaceName = affiliates[0]?.marketplaceName || '';
+          const affiliateMarketplaceName = topAffiliate?.marketplaceName || '';
 
           // Buscar o marketplace correspondente
           const marketplace = marketplacesList.find(
@@ -95,6 +105,8 @@ export const useAffiliateCommissionData = (organizationId: string, refreshTrigge
             marketplace_id: marketplace.id,
             commission_rate: parseFloat(marketplace.affiliate_commission_rate?.toString() || '0'),
             max_affiliate_percentage: maxAffiliatePercentage,
+            affiliate_name: topAffiliate?.name || undefined,
+            affiliate_username: topAffiliate?.username || undefined,
           });
         }
 

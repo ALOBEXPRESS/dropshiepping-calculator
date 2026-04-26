@@ -145,6 +145,16 @@ export const AffiliateCommissionChart: React.FC<AffiliateCommissionChartProps> =
         const product = chartData[dataPointIndex];
         if (!product) return '';
 
+        const affiliateInfo = product.affiliate_name
+          ? `
+            <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(2,6,23,0.08);">
+              <div style="font-size:10px;color:#6b7280;margin-bottom:4px;">Afiliado</div>
+              <div style="font-size:12px;color:#111827;font-weight:600;">${product.affiliate_name}</div>
+              ${product.affiliate_username ? `<div style="font-size:11px;color:#8b5cf6;font-family:monospace;">@${product.affiliate_username}</div>` : ''}
+            </div>
+          `
+          : '';
+
         return `
           <div style="background:rgba(255,255,255,0.98);border:1px solid rgba(2,6,23,0.08);border-radius:12px;padding:12px;box-shadow:0 18px 50px rgba(2,6,23,0.14);backdrop-filter:blur(10px);min-width:240px;">
             <div style="margin-bottom:8px;">
@@ -161,6 +171,7 @@ export const AffiliateCommissionChart: React.FC<AffiliateCommissionChartProps> =
                 <div style="font-size:12px;color:#111827;font-weight:600;">${product.stock_quantity}</div>
               </div>
             </div>
+            ${affiliateInfo}
             <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(2,6,23,0.08);">
               <div style="display:flex;justify-content:space-between;align-items:center;">
                 <span style="font-size:11px;color:#6b7280;font-weight:600;">Comissão Afiliado:</span>
