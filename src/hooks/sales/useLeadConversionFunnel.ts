@@ -14,7 +14,11 @@ interface LeadConversionFunnel {
   conversionRate: number;
 }
 
-export const useLeadConversionFunnel = (organizationId: string, refreshTrigger?: number) => {
+export const useLeadConversionFunnel = (
+  organizationId: string, 
+  refreshTrigger?: number,
+  period: 'day' | 'week' | 'month' | 'year' | 'total' = 'total'
+) => {
   const [data, setData] = useState<LeadConversionFunnel>({
     stages: [],
     totalLeads: 0,
@@ -31,15 +35,52 @@ export const useLeadConversionFunnel = (organizationId: string, refreshTrigger?:
       setError(null);
 
       try {
-        // Buscar todos os leads com contagem de pedidos processados (tabela orders)
-        const { data: leads, error: leadsError } = await supabase
+        // Calcular o intervalo de datas baseado no período
+        const now = new Date();
+        let startDate: Date | null = null;
+
+        switch (period) {
+          case 'day':
+            startDate = new Date(now);
+            startDate.setHours(0, 0, 0, 0);
+            break;
+          case 'week':
+            startDate = new Date(now);
+            startDate.setDate(now.getDate() - 7);
+            startDate.setHours(0, 0, 0, 0);
+            break;
+          case 'month':
+            startDate = new Date(now);
+            startDate.setMonth(now.getMonth() - 1);
+            startDate.setHours(0, 0, 0, 0);
+            break;
+          case 'year':
+            startDate = new Date(now);
+            startDate.setFullYear(now.getFullYear() - 1);
+            startDate.setHours(0, 0, 0, 0);
+            break;
+          case 'total':
+          default:
+            startDate = null; // Sem filtro de data
+            break;
+        }
+
+        // Construir query com filtro de data se necessário
+        const query = supabase
           .from('leads')
           .select(`
             id,
             total_orders,
+            created_at,
             orders!lead_id (id)
           `)
           .eq('organization_id', organizationId);
+
+        if (startDate) {
+          query.gte('created_at', startDate.toISOString());
+        }
+
+        const { data: leads, error: leadsError } = await query;
 
         if (leadsError) throw leadsError;
 
@@ -120,7 +161,7 @@ export const useLeadConversionFunnel = (organizationId: string, refreshTrigger?:
     };
 
     fetchLeadFunnel();
-  }, [organizationId, refreshTrigger]);
+  }, [organizationId, refreshTrigger, period]);
 
   return { data, loading, error };
 };

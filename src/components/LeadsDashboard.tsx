@@ -101,6 +101,7 @@ const LeadsDashboard: React.FC<LeadsDashboardProps> = () => {
               <GenderClassificationFunnel 
                 organizationId={organizationId} 
                 refreshTrigger={refreshKey}
+                period={period}
                 onClassifyClick={() => {
                   const button = document.querySelector('[data-gender-classify-button]') as HTMLButtonElement;
                   if (button) button.click();
@@ -111,6 +112,7 @@ const LeadsDashboard: React.FC<LeadsDashboardProps> = () => {
               <CustomersStatistics 
                 organizationId={organizationId} 
                 refreshTrigger={refreshKey}
+                period={period}
               />
             </section>
           )}

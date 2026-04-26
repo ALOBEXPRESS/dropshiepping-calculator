@@ -7,6 +7,7 @@ import { useLeadConversionFunnel } from '@/hooks/sales/useLeadConversionFunnel';
 interface CustomersStatisticsProps {
   organizationId: string;
   refreshTrigger?: number;
+  period?: 'day' | 'week' | 'month' | 'year' | 'total';
 }
 
 // Map gradient class → solid hex for recharts (which can't use Tailwind gradients)
@@ -20,8 +21,9 @@ const STAGE_COLORS: Record<string, string> = {
 export const CustomersStatistics: React.FC<CustomersStatisticsProps> = ({
   organizationId,
   refreshTrigger,
+  period = 'total',
 }) => {
-  const { data, loading, error } = useLeadConversionFunnel(organizationId, refreshTrigger);
+  const { data, loading, error } = useLeadConversionFunnel(organizationId, refreshTrigger, period);
 
   const chartData = data.stages
     .filter((s) => s.count > 0)
