@@ -106,9 +106,10 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
       }
 
       // Construir query com filtro de data se necessário
+      // Buscar leads únicos (sem duplicação por múltiplos pedidos)
       const query = supabase
         .from('leads')
-        .select('gender, created_at')
+        .select('id, gender, created_at')
         .eq('organization_id', organizationId);
 
       if (startDate) {
@@ -119,14 +120,27 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
         query.eq('marketplace_id', marketplaceId);
       }
 
-      const { data, error: fetchError } = await query;
+      const { data: rawData, error: fetchError } = await query;
 
       if (fetchError) throw fetchError;
 
-      const total = data?.length || 0;
-      const male = data?.filter(l => l.gender === 'male').length || 0;
-      const female = data?.filter(l => l.gender === 'female').length || 0;
-      const unclassified = data?.filter(l => l.gender === null).length || 0;
+      // Garantir que cada lead seja contado apenas uma vez
+      // Usar Map para agrupar por ID e evitar duplicação
+      const uniqueLeadsMap = new Map();
+      if (rawData) {
+        for (const lead of rawData) {
+          if (!uniqueLeadsMap.has(lead.id)) {
+            uniqueLeadsMap.set(lead.id, lead);
+          }
+        }
+      }
+
+      const data = Array.from(uniqueLeadsMap.values());
+
+      const total = data.length;
+      const male = data.filter(l => l.gender === 'male').length;
+      const female = data.filter(l => l.gender === 'female').length;
+      const unclassified = data.filter(l => l.gender === null).length;
 
       const malePercentage = total > 0 ? (male / total) * 100 : 0;
       const femalePercentage = total > 0 ? (female / total) * 100 : 0;
