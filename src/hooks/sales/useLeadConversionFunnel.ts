@@ -82,9 +82,32 @@ export const useLeadConversionFunnel = (
           query.eq('marketplace_id', marketplaceId);
         }
 
-        const { data: allLeads, error: leadsError } = await query;
+        const { data: rawLeads, error: leadsError } = await query;
 
         if (leadsError) throw leadsError;
+
+        // Agrupar pedidos por lead para evitar duplicação
+        // Quando um lead tem múltiplos pedidos, o Supabase retorna múltiplas linhas
+        const leadsMap = new Map();
+        if (rawLeads) {
+          for (const row of rawLeads) {
+            if (!leadsMap.has(row.id)) {
+              leadsMap.set(row.id, {
+                id: row.id,
+                total_orders: row.total_orders,
+                created_at: row.created_at,
+                orders: []
+              });
+            }
+            // Adicionar pedidos ao array
+            if (row.orders && Array.isArray(row.orders)) {
+              const lead = leadsMap.get(row.id);
+              lead.orders.push(...row.orders);
+            }
+          }
+        }
+        
+        const allLeads = Array.from(leadsMap.values());
 
         // Filtrar leads baseado no período
         let leads = allLeads;
@@ -94,7 +117,7 @@ export const useLeadConversionFunnel = (
             const createdInPeriod = new Date(lead.created_at) >= startDate;
             
             // OU se teve algum pedido processado no período
-            const hasOrderInPeriod = Array.isArray(lead.orders) && lead.orders.some(order => {
+            const hasOrderInPeriod = Array.isArray(lead.orders) && lead.orders.some((order: any) => {
               if (!order.order_date) return false;
               return new Date(order.order_date) >= startDate;
             });
@@ -102,8 +125,6 @@ export const useLeadConversionFunnel = (
             return createdInPeriod || hasOrderInPeriod;
           });
         }
-
-        if (leadsError) throw leadsError;
 
         if (!leads || leads.length === 0) {
           setData({ stages: [], totalLeads: 0, conversionRate: 0 });
