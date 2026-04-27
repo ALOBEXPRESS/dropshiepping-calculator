@@ -203,6 +203,7 @@ export interface ProductItem {
     url: string;
     copy: string;
   }>;
+  lowestMarketplacePrice?: string | number;
 }
 
 export interface CalculationResult {

@@ -172,6 +172,7 @@ type EditProductFormData = {
     url: string;
     copy: string;
   }>;
+  lowestMarketplacePrice: string;
 };
 
 export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, isOpen, onClose, onSave, mode = 'edit' }) => {
@@ -365,6 +366,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     promoVideoChannelNames: source?.promoVideoChannelNames || {},
     promoVideoChannelCopies: source?.promoVideoChannelCopies || {},
     additionalVideos: Array.isArray(source?.additionalVideos) ? source.additionalVideos : [],
+    lowestMarketplacePrice: source?.lowestMarketplacePrice !== undefined && source?.lowestMarketplacePrice !== null ? String(source.lowestMarketplacePrice) : '',
     });
   };
   const [formData, setFormData] = useState<EditProductFormData>(() => buildFormData(product));
@@ -864,6 +866,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       additionalVideos: formData.additionalVideos,
       shippingOption: (formData.shopeeFreeShipping ? 'with' : 'without') as 'with' | 'without',
       marketplaceShippingCost: formData.marketplace === 'shopee' ? undefined : formData.shippingFee,
+      lowestMarketplacePrice: parseCurrency(formData.lowestMarketplacePrice),
     };
     
     console.log('=== UPDATED PRODUCT ===');
@@ -1592,6 +1595,19 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                         <SelectItem value="seedance">Seedance</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="lowestMarketplacePrice" className="text-right dark:text-white">
+                      Menor Preço {marketplaceLabel}
+                    </Label>
+                    <Input
+                      id="lowestMarketplacePrice"
+                      type="text"
+                      value={formData.lowestMarketplacePrice}
+                      onChange={(e) => handleCurrencyChange(e, (val) => handleChange('lowestMarketplacePrice', val))}
+                      className="col-span-3"
+                      placeholder="R$ 0,00"
+                    />
                   </div>
                 </>
               )}
