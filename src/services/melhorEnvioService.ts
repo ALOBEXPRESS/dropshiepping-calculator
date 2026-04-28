@@ -87,17 +87,18 @@ export class MelhorEnvioError extends Error {
  * @returns Token de autenticação
  * @throws {MelhorEnvioError} Se o token não estiver configurado
  */
-function getApiToken(): string {
-  const token = import.meta.env.VITE_MELHOR_ENVIO_TOKEN;
-  
-  if (!token) {
-    throw new MelhorEnvioError(
-      'Token da API Melhor Envio não configurado. Verifique a variável de ambiente VITE_MELHOR_ENVIO_TOKEN.'
-    );
-  }
-  
-  return token;
-}
+// Função removida - agora usamos proxy via Supabase Edge Function
+// function getApiToken(): string {
+//   const token = import.meta.env.VITE_MELHOR_ENVIO_TOKEN;
+//   
+//   if (!token) {
+//     throw new MelhorEnvioError(
+//       'Token da API Melhor Envio não configurado. Verifique a variável de ambiente VITE_MELHOR_ENVIO_TOKEN.'
+//     );
+//   }
+//   
+//   return token;
+// }
 
 /**
  * Calcula o custo de frete entre dois CEPs usando a API Melhor Envio
