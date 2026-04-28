@@ -154,10 +154,9 @@ export async function calculateShipping(
       throw new MelhorEnvioError('CEP inválido. Verifique a localização do fornecedor e destino.');
     }
 
-    const token = getApiToken();
-    console.log('[Melhor Envio] Token obtido:', token ? `${token.substring(0, 10)}...` : 'VAZIO');
-    
-    const endpoint = 'https://www.melhorenvio.com.br/api/v2/me/shipment/calculate';
+    // Usar proxy do Supabase Edge Function para evitar CORS
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const endpoint = `${supabaseUrl}/functions/v1/melhor-envio-proxy`;
 
     const requestBody = {
       from: {
@@ -180,13 +179,12 @@ export async function calculateShipping(
     };
 
     console.log('[Melhor Envio] Request body:', JSON.stringify(requestBody, null, 2));
+    console.log('[Melhor Envio] Endpoint:', endpoint);
 
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(requestBody)
     });
@@ -198,6 +196,13 @@ export async function calculateShipping(
       const responseText = await response.text();
       console.error('[Melhor Envio] Error response:', responseText);
 
+      let errorData: any = {};
+      try {
+        errorData = JSON.parse(responseText);
+      } catch (e) {
+        // Ignore parse error
+      }
+
       if (response.status === 401) {
         throw new MelhorEnvioError(
           'Erro ao calcular frete. Token de autenticação inválido ou expirado.',
@@ -206,13 +211,7 @@ export async function calculateShipping(
       }
 
       if (response.status === 400) {
-        let errorData: any = {};
-        try {
-          errorData = JSON.parse(responseText);
-        } catch (e) {
-          // Ignore parse error
-        }
-        const errorMessage = errorData.message || responseText || 'Dados inválidos na requisição';
+        const errorMessage = errorData.message || errorData.error || responseText || 'Dados inválidos na requisição';
         throw new MelhorEnvioError(
           `Erro ao calcular frete: ${errorMessage}`,
           400
@@ -220,12 +219,6 @@ export async function calculateShipping(
       }
 
       if (response.status === 422) {
-        let errorData: any = {};
-        try {
-          errorData = JSON.parse(responseText);
-        } catch (e) {
-          // Ignore parse error
-        }
         throw new MelhorEnvioError(
           `CEP inválido ou não encontrado: ${JSON.stringify(errorData)}`,
           422
