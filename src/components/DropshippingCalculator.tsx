@@ -1105,16 +1105,16 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
     
     if (supplierCode === 'ALOBEXPRESS_01' || supplierCode === 'ALOBEXPRESS') {
       console.log('[handleFillFromBlingProduct] Detected ALOBEXPRESS');
-      handleSupplierChange('ALOBEXPRESS');
+      handleSupplierChange('ALOBEXPRESS', suppliersList);
     } else if (supplierCode === 'ALOBFOR_DROP_01' || productSkuUpper.startsWith('YEIZ')) {
       console.log('[handleFillFromBlingProduct] Detected Tyr');
-      handleSupplierChange('Tyr');
+      handleSupplierChange('Tyr', suppliersList);
     } else if (supplierCode === 'ALOBFOR_DROP_02') {
       console.log('[handleFillFromBlingProduct] Detected Dogama');
-      handleSupplierChange('Dogama');
+      handleSupplierChange('Dogama', suppliersList);
     } else {
       console.log('[handleFillFromBlingProduct] No supplier detected, clearing');
-      handleSupplierChange('');
+      handleSupplierChange('', suppliersList);
     }
     // Override supplier fee values with product-saved values if present
     const p = product as unknown as { supplierFeeType?: string; supplierFeeValue?: string | number; supplierGatewayFeeType?: string; supplierGatewayFeeValue?: string | number };
@@ -2614,6 +2614,17 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                     step="0.01"
                   />
                 </div>
+                {/* Aviso de dimensões obrigatórias para Mercado Livre */}
+                {marketplace === 'mercadolivre' && parseCurrency(costPrice) >= 79 && (!weight || !width || !height || !depth) && (
+                  <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-3 mt-2 animate-fadeIn">
+                    <p className="text-xs text-blue-800 dark:text-blue-200 font-semibold flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                      <span>
+                        <strong>⚠️ Importante:</strong> Para produtos com preço ≥ R$ 79,00 no Mercado Livre, as dimensões são obrigatórias para calcular o custo de frete grátis que você pagará.
+                      </span>
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Preço de Venda Manual */}
@@ -2636,17 +2647,6 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                     step="0.01"
                   />
                 </div>
-                {/* Aviso de frete obrigatório para Mercado Livre */}
-                {marketplace === 'mercadolivre' && parseCurrency(manualSellingPrice) >= 79 && (
-                  <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-3 mt-2 animate-fadeIn">
-                    <p className="text-xs text-blue-800 dark:text-blue-200 font-semibold flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                      <span>
-                        <strong>Importante:</strong> Para produtos com preço ≥ R$ 79,00 no Mercado Livre, as dimensões são obrigatórias para calcular o custo de frete grátis que você pagará.
-                      </span>
-                    </p>
-                  </div>
-                )}
               </div>
 
               {/* Markup */}

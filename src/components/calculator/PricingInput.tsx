@@ -16,6 +16,10 @@ interface PricingInputProps {
   setCompetitorPrice: (value: string) => void;
   competitorMarkup: string;
   setCompetitorMarkup: (value: string) => void;
+  weight: string;
+  width: string;
+  height: string;
+  depth: string;
 }
 
 export const PricingInput: React.FC<PricingInputProps> = ({
@@ -30,8 +34,26 @@ export const PricingInput: React.FC<PricingInputProps> = ({
   competitorPrice,
   setCompetitorPrice,
   competitorMarkup,
-  setCompetitorMarkup
+  setCompetitorMarkup,
+  weight,
+  width,
+  height,
+  depth
 }) => {
+  // Helper to parse currency string to number
+  const parseCurrency = (value: string | number): number => {
+    if (typeof value === 'number') return value;
+    if (!value) return 0;
+    const cleaned = String(value).replace(/[^\d,.-]/g, '').replace(',', '.');
+    return parseFloat(cleaned) || 0;
+  };
+
+  // Check if dimensions are missing
+  const hasMissingDimensions = !weight || !width || !height || !depth;
+  
+  // Check if price is >= 79
+  const costPriceValue = parseCurrency(costPrice);
+  const showDimensionsWarning = marketplace === 'mercadolivre' && costPriceValue >= 79 && hasMissingDimensions;
   return (
     <>
       <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn">
@@ -53,6 +75,14 @@ export const PricingInput: React.FC<PricingInputProps> = ({
             step="0.01"
           />
         </div>
+        {showDimensionsWarning && (
+          <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
+            <p className="text-xs text-blue-700 dark:text-blue-300">
+              <strong>⚠️ Importante:</strong> Para produtos com preço ≥ R$ 79,00 no Mercado Livre, 
+              as dimensões são obrigatórias para calcular o custo de frete grátis que você pagará.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Preço de Venda Manual */}

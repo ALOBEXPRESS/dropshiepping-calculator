@@ -187,10 +187,10 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
             setSupplier_id(value);
             const selectedSupplier = suppliersList.find(s => s.id === value);
             if (selectedSupplier) {
-              handleSupplierChange(selectedSupplier.name);
+              handleSupplierChange(selectedSupplier.name, suppliersList);
             } else {
               // fallback: value pode ser o nome direto
-              handleSupplierChange(value);
+              handleSupplierChange(value, suppliersList);
             }
           }}
         >
@@ -350,14 +350,6 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Ex: 20</p>
           </div>
         </div>
-        {marketplace === 'mercadolivre' && (
-          <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
-            <p className="text-xs text-blue-700 dark:text-blue-300">
-              <strong>⚠️ Importante:</strong> Para produtos com preço ≥ R$ 79,00 no Mercado Livre, 
-              as dimensões são obrigatórias para calcular o custo de frete grátis que você pagará.
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Imagem do Produto */}
