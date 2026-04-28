@@ -125,6 +125,15 @@ export const MercadoLivreConfig: React.FC<MercadoLivreConfigProps> = ({
     return price >= 79;
   }, [manualSellingPrice]);
 
+  // Efeito para zerar o frete quando o preço for menor que R$ 79
+  useEffect(() => {
+    if (!requiresFreeShipping() && mlShippingCost !== '0') {
+      setMlShippingCost('0');
+      setAvailableShippingOptions([]);
+      setShippingMethod('');
+    }
+  }, [requiresFreeShipping, mlShippingCost, setMlShippingCost]);
+
   // Calcula o frete automaticamente
   const calculateShippingCost = useCallback(async () => {
     if (!canCalculateShipping() || !supplierName) {
@@ -417,13 +426,20 @@ export const MercadoLivreConfig: React.FC<MercadoLivreConfigProps> = ({
                   inputMode="decimal"
                   value={mlShippingCost}
                   onChange={(e) => handleFloatInput(setMlShippingCost)(e)}
-                  className="pl-8 h-8 text-sm bg-white dark:bg-gray-800 dark:text-white"
+                  className="pl-8 h-8 text-sm bg-white dark:bg-gray-800 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="0,00"
+                  disabled={!requiresFreeShipping()}
                />
             </div>
-            <p className="text-[10px] text-gray-500 dark:text-gray-200">
-               *Obrigatório para produtos &gt; R$ 79 (Frete Grátis)
-            </p>
+            {requiresFreeShipping() ? (
+              <p className="text-[10px] text-gray-500 dark:text-gray-200">
+                *Obrigatório para produtos &gt; R$ 79 (Frete Grátis)
+              </p>
+            ) : (
+              <p className="text-[10px] text-orange-600 dark:text-orange-400 font-semibold">
+                ⚠️ Frete grátis é obrigatório apenas para produtos com preço ≥ R$ 79,00
+              </p>
+            )}
             {requiresFreeShipping() && !canCalculateShipping() && (
               <p className="text-[10px] text-orange-600 dark:text-orange-400 font-semibold">
                 ⚠️ Preencha as dimensões do produto para calcular o frete automaticamente
