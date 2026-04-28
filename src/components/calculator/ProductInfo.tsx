@@ -44,7 +44,7 @@ interface ProductInfoProps {
   supplierName: string;
   supplier_id: string;
   setSupplier_id: (value: string) => void;
-  handleSupplierChange: (name: string) => void;
+  handleSupplierChange: (name: string, suppliersList?: Array<{ id: string; name: string }>) => void;
   suppliersList: Supplier[];
   accountHoldersList: AccountHolder[];
 }
