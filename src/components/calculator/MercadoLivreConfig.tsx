@@ -1,12 +1,15 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AnimatedCheckbox } from "@/components/ui/AnimatedCheckbox";
-import { Truck } from 'lucide-react';
-import { mercadoLivreTaxes } from '../../services/pricingService';
+import { Button } from "@/components/ui/button";
+import { Truck, Loader2, Calculator } from 'lucide-react';
+import { mercadoLivreTaxes, SUPPLIER_ADDRESSES, SHIPPING_REGIONS } from '../../services/pricingService';
 import { formatCurrency, parseCurrency } from '../../utils/currency';
+import { calculateShipping, type ProductDimensions } from '../../services/melhorEnvioService';
+import { toast } from 'sonner';
 
 interface MercadoLivreConfigProps {
   marketplace: string;
@@ -43,6 +46,13 @@ interface MercadoLivreConfigProps {
   mercadoAdsBudgetType: 'diaria';
   setMercadoAdsBudgetType: (value: 'diaria') => void;
   handleFloatInput: (setter: (value: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => void;
+  // Props para cálculo automático de frete
+  supplierName?: string;
+  weight?: string;
+  width?: string;
+  height?: string;
+  depth?: string;
+  manualSellingPrice?: string;
 }
 
 export const MercadoLivreConfig: React.FC<MercadoLivreConfigProps> = ({
@@ -79,11 +89,129 @@ export const MercadoLivreConfig: React.FC<MercadoLivreConfigProps> = ({
   setMercadoAdsConversionRate,
   mercadoAdsBudgetType,
   setMercadoAdsBudgetType,
-  handleFloatInput
+  handleFloatInput,
+  supplierName,
+  weight,
+  width,
+  height,
+  depth,
+  manualSellingPrice
 }) => {
+  const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
+  const [shippingRegion, setShippingRegion] = useState<string>('Equilíbrio');
+  const [shippingMethod, setShippingMethod] = useState<string>('');
+  const [availableShippingOptions, setAvailableShippingOptions] = useState<Array<{ name: string; price: number; deliveryTime: number }>>([]);
+
   const conversionValue = parseCurrency(mercadoAdsConversionRate);
   const cpcValue = parseCurrency(mercadoAdsCpc);
   const totalCpaValue = conversionValue > 0 ? (cpcValue / (conversionValue / 100)) : 0;
+
+  // Verifica se todas as condições para calcular frete estão atendidas
+  const canCalculateShipping = useCallback(() => {
+    if (!supplierName || !weight || !width || !height || !depth) return false;
+    
+    const weightVal = parseCurrency(weight);
+    const widthVal = parseCurrency(width);
+    const heightVal = parseCurrency(height);
+    const depthVal = parseCurrency(depth);
+    
+    return weightVal > 0 && widthVal > 0 && heightVal > 0 && depthVal > 0;
+  }, [supplierName, weight, width, height, depth]);
+
+  // Verifica se o produto requer frete grátis (preço >= R$ 79)
+  const requiresFreeShipping = useCallback(() => {
+    if (!manualSellingPrice) return false;
+    const price = parseCurrency(manualSellingPrice);
+    return price >= 79;
+  }, [manualSellingPrice]);
+
+  // Calcula o frete automaticamente
+  const calculateShippingCost = useCallback(async () => {
+    if (!canCalculateShipping() || !supplierName) {
+      toast.error('Dados incompletos', {
+        description: 'Preencha o fornecedor e as dimensões do produto para calcular o frete.'
+      });
+      return;
+    }
+
+    setIsCalculatingShipping(true);
+
+    try {
+      // Obter endereço do fornecedor
+      const supplierAddress = SUPPLIER_ADDRESSES[supplierName];
+      if (!supplierAddress) {
+        throw new Error('Endereço do fornecedor não encontrado');
+      }
+
+      // Obter região de destino
+      const regions = SHIPPING_REGIONS[supplierName];
+      if (!regions || !regions[shippingRegion]) {
+        throw new Error('Região de frete não encontrada');
+      }
+
+      const destinationPostalCode = regions[shippingRegion].postalCode;
+
+      // Preparar dimensões
+      const dimensions: ProductDimensions = {
+        weight: parseCurrency(weight!),
+        height: parseCurrency(height!),
+        width: parseCurrency(width!),
+        length: parseCurrency(depth!)
+      };
+
+      // Chamar API do Melhor Envio
+      const shippingOptions = await calculateShipping(
+        supplierAddress.postalCode,
+        destinationPostalCode,
+        dimensions
+      );
+
+      if (shippingOptions.length === 0) {
+        throw new Error('Nenhuma opção de frete disponível');
+      }
+
+      // Armazenar opções disponíveis
+      setAvailableShippingOptions(shippingOptions.map(opt => ({
+        name: opt.name,
+        price: opt.price,
+        deliveryTime: opt.deliveryTime
+      })));
+
+      // Se já tem um método selecionado, usar ele. Senão, usar o mais barato
+      let selectedOption = shippingOptions[0];
+      if (shippingMethod) {
+        const found = shippingOptions.find(opt => opt.name === shippingMethod);
+        if (found) selectedOption = found;
+      }
+
+      // Atualizar o custo de frete
+      setMlShippingCost(formatCurrency(selectedOption.price));
+      setShippingMethod(selectedOption.name);
+
+      toast.success('Frete calculado com sucesso!', {
+        description: `${selectedOption.name}: R$ ${formatCurrency(selectedOption.price)} (${selectedOption.deliveryTime} dias úteis)`
+      });
+
+    } catch (error) {
+      console.error('Erro ao calcular frete:', error);
+      toast.error('Erro ao calcular frete', {
+        description: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    } finally {
+      setIsCalculatingShipping(false);
+    }
+  }, [canCalculateShipping, supplierName, shippingRegion, shippingMethod, weight, height, width, depth, setMlShippingCost]);
+
+  // Atualiza o custo quando o método de envio muda
+  useEffect(() => {
+    if (shippingMethod && availableShippingOptions.length > 0) {
+      const selected = availableShippingOptions.find(opt => opt.name === shippingMethod);
+      if (selected) {
+        setMlShippingCost(formatCurrency(selected.price));
+      }
+    }
+  }, [shippingMethod, availableShippingOptions, setMlShippingCost]);
+
   useEffect(() => {
     if (marketplace !== 'mercadolivre') return;
     if (!mercadoAdsEnabled) return;
@@ -94,6 +222,7 @@ export const MercadoLivreConfig: React.FC<MercadoLivreConfigProps> = ({
       setMercadoAdsAcosTarget('0');
     }
   }, [marketplace, mercadoAdsEnabled, mercadoAdsSalesQuantity, mercadoAdsAcosTarget, setMercadoAdsSalesQuantity, setMercadoAdsAcosTarget]);
+  
   if (marketplace !== 'mercadolivre') return null;
 
   return (
@@ -212,11 +341,75 @@ export const MercadoLivreConfig: React.FC<MercadoLivreConfigProps> = ({
          </ul>
 
          {/* Campo de Frete Mercado Livre */}
-         <div className="mb-3 animate-fadeIn">
+         <div className="mb-3 animate-fadeIn space-y-3">
+            {/* Seleção de Região */}
+            {requiresFreeShipping() && supplierName && SHIPPING_REGIONS[supplierName] && (
+              <div>
+                <Label htmlFor="shippingRegion" className="text-xs font-semibold text-gray-800 dark:text-white">
+                  Região de Destino
+                </Label>
+                <Select value={shippingRegion} onValueChange={setShippingRegion}>
+                  <SelectTrigger className="h-8 text-sm mt-1">
+                    <SelectValue placeholder="Selecione a região" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(SHIPPING_REGIONS[supplierName]).map(([key, region]) => (
+                      <SelectItem key={key} value={key}>
+                        {key} ({region.name})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Botão para calcular frete */}
+            {requiresFreeShipping() && canCalculateShipping() && (
+              <Button
+                type="button"
+                onClick={calculateShippingCost}
+                disabled={isCalculatingShipping}
+                className="w-full h-9 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"
+              >
+                {isCalculatingShipping ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Calculando...
+                  </>
+                ) : (
+                  <>
+                    <Calculator className="w-4 h-4 mr-2" />
+                    Calcular Frete Automaticamente
+                  </>
+                )}
+              </Button>
+            )}
+
+            {/* Seleção de Método de Envio */}
+            {availableShippingOptions.length > 0 && (
+              <div>
+                <Label htmlFor="shippingMethod" className="text-xs font-semibold text-gray-800 dark:text-white">
+                  Método de Envio
+                </Label>
+                <Select value={shippingMethod} onValueChange={setShippingMethod}>
+                  <SelectTrigger className="h-8 text-sm mt-1">
+                    <SelectValue placeholder="Selecione o método" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableShippingOptions.map((option) => (
+                      <SelectItem key={option.name} value={option.name}>
+                        {option.name} - R$ {formatCurrency(option.price)} ({option.deliveryTime} dias úteis)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <Label htmlFor="mlShippingCost" className="text-xs font-semibold text-gray-800 dark:text-white flex items-center gap-1">
                <Truck className="w-3 h-3" /> Custo de Frete (Pago por você)
             </Label>
-            <div className="relative mt-1">
+            <div className="relative">
                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-200 font-semibold">R$</span>
                <Input
                   id="mlShippingCost"
@@ -228,9 +421,14 @@ export const MercadoLivreConfig: React.FC<MercadoLivreConfigProps> = ({
                   placeholder="0,00"
                />
             </div>
-            <p className="text-[10px] text-gray-500 dark:text-gray-200 mt-1">
+            <p className="text-[10px] text-gray-500 dark:text-gray-200">
                *Obrigatório para produtos &gt; R$ 79 (Frete Grátis)
             </p>
+            {requiresFreeShipping() && !canCalculateShipping() && (
+              <p className="text-[10px] text-orange-600 dark:text-orange-400 font-semibold">
+                ⚠️ Preencha as dimensões do produto para calcular o frete automaticamente
+              </p>
+            )}
          </div>
 
          <p className="text-xs text-yellow-800 dark:text-yellow-200 font-semibold mb-2">Regras de Custo Fixo (Atualizado):</p>

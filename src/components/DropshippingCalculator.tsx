@@ -3079,6 +3079,12 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 mercadoAdsBudgetType={mercadoAdsBudgetType}
                 setMercadoAdsBudgetType={setMercadoAdsBudgetType}
                 handleFloatInput={handleFloatInput}
+                supplierName={supplierName}
+                weight={weight}
+                width={width}
+                height={height}
+                depth={depth}
+                manualSellingPrice={manualSellingPrice}
               />
 
               <TikTokConfig

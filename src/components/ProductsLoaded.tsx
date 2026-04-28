@@ -463,9 +463,31 @@ export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBli
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="text-xs text-gray-600 dark:text-zinc-400">
-            Página {page} de {totalPages}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-600 dark:text-zinc-400">Página</span>
+            <Input
+              type="number"
+              min={1}
+              max={totalPages}
+              value={page}
+              onChange={(e) => {
+                const value = parseInt(e.target.value, 10);
+                if (!isNaN(value) && value >= 1 && value <= totalPages) {
+                  setPage(value);
+                }
+              }}
+              onBlur={(e) => {
+                const value = parseInt(e.target.value, 10);
+                if (isNaN(value) || value < 1) {
+                  setPage(1);
+                } else if (value > totalPages) {
+                  setPage(totalPages);
+                }
+              }}
+              className="h-8 w-16 text-center text-xs dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            />
+            <span className="text-xs text-gray-600 dark:text-zinc-400">de {totalPages}</span>
+          </div>
           <Button
             type="button"
             variant="outline"
