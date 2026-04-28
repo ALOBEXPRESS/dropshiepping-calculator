@@ -129,6 +129,12 @@ export async function calculateShipping(
   dimensions: ProductDimensions
 ): Promise<ShippingOption[]> {
   try {
+    console.log('[Melhor Envio] Iniciando cálculo de frete:', {
+      from: fromPostalCode,
+      to: toPostalCode,
+      dimensions
+    });
+
     // Validar dimensões
     if (dimensions.weight <= 0 || dimensions.height <= 0 || dimensions.width <= 0 || dimensions.length <= 0) {
       throw new MelhorEnvioError('Dimensões do produto inválidas. Todos os valores devem ser maiores que zero.');
@@ -138,12 +144,19 @@ export async function calculateShipping(
     const cleanFromPostalCode = fromPostalCode.replace(/\D/g, '');
     const cleanToPostalCode = toPostalCode.replace(/\D/g, '');
 
+    console.log('[Melhor Envio] CEPs limpos:', {
+      from: cleanFromPostalCode,
+      to: cleanToPostalCode
+    });
+
     // Validar formato dos CEPs
     if (cleanFromPostalCode.length !== 8 || cleanToPostalCode.length !== 8) {
       throw new MelhorEnvioError('CEP inválido. Verifique a localização do fornecedor e destino.');
     }
 
     const token = getApiToken();
+    console.log('[Melhor Envio] Token obtido:', token ? `${token.substring(0, 10)}...` : 'VAZIO');
+    
     const endpoint = 'https://www.melhorenvio.com.br/api/v2/me/shipment/calculate';
 
     const requestBody = {
@@ -166,6 +179,8 @@ export async function calculateShipping(
       ]
     };
 
+    console.log('[Melhor Envio] Request body:', JSON.stringify(requestBody, null, 2));
+
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
@@ -176,8 +191,13 @@ export async function calculateShipping(
       body: JSON.stringify(requestBody)
     });
 
+    console.log('[Melhor Envio] Response status:', response.status);
+
     // Tratar erros HTTP
     if (!response.ok) {
+      const responseText = await response.text();
+      console.error('[Melhor Envio] Error response:', responseText);
+
       if (response.status === 401) {
         throw new MelhorEnvioError(
           'Erro ao calcular frete. Token de autenticação inválido ou expirado.',
@@ -186,8 +206,13 @@ export async function calculateShipping(
       }
 
       if (response.status === 400) {
-        const errorData: any = await response.json().catch(() => ({}));
-        const errorMessage = errorData.message || 'Dados inválidos na requisição';
+        let errorData: any = {};
+        try {
+          errorData = JSON.parse(responseText);
+        } catch (e) {
+          // Ignore parse error
+        }
+        const errorMessage = errorData.message || responseText || 'Dados inválidos na requisição';
         throw new MelhorEnvioError(
           `Erro ao calcular frete: ${errorMessage}`,
           400
@@ -195,20 +220,26 @@ export async function calculateShipping(
       }
 
       if (response.status === 422) {
-        await response.json().catch(() => ({}));
+        let errorData: any = {};
+        try {
+          errorData = JSON.parse(responseText);
+        } catch (e) {
+          // Ignore parse error
+        }
         throw new MelhorEnvioError(
-          'CEP inválido ou não encontrado. Verifique os CEPs informados.',
+          `CEP inválido ou não encontrado: ${JSON.stringify(errorData)}`,
           422
         );
       }
 
       throw new MelhorEnvioError(
-        `Erro ao calcular frete. Status: ${response.status}`,
+        `Erro ao calcular frete. Status: ${response.status} - ${responseText}`,
         response.status
       );
     }
 
     const data = await response.json();
+    console.log('[Melhor Envio] Response data:', data);
 
     // Validar resposta
     if (!Array.isArray(data)) {
@@ -229,6 +260,8 @@ export async function calculateShipping(
         } : undefined
       }));
 
+    console.log('[Melhor Envio] Shipping options:', shippingOptions);
+
     // Se não houver opções disponíveis, retornar erro
     if (shippingOptions.length === 0) {
       throw new MelhorEnvioError(
@@ -239,6 +272,8 @@ export async function calculateShipping(
     return shippingOptions;
 
   } catch (error) {
+    console.error('[Melhor Envio] Erro capturado:', error);
+    
     // Se já é um MelhorEnvioError, apenas repassa
     if (error instanceof MelhorEnvioError) {
       throw error;
