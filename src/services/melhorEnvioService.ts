@@ -1,0 +1,286 @@
+/**
+ * Serviço de integração com API Melhor Envio
+ * 
+ * Este serviço é responsável por calcular custos de frete através da API do Melhor Envio.
+ * Utilizado para produtos do Mercado Livre com preço >= R$ 79,00 que possuem frete grátis obrigatório.
+ * 
+ * @see https://docs.melhorenvio.com.br/reference/shipment-calculate
+ */
+
+/**
+ * Interface para dimensões do produto
+ */
+export interface ProductDimensions {
+  /** Peso em kg */
+  weight: number;
+  /** Altura em cm */
+  height: number;
+  /** Largura em cm */
+  width: number;
+  /** Comprimento em cm */
+  length: number;
+}
+
+/**
+ * Interface para endereço do fornecedor
+ */
+export interface SupplierAddress {
+  street: string;
+  number: string;
+  complement?: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  postalCode: string;
+}
+
+/**
+ * Interface para opção de envio retornada pela API
+ */
+export interface ShippingOption {
+  /** Nome da modalidade (ex: "Correios PAC", "SEDEX") */
+  name: string;
+  /** Preço do frete em reais */
+  price: number;
+  /** Prazo de entrega em dias úteis */
+  deliveryTime: number;
+  /** ID da empresa transportadora */
+  company?: {
+    id: number;
+    name: string;
+    picture: string;
+  };
+}
+
+/**
+ * Interface para região de frete
+ */
+export interface ShippingRegion {
+  /** Nome da região (ex: "Mais Distante", "Equilíbrio", "Curta Distância") */
+  name: string;
+  /** CEP representativo da região */
+  postalCode: string;
+}
+
+/**
+ * Erro customizado para problemas com a API Melhor Envio
+ */
+export class MelhorEnvioError extends Error {
+  statusCode?: number;
+  originalError?: unknown;
+
+  constructor(
+    message: string,
+    statusCode?: number,
+    originalError?: unknown
+  ) {
+    super(message);
+    this.name = 'MelhorEnvioError';
+    this.statusCode = statusCode;
+    this.originalError = originalError;
+  }
+}
+
+/**
+ * Obtém o token da API Melhor Envio das variáveis de ambiente
+ * 
+ * @returns Token de autenticação
+ * @throws {MelhorEnvioError} Se o token não estiver configurado
+ */
+function getApiToken(): string {
+  const token = import.meta.env.VITE_MELHOR_ENVIO_TOKEN;
+  
+  if (!token) {
+    throw new MelhorEnvioError(
+      'Token da API Melhor Envio não configurado. Verifique a variável de ambiente VITE_MELHOR_ENVIO_TOKEN.'
+    );
+  }
+  
+  return token;
+}
+
+/**
+ * Calcula o custo de frete entre dois CEPs usando a API Melhor Envio
+ * 
+ * @param fromPostalCode - CEP de origem (fornecedor) - formato: "04427000" ou "04427-000"
+ * @param toPostalCode - CEP de destino - formato: "40010000" ou "40010-000"
+ * @param dimensions - Dimensões do produto (peso em kg, altura/largura/comprimento em cm)
+ * @returns Promise com array de opções de envio disponíveis
+ * @throws {MelhorEnvioError} Em caso de erro na requisição ou resposta inválida
+ * 
+ * @example
+ * ```typescript
+ * const options = await calculateShipping(
+ *   "04427000",
+ *   "40010000",
+ *   { weight: 0.5, height: 5, width: 15, length: 20 }
+ * );
+ * 
+ * console.log(options);
+ * // [
+ * //   { name: "Correios PAC", price: 18.90, deliveryTime: 5 },
+ * //   { name: "SEDEX", price: 32.50, deliveryTime: 2 }
+ * // ]
+ * ```
+ */
+export async function calculateShipping(
+  fromPostalCode: string,
+  toPostalCode: string,
+  dimensions: ProductDimensions
+): Promise<ShippingOption[]> {
+  try {
+    // Validar dimensões
+    if (dimensions.weight <= 0 || dimensions.height <= 0 || dimensions.width <= 0 || dimensions.length <= 0) {
+      throw new MelhorEnvioError('Dimensões do produto inválidas. Todos os valores devem ser maiores que zero.');
+    }
+
+    // Remover formatação dos CEPs (hífen)
+    const cleanFromPostalCode = fromPostalCode.replace(/\D/g, '');
+    const cleanToPostalCode = toPostalCode.replace(/\D/g, '');
+
+    // Validar formato dos CEPs
+    if (cleanFromPostalCode.length !== 8 || cleanToPostalCode.length !== 8) {
+      throw new MelhorEnvioError('CEP inválido. Verifique a localização do fornecedor e destino.');
+    }
+
+    const token = getApiToken();
+    const endpoint = 'https://www.melhorenvio.com.br/api/v2/me/shipment/calculate';
+
+    const requestBody = {
+      from: {
+        postal_code: cleanFromPostalCode
+      },
+      to: {
+        postal_code: cleanToPostalCode
+      },
+      products: [
+        {
+          id: '1',
+          width: dimensions.width,
+          height: dimensions.height,
+          length: dimensions.length,
+          weight: dimensions.weight,
+          quantity: 1,
+          insurance_value: 0
+        }
+      ]
+    };
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    // Tratar erros HTTP
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new MelhorEnvioError(
+          'Erro ao calcular frete. Token de autenticação inválido ou expirado.',
+          401
+        );
+      }
+
+      if (response.status === 400) {
+        const errorData: any = await response.json().catch(() => ({}));
+        const errorMessage = errorData.message || 'Dados inválidos na requisição';
+        throw new MelhorEnvioError(
+          `Erro ao calcular frete: ${errorMessage}`,
+          400
+        );
+      }
+
+      if (response.status === 422) {
+        await response.json().catch(() => ({}));
+        throw new MelhorEnvioError(
+          'CEP inválido ou não encontrado. Verifique os CEPs informados.',
+          422
+        );
+      }
+
+      throw new MelhorEnvioError(
+        `Erro ao calcular frete. Status: ${response.status}`,
+        response.status
+      );
+    }
+
+    const data = await response.json();
+
+    // Validar resposta
+    if (!Array.isArray(data)) {
+      throw new MelhorEnvioError('Resposta inválida da API Melhor Envio.');
+    }
+
+    // Mapear resposta para o formato esperado
+    const shippingOptions: ShippingOption[] = data
+      .filter((item: any) => item.error === undefined || item.error === null)
+      .map((item: any) => ({
+        name: item.name || 'Serviço desconhecido',
+        price: parseFloat(item.price) || 0,
+        deliveryTime: parseInt(item.delivery_time) || 0,
+        company: item.company ? {
+          id: item.company.id,
+          name: item.company.name,
+          picture: item.company.picture
+        } : undefined
+      }));
+
+    // Se não houver opções disponíveis, retornar erro
+    if (shippingOptions.length === 0) {
+      throw new MelhorEnvioError(
+        'Nenhuma opção de frete disponível para esta rota. Verifique os CEPs e dimensões do produto.'
+      );
+    }
+
+    return shippingOptions;
+
+  } catch (error) {
+    // Se já é um MelhorEnvioError, apenas repassa
+    if (error instanceof MelhorEnvioError) {
+      throw error;
+    }
+
+    // Tratar erros de rede
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new MelhorEnvioError(
+        'Erro ao conectar com o serviço de frete. Verifique sua conexão e tente novamente.',
+        undefined,
+        error
+      );
+    }
+
+    // Erro genérico
+    throw new MelhorEnvioError(
+      'Erro inesperado ao calcular frete. Tente novamente.',
+      undefined,
+      error
+    );
+  }
+}
+
+/**
+ * Formata o preço do frete para exibição
+ * 
+ * @param price - Preço em reais
+ * @returns String formatada (ex: "R$ 18,90")
+ */
+export function formatShippingPrice(price: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(price);
+}
+
+/**
+ * Formata o prazo de entrega para exibição
+ * 
+ * @param days - Número de dias úteis
+ * @returns String formatada (ex: "5 dias úteis")
+ */
+export function formatDeliveryTime(days: number): string {
+  return days === 1 ? '1 dia útil' : `${days} dias úteis`;
+}

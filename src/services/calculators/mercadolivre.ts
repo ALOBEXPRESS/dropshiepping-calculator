@@ -26,15 +26,24 @@ export interface CalculationResult {
 
 /**
  * Calcula a taxa fixa do Mercado Livre baseada no preço de venda
+ * Regras de março de 2026 (Task 3.8 - Bug Fix):
+ * - Preço < R$ 12,50: R$ 0,00 (isento)
+ * - R$ 12,50 - R$ 29,00: R$ 6,25
+ * - R$ 29,01 - R$ 50,00: R$ 6,50
+ * - R$ 50,01 - R$ 78,99: R$ 6,75
+ * - Preço ≥ R$ 79,00: R$ 0,00 (isento, mas com frete grátis obrigatório)
  */
 export const getFixedFee = (price: number, listingType: string): number => {
   if (listingType === 'gratis') return 0;
 
-  if (price < 12.50) {
-    return price * 0.5;
-  }
-  if (price < 79) return 6.00;
-  return 0; // Acima de 79 não tem taxa fixa (tem frete grátis geralmente)
+  // Faixas de preço (março 2026)
+  if (price < 12.50) return 0.00;
+  if (price >= 12.50 && price <= 29.00) return 6.25;
+  if (price >= 29.01 && price <= 50.00) return 6.50;
+  if (price >= 50.01 && price <= 78.99) return 6.75;
+  if (price >= 79.00) return 0.00; // Isento, mas com frete grátis
+  
+  return 0;
 };
 
 /**
@@ -58,12 +67,7 @@ export const calculateSellingPrice = (params: MercadoLivreParams): CalculationRe
   const totalVariableRate = (categoryRate + desiredMargin + gatewayFee + otherVariableRate) / 100;
 
   // Função para testar um preço candidato
-  const tryPrice = (fixedFee: number | ((p: number) => number)): number => {
-    if (typeof fixedFee === 'function') {
-      const denominator = 0.5 - totalVariableRate;
-      if (denominator <= 0) return Infinity; 
-      return baseCosts / denominator;
-    }
+  const tryPrice = (fixedFee: number): number => {
     const denominator = 1 - totalVariableRate;
     if (denominator <= 0) return Infinity;
     return (baseCosts + fixedFee) / denominator;
@@ -74,10 +78,13 @@ export const calculateSellingPrice = (params: MercadoLivreParams): CalculationRe
 
   // Ranges definition (Price Min, Price Max, Fixed Fee)
   // Max is exclusive, Min is inclusive.
+  // Updated with new tiered fees (março 2026)
   const ranges = [
       { min: 79, max: Infinity, fee: 0 },
-      { min: 12.50, max: 79, fee: 6.00 },
-      { min: 0, max: 12.50, fee: (p: number) => p * 0.5 }
+      { min: 50.01, max: 79, fee: 6.75 },
+      { min: 29.01, max: 50.01, fee: 6.50 },
+      { min: 12.50, max: 29.01, fee: 6.25 },
+      { min: 0, max: 12.50, fee: 0 }
   ];
 
   let bestFallbackPrice = 0;
@@ -88,7 +95,7 @@ export const calculateSellingPrice = (params: MercadoLivreParams): CalculationRe
       // Check if valid in range
       if (p >= range.min && p < range.max) {
           finalPrice = p;
-          appliedFixedFee = typeof range.fee === 'function' ? range.fee(p) : range.fee;
+          appliedFixedFee = range.fee;
           break; // Exact match found
       }
 

@@ -85,6 +85,85 @@ export const getRecommendedMargin = (price: number) => {
   return 16;
 };
 
+/**
+ * Calcula a taxa fixa do Mercado Livre por faixa de preço (Task 3.3)
+ * Regras de março de 2026:
+ * - Preço < R$ 12,50: R$ 0,00 (isento)
+ * - R$ 12,50 - R$ 29,00: R$ 6,25
+ * - R$ 29,01 - R$ 50,00: R$ 6,50
+ * - R$ 50,01 - R$ 78,99: R$ 6,75
+ * - Preço ≥ R$ 79,00: R$ 0,00 (isento, mas com frete grátis obrigatório)
+ */
+export const getMercadoLivreFixedFee = (price: number, listingType: string): number => {
+  // Anúncios grátis não têm taxa fixa
+  if (listingType === 'gratis') {
+    return 0;
+  }
+  
+  // Faixas de preço
+  if (price < 12.50) return 0.00;
+  if (price >= 12.50 && price <= 29.00) return 6.25;
+  if (price >= 29.01 && price <= 50.00) return 6.50;
+  if (price >= 50.01 && price <= 78.99) return 6.75;
+  if (price >= 79.00) return 0.00; // Isento, mas com frete grátis
+  
+  return 0;
+};
+
+/**
+ * Mapeamento de endereços de fornecedores (Task 3.4)
+ */
+export const SUPPLIER_ADDRESSES: Record<string, import('../types/calculator').SupplierAddress> = {
+  'Tyr': {
+    street: 'Rua Desembargador Olavo Ferreira Prado',
+    number: '787',
+    neighborhood: 'Americanópolis',
+    city: 'São Paulo',
+    state: 'SP',
+    postalCode: '04427000'
+  },
+  'Dogama': {
+    street: 'Rua Messias Jerônimo',
+    number: '906',
+    complement: 'Ponto de Coleta dos Correios',
+    neighborhood: 'São Geraldo 2',
+    city: 'Nova Serrana',
+    state: 'MG',
+    postalCode: '35520292'
+  },
+  'Alobexpress': {
+    street: 'Estr. Aterrado do Leme',
+    number: '1240',
+    complement: 'Condominio Leme 2 bloco 7 app 502',
+    neighborhood: 'Santa Cruz',
+    city: 'Rio de Janeiro',
+    state: 'RJ',
+    postalCode: '23575330'
+  }
+};
+
+/**
+ * Mapeamento de regiões de frete por fornecedor (Task 3.4)
+ * Estrutura: { fornecedor: { região: CEP } }
+ */
+export const SHIPPING_REGIONS: Record<string, Record<string, import('../types/calculator').ShippingRegion>> = {
+  'Tyr': {
+    'Mais Distante': { name: 'Roraima', postalCode: '69301010' },
+    'Equilíbrio': { name: 'Bahia', postalCode: '40010000' },
+    'Curta Distância': { name: 'São Paulo (mesmo estado)', postalCode: '01310100' }
+  },
+  'Dogama': {
+    'Mais Distante': { name: 'Roraima', postalCode: '69301010' },
+    'Equilíbrio': { name: 'Ceará', postalCode: '60010000' },
+    'Curta Distância': { name: 'Minas Gerais (mesmo estado)', postalCode: '30130100' }
+  },
+  'Alobexpress': {
+    'Mais Distante': { name: 'Roraima', postalCode: '69301010' },
+    'Equilíbrio': { name: 'Paraíba', postalCode: '58010000' },
+    'Curta Distância': { name: 'Rio de Janeiro (mesmo estado)', postalCode: '20040030' }
+  }
+};
+
   const calculateGatewayCost = (
     amount: number,
     feePercent: number,

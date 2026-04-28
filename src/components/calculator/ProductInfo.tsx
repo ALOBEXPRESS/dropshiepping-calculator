@@ -1,9 +1,10 @@
-﻿import React, { useRef, useEffect } from 'react';
+﻿import React, { useRef, useEffect, useMemo } from 'react';
 import gsap from 'gsap';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Supplier, AccountHolder } from '../../services/referenceService';
+import { SUPPLIER_ADDRESSES } from '../../services/pricingService';
 
 interface ProductInfoProps {
   accountHolder: string;
@@ -127,6 +128,27 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
 
   console.log('[ProductInfo] Filtered holders:', filteredHolders);
 
+  // Get supplier address for display (Task 3.5)
+  const supplierAddress = useMemo(() => {
+    if (!supplierName) return null;
+    return SUPPLIER_ADDRESSES[supplierName] || null;
+  }, [supplierName]);
+
+  // Format address for display
+  const formattedAddress = useMemo(() => {
+    if (!supplierAddress) return '';
+    const parts = [
+      supplierAddress.street,
+      supplierAddress.number,
+      supplierAddress.complement,
+      supplierAddress.neighborhood,
+      supplierAddress.city,
+      supplierAddress.state,
+      `CEP: ${supplierAddress.postalCode}`
+    ].filter(Boolean);
+    return parts.join(', ');
+  }, [supplierAddress]);
+
   return (
     <div ref={containerRef} className="contents">
       {/* Nome do Produto */}
@@ -183,6 +205,22 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
             ))}
           </SelectContent>
         </Select>
+        {/* Display supplier address when selected (Task 3.5) */}
+        {supplierAddress && formattedAddress && (
+          <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700">
+            <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+              Endereço do Fornecedor:
+            </p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              {formattedAddress}
+            </p>
+            {marketplace === 'mercadolivre' && (
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                ℹ️ Este endereço será usado para calcular o frete grátis em produtos ≥ R$ 79,00
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Tipo de Conta */}
@@ -249,42 +287,77 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
 
       <div className="grid w-full max-w-sm items-center gap-1.5 product-field">
         <Label className="text-sm font-bold text-gray-900 dark:text-gray-100">
-          Dimensões (kg/g/cm/m)
+          Dimensões do Produto
+          {marketplace === 'mercadolivre' && (
+            <span className="text-red-500"> *</span>
+          )}
         </Label>
         <div className="grid grid-cols-2 gap-2">
-          <Input
-            id="productWeight"
-            type="text"
-            inputMode="decimal"
-            value={weight}
-            onChange={(e) => handleFloatInput(setWeight)(e)}
-            placeholder="Peso (kg)"
-          />
-          <Input
-            id="productWidth"
-            type="text"
-            inputMode="decimal"
-            value={width}
-            onChange={(e) => handleFloatInput(setWidth)(e)}
-            placeholder="Largura (cm)"
-          />
-          <Input
-            id="productHeight"
-            type="text"
-            inputMode="decimal"
-            value={height}
-            onChange={(e) => handleFloatInput(setHeight)(e)}
-            placeholder="Altura (cm)"
-          />
-          <Input
-            id="productDepth"
-            type="text"
-            inputMode="decimal"
-            value={depth}
-            onChange={(e) => handleFloatInput(setDepth)(e)}
-            placeholder="Profundidade (cm)"
-          />
+          <div>
+            <Input
+              id="productWeight"
+              type="number"
+              inputMode="decimal"
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              placeholder="Peso (kg)"
+              step="0.01"
+              min="0"
+              className="text-sm"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Ex: 0.5</p>
+          </div>
+          <div>
+            <Input
+              id="productWidth"
+              type="number"
+              inputMode="decimal"
+              value={width}
+              onChange={(e) => setWidth(e.target.value)}
+              placeholder="Largura (cm)"
+              step="1"
+              min="1"
+              className="text-sm"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Ex: 15</p>
+          </div>
+          <div>
+            <Input
+              id="productHeight"
+              type="number"
+              inputMode="decimal"
+              value={height}
+              onChange={(e) => setHeight(e.target.value)}
+              placeholder="Altura (cm)"
+              step="1"
+              min="1"
+              className="text-sm"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Ex: 5</p>
+          </div>
+          <div>
+            <Input
+              id="productDepth"
+              type="number"
+              inputMode="decimal"
+              value={depth}
+              onChange={(e) => setDepth(e.target.value)}
+              placeholder="Comprimento (cm)"
+              step="1"
+              min="1"
+              className="text-sm"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Ex: 20</p>
+          </div>
         </div>
+        {marketplace === 'mercadolivre' && (
+          <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
+            <p className="text-xs text-blue-700 dark:text-blue-300">
+              <strong>⚠️ Importante:</strong> Para produtos com preço ≥ R$ 79,00 no Mercado Livre, 
+              as dimensões são obrigatórias para calcular o custo de frete grátis que você pagará.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Imagem do Produto */}

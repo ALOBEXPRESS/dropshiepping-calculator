@@ -528,7 +528,14 @@ npx vitest run
     ```bash
     npm install
     ```
-2.  Rodar servidor de desenvolvimento:
+2.  Configurar variáveis de ambiente:
+    - Copie o arquivo `.env.example` para `.env`
+    - Configure as variáveis necessárias:
+      - `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`: Credenciais do Supabase
+      - `VITE_MELHOR_ENVIO_TOKEN`: Token da API Melhor Envio (obrigatório para cálculo de frete em produtos do Mercado Livre ≥ R$ 79,00)
+        - Obtenha seu token em: https://melhorenvio.com.br/painel/gerenciar/tokens
+        - Escopos necessários: `shipping-calculate`, `shipping-companies`
+3.  Rodar servidor de desenvolvimento:
     ```bash
     npm run dev
     ```

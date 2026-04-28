@@ -1,11 +1,13 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, Loader2, Package, AlertCircle } from 'lucide-react';
 import contactBg from '../../imgs/contactbg.jpg';
-import type { CalculationResult } from '../../types/calculator';
+import type { CalculationResult, ShippingOption } from '../../types/calculator';
 import { formatCurrency } from '../../utils/currency';
+import { calculateShipping, formatShippingPrice, formatDeliveryTime, MelhorEnvioError } from '../../services/melhorEnvioService';
+import { SHIPPING_REGIONS, SUPPLIER_ADDRESSES } from '../../services/pricingService';
 import gsap from 'gsap';
 
 interface ResultsPanelProps {
@@ -16,6 +18,14 @@ interface ResultsPanelProps {
   setCompetitorDiscount: (value: string) => void;
   children?: React.ReactNode;
   onClose?: () => void;
+  // Shipping-related props
+  productPrice?: number;
+  supplierLocation?: string;
+  productWeight?: number;
+  productHeight?: number;
+  productWidth?: number;
+  productLength?: number;
+  onShippingMethodSelected?: (shippingCost: number, shippingMethod: string, shippingRegion: string) => void;
 }
 
 export const ResultsPanel: React.FC<ResultsPanelProps> = ({
@@ -25,11 +35,93 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
   competitorDiscount,
   setCompetitorDiscount,
   children,
-  onClose
+  onClose,
+  productPrice,
+  supplierLocation,
+  productWeight,
+  productHeight,
+  productWidth,
+  productLength,
+  onShippingMethodSelected
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  
+  // Shipping state
+  const [selectedRegion, setSelectedRegion] = useState<string>('');
+  const [selectedShippingMethod, setSelectedShippingMethod] = useState<string>('');
+  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
+  const [loadingShipping, setLoadingShipping] = useState(false);
+  const [shippingError, setShippingError] = useState<string>('');
 
   if (!calculations) return null;
+
+  // Check if shipping section should be displayed
+  const shouldShowShipping = 
+    marketplace === 'mercadolivre' && 
+    productPrice !== undefined && 
+    productPrice >= 79.00 &&
+    supplierLocation &&
+    productWeight !== undefined &&
+    productHeight !== undefined &&
+    productWidth !== undefined &&
+    productLength !== undefined;
+
+  // Handle region selection
+  const handleRegionChange = async (region: string) => {
+    setSelectedRegion(region);
+    setSelectedShippingMethod('');
+    setShippingOptions([]);
+    setShippingError('');
+    setLoadingShipping(true);
+
+    try {
+      // Get supplier address
+      const supplierAddress = supplierLocation ? SUPPLIER_ADDRESSES[supplierLocation] : null;
+      if (!supplierAddress) {
+        throw new Error('Fornecedor não encontrado');
+      }
+
+      // Get destination postal code for selected region
+      const regionData = supplierLocation ? SHIPPING_REGIONS[supplierLocation]?.[region] : null;
+      if (!regionData) {
+        throw new Error('Região não encontrada');
+      }
+
+      // Call Melhor Envio API
+      const options = await calculateShipping(
+        supplierAddress.postalCode,
+        regionData.postalCode,
+        {
+          weight: productWeight!,
+          height: productHeight!,
+          width: productWidth!,
+          length: productLength!
+        }
+      );
+
+      setShippingOptions(options);
+    } catch (error) {
+      if (error instanceof MelhorEnvioError) {
+        setShippingError(error.message);
+      } else {
+        setShippingError('Erro ao calcular frete. Tente novamente.');
+      }
+      console.error('Shipping calculation error:', error);
+    } finally {
+      setLoadingShipping(false);
+    }
+  };
+
+  // Handle shipping method selection
+  const handleShippingMethodChange = (methodName: string) => {
+    setSelectedShippingMethod(methodName);
+    
+    // Find the selected method's price
+    const selectedMethod = shippingOptions.find(opt => opt.name === methodName);
+    if (selectedMethod && onShippingMethodSelected) {
+      onShippingMethodSelected(selectedMethod.price, methodName, selectedRegion);
+    }
+  };
 
   const getMarketplaceName = (slug: string) => {
     switch(slug) {
@@ -204,6 +296,36 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
                             </div>
                         )}
 
+                        {marketplace === 'mercadolivre' && productPrice !== undefined && productPrice < 79.00 && Number(calculations.fixedFee) > 0 && (
+                            <div className="flex justify-between items-center mt-2 border-t border-black/10 pt-1 gap-2">
+                                <div className="flex items-center gap-1">
+                                    <span className={`text-xs font-bold ${styles.subText}`}>Taxa Fixa:</span>
+                                    <div className="relative group">
+                                        <span className={`text-xs cursor-help ${styles.subText}`}>ⓘ</span>
+                                        <div className={`absolute left-0 bottom-full mb-2 w-64 p-3 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 ${
+                                            calculations.marginStatus === 'negative' 
+                                                ? 'bg-zinc-800 border border-zinc-700 text-white' 
+                                                : 'bg-white border border-black/20 text-black'
+                                        }`}>
+                                            <p className={`text-xs font-bold mb-2 ${
+                                                calculations.marginStatus === 'negative' ? 'text-white' : 'text-black'
+                                            }`}>Faixas de Taxa Fixa do Mercado Livre:</p>
+                                            <ul className={`text-xs space-y-1 ${
+                                                calculations.marginStatus === 'negative' ? 'text-white/90' : 'text-black/80'
+                                            }`}>
+                                                <li>• &lt; R$ 12,50: R$ 0,00 (isento)</li>
+                                                <li>• R$ 12,50 - R$ 29,00: R$ 6,25</li>
+                                                <li>• R$ 29,01 - R$ 50,00: R$ 6,50</li>
+                                                <li>• R$ 50,01 - R$ 78,99: R$ 6,75</li>
+                                                <li>• ≥ R$ 79,00: R$ 0,00 (isento, mas com frete grátis)</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span className={`text-xs font-bold ${styles.text}`}>R$ {formatMoney(calculations.fixedFee)}</span>
+                            </div>
+                        )}
+
                         {Number(calculations.influencerCost) > 0 && (
                             <div className="flex justify-between items-center mt-2 border-t border-black/10 pt-1 gap-2">
                                 <span className={`text-xs font-bold ${styles.subText}`}>Influencer ({formatPercent(calculations.totalInfluencerPercent || 0, 1)}%):</span>
@@ -301,6 +423,155 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
                             O valor recomendado é sempre menor que o concorrente. uma margem de (aproximadamente) 25%
                          </p>
                     </div>
+                )}
+                
+                {/* Shipping Section - Only for Mercado Livre with price >= R$ 79.00 and dimensions filled */}
+                {shouldShowShipping && (
+                  <div className={`mt-4 pt-4 border-t ${
+                    calculations.marginStatus === 'negative' ? 'border-zinc-800/60' : 'border-black/10'
+                  }`}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Package className={`w-5 h-5 ${styles.text}`} />
+                      <h4 className={`text-lg font-bold ${styles.text}`}>Cálculo de Frete</h4>
+                    </div>
+                    
+                    <p className={`text-xs mb-3 ${styles.subText}`}>
+                      Produtos acima de R$ 79,00 no Mercado Livre têm frete grátis obrigatório pago pelo vendedor.
+                    </p>
+
+                    {/* Region Selection */}
+                    <div className="mb-4">
+                      <Label className={`text-sm font-bold mb-2 block ${styles.text}`}>
+                        Selecione a Região de Destino:
+                      </Label>
+                      <div className="space-y-2">
+                        {supplierLocation && SHIPPING_REGIONS[supplierLocation] && 
+                          Object.entries(SHIPPING_REGIONS[supplierLocation]).map(([key, region]) => (
+                            <label 
+                              key={key} 
+                              className={`flex items-center space-x-2 cursor-pointer p-2 rounded ${
+                                selectedRegion === key 
+                                  ? (calculations.marginStatus === 'negative' ? 'bg-white/10' : 'bg-black/5')
+                                  : ''
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name="shipping-region"
+                                value={key}
+                                checked={selectedRegion === key}
+                                onChange={(e) => handleRegionChange(e.target.value)}
+                                className="w-4 h-4"
+                              />
+                              <span className={`text-sm ${styles.text}`}>
+                                {key} - {region.name}
+                              </span>
+                            </label>
+                          ))
+                        }
+                      </div>
+                    </div>
+
+                    {/* Loading State */}
+                    {loadingShipping && (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className={`w-6 h-6 animate-spin ${styles.text}`} />
+                        <span className={`ml-2 text-sm ${styles.text}`}>Calculando frete...</span>
+                      </div>
+                    )}
+
+                    {/* Error State */}
+                    {shippingError && (
+                      <div className={`flex items-start gap-2 p-3 rounded-lg mb-4 ${
+                        calculations.marginStatus === 'negative' 
+                          ? 'bg-red-900/30 border border-red-700' 
+                          : 'bg-red-100 border border-red-300'
+                      }`}>
+                        <AlertCircle className={`w-5 h-5 flex-shrink-0 ${
+                          calculations.marginStatus === 'negative' ? 'text-red-400' : 'text-red-600'
+                        }`} />
+                        <div>
+                          <p className={`text-sm font-bold ${
+                            calculations.marginStatus === 'negative' ? 'text-red-300' : 'text-red-700'
+                          }`}>
+                            Erro ao calcular frete
+                          </p>
+                          <p className={`text-xs ${
+                            calculations.marginStatus === 'negative' ? 'text-red-400' : 'text-red-600'
+                          }`}>
+                            {shippingError}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Shipping Methods */}
+                    {!loadingShipping && shippingOptions.length > 0 && (
+                      <div className="mb-4">
+                        <Label className={`text-sm font-bold mb-2 block ${styles.text}`}>
+                          Selecione a Modalidade de Envio:
+                        </Label>
+                        <div className="space-y-2">
+                          {shippingOptions.map((option, index) => (
+                            <label
+                              key={index}
+                              className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer ${
+                                selectedShippingMethod === option.name
+                                  ? (calculations.marginStatus === 'negative' 
+                                      ? 'border-white bg-white/10' 
+                                      : 'border-black bg-black/5')
+                                  : (calculations.marginStatus === 'negative'
+                                      ? 'border-zinc-700 bg-zinc-800/30'
+                                      : 'border-black/20 bg-white/50')
+                              }`}
+                            >
+                              <div className="flex items-center space-x-2 flex-1">
+                                <input
+                                  type="radio"
+                                  name="shipping-method"
+                                  value={option.name}
+                                  checked={selectedShippingMethod === option.name}
+                                  onChange={(e) => handleShippingMethodChange(e.target.value)}
+                                  className="w-4 h-4"
+                                />
+                                <div className="flex justify-between items-center flex-1">
+                                  <span className={`font-bold text-sm ${styles.text}`}>{option.name}</span>
+                                  <div className="text-right">
+                                    <div className={`font-bold ${styles.accent}`}>
+                                      {formatShippingPrice(option.price)}
+                                    </div>
+                                    <div className={`text-xs ${styles.subText}`}>
+                                      {formatDeliveryTime(option.deliveryTime)}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Selected Shipping Info */}
+                    {selectedShippingMethod && (
+                      <div className={`p-3 rounded-lg ${
+                        calculations.marginStatus === 'negative'
+                          ? 'bg-green-900/30 border border-green-700'
+                          : 'bg-green-100 border border-green-300'
+                      }`}>
+                        <p className={`text-sm font-bold ${
+                          calculations.marginStatus === 'negative' ? 'text-green-300' : 'text-green-700'
+                        }`}>
+                          ✓ Frete selecionado: {selectedShippingMethod}
+                        </p>
+                        <p className={`text-xs ${
+                          calculations.marginStatus === 'negative' ? 'text-green-400' : 'text-green-600'
+                        }`}>
+                          O custo de frete foi incluído no cálculo de lucro e margem.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 )}
                 
                 {children}

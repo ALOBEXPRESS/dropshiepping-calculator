@@ -252,6 +252,12 @@ export interface CalculationResult {
   totalInfluencerPercent: number;
   totalAffiliatePercent: number;
   tiktokSfpFee?: string;
+  // Campos adicionados para suporte a frete (Task 3.2)
+  mlFixedFee?: string; // Taxa fixa do Mercado Livre
+  shippingCost?: string; // Custo de frete grátis
+  shippingRegion?: string; // Região selecionada
+  shippingMethod?: string; // Modalidade selecionada
+  shippingOptions?: ShippingOption[]; // Opções disponíveis
 }
 
 export interface ShopeeCategory {
@@ -269,4 +275,33 @@ export interface KiePlan {
     name: string;
     price: number;
     credits: number;
+}
+
+// Interfaces para dimensões e frete (Task 3.2)
+export interface ProductDimensions {
+  weight: number; // kg
+  height: number; // cm
+  width: number; // cm
+  length: number; // cm
+}
+
+export interface SupplierAddress {
+  street: string;
+  number: string;
+  complement?: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  postalCode: string;
+}
+
+export interface ShippingOption {
+  name: string; // "Correios PAC", "SEDEX", etc.
+  price: number;
+  deliveryTime: number; // dias
+}
+
+export interface ShippingRegion {
+  name: string; // "Mais Distante", "Equilíbrio", "Curta Distância"
+  postalCode: string;
 }
