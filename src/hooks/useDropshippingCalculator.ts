@@ -785,8 +785,23 @@ export const useDropshippingCalculator = () => {
     updatePaidTrafficGatewayFees(paidTrafficGatewayBank, paidTrafficGatewayMethod, val);
   };
 
-  const handleSupplierChange = (name: string) => {
+  const handleSupplierChange = useCallback((name: string, suppliersList?: Array<{ id: string; name: string }>) => {
+    console.log('[handleSupplierChange] Called with:', { name, suppliersListLength: suppliersList?.length });
     setSupplierName(name);
+    
+    // Try to find and set supplier_id if suppliersList is provided
+    if (suppliersList && suppliersList.length > 0 && name) {
+      const normalized = name.trim().toLowerCase();
+      const matchingSupplier = suppliersList.find(s => s.name.toLowerCase() === normalized);
+      if (matchingSupplier) {
+        console.log('[handleSupplierChange] Found matching supplier:', matchingSupplier);
+        setSupplier_id(matchingSupplier.id);
+      } else {
+        console.log('[handleSupplierChange] No matching supplier found for:', name);
+        setSupplier_id('');
+      }
+    }
+    
     const normalized = name.trim().toLowerCase();
     if (normalized === 'tyr' || normalized === 'tyr (yeizidrop)') {
       setSupplierFeeType('percent');
@@ -806,7 +821,7 @@ export const useDropshippingCalculator = () => {
       setSupplierFeePercent('0');
       setSupplierFixedFee('0');
     }
-  };
+  }, []);
 
   const handleDeliveryModeChange = (mode: string) => {
     setDeliveryMode(mode);
