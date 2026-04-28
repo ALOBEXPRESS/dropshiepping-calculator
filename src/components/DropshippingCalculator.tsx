@@ -752,6 +752,17 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       return;
     }
 
+    // Validação de frete obrigatório para Mercado Livre com preço >= R$ 79
+    if (marketplace === 'mercadolivre' && resolvedSellingPrice >= 79) {
+      const shippingCost = parseCurrency(mlShippingCost);
+      if (shippingCost <= 0) {
+        toast.error('Frete obrigatório', {
+          description: 'Você precisa calcular o frete para esse produto',
+        });
+        return;
+      }
+    }
+
     const conditionPayload = operationMode === 'armazem_alob'
       ? productCondition === 'novo'
         ? { isNewProduct: 'sim', defectiveProduct: 'nao' }
@@ -1081,13 +1092,28 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
     setUnitOfMeasure(resolvedUnit);
     setLastFilledBlingSku(product.sku || '');
     setLastFilledBlingIds([product.id, ...productVariations.map((variation) => variation.id)]);
-    if (product.supplierSku === 'ALOBEXPRESS_01') {
+    
+    // Detectar fornecedor pelo código do fornecedor (supplierSku) ou SKU do produto
+    const productSkuUpper = (product.sku || '').toUpperCase();
+    const supplierCode = product.supplierSku || '';
+    
+    console.log('[handleFillFromBlingProduct] Supplier detection:', {
+      supplierSku: product.supplierSku,
+      productSku: product.sku,
+      supplierCode
+    });
+    
+    if (supplierCode === 'ALOBEXPRESS_01' || supplierCode === 'ALOBEXPRESS') {
+      console.log('[handleFillFromBlingProduct] Detected ALOBEXPRESS');
       handleSupplierChange('ALOBEXPRESS');
-    } else if (product.supplierSku === 'ALOBFOR_DROP_01') {
+    } else if (supplierCode === 'ALOBFOR_DROP_01' || productSkuUpper.startsWith('YEIZ')) {
+      console.log('[handleFillFromBlingProduct] Detected Tyr');
       handleSupplierChange('Tyr');
-    } else if (product.supplierSku === 'ALOBFOR_DROP_02') {
+    } else if (supplierCode === 'ALOBFOR_DROP_02') {
+      console.log('[handleFillFromBlingProduct] Detected Dogama');
       handleSupplierChange('Dogama');
     } else {
+      console.log('[handleFillFromBlingProduct] No supplier detected, clearing');
       handleSupplierChange('');
     }
     // Override supplier fee values with product-saved values if present
@@ -2610,6 +2636,17 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                     step="0.01"
                   />
                 </div>
+                {/* Aviso de frete obrigatório para Mercado Livre */}
+                {marketplace === 'mercadolivre' && parseCurrency(manualSellingPrice) >= 79 && (
+                  <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-3 mt-2 animate-fadeIn">
+                    <p className="text-xs text-blue-800 dark:text-blue-200 font-semibold flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                      <span>
+                        <strong>Importante:</strong> Para produtos com preço ≥ R$ 79,00 no Mercado Livre, as dimensões são obrigatórias para calcular o custo de frete grátis que você pagará.
+                      </span>
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Markup */}
