@@ -1042,6 +1042,13 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
     });
   });
   const handleFillFromBlingProduct = async (product: BlingProductItem, productVariations: BlingProductItem[]) => {
+    console.log('[handleFillFromBlingProduct] Product dimensions:', {
+      weight: product.weight,
+      width: product.width,
+      height: product.height,
+      depth: product.depth
+    });
+    
     const salePriceValue = product.salePrice !== null && product.salePrice !== undefined
       ? formatCurrency(product.salePrice)
       : '';
@@ -1050,10 +1057,25 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
     setStockQuantity(product.stockQuantity !== null && product.stockQuantity !== undefined ? String(product.stockQuantity) : '');
     setProductImage(product.imageUrl || '');
     setProductDescription(product.description || '');
-    setWeight(product.weight !== null && product.weight !== undefined ? formatCurrency(product.weight) : '');
-    setWidth(product.width !== null && product.width !== undefined ? formatCurrency(product.width) : '');
-    setHeight(product.height !== null && product.height !== undefined ? formatCurrency(product.height) : '');
-    setDepth(product.depth !== null && product.depth !== undefined ? formatCurrency(product.depth) : '');
+    
+    // Formatar dimensões corretamente
+    const weightValue = product.weight !== null && product.weight !== undefined ? String(product.weight) : '';
+    const widthValue = product.width !== null && product.width !== undefined ? String(product.width) : '';
+    const heightValue = product.height !== null && product.height !== undefined ? String(product.height) : '';
+    const depthValue = product.depth !== null && product.depth !== undefined ? String(product.depth) : '';
+    
+    console.log('[handleFillFromBlingProduct] Formatted dimensions:', {
+      weight: weightValue,
+      width: widthValue,
+      height: heightValue,
+      depth: depthValue
+    });
+    
+    setWeight(weightValue);
+    setWidth(widthValue);
+    setHeight(heightValue);
+    setDepth(depthValue);
+    
     const normalizedUnit = (product.unitOfMeasure ?? '').trim();
     const resolvedUnit = normalizedUnit === '' || normalizedUnit === '\'' ? 'cm' : normalizedUnit;
     setUnitOfMeasure(resolvedUnit);
