@@ -131,7 +131,7 @@ scripts/
 .trae/
 .cursor
 .claude/
-
+tools/
 # Database migrations (managed separately)
 supabase/
 
@@ -175,3 +175,17 @@ video/
 .vercel
 # Added by code-review-graph
 .code-review-graph/
+
+# ============================================
+# LIGHTRAG KNOWLEDGE GRAPH
+# ============================================
+# Storage (binary indexes, embeddings) - NEVER commit
+tools/lightrag/rag_storage/
+tools/lightrag/.venv/
+tools/lightrag/.index_manifest.json
+tools/lightrag/__pycache__/
+tools/lightrag/**/__pycache__/
+tools/lightrag/**/*.pyc
+
+# Obsidian vault markdown - VERSIONED (keep in Git)
+# docs/knowledge-graph/ is intentionally NOT ignored

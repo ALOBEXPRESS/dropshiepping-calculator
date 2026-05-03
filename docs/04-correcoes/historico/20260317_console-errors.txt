@@ -1,0 +1,4 @@
+Total messages: 46 (Errors: 1, Warnings: 1)
+Returning 1 messages for level "error"
+
+[ERROR] Failed to load resource: net::ERR_CACHE_OPERATION_NOT_SUPPORTED @ http://localhost:5173/src/video/dollar-animate-real.mp4:0

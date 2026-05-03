@@ -1,0 +1,1033 @@
+- generic:
+  - generic:
+    - region "Notifications alt+T"
+    - generic:
+      - complementary:
+        - generic:
+          - generic:
+            - img
+            - button:
+              - img
+          - list:
+            - listitem:
+              - generic:
+                - img
+                - generic: Painel
+                - img
+              - list:
+                - listitem:
+                  - link:
+                    - /url: /
+                    - text: Calculadora
+                - listitem:
+                  - link:
+                    - /url: /produtos
+                    - text: Produtos
+                - listitem:
+                  - link:
+                    - /url: /vendas
+                    - text: Vendas
+                - listitem:
+                  - link:
+                    - /url: /leads
+                    - text: Leads
+      - generic:
+        - banner:
+          - generic:
+            - button:
+              - img
+          - generic:
+            - button:
+              - img
+            - generic:
+              - generic:
+                - img
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - img
+                - generic:
+                  - paragraph: Calculadora de Precificação Dropshipping Nacional v2.8.0
+                  - paragraph: Taxas reais atualizadas de Marketplaces 2026
+              - generic:
+                - button: Resumo Financeiro Geral
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                      - generic: Dados do Produto
+                    - generic:
+                      - button: Resetar
+                      - button [disabled]:
+                        - img
+                        - text: Adicionar
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: Nome do Produto *
+                        - textbox:
+                          - /placeholder: "Ex: Fone Bluetooth"
+                      - generic:
+                        - generic: SKU do Produto *
+                        - textbox:
+                          - /placeholder: "Ex: SKU-001"
+                      - generic:
+                        - generic: Fornecedor *
+                        - combobox:
+                          - generic: Dogama
+                          - img
+                      - generic:
+                        - generic: Tipo de Conta
+                        - combobox:
+                          - generic: CNPJ
+                          - img
+                      - generic:
+                        - generic: Titular
+                        - combobox:
+                          - generic: Emelyn
+                          - img
+                      - generic:
+                        - generic: Quantidade em estoque
+                        - spinbutton
+                      - generic:
+                        - generic: Dimensões (kg/g/cm/m)
+                        - generic:
+                          - textbox:
+                            - /placeholder: Peso (kg)
+                          - textbox:
+                            - /placeholder: Largura (cm)
+                          - textbox:
+                            - /placeholder: Altura (cm)
+                          - textbox:
+                            - /placeholder: Profundidade (cm)
+                      - generic:
+                        - generic: Imagem do Produto (URL)
+                        - textbox:
+                          - /placeholder: https://exemplo.com/imagem.jpg
+                        - paragraph: Se não informar, usamos a imagem padrão do marketplace
+                      - generic:
+                        - generic: Descrição
+                        - textbox:
+                          - /placeholder: Digite a descrição do produto
+                      - generic:
+                        - generic: Modalidade
+                        - combobox:
+                          - generic: Dropshipping
+                          - img
+                      - generic:
+                        - generic: Chance de devolução (%)
+                        - generic:
+                          - textbox:
+                            - /placeholder: 33,33
+                            - text: 33,33
+                    - generic:
+                      - generic: Marketplace
+                      - combobox:
+                        - generic: Mercado Livre
+                        - img
+                    - generic:
+                      - generic: Preço de Custo do Fornecedor
+                      - generic:
+                        - generic: R$
+                        - textbox:
+                          - /placeholder: 0,00
+                    - generic:
+                      - generic: Preço de venda
+                      - generic:
+                        - generic: R$
+                        - textbox:
+                          - /placeholder: 0,00
+                          - text: 47,00
+                    - generic:
+                      - generic: Markup
+                      - combobox:
+                        - generic: 0 (Automático / Margem Recomendada)
+                        - img
+                      - paragraph: Define o preço sugerido multiplicando o custo.
+                    - generic:
+                      - checkbox [checked]:
+                        - generic:
+                          - img
+                      - generic: É produto com variação?
+                    - generic:
+                      - generic:
+                        - combobox:
+                          - generic: Tamanho
+                          - img
+                        - textbox:
+                          - /placeholder: "Tamanho (ex: P)"
+                        - textbox:
+                          - /placeholder: SKU Variação
+                        - spinbutton
+                        - textbox:
+                          - /placeholder: Custo (R$)
+                        - textbox:
+                          - /placeholder: Markup
+                          - text: 1,5
+                      - button:
+                        - img
+                        - text: Adicionar Variação
+                    - generic:
+                      - generic: Preço Mínimo Concorrente (Mercado Livre)
+                      - generic:
+                        - generic: R$
+                        - textbox:
+                          - /placeholder: 0,00
+                    - generic:
+                      - generic: Configuração de Pagamento
+                      - generic:
+                        - button:
+                          - img
+                          - generic: Mercado Pago
+                        - button:
+                          - img
+                          - generic: Nubank
+                        - button:
+                          - img
+                          - generic: PicPay
+                        - button:
+                          - img
+                          - generic: PayPal
+                        - button:
+                          - img
+                          - generic: Stripe
+                        - button:
+                          - img
+                          - generic: Bradesco
+                      - generic:
+                        - button: 💠 PIX (0%)
+                        - button: Pix com crédito (Taxa + Min R$5)
+                    - generic:
+                      - generic:
+                        - generic: Taxa de Gateway
+                        - generic:
+                          - button: "%"
+                          - button: R$
+                      - generic:
+                        - generic:
+                          - generic: R$
+                          - textbox:
+                            - /placeholder: 0,00
+                            - text: "0"
+                        - generic:
+                          - generic: R$ 0,00
+                    - generic:
+                      - generic:
+                        - button: Tráfego Pago
+                        - button: Tráfego Orgânico
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                            - text: Configuração de Tráfego Orgânico
+                          - img
+                      - generic:
+                        - generic:
+                          - generic:
+                            - button: Forma Manual (MindVideo + n8n)
+                            - button: Forma Automatizada (Kie.ai + n8n)
+                          - generic:
+                            - heading [level=4]: Marketing de Influencer
+                            - generic:
+                              - paragraph: Nenhum influencer cadastrado. Cadastre influencers primeiro para poder selecioná-los.
+                          - generic:
+                            - heading [level=4]: Marketing de Afiliado
+                            - generic:
+                              - paragraph: Nenhum afiliado cadastrado. Cadastre afiliados primeiro para poder selecioná-los.
+                          - generic:
+                            - generic:
+                              - generic: API de Inteligência Artificial
+                              - generic:
+                                - button: Gemini (Grátis)
+                                - button: ChatGPT (Pago)
+                              - paragraph:
+                                - text: "Inclui: Gemini Pro, Gemini Flash, etc."
+                                - link:
+                                  - /url: https://ai.google.dev/pricing
+                                  - text: Ver limitações
+                            - generic:
+                              - generic: Canais
+                              - generic:
+                                - button: Youtube Shorts
+                                - button: Kaway Video
+                                - button: Tiktok
+                                - button: Instagram Reels
+                                - button: WhatsApp
+                                - button: Grupo Facebook
+                                - button: Shopee Vídeo
+                            - generic:
+                              - text: Impressão
+                              - generic:
+                                - img
+                                - generic: Total de visualizações/impressões
+                              - textbox:
+                                - /placeholder: "0"
+                            - generic:
+                              - text: Cliques
+                              - generic:
+                                - img
+                                - generic: Total de cliques no link
+                              - textbox:
+                                - /placeholder: "0"
+                            - generic:
+                              - text: CTR (Automático %)
+                              - textbox: "0.00"
+                            - generic:
+                              - text: Vendas (Total)
+                              - textbox:
+                                - /placeholder: "0"
+                            - generic:
+                              - text: Frequência de postagem (vídeos/dia)
+                              - textbox:
+                                - /placeholder: "1"
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - generic: Influencer para Vídeo
+                                    - img
+                                - generic:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - text: Selecione o Influencer
+                                        - combobox:
+                                          - generic: Selecione um influencer
+                                          - img
+                                        - paragraph: Cadastre influencers na seção "Marketing de Influencer" acima
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - generic: Video Model
+                                    - img
+                                - generic:
+                                  - generic:
+                                    - generic:
+                                      - generic:
+                                        - button: Veo3
+                                        - button: Grok
+                                        - button: Sora2
+                                        - button: Wan 2
+                                      - generic:
+                                        - button: Cópia
+                                        - button: Kling
+                                        - button: Runway
+                                        - button: Luma
+                                        - button: Pika 2.5
+                                        - button: Seedance
+                                      - generic:
+                                        - text: Modelo de Vídeo
+                                        - combobox:
+                                          - generic: Sora2
+                                          - img
+                                      - generic:
+                                        - generic:
+                                          - checkbox [checked]:
+                                            - generic:
+                                              - img
+                                          - generic: Plano Gratuito
+                                        - generic:
+                                          - checkbox
+                                          - generic: Plano Pago
+                    - generic:
+                      - generic:
+                        - generic: Taxa de Gateway do Fornecedor
+                        - generic:
+                          - button: "%"
+                          - button: R$
+                      - generic:
+                        - generic: R$
+                        - textbox:
+                          - /placeholder: 0,00
+                          - text: 2,00
+                    - generic:
+                      - generic:
+                        - generic: Taxa do fornecedor
+                        - generic:
+                          - button: "%"
+                          - button: R$
+                      - generic:
+                        - textbox:
+                          - /placeholder: 0,00
+                          - text: "6"
+                        - generic: "%"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - checkbox
+                          - generic:
+                            - img
+                        - generic: Tenho Reputação no Mercado Livre
+                      - generic:
+                        - paragraph: "Sem reputação: Menor exposição, frete mais caro para o vendedor, limitações de envios"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - checkbox
+                          - generic:
+                            - img
+                        - generic: Meli+
+                      - generic:
+                        - paragraph: Comissão menor e frete com desconto quando disponível
+                    - generic:
+                      - generic: Tipo de Anúncio
+                      - combobox:
+                        - generic: Clássico (11.5% a 14.5% + taxa fixa)
+                        - img
+                      - paragraph: "Modalidades: Clássico (Visibilidade média) | Premium (Máxima visibilidade + 12x sem juros)"
+                    - generic:
+                      - generic: Categoria do Produto
+                      - combobox:
+                        - generic: Eletrônicos (12%)
+                        - img
+                    - generic:
+                      - paragraph: "Prazos de Recebimento:"
+                      - list:
+                        - listitem:
+                          - text: •
+                          - strong: "Sem Reputação / Iniciante:"
+                          - text: 10 a 28 dias após a entrega
+                        - listitem:
+                          - text: •
+                          - strong: "Líder / Gold / Platinum:"
+                          - text: 5 dias após a entrega (ou na hora com Mercado Pago)
+                      - generic:
+                        - generic:
+                          - img
+                          - text: Custo de Frete (Pago por você)
+                        - generic:
+                          - generic: R$
+                          - textbox:
+                            - /placeholder: 0,00
+                            - text: "0"
+                        - paragraph: "*Obrigatório para produtos > R$ 79 (Frete Grátis)"
+                      - paragraph: "Regras de Custo Fixo (Atualizado):"
+                      - list:
+                        - listitem: "• < R$ 12,50: Metade do preço de venda"
+                        - listitem: "• R$ 12,50 - R$ 79: R$ 6,00"
+                        - listitem: "• > R$ 79: Isento de taxa fixa"
+                    - generic:
+                      - generic:
+                        - checkbox
+                        - generic: Calcular Mercado Ads
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - heading [level=3]: Produtos integrados
+                          - paragraph: 191 produtos encontrados
+                        - generic:
+                          - button:
+                            - img
+                            - text: Atualizar
+                      - generic:
+                        - generic:
+                          - textbox:
+                            - /placeholder: Buscar por nome ou SKU
+                          - generic:
+                            - button: Não categorizado
+                            - generic:
+                              - textbox:
+                                - /placeholder: Preço mínimo
+                              - textbox:
+                                - /placeholder: Preço máximo
+                        - generic:
+                          - combobox:
+                            - generic: Todos
+                            - img
+                        - generic:
+                          - combobox:
+                            - generic: Todos
+                            - img
+                          - generic:
+                            - generic: INTEGRAÇÃO BLING
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                            - generic:
+                              - generic:
+                                - img
+                          - generic:
+                            - generic:
+                              - heading [level=3]: Camisa Mouth
+                            - generic:
+                              - generic:
+                                - paragraph: Preço
+                                - paragraph: R$ 43,00
+                              - generic:
+                                - paragraph: Custo
+                                - paragraph: R$ 29,90
+                              - generic:
+                                - paragraph: Vendas
+                                - paragraph: "0"
+                              - generic:
+                                - paragraph: Estoque
+                                - paragraph: "0"
+                              - generic:
+                                - paragraph: SKU
+                                - paragraph: CamisaMouth
+                            - generic:
+                              - button: Cadastrado
+                              - button: Atualizar
+                        - generic:
+                          - generic:
+                            - generic:
+                              - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                            - generic:
+                              - generic:
+                                - img
+                          - generic:
+                            - generic:
+                              - heading [level=3]: Camiseta Masculina Oversized Los Angeles 2
+                            - generic:
+                              - generic:
+                                - paragraph: Preço
+                                - paragraph: R$ 64,00
+                              - generic:
+                                - paragraph: Custo
+                                - paragraph: R$ 37,90
+                              - generic:
+                                - paragraph: Vendas
+                                - paragraph: "0"
+                              - generic:
+                                - paragraph: Estoque
+                                - paragraph: "0"
+                              - generic:
+                                - paragraph: SKU
+                                - paragraph: C1362
+                            - generic:
+                              - button: Preencher
+                        - generic:
+                          - generic:
+                            - generic:
+                              - img
+                            - generic:
+                              - generic:
+                                - img
+                          - generic:
+                            - generic:
+                              - heading [level=3]: Kit Esponja Make Up Para Acabamento Maquiagem
+                            - generic:
+                              - generic:
+                                - paragraph: Preço
+                                - paragraph: R$ 14,00
+                              - generic:
+                                - paragraph: Custo
+                                - paragraph: R$ 8,30
+                              - generic:
+                                - paragraph: Vendas
+                                - paragraph: "0"
+                              - generic:
+                                - paragraph: Estoque
+                                - paragraph: "2"
+                              - generic:
+                                - paragraph: SKU
+                                - paragraph: "2023238737"
+                            - generic:
+                              - button: Preencher
+                        - generic:
+                          - generic:
+                            - generic:
+                              - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                            - generic:
+                              - generic:
+                                - img
+                          - generic:
+                            - generic:
+                              - heading [level=3]: Camisa Rock In Rio
+                            - generic:
+                              - generic:
+                                - paragraph: Preço
+                                - paragraph: R$ 49,90
+                              - generic:
+                                - paragraph: Custo
+                                - paragraph: R$ 32,90
+                              - generic:
+                                - paragraph: Vendas
+                                - paragraph: "0"
+                              - generic:
+                                - paragraph: Estoque
+                                - paragraph: "0"
+                              - generic:
+                                - paragraph: SKU
+                                - paragraph: C1259
+                            - generic:
+                              - button: Cadastrado
+                              - button: Atualizar
+                        - generic:
+                          - generic:
+                            - generic:
+                              - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                            - generic:
+                              - generic:
+                                - img
+                          - generic:
+                            - generic:
+                              - heading [level=3]: Corrente Masculina Aço Inoxidável 3 em 1 Fina Estilo Moderno Resistente
+                            - generic:
+                              - generic:
+                                - paragraph: Preço
+                                - paragraph: R$ 19,00
+                              - generic:
+                                - paragraph: Custo
+                                - paragraph: R$ 9,90
+                              - generic:
+                                - paragraph: Vendas
+                                - paragraph: "0"
+                              - generic:
+                                - paragraph: Estoque
+                                - paragraph: "0"
+                              - generic:
+                                - paragraph: SKU
+                                - paragraph: "2023171245"
+                            - generic:
+                              - button: Cadastrado
+                              - button: Atualizar
+                        - generic:
+                          - generic:
+                            - generic:
+                              - img
+                            - generic:
+                              - generic:
+                                - img
+                          - generic:
+                            - generic:
+                              - heading [level=3]: Presilha Com Laço E Rede De Coque Force Reforçada
+                            - generic:
+                              - generic:
+                                - paragraph: Preço
+                                - paragraph: R$ 12,00
+                              - generic:
+                                - paragraph: Custo
+                                - paragraph: R$ 6,90
+                              - generic:
+                                - paragraph: Vendas
+                                - paragraph: "0"
+                              - generic:
+                                - paragraph: Estoque
+                                - paragraph: "-"
+                              - generic:
+                                - paragraph: SKU
+                                - paragraph: "2023392655"
+                            - generic:
+                              - button: Preencher
+                        - generic:
+                          - generic:
+                            - generic:
+                              - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                            - generic:
+                              - generic:
+                                - img
+                          - generic:
+                            - generic:
+                              - heading [level=3]: Kit 2 Tênis Masculino M-Boost
+                            - generic:
+                              - generic:
+                                - paragraph: Preço
+                                - paragraph: R$ 143,00
+                              - generic:
+                                - paragraph: Custo
+                                - paragraph: R$ 0,00
+                              - generic:
+                                - paragraph: Vendas
+                                - paragraph: "0"
+                              - generic:
+                                - paragraph: Estoque
+                                - paragraph: "0"
+                              - generic:
+                                - paragraph: SKU
+                                - paragraph: Kit2025448010
+                            - generic:
+                              - button: Preencher
+                        - generic:
+                          - generic:
+                            - generic:
+                              - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                            - generic:
+                              - generic:
+                                - img
+                          - generic:
+                            - generic:
+                              - heading [level=3]: Camisa Bitcoin Warrior
+                            - generic:
+                              - generic:
+                                - paragraph: Preço
+                                - paragraph: R$ 49,90
+                              - generic:
+                                - paragraph: Custo
+                                - paragraph: R$ 0,00
+                              - generic:
+                                - paragraph: Vendas
+                                - paragraph: "0"
+                              - generic:
+                                - paragraph: Estoque
+                                - paragraph: "0"
+                              - generic:
+                                - paragraph: SKU
+                                - paragraph: C781
+                            - generic:
+                              - button: Cadastrado
+                              - button: Atualizar
+                        - generic:
+                          - generic:
+                            - generic:
+                              - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                            - generic:
+                              - generic:
+                                - img
+                          - generic:
+                            - generic:
+                              - heading [level=3]: Camisa Feminina Baby Look Monday Lisa
+                            - generic:
+                              - generic:
+                                - paragraph: Preço
+                                - paragraph: R$ 39,00
+                              - generic:
+                                - paragraph: Custo
+                                - paragraph: R$ 0,00
+                              - generic:
+                                - paragraph: Vendas
+                                - paragraph: "0"
+                              - generic:
+                                - paragraph: Estoque
+                                - paragraph: "-"
+                              - generic:
+                                - paragraph: SKU
+                                - paragraph: C1233
+                            - generic:
+                              - button: Cadastrado
+                              - button: Atualizar
+                      - generic:
+                        - button [disabled]:
+                          - img
+                        - generic: Página 1 de 22
+                        - button:
+                          - img
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                      - text: Taxas dos Marketplaces (Referência)
+                    - img
+                - generic:
+                  - generic:
+                    - generic:
+                      - heading [level=5]: 📦 Mercado Livre Clássico
+                      - list:
+                        - listitem:
+                          - text: •
+                          - strong: "Comissão:"
+                          - text: 10% a 14% sobre o valor da venda (varia por categoria)
+                        - listitem:
+                          - text: •
+                          - strong: "Custo Fixo:"
+                          - text: Hoje varia por faixa de preço.
+                        - listitem:
+                          - text: •
+                          - strong: "Frete Grátis:"
+                          - text: Políticas de frete grátis mudaram e agora são mais flexíveis.
+                        - listitem:
+                          - text: •
+                          - strong: "Visibilidade:"
+                          - text: Alta
+                        - listitem:
+                          - text: •
+                          - strong: "Parcelamento:"
+                          - text: Não inclui parcelamento sem juros
+                    - generic:
+                      - heading [level=5]: ⭐ Anúncio Premium (Mercado Livre)
+                      - list:
+                        - listitem:
+                          - text: •
+                          - strong: "Comissão:"
+                          - text: 15% a 19% sobre o valor da venda (varia por categoria)
+                        - listitem:
+                          - text: •
+                          - strong: "Custo Fixo:"
+                          - text: Hoje varia por faixa de preço.
+                        - listitem:
+                          - text: •
+                          - strong: "Visibilidade:"
+                          - text: Máxima - destaque e prioridade nas buscas
+                        - listitem:
+                          - text: •
+                          - strong: "Parcelamento:"
+                          - text: Até 12x sem juros para o comprador
+                        - listitem:
+                          - text: •
+                          - strong: "Benefício:"
+                          - text: Maior conversão de vendas pela visibilidade
+                    - generic:
+                      - heading [level=5]: 📦 Amazon
+                      - list:
+                        - listitem:
+                          - text: •
+                          - strong: "1. Comissão de Venda (Taxa de Referência):"
+                          - text: A Amazon cobra uma comissão sobre o valor total da venda (preço do item + frete + embalagem para presente).
+                          - list:
+                            - listitem:
+                              - strong: "Porcentagem:"
+                              - text: Geralmente entre 10% e 15% para a maioria das categorias.
+                            - listitem:
+                              - strong: "Comissão mínima:"
+                              - text: Se o valor calculado da comissão for muito baixo, aplica-se uma comissão mínima de R$ 1,00 por item.
+                        - listitem:
+                          - text: •
+                          - strong: "2. Taxa Fixa por Item (Plano Individual):"
+                          - text: "A taxa fixa depende do seu plano de vendedor:"
+                          - list:
+                            - listitem:
+                              - strong: "Plano Individual:"
+                              - text: R$ 2,00 por item vendido (além da comissão de 10-15%).
+                            - listitem:
+                              - strong: "Plano Profissional:"
+                              - text: Não tem taxa fixa por item (apenas a comissão de 10-15%). Em vez disso, paga-se uma mensalidade de R$ 19,00.
+                        - listitem:
+                          - text: •
+                          - strong: "3. Outras Taxas Possíveis:"
+                          - list:
+                            - listitem:
+                              - strong: "Logística (FBA/DBA):"
+                              - text: Se você utilizar a logística da Amazon para enviar os produtos, haverá taxas de manuseio e frete, que variam conforme o peso e tamanho do produto.
+                            - listitem:
+                              - strong: "Parcelamento:"
+                              - text: Se o vendedor oferecer parcelamento sem juros, pode haver uma taxa adicional de 1,5% sobre o valor total da venda.
+                    - generic:
+                      - heading [level=5]: 🛍️ Shopee
+                      - list:
+                        - listitem:
+                          - text: •
+                          - strong: "Com Frete Grátis:"
+                          - text: 14% comissão + 6% frete + R$ 4 fixo*
+                        - listitem:
+                          - text: •
+                          - strong: "Sem Frete Grátis:"
+                          - text: 12% comissão + 2% transação + R$ 4 fixo*
+                        - listitem:
+                          - text: •
+                          - strong: "*Produtos abaixo de R$ 8:"
+                          - text: Taxa fixa é 50% do valor do item (não R$ 4)
+                    - generic:
+                      - paragraph: "💡 Dicas Importantes:"
+                      - list:
+                        - listitem: "• O custo fixo varia conforme o preço: R$ 6,00 (até R$ 40), R$ 6,50 (R$ 40-60), R$ 6,75 (R$ 60-79)"
+                        - listitem: • A margem recomendada já considera custos operacionais e embalagem
+                        - listitem: • No Mercado Livre, o Premium tem maior custo mas gera mais vendas pela visibilidade
+                        - listitem: • Valores atualizados conforme políticas de 2024 dos marketplaces
+              - contentinfo:
+                - paragraph: "Desenvolvido por: Jonatan Renan"
+                - paragraph: Alob Express © todos os direitos reservados
+  - dialog "Resumo Financeiro Geral" [ref=e480]:
+    - heading "Resumo Financeiro Geral" [level=2] [ref=e482]
+    - generic [ref=e483]:
+      - generic [ref=e485]:
+        - generic [ref=e486]:
+          - generic [ref=e487]:
+            - paragraph [ref=e488]: Lucro
+            - paragraph [ref=e489]: R$ 0,00
+          - generic [ref=e490]:
+            - paragraph [ref=e491]: Total de Vendas
+            - paragraph [ref=e492]: "0"
+        - generic [ref=e493]:
+          - paragraph [ref=e494]: Total de Despesas
+          - paragraph [ref=e495]: R$ 0,00
+      - generic [ref=e496]:
+        - generic [ref=e497]:
+          - generic [ref=e498]:
+            - img
+          - generic [ref=e499]:
+            - paragraph [ref=e500]: Customer Lifetime Value
+            - paragraph [ref=e501]: Análise de valor dos clientes
+        - generic [ref=e502]:
+          - generic [ref=e503]:
+            - generic [ref=e504]:
+              - img
+              - paragraph [ref=e505]: LTV Médio
+            - paragraph [ref=e506]: R$ 224,40
+          - generic [ref=e507]:
+            - generic [ref=e508]:
+              - img
+              - paragraph [ref=e509]: Ticket Médio
+            - paragraph [ref=e510]: R$ 74,80
+          - generic [ref=e511]:
+            - generic [ref=e512]:
+              - img
+              - paragraph [ref=e513]: Pedidos/Cliente
+            - paragraph [ref=e514]: "3.0"
+          - generic [ref=e515]:
+            - generic [ref=e516]:
+              - img
+              - paragraph [ref=e517]: Taxa Recompra
+            - paragraph [ref=e518]: 100.0%
+      - generic [ref=e520]:
+        - generic [ref=e521]:
+          - generic [ref=e522]:
+            - generic [ref=e523]:
+              - paragraph [ref=e524]:
+                - img
+                - text: Análise de Lucro
+              - generic [ref=e525]: 30.5% margem
+            - img "Custo 69.5%, Comissão 5.3%, Lucro 30.5%" [ref=e526]:
+              - generic [ref=e528]: 69.5%
+              - generic [ref=e531]: 30.5%
+            - generic [ref=e532]:
+              - generic [ref=e535]: Custo (69.5%)
+              - generic [ref=e538]: Comissão (5.3%)
+              - generic [ref=e541]: Lucro (30.5%)
+            - generic [ref=e542]:
+              - generic [ref=e543]:
+                - paragraph [ref=e544]: Custo
+                - paragraph [ref=e545]: R$ 29,90
+              - generic [ref=e546]:
+                - paragraph [ref=e547]: Comissão
+                - paragraph [ref=e548]: R$ 2,30
+              - generic [ref=e549]:
+                - paragraph [ref=e550]: Lucro
+                - paragraph [ref=e551]: R$ 13,10
+            - generic [ref=e552]:
+              - generic [ref=e553]:
+                - generic [ref=e554]: Frete Total
+                - generic [ref=e555]: R$ 0,00
+              - generic [ref=e556]:
+                - generic [ref=e557]: Outras Despesas
+                - generic [ref=e558]: R$ 0,00
+          - generic [ref=e559]:
+            - generic [ref=e560]:
+              - paragraph [ref=e561]:
+                - img
+                - text: Produtos Mais Lucrativos
+              - generic [ref=e562]: Top 5
+            - generic [ref=e564]:
+              - generic [ref=e565]: "1"
+              - img "Camisa Mouth Cor:Azul Marinho;Tamanho:GG" [ref=e566]
+              - generic [ref=e567]:
+                - paragraph [ref=e568]: Camisa Mouth Cor:Azul Marinho;Tamanho:GG
+                - generic [ref=e569]:
+                  - generic [ref=e570]: 1 vendas
+                  - generic [ref=e571]: 58.1%
+              - generic [ref=e572]:
+                - paragraph [ref=e573]: R$ 25,00
+                - paragraph [ref=e574]: lucro
+        - generic [ref=e575]:
+          - generic [ref=e576]:
+            - generic [ref=e577]:
+              - generic [ref=e578]:
+                - img
+              - generic [ref=e579]:
+                - paragraph [ref=e580]: Performance por Marketplace
+                - paragraph [ref=e581]: Comparação entre plataformas
+            - generic [ref=e583]:
+              - generic [ref=e584]:
+                - img "Mercado Livre" [ref=e586]
+                - generic [ref=e587]:
+                  - heading "Mercado Livre" [level=4] [ref=e588]
+                  - paragraph [ref=e589]: 1 pedidos processados
+              - generic [ref=e590]:
+                - generic [ref=e591]:
+                  - generic [ref=e592]:
+                    - img [ref=e593]
+                    - paragraph [ref=e595]: Pedidos
+                  - paragraph [ref=e596]: "1"
+                - generic [ref=e597]:
+                  - generic [ref=e598]:
+                    - img
+                    - paragraph [ref=e599]: Receita
+                  - paragraph [ref=e600]: R$ 43,00
+                - generic [ref=e601]:
+                  - generic [ref=e602]:
+                    - img
+                    - paragraph [ref=e603]: Lucro
+                  - paragraph [ref=e604]: R$ 13,10
+          - generic [ref=e605]:
+            - paragraph [ref=e606]: Total de produtos por marketplace
+            - generic [ref=e607]:
+              - generic [ref=e608]:
+                - generic [ref=e609]: Mercado Livre
+                - generic [ref=e610]: "7"
+              - generic [ref=e611]:
+                - generic [ref=e612]: Shopee
+                - generic [ref=e613]: "55"
+              - generic [ref=e614]:
+                - generic [ref=e615]: TikTok
+                - generic [ref=e616]: "21"
+      - generic [ref=e617]:
+        - generic [ref=e619]:
+          - generic [ref=e620]:
+            - paragraph [ref=e621]: Capital de giro disponível
+            - paragraph [ref=e622]: R$ 500,00
+          - generic [ref=e623]:
+            - paragraph [ref=e624]: Reserva de emergência
+            - paragraph [ref=e625]: R$ 3.000,00
+          - generic [ref=e626]:
+            - paragraph [ref=e627]: Capital de Marketing
+            - paragraph [ref=e628]: R$ 300,00
+            - paragraph [ref=e629]: "Investimento total: R$ 0,00"
+          - generic [ref=e631]:
+            - paragraph [ref=e632]: Investimento Bruto
+            - paragraph [ref=e633]: R$ 0,00
+          - generic [ref=e634]:
+            - paragraph [ref=e635]: Investimento Líquido
+            - paragraph [ref=e636]: R$ 0,00
+        - generic [ref=e637]:
+          - generic [ref=e638]:
+            - paragraph [ref=e639]: Maior preço por marketplace
+            - generic [ref=e640]:
+              - img "Tênis Masculino Wwave Corrida Academia" [ref=e642]
+              - img "Copo QUENCHER 1.0" [ref=e644]
+            - generic [ref=e645]:
+              - button [disabled]:
+                - img
+              - generic [ref=e646]: 1 / 2
+              - button [active] [ref=e647] [cursor=pointer]:
+                - img
+          - generic [ref=e648]:
+            - paragraph [ref=e649]: Maior lucro por marketplace
+            - generic [ref=e650]:
+              - img "Camisa Feminina Baby Look Glória de Deus" [ref=e652]
+              - img "Copo com Alça térmico 800ml" [ref=e654]
+            - generic [ref=e655]:
+              - button [disabled]:
+                - img
+              - generic [ref=e656]: 1 / 2
+              - button [ref=e657] [cursor=pointer]:
+                - img
+    - button "Close" [ref=e658] [cursor=pointer]:
+      - img
+      - generic [ref=e659]: Close

@@ -553,6 +553,38 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
                 </div>
               </div>
 
+              {/* Lucro Estimado */}
+              <div className="pt-2 border-t border-gray-200 dark:border-zinc-700">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Valor Líquido
+                  </p>
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    {formatCurrency(order.net_revenue)}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Custo
+                  </p>
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    {formatCurrency(order.total_cost)}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between pt-1 border-t border-dashed border-gray-300 dark:border-zinc-600">
+                  <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                    Lucro Estimado
+                  </p>
+                  <p className={`text-base font-bold ${
+                    order.estimated_profit > 0 
+                      ? 'text-green-600 dark:text-green-400' 
+                      : 'text-red-600 dark:text-red-400'
+                  }`}>
+                    {formatCurrency(order.estimated_profit)}
+                  </p>
+                </div>
+              </div>
+
               {order.commission_rate > 0 && (
                 <div className="text-xs text-gray-500 dark:text-gray-400">
                   Comissão: {order.commission_rate}%

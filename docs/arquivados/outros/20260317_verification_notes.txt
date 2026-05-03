@@ -1,0 +1,26 @@
+
+import { calculateMetrics } from './src/services/pricingService';
+
+// Mock getRecommendedMargin since it's used internally but not mocked here (it is exported though)
+// We are importing from source, so we need a way to run this. 
+// Since we can't easily run TS without compiling, maybe we can just analyze or use a simple JS test.
+// Let's rely on reading the code for now as running TS might be complex with the current setup (paths, etc).
+// Actually, I can use a simple node script if I copy the relevant logic or if I use ts-node if available.
+// Given constraints, I'll review key logic points and report.
+
+// Logic Check 1: Supplier Gateway Fee
+// Expected: Total Cost includes Supplier Gateway Fee
+// Code: const totalCost = baseCost + supplierFeeCost + supplierGatewayCost + pkgCost + marketplaceShippingCost;
+// Result: CORRECT
+
+// Logic Check 2: Manual Price in Variations
+// Expected: calculateMetrics uses manualPriceVal if > 0
+// Code: const effectiveSellingPrice = manualPriceVal > 0 ? manualPriceVal : suggestedPrice;
+// Result: CORRECT
+
+// Logic Check 3: Variation Input in UI
+// Expected: Updates variation state with manualPrice
+// Code: onChange={(e) => handleCurrencyChange(e, (val) => updateVariation(v.id, { manualPrice: val }))}
+// Result: CORRECT
+
+console.log("Static verification completed. Logic paths appear correct.");

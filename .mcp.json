@@ -7,6 +7,15 @@
         "serve"
       ],
       "type": "stdio"
+    },
+    "lightrag": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "D:/workspace/no-code/dropshipping-calculator-app/tools/lightrag",
+        "kg-server"
+      ]
     }
   }
 }

@@ -12,4 +12,7 @@ export interface PendingOrder {
   items_count: number;
   first_product_image: string | null;
   first_product_name: string | null;
+  estimated_profit: number;
+  net_revenue: number;
+  total_cost: number;
 }
