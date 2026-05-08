@@ -21,9 +21,6 @@ secretsbling.md
 src/hooks/n8n*
 tests/*
 test/screenshots
-scripts/*
-sql-scripts/*
-python-scripts/*
 # ============================================
 # LOGS
 # ============================================
@@ -103,9 +100,6 @@ src/hooks/n8n/
 
 # Test files (keep local only)
 src/test/
-
-# Large documentation files
-docs/
 
 # Documentation files (keep local only)
 AGENTS.md

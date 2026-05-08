@@ -14,6 +14,7 @@ import { LoadingState } from './components/ui/LoadingState';
 // Lazy load components for code splitting
 const DropshippingCalculator = lazy(() => import('./components/DropshippingCalculator'));
 const LoginPremium = lazy(() => import('./components/LoginPremium'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Sales = lazy(() => import('./pages/Sales'));
 const Leads = lazy(() => import('./pages/Leads'));
 
@@ -32,6 +33,16 @@ const SalesPage = () => (
     <Layout>
       <Suspense fallback={<LoadingState />}>
         <Sales />
+      </Suspense>
+    </Layout>
+  </ProtectedRoute>
+);
+
+const DashboardPage = () => (
+  <ProtectedRoute>
+    <Layout>
+      <Suspense fallback={<LoadingState />}>
+        <Dashboard />
       </Suspense>
     </Layout>
   </ProtectedRoute>
@@ -79,6 +90,7 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
+              <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/produtos" element={<ProductsPage />} />
               <Route path="/vendas" element={<SalesPage />} />
               <Route path="/leads" element={<LeadsPage />} />

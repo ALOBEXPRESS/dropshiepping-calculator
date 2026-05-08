@@ -14,7 +14,8 @@ import {
   Menu,
   Bell,
   Mail,
-  X
+  X,
+  BarChart3
 } from 'lucide-react';
 import { 
   DropdownMenu, 
@@ -123,6 +124,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
           
           <ul className="space-y-2 font-medium">
+            <li>
+              <Link
+                to={{ pathname: '/dashboard', search: e2eSearch }}
+                className={`flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-zinc-800 group no-underline
+                  ${location.pathname === '/dashboard'
+                    ? 'bg-gradient-to-r from-blue-500/10 to-purple-500/10 text-blue-400 font-semibold'
+                    : 'text-gray-500 dark:text-gray-400'
+                  }`}
+              >
+                <BarChart3 className={`w-5 h-5 transition duration-75 ${
+                  location.pathname === '/dashboard'
+                    ? 'text-blue-400'
+                    : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white'
+                }`} />
+                <span className="ml-3">Dashboard</span>
+              </Link>
+            </li>
             <li>
               <div className="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-zinc-800 group cursor-pointer">
                 <LayoutDashboard className="w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" />
