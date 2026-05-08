@@ -2,17 +2,22 @@
 
 ## Resumo
 
-Criada nova página "Dashboard" que exibe os funis de leads com filtros de período e marketplace.
+Criada nova página "Dashboard" que exibe os KPIs, gráficos de conversão semanal e análise de leads com filtros de período e marketplace.
 
 ## Arquivos Criados
 
 ### 1. `src/pages/Dashboard.tsx`
 Nova página principal de dashboard com:
-- Funil de Classificação de Gênero
-- Funil de Conversão de Leads
+- **5 KPI Cards:**
+  - Receita Total
+  - Taxas Marketplace
+  - Lucro Total
+  - Produtos
+  - Clientes
+- **Gráfico de Conversão Semanal** (barras empilhadas)
+- **Gráfico de Leads** (bolhas/bubble chart)
 - Filtros de período (Total, Dia, Semana, Mês, Ano)
 - Filtro de marketplace
-- Botão escondido para classificação em lote de gênero
 
 ## Arquivos Modificados
 
@@ -81,20 +86,27 @@ const DashboardPage = () => (
 
 ## Funcionalidades
 
-### Funil de Classificação de Gênero
-- Exibe distribuição de leads por gênero (Masculino, Feminino, Não Classificados)
-- Gráfico donut com percentuais
-- Taxa de classificação
-- Botão para classificar leads pendentes
+### KPI Cards (5 cards)
+1. **Receita Total** - Total de vendas
+2. **Taxas Marketplace** - Comissões pagas
+3. **Lucro Total** - Lucro líquido
+4. **Produtos** - Total de produtos
+5. **Clientes** - Total de clientes
 
-### Funil de Conversão de Leads
-- Exibe estágios de conversão:
-  - Novos Leads (0 pedidos processados)
-  - Recorrentes (>2 pedidos no Bling, 0 processados)
-  - Convertidos (1 pedido processado)
-  - Qualificados (>1 pedido processado)
-- Gráfico donut com percentuais
-- Taxa de conversão
+### Gráfico de Conversão Semanal
+- Gráfico de barras empilhadas
+- Mostra taxas (amarelo) e receitas (laranja) por dia
+- Exibe lucro líquido
+- Indica o dia mais lucrativo do mês
+
+### Gráfico de Leads (Bubble Chart)
+- Visualização em bolhas
+- Categorias:
+  - Sem Lucro Processado (amarelo)
+  - Lucro Processado 1x (laranja)
+  - Qualificados (2+x) (roxo)
+- Mostra quantidade e percentual de cada categoria
+- Indica usuários cadastrados recentemente
 
 ### Filtros
 1. **Período:**
@@ -110,11 +122,20 @@ const DashboardPage = () => (
 
 ## Componentes Reutilizados
 
-- `GenderClassificationFunnel` - Funil de classificação de gênero
-- `CustomersStatistics` - Funil de conversão de leads
+- `KPICard` - Cards de métricas
+- `WeeklyConversionChart` - Gráfico de conversão semanal
+- `LeadStatusChart` - Gráfico de status de leads
 - `TimePeriodFilter` - Filtro de período
 - `MarketplaceFilter` - Filtro de marketplace
-- `GenderClassificationJobButton` - Botão para classificação em lote
+- `KPICardSkeleton` - Loading state para KPI cards
+- `WeeklyConversionChartSkeleton` - Loading state para gráfico de conversão
+- `LeadStatusChartSkeleton` - Loading state para gráfico de leads
+
+## Hooks Utilizados
+
+- `useDashboardData` - Busca dados do dashboard com React Query
+- `useMarketplaces` - Busca lista de marketplaces
+- `useSettings` - Acessa organizationId do contexto
 
 ## Rotas
 
@@ -129,6 +150,23 @@ const DashboardPage = () => (
 - Ícone: `BarChart3` (gráfico de barras) em azul quando ativo
 - Gradiente: Azul/roxo no estado ativo
 - Responsivo: Grid adaptativo para mobile/tablet/desktop
+- Dark mode: Totalmente suportado
+
+## Estados da Interface
+
+### Loading State
+- Exibe skeletons para KPI cards
+- Exibe skeletons para gráficos
+- Desabilita filtros durante carregamento
+
+### Error State
+- Componente `DashboardErrorState`
+- Botão de retry para recarregar dados
+- Mensagem de erro amigável
+
+### Empty State
+- Componente `EmptyDashboardState`
+- Exibido quando não há dados disponíveis
 
 ## Testes
 
@@ -136,18 +174,33 @@ const DashboardPage = () => (
 ✅ Imports corretos
 ✅ Rotas configuradas
 ✅ Menu atualizado
+✅ Componentes reutilizados da página Leads
+
+## Diferenças entre Dashboard e Leads
+
+| Aspecto | Dashboard | Leads |
+|---------|-----------|-------|
+| **Foco** | KPIs e conversões | Funis de classificação |
+| **KPI Cards** | ✅ 5 cards | ✅ 5 cards |
+| **Gráfico Conversão** | ✅ Sim | ✅ Sim |
+| **Gráfico Leads** | ✅ Sim | ✅ Sim |
+| **Funil Gênero** | ❌ Não | ✅ Sim |
+| **Funil Conversão** | ❌ Não | ✅ Sim |
+| **Classificação Gênero** | ❌ Não | ✅ Sim |
 
 ## Próximos Passos
 
-1. Testar a navegação no navegador
-2. Verificar responsividade em diferentes tamanhos de tela
-3. Testar filtros de período e marketplace
-4. Verificar classificação de gênero em lote
-5. Adicionar testes automatizados (opcional)
+1. ✅ Testar a navegação no navegador
+2. ✅ Verificar responsividade em diferentes tamanhos de tela
+3. ✅ Testar filtros de período e marketplace
+4. ⏳ Verificar dados reais vs mock data
+5. ⏳ Adicionar testes automatizados (opcional)
 
 ## Observações
 
-- A página Dashboard é independente da página Leads
-- Os mesmos componentes são reutilizados em ambas as páginas
-- Os filtros afetam ambos os funis simultaneamente
-- A classificação de gênero em lote é feita através de um botão escondido
+- A página Dashboard foca em **métricas e conversões**
+- A página Leads foca em **classificação e funis**
+- Os mesmos componentes de KPIs e gráficos são reutilizados
+- Os filtros afetam todos os componentes simultaneamente
+- Usa React Query para cache e gerenciamento de estado
+- Suporta modo escuro (dark mode)
