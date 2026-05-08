@@ -125,12 +125,22 @@ export default function LeadsTable({
   } = useLeads(organizationId, filters, sort, pagination);
 
   // Update pagination total count when data changes
+  // Also adjust current page if it's now out of bounds (e.g., after deleting last item on a page)
   React.useEffect(() => {
     if (leadsData?.totalCount !== undefined) {
-      setPagination(prev => ({
-        ...prev,
-        totalCount: leadsData.totalCount,
-      }));
+      setPagination(prev => {
+        const newTotalPages = Math.ceil(leadsData.totalCount / prev.pageSize);
+        const maxValidPage = Math.max(0, newTotalPages - 1);
+        
+        // If current page is now out of bounds, go to the last valid page
+        const adjustedPage = prev.page > maxValidPage ? maxValidPage : prev.page;
+        
+        return {
+          ...prev,
+          totalCount: leadsData.totalCount,
+          page: adjustedPage,
+        };
+      });
     }
   }, [leadsData?.totalCount]);
 
