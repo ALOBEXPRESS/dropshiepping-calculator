@@ -2,25 +2,18 @@
  * LeadsDashboard Component
  * 
  * Main container component for the leads analytics dashboard.
- * Includes gender classification funnel and lead conversion statistics.
+ * Includes gender classification funnel, lead conversion statistics, and leads table.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import KPICard from './KPICard';
-import WeeklyConversionChart from './WeeklyConversionChart';
-import LeadStatusChart from './LeadStatusChart';
+import React, { useState, useCallback, useMemo } from 'react';
 import TimePeriodFilter from './TimePeriodFilter';
 import MarketplaceFilter from './MarketplaceFilter';
-import { KPICardSkeleton, WeeklyConversionChartSkeleton, LeadStatusChartSkeleton } from './skeletons';
-import EmptyDashboardState from './EmptyDashboardState';
-import DashboardErrorState from './DashboardErrorState';
 import { GenderClassificationFunnel, GenderClassificationJobButton, CustomersStatistics } from './sales';
-import { MOCK_DASHBOARD_DATA } from '../data/mockDashboardData';
-import { useDashboardData } from '../hooks/useDashboardData';
+import LeadsTable from './leads/LeadsTable';
+import { LeadsTableErrorBoundary } from './leads/LeadsTableErrorBoundary';
 import { useMarketplaces } from '../hooks/useMarketplaces';
 import { useSettings } from '@/contexts/SettingsContext';
-import { transformToKPICardProps } from '../utils/transformDashboardData.tsx';
-import { runDashboardDiagnostic } from '../utils/diagnosticDashboard';
+import { calculatePeriodRanges } from '@/utils/dateRangeCalculator';
 import type { TimePeriod } from '../types/dashboard';
 
 /**
@@ -42,34 +35,24 @@ const LeadsDashboard: React.FC<LeadsDashboardProps> = () => {
   // Fetch marketplaces list
   const { marketplaces, isLoading: isLoadingMarketplaces } = useMarketplaces();
 
-  // Fetch dashboard data using React Query hook with marketplace filter
-  const { data, isLoading, isError, error, refetch } = useDashboardData(period, selectedMarketplace);
-
   const handleRefresh = useCallback(() => {
     setRefreshKey(Date.now());
-    refetch();
-  }, [refetch]);
-
-  // Run diagnostic on mount in development mode
-  useEffect(() => {
-    if (import.meta.env.DEV) {
-      console.log('🔍 Running dashboard diagnostic...');
-      runDashboardDiagnostic();
-    }
   }, []);
 
-  // Transform data to KPI card props
-  const kpiProps = data ? transformToKPICardProps(data) : null;
-
-  // Handle error state
-  if (isError) {
-    return <DashboardErrorState error={error?.message || 'Failed to load dashboard data'} onRetry={refetch} />;
-  }
-
-  // Handle empty state (no data available)
-  if (!isLoading && !data) {
-    return <EmptyDashboardState />;
-  }
+  // Convert TimePeriod to date range for LeadsTable
+  // Requirements: 10.1, 10.2, 10.3
+  const dateRangeForLeadsTable = useMemo(() => {
+    if (period === 'total') {
+      // For 'total', don't apply date filter
+      return null;
+    }
+    
+    const periodData = calculatePeriodRanges(period);
+    return {
+      from: periodData.current.start,
+      to: periodData.current.end,
+    };
+  }, [period]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 p-4 sm:p-6">
@@ -80,13 +63,13 @@ const LeadsDashboard: React.FC<LeadsDashboardProps> = () => {
             <TimePeriodFilter
               selectedPeriod={period}
               onPeriodChange={setPeriod}
-              disabled={isLoading}
+              disabled={false}
             />
             <MarketplaceFilter
               marketplaces={marketplaces}
               selectedMarketplace={selectedMarketplace}
               onMarketplaceChange={setSelectedMarketplace}
-              disabled={isLoading || isLoadingMarketplaces}
+              disabled={isLoadingMarketplaces}
             />
           </div>
 
@@ -133,66 +116,24 @@ const LeadsDashboard: React.FC<LeadsDashboardProps> = () => {
             </div>
           )}
 
-          {/* KPI Cards Section - Now 5 cards */}
-          <section 
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6"
-            role="region"
-            aria-label="Métricas KPI"
-          >
-            {isLoading ? (
-              // Loading state: Show skeleton components
-              <>
-                <KPICardSkeleton />
-                <KPICardSkeleton />
-                <KPICardSkeleton />
-                <KPICardSkeleton />
-                <KPICardSkeleton />
-              </>
-            ) : (
-              // Success state: Show actual KPI cards with real data
-              <>
-                {/* Revenue KPI */}
-                <KPICard {...kpiProps!.revenue} />
-
-                {/* Fees KPI */}
-                <KPICard {...kpiProps!.fees} />
-
-                {/* Profit KPI */}
-                <KPICard {...kpiProps!.profit} />
-
-                {/* Products KPI */}
-                <KPICard {...kpiProps!.products} />
-
-                {/* Customers KPI */}
-                <KPICard {...kpiProps!.customers} />
-              </>
-            )}
-          </section>
-
-          {/* Charts Section - Side by side on desktop, stacked on mobile/tablet */}
-          <section 
-            className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6"
-            role="region"
-            aria-label="Analytics Charts"
-          >
-            {isLoading ? (
-              <>
-                <WeeklyConversionChartSkeleton />
-                <LeadStatusChartSkeleton />
-              </>
-            ) : (
-              <>
-                <WeeklyConversionChart
-                  data={MOCK_DASHBOARD_DATA.weeklyConversions}
-                  mostProfitableDay={MOCK_DASHBOARD_DATA.metadata.mostProfitableDay}
+          {/* Leads Table Section - Integrates with dashboard filters */}
+          {/* Requirements: 10.1, 10.2, 10.3, 10.4, 10.5 */}
+          {/* Error Boundary: Requirements 1.7, 6.9, 7.7, 8.6 */}
+          {organizationId && (
+            <section 
+              className="mt-8"
+              role="region"
+              aria-label="Tabela de Leads"
+            >
+              <LeadsTableErrorBoundary onReset={handleRefresh}>
+                <LeadsTable
+                  organizationId={organizationId}
+                  period={dateRangeForLeadsTable}
+                  marketplaceId={selectedMarketplace}
                 />
-                <LeadStatusChart
-                  data={MOCK_DASHBOARD_DATA.leadStatus}
-                  recentSignups={MOCK_DASHBOARD_DATA.metadata.recentSignups}
-                />
-              </>
-            )}
-          </section>
+              </LeadsTableErrorBoundary>
+            </section>
+          )}
 
         </main>
       </div>
