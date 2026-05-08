@@ -216,7 +216,12 @@ export function leadsToCSV(
           return escapeCSVField(formatDateForCSV(lead[col.key as keyof Lead] as string));
         
         default:
-          return escapeCSVField(lead[col.key as keyof Lead]);
+          const value = lead[col.key as keyof Lead];
+          // Handle boolean values
+          if (typeof value === 'boolean') {
+            return escapeCSVField(value ? 'Sim' : 'Não');
+          }
+          return escapeCSVField(value);
       }
     }).join(opts.delimiter);
 

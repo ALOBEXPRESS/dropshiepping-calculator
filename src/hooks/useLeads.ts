@@ -13,9 +13,7 @@ import type {
   SortConfig,
   PaginationConfig,
   LeadsQueryResponse,
-  LeadKPIs,
   LeadFormData,
-  Marketplace,
 } from '../types/leads';
 import { LEADS_CACHE_TIME, LEADS_STALE_TIME } from '../components/leads/constants';
 
@@ -34,8 +32,8 @@ export function useLeads(
     queryKey: ['leads', organizationId, filters, sort, pagination],
     queryFn: () => LeadsService.fetchLeads(organizationId, filters, sort, pagination),
     staleTime: LEADS_STALE_TIME,
-    cacheTime: LEADS_CACHE_TIME,
-    keepPreviousData: true, // For smooth pagination transitions
+    gcTime: LEADS_CACHE_TIME, // Changed from cacheTime in React Query v5
+    placeholderData: (previousData) => previousData, // Changed from keepPreviousData in React Query v5
     enabled: !!organizationId,
     retry: 2, // Retry failed requests up to 2 times
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
@@ -55,7 +53,7 @@ export function useLeadKPIs(
     queryKey: ['lead-kpis', organizationId, filters],
     queryFn: () => LeadsService.fetchLeadKPIs(organizationId, filters),
     staleTime: LEADS_STALE_TIME,
-    cacheTime: LEADS_CACHE_TIME,
+    gcTime: LEADS_CACHE_TIME, // Changed from cacheTime in React Query v5
     enabled: !!organizationId,
     retry: 2, // Retry failed requests up to 2 times
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
@@ -72,11 +70,11 @@ export function useCreateLead(organizationId: string) {
     mutationFn: (formData: LeadFormData) => 
       LeadsService.createLead(organizationId, formData),
     onMutate: async (formData) => {
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries(['leads', organizationId]);
+      // Cancel outgoing refetches - React Query v5 syntax
+      await queryClient.cancelQueries({ queryKey: ['leads', organizationId] });
 
-      // Snapshot previous value
-      const previousLeads = queryClient.getQueriesData(['leads', organizationId]);
+      // Snapshot previous value - React Query v5 syntax
+      const previousLeads = queryClient.getQueriesData({ queryKey: ['leads', organizationId] });
 
       // Create optimistic lead with temporary ID
       const optimisticLead: Lead = {
@@ -85,11 +83,11 @@ export function useCreateLead(organizationId: string) {
         name: formData.name,
         email: formData.email || null,
         phone: formData.phone || null,
-        cellphone: formData.cellphone || null,
+        mobile_phone: formData.mobile_phone || null,
         document_type: formData.document_type || null,
         document_number: formData.document_number || null,
-        company: formData.company || null,
-        fantasy_name: formData.fantasy_name || null,
+        company_name: formData.company_name || null,
+        trade_name: formData.trade_name || null,
         marketplace_id: formData.marketplace_id || null,
         marketplace_name: undefined,
         lead_status: formData.lead_status || null,
@@ -104,9 +102,9 @@ export function useCreateLead(organizationId: string) {
         last_order_date: null,
       };
 
-      // Optimistically add to cache
+      // Optimistically add to cache - React Query v5 syntax
       queryClient.setQueriesData<LeadsQueryResponse>(
-        ['leads', organizationId],
+        { queryKey: ['leads', organizationId] },
         (old) => {
           if (!old) return old;
           return {
@@ -119,7 +117,7 @@ export function useCreateLead(organizationId: string) {
 
       return { previousLeads };
     },
-    onError: (err, variables, context) => {
+    onError: (_error, _variables, context) => {
       // Rollback on error
       if (context?.previousLeads) {
         context.previousLeads.forEach(([queryKey, data]) => {
@@ -128,12 +126,12 @@ export function useCreateLead(organizationId: string) {
       }
     },
     onSuccess: () => {
-      // Invalidate KPIs on successful create
-      queryClient.invalidateQueries(['lead-kpis', organizationId]);
+      // Invalidate KPIs on successful create - React Query v5 syntax
+      queryClient.invalidateQueries({ queryKey: ['lead-kpis', organizationId] });
     },
     onSettled: () => {
-      // Always refetch after error or success to get real data from server
-      queryClient.invalidateQueries(['leads', organizationId]);
+      // Always refetch after error or success to get real data from server - React Query v5 syntax
+      queryClient.invalidateQueries({ queryKey: ['leads', organizationId] });
     },
   });
 }
@@ -148,15 +146,15 @@ export function useUpdateLead(organizationId: string) {
     mutationFn: ({ leadId, formData }: { leadId: string; formData: LeadFormData }) =>
       LeadsService.updateLead(leadId, organizationId, formData),
     onMutate: async ({ leadId, formData }) => {
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries(['leads', organizationId]);
+      // Cancel outgoing refetches - React Query v5 syntax
+      await queryClient.cancelQueries({ queryKey: ['leads', organizationId] });
 
-      // Snapshot previous value
-      const previousLeads = queryClient.getQueriesData(['leads', organizationId]);
+      // Snapshot previous value - React Query v5 syntax
+      const previousLeads = queryClient.getQueriesData({ queryKey: ['leads', organizationId] });
 
-      // Optimistically update to the new value
+      // Optimistically update to the new value - React Query v5 syntax
       queryClient.setQueriesData<LeadsQueryResponse>(
-        ['leads', organizationId],
+        { queryKey: ['leads', organizationId] },
         (old) => {
           if (!old) return old;
           return {
@@ -176,7 +174,7 @@ export function useUpdateLead(organizationId: string) {
 
       return { previousLeads };
     },
-    onError: (err, variables, context) => {
+    onError: (_error, _variables, context) => {
       // Rollback on error
       if (context?.previousLeads) {
         context.previousLeads.forEach(([queryKey, data]) => {
@@ -185,12 +183,12 @@ export function useUpdateLead(organizationId: string) {
       }
     },
     onSuccess: () => {
-      // Invalidate KPIs on successful update (status changes may affect KPIs)
-      queryClient.invalidateQueries(['lead-kpis', organizationId]);
+      // Invalidate KPIs on successful update (status changes may affect KPIs) - React Query v5 syntax
+      queryClient.invalidateQueries({ queryKey: ['lead-kpis', organizationId] });
     },
     onSettled: () => {
-      // Always refetch after error or success to get real data from server
-      queryClient.invalidateQueries(['leads', organizationId]);
+      // Always refetch after error or success to get real data from server - React Query v5 syntax
+      queryClient.invalidateQueries({ queryKey: ['leads', organizationId] });
     },
   });
 }
@@ -205,15 +203,15 @@ export function useDeleteLead(organizationId: string) {
     mutationFn: (leadId: string) =>
       LeadsService.deleteLead(leadId, organizationId),
     onMutate: async (leadId) => {
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries(['leads', organizationId]);
+      // Cancel outgoing refetches - React Query v5 syntax
+      await queryClient.cancelQueries({ queryKey: ['leads', organizationId] });
 
-      // Snapshot previous value
-      const previousLeads = queryClient.getQueriesData(['leads', organizationId]);
+      // Snapshot previous value - React Query v5 syntax
+      const previousLeads = queryClient.getQueriesData({ queryKey: ['leads', organizationId] });
 
-      // Optimistically remove from cache
+      // Optimistically remove from cache - React Query v5 syntax
       queryClient.setQueriesData<LeadsQueryResponse>(
-        ['leads', organizationId],
+        { queryKey: ['leads', organizationId] },
         (old) => {
           if (!old) return old;
           return {
@@ -226,7 +224,7 @@ export function useDeleteLead(organizationId: string) {
 
       return { previousLeads };
     },
-    onError: (err, variables, context) => {
+    onError: (_error, _variables, context) => {
       // Rollback on error
       if (context?.previousLeads) {
         context.previousLeads.forEach(([queryKey, data]) => {
@@ -235,12 +233,12 @@ export function useDeleteLead(organizationId: string) {
       }
     },
     onSuccess: () => {
-      // Invalidate KPIs on successful delete
-      queryClient.invalidateQueries(['lead-kpis', organizationId]);
+      // Invalidate KPIs on successful delete - React Query v5 syntax
+      queryClient.invalidateQueries({ queryKey: ['lead-kpis', organizationId] });
     },
     onSettled: () => {
-      // Always refetch after error or success
-      queryClient.invalidateQueries(['leads', organizationId]);
+      // Always refetch after error or success - React Query v5 syntax
+      queryClient.invalidateQueries({ queryKey: ['leads', organizationId] });
     },
   });
 }

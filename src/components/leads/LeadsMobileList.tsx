@@ -7,7 +7,7 @@
  * Requirements: 11.1, 11.2
  */
 
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { LeadMobileCard } from './LeadMobileCard';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';

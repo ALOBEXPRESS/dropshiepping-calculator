@@ -20,14 +20,10 @@
  */
 
 import type {
-  Lead,
   LeadFilters,
   SortConfig,
   PaginationConfig,
-  LeadsQueryResponse,
-  LeadKPIs,
   LeadFormData,
-  Marketplace,
 } from '../types/leads';
 
 // Supabase project ID from MCP configuration

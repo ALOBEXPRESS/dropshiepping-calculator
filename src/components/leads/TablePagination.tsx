@@ -10,7 +10,6 @@
  * Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7
  */
 
-import React from 'react';
 import {
   Pagination,
   PaginationContent,
@@ -62,7 +61,6 @@ export function TablePagination({
   
   // Calculate pagination values
   const totalPages = Math.ceil(totalCount / pageSize);
-  const currentPage = page + 1; // Convert 0-indexed to 1-indexed for display
   const startResult = totalCount === 0 ? 0 : page * pageSize + 1;
   const endResult = Math.min((page + 1) * pageSize, totalCount);
   

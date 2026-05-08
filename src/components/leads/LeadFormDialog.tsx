@@ -15,7 +15,7 @@
  * Requirements: 6.1-6.9, 7.1-7.8
  */
 
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';

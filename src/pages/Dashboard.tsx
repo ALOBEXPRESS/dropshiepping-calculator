@@ -5,7 +5,7 @@
  * Exibe estatísticas de vendas, conversões e análise de leads.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import KPICard from '@/components/KPICard';
 import WeeklyConversionChart from '@/components/WeeklyConversionChart';
 import LeadStatusChart from '@/components/LeadStatusChart';
@@ -17,13 +17,11 @@ import DashboardErrorState from '@/components/DashboardErrorState';
 import { MOCK_DASHBOARD_DATA } from '@/data/mockDashboardData';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useMarketplaces } from '@/hooks/useMarketplaces';
-import { useSettings } from '@/contexts/SettingsContext';
 import { transformToKPICardProps } from '@/utils/transformDashboardData.tsx';
 import { runDashboardDiagnostic } from '@/utils/diagnosticDashboard';
 import type { TimePeriod } from '@/types/dashboard';
 
 const Dashboard: React.FC = () => {
-  const { organizationId } = useSettings();
   const [period, setPeriod] = useState<TimePeriod>('total');
   const [selectedMarketplace, setSelectedMarketplace] = useState<string | null>(null);
 
@@ -32,10 +30,6 @@ const Dashboard: React.FC = () => {
 
   // Fetch dashboard data using React Query hook with marketplace filter
   const { data, isLoading, isError, error, refetch } = useDashboardData(period, selectedMarketplace);
-
-  const handleRefresh = useCallback(() => {
-    refetch();
-  }, [refetch]);
 
   // Run diagnostic on mount in development mode
   useEffect(() => {
