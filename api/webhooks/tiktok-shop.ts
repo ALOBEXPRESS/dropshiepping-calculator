@@ -18,6 +18,7 @@ const TIKTOK_SHOP_WEBHOOK_SECRET = process.env.TIKTOK_SHOP_WEBHOOK_SECRET || '';
  * @param signature - Authorization header value
  * @returns boolean indicating if signature is valid
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function validateTikTokSignature(body: string, signature: string): boolean {
   if (!TIKTOK_SHOP_WEBHOOK_SECRET) {
     console.warn('⚠️ TIKTOK_SHOP_WEBHOOK_SECRET not configured');
