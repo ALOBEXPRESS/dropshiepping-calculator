@@ -4,48 +4,48 @@
  */
 
 export interface TikTokShopWebhookEvent {
-  timestamp: number;
-  type: TikTokShopEventType;
-  shop_id: string;
-  data: unknown; // Varies by event type
+  timestamp?: number;
+  type?: string;
+  event_type?: string;
+  shop_id?: string;
+  data?: {
+    shop_id?: string;
+    order_id?: string;
+    product_id?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
 }
 
 export type TikTokShopEventType =
+  // Message Events
+  | 'NEW_MESSAGE'
+  | 'NEW_MESSAGE_LISTENER'
   // Order Events
-  | 'ORDER_STATUS_CHANGE'
-  | 'ORDER_CANCEL'
-  | 'ORDER_SHIPPED'
-  | 'ORDER_DELIVERED'
+  | 'CANCELLATION_STATUS_CHANGE'
+  | 'ORDER_RETURN_STATUS_CHANGE'
+  | 'PACKAGE_UPDATE'
   // Product Events
-  | 'PRODUCT_CHANGE'
-  | 'PRODUCT_DELETE'
+  | 'PRODUCT_INFORMATION_CHANGE'
+  | 'PRODUCT_CREATION'
+  | 'PRODUCT_STATUS_CHANGE'
+  | 'PRODUCT_AUDIT_STATUS_CHANGE'
   // Inventory Events
-  | 'INVENTORY_UPDATE'
-  // Return Events
-  | 'RETURN_REQUEST'
-  | 'RETURN_APPROVED'
-  | 'RETURN_REJECTED'
-  // Other Events
-  | 'SHOP_AUTHORIZED'
-  | 'SHOP_DEAUTHORIZED';
+  | 'INVENTORY_STATUS_CHANGE'
+  // Aftersales Events
+  | 'AFTERSALES_REQUEST'
+  // Content Events
+  | 'SHOPPABLE_CONTENT_POSTING'
+  // Sample Events
+  | 'SAMPLE_APPLICATION_STATUS_CHANGE';
 
-export interface TikTokShopOrderEvent {
-  order_id: string;
-  order_status: string;
-  update_time: number;
-  // Add more fields as needed based on TikTok Shop API docs
-}
-
-export interface TikTokShopProductEvent {
-  product_id: string;
-  product_name: string;
-  update_time: number;
-  // Add more fields as needed
-}
-
-export interface TikTokShopWebhookResponse {
-  success: boolean;
-  received: boolean;
-  timestamp: string;
-  error?: string;
+export interface TikTokWebhookEventDB {
+  id: string;
+  event_type: string;
+  shop_id: string;
+  order_id: string | null;
+  product_id: string | null;
+  raw_payload: Record<string, unknown>;
+  processed: boolean;
+  created_at: string;
 }

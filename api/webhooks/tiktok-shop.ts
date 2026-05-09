@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import crypto from 'crypto';
+import { createClient } from '@supabase/supabase-js';
 
 /**
  * Webhook endpoint for TikTok Shop
@@ -11,36 +11,11 @@ import crypto from 'crypto';
 const TIKTOK_SHOP_APP_KEY = process.env.TIKTOK_SHOP_APP_KEY || '';
 const TIKTOK_SHOP_APP_SECRET = process.env.TIKTOK_SHOP_APP_SECRET || '';
 const TIKTOK_SHOP_WEBHOOK_SECRET = process.env.TIKTOK_SHOP_WEBHOOK_SECRET || '';
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || '';
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-/**
- * Validates TikTok Shop webhook signature
- * @param body - Raw request body as string
- * @param signature - Authorization header value
- * @returns boolean indicating if signature is valid
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function validateTikTokSignature(body: string, signature: string): boolean {
-  if (!TIKTOK_SHOP_WEBHOOK_SECRET) {
-    console.warn('⚠️ TIKTOK_SHOP_WEBHOOK_SECRET not configured');
-    return false;
-  }
-
-  try {
-    // TikTok Shop typically uses HMAC-SHA256 for webhook signatures
-    const hmac = crypto.createHmac('sha256', TIKTOK_SHOP_WEBHOOK_SECRET);
-    hmac.update(body);
-    const expectedSignature = hmac.digest('hex');
-    
-    // Compare signatures (timing-safe comparison)
-    return crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expectedSignature)
-    );
-  } catch (error) {
-    console.error('❌ Error validating signature:', error);
-    return false;
-  }
-}
+// Supabase client (service role p/ bypass RLS)
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 export default async function handler(
   req: VercelRequest,
@@ -66,6 +41,7 @@ export default async function handler(
         appKey: !!TIKTOK_SHOP_APP_KEY,
         appSecret: !!TIKTOK_SHOP_APP_SECRET,
         webhookSecret: !!TIKTOK_SHOP_WEBHOOK_SECRET,
+        supabase: !!SUPABASE_URL && !!SUPABASE_SERVICE_ROLE_KEY,
       },
     });
   }
@@ -73,38 +49,40 @@ export default async function handler(
   // POST: Webhook handler
   if (req.method === 'POST') {
     try {
-      // Get raw body as string for signature validation
-      const rawBody = JSON.stringify(req.body);
-      const authHeader = req.headers.authorization || '';
+      const body = req.body;
 
-      console.log('📥 TikTok Shop Webhook received:', {
+      // Extrai campos do payload
+      const eventType = body.type || body.event_type || 'UNKNOWN';
+      const shopId = body.shop_id || body.data?.shop_id || 'UNKNOWN';
+      const orderId = body.data?.order_id || null;
+      const productId = body.data?.product_id || null;
+
+      console.log('📥 TikTok webhook:', {
+        eventType,
+        shopId,
+        orderId,
+        productId,
         timestamp: new Date().toISOString(),
-        headers: {
-          contentType: req.headers['content-type'],
-          authorization: authHeader ? '***' : 'missing',
-        },
-        bodyPreview: rawBody.substring(0, 200),
       });
 
-      // Signature validation (commented out for initial testing)
-      // Uncomment when ready to enforce signature validation
-      /*
-      if (!validateTikTokSignature(rawBody, authHeader)) {
-        console.error('❌ Invalid webhook signature');
-        return res.status(401).json({
-          error: 'Invalid signature',
-          message: 'Webhook signature validation failed',
+      // Salva no Supabase
+      const { error } = await supabase
+        .from('tiktok_webhook_events')
+        .insert({
+          event_type: eventType,
+          shop_id: shopId,
+          order_id: orderId,
+          product_id: productId,
+          raw_payload: body,
+          processed: false,
         });
+
+      if (error) {
+        console.error('❌ Supabase insert error:', error);
+        // Ainda responde 200 p/ evitar retry infinito
       }
-      */
 
-      // Log the full event for debugging
-      console.log('📦 TikTok Shop Event:', JSON.stringify(req.body, null, 2));
-
-      // TODO: Process the webhook event here
-      // Example: Save to database, trigger workflows, etc.
-      
-      // Respond quickly to TikTok Shop (they expect fast responses)
+      // Responde rápido
       return res.status(200).json({
         success: true,
         received: true,
@@ -112,10 +90,9 @@ export default async function handler(
       });
 
     } catch (error) {
-      console.error('❌ Error processing TikTok Shop webhook:', error);
+      console.error('❌ Webhook processing error:', error);
       
-      // Still return 200 to prevent TikTok from retrying
-      // Log the error for investigation
+      // Sempre 200 p/ evitar retry TikTok
       return res.status(200).json({
         success: false,
         error: 'Internal processing error',

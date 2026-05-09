@@ -1,0 +1,34 @@
+{
+  "artifacts": [
+    {
+      "name": "database-schema",
+      "path": "./supabase",
+      "description": "Migrações do banco de dados Supabase - todas as tabelas, índices, constraints, foreign keys e políticas RLS. Use para entender a estrutura de dados e como as tabelas se relacionam."
+    },
+    {
+      "name": "project-docs",
+      "path": "./docs",
+      "description": "Documentação do projeto - guias de setup, correções, features e decisões arquiteturais. Consulte antes de fazer mudanças significativas para entender o contexto e padrões existentes."
+    },
+    {
+      "name": "n8n-workflows",
+      "path": "./src/hooks/n8n/workflows",
+      "description": "Workflows do n8n para automação - integração com Bling, processamento de pedidos e outras automações. Verifique antes de modificar integrações ou adicionar novos workflows."
+    },
+    {
+      "name": "components-config",
+      "path": "./components.json",
+      "description": "Configuração do shadcn/ui - aliases de componentes, estilos e estrutura. Consulte antes de adicionar ou modificar componentes UI."
+    },
+    {
+      "name": "typescript-config",
+      "path": "./tsconfig.json",
+      "description": "Configuração do TypeScript - paths, compiler options e estrutura do projeto. Verifique antes de adicionar novos paths ou modificar configurações de compilação."
+    },
+    {
+      "name": "environment-config",
+      "path": "./.env.example",
+      "description": "Variáveis de ambiente necessárias - configurações de API, banco de dados e serviços externos. Consulte antes de adicionar novas integrações ou configurações."
+    }
+  ]
+}

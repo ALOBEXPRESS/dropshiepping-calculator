@@ -1,0 +1,133 @@
+# SocratiCode Ignore Rules
+# Arquivos e diretórios que não devem ser indexados
+
+# Logs e temporários
+*.log
+*.tmp
+*.temp
+.playwright-mcp/
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+.next/
+out/
+.vercel/
+
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# IDE
+.vscode/
+.idea/
+.kiro/
+.trae/
+.cursor/
+.claude/
+.agents/
+*.swp
+*.swo
+
+#Screenshots
+screenshots/
+
+# Git
+.git/
+
+# Cache
+.cache/
+.turbo/
+coverage/
+.nyc_output/
+
+# Testes
+**/tests/
+**/tests
+tests/
+test-results/
+playwright-report/
+test-screenshots/
+tests/playwright/test-results.json
+*.spec.ts.snap
+
+# Local tools / generated indexes
+tools/
+.code-review-graph/
+
+# LightRAG / vector stores
+tools/lightrag/
+**/rag_storage/
+**/.venv/
+**/__pycache__/
+**/*.pyc
+**/*llm_response_cache*
+**/vdb_*.json
+**/kv_store_*.json
+
+
+# Supabase local/backups
+supabase/backups/old-functions
+supabase/.branches/
+supabase/.temp/
+supabase/migrations/_archived
+supabase/migrations
+
+# Scripts
+sql-scripts/
+scripts/
+python-scripts/
+
+# Arquivos grandes de dados
+*.csv
+*.xlsx
+*.json.gz
+
+# Imagens e mídia (já indexadas via metadados)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.webp
+*.mp4
+*.webm
+*.mov
+*.pdf
+*.zip
+
+# Arquivos de lock
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+bun.lockb
+
+# Secrets
+.env
+.env.local
+.env.*.local
+.env.*
+*.env
+*.key
+*.pem
+*.p12
+*.pfx
+credentials.json
+serviceAccountKey.json
+*secret*
+*token*
+*apikey*
+apikeyn8n.md
+secretsbling.md
+
+# Docs/agentes locais
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+docs/
+
+# Features
+Features/
