@@ -126,6 +126,16 @@ scripts/
 .cursor
 .claude/
 tools/
+
+# Documentation (internal only - never public)
+docs/
+
+# Scripts (contain sensitive operations)
+python-scripts/
+sql-scripts/
+
+# MCP config (may contain sensitive paths/tokens)
+.mcp.json
 # Database migrations (managed separately)
 supabase/
 
