@@ -896,9 +896,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               const resolvedName = String(lookup?.name ?? it.product_name ?? '').trim();
               const rawUnitCost = Number(it.unit_cost ?? 0);
               const resolvedUnitCost = rawUnitCost > 0 ? rawUnitCost : Number(lookup?.cost_price ?? 0);
+              const resolvedImageUrl = String(lookup?.image_url ?? '').trim() || undefined;
               return {
                 name: resolvedName,
                 sku: resolvedSku || undefined,
+                image_url: resolvedImageUrl,
                 quantity: quantity || undefined,
                 unit_price: unitPrice,
                 unit_cost: resolvedUnitCost > 0 ? resolvedUnitCost : undefined,
@@ -922,6 +924,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             products: products.length > 0 ? products : (updates[reportId]?.products ?? existing?.products),
             product_name: (updates[reportId]?.product_name ?? existing?.product_name ?? fallbackMainName),
             product_sku: (updates[reportId]?.product_sku ?? existing?.product_sku ?? (products[0]?.sku || undefined)),
+            product_image_url: (updates[reportId]?.product_image_url ?? existing?.product_image_url ?? (products[0]?.image_url || undefined)),
             total_cost: prevTotalCost > 0 ? prevTotalCost : (totalCost > 0 ? totalCost : prevTotalCost),
             product_cost_price: prevProductCostPrice > 0 ? prevProductCostPrice : (avgUnitCost > 0 ? avgUnitCost : prevProductCostPrice),
           };
@@ -1888,16 +1891,26 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const isFreeSample = selectedOrder.is_free_sample === true;
 
             // total_products = valor bruto dos itens (antes do desconto do marketplace)
-            // Usado como base para comissão e desconto
             const totalProductsValue = Number(selectedOrder.total_products ?? selectedOrder.total_amount ?? 0);
-            
+
+            // ── Desconto ──────────────────────────────────────────────────────────
+            const blingDiscountValue = Number(selectedOrder.discount_value ?? 0);
+            const manualDiscountValue = parseFloat(manualDesconto.replace(',', '.').replace(/[^0-9.]/g, '')) || 0;
+            const activeDiscount = blingDiscountEnabled
+              ? (blingDiscountValue > 0 ? blingDiscountValue : 0)
+              : manualDiscountValue;
+
+            // ── Preços de venda ───────────────────────────────────────────────────
+            const precoVendaBruto = totalProductsValue > 0 ? totalProductsValue : selectedOrder.total_amount;
+            const precoVendaLiquido = precoVendaBruto - activeDiscount;
+
+            // ── Custos marketplace ────────────────────────────────────────────────
             const fixedFee = Number(resolvedMarketplaceConfig?.fixed_fee ?? selectedOrder.marketplace_fixed_fee ?? 0);
             const commissionRate = Number(resolvedMarketplaceConfig?.commission_rate ?? selectedOrder.commission_rate ?? 0);
             const affiliateRate = Number(resolvedMarketplaceConfig?.affiliate_commission_rate ?? 0);
-            
-            // Comissão calculada sobre total_products (valor bruto dos itens), não sobre total_amount
-            // Isso é correto para TikTok e outros marketplaces que cobram sobre o valor do item
-            const commissionBase = totalProductsValue > 0 ? totalProductsValue : selectedOrder.total_amount;
+
+            // Comissão sobre preço bruto (total_products)
+            const commissionBase = precoVendaBruto;
             const commissionPercent = isFreeSample ? 0 : (commissionRate > 0
               ? (commissionBase * commissionRate) / 100
               : Math.max(0, selectedOrder.marketplace_commission - fixedFee));
@@ -1906,44 +1919,27 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               : (cameFromAffiliate && affiliateRate > 0
                 ? (commissionBase * affiliateRate) / 100
                 : 0);
+            // SFP 6% sobre preço líquido
             const sfpEnabled = !isFreeSample && selectedOrder.tiktok_sfp_enabled === true;
-            const sfpFee = sfpEnabled ? commissionBase * 0.06 : 0;
+            const sfpFee = sfpEnabled ? precoVendaLiquido * 0.06 : 0;
             const subtotalMarketplace = isFreeSample ? 0 : (commissionPercent + affiliateCommission + fixedFee + sfpFee + selectedOrder.shipping_cost + selectedOrder.other_expenses);
 
-            // Desconto do Bling (desconto.valor) — aplicado sobre total_products
-            const blingDiscountValue = Number(selectedOrder.discount_value ?? 0);
-            // Se checkbox marcado: usa desconto do Bling; se desmarcado: usa valor manual
-            const manualDiscountValue = parseFloat(manualDesconto.replace(',', '.').replace(/[^0-9.]/g, '')) || 0;
-            // activeDiscount: quando checkbox marcado usa blingDiscount, quando desmarcado usa campo manual
-            const activeDiscount = blingDiscountEnabled
-              ? (blingDiscountValue > 0 ? blingDiscountValue : 0)
-              : manualDiscountValue;
-
-            // Preço de Venda Bruto = Total dos itens (totalProdutos do Bling)
-            const precoVendaBruto = totalProductsValue > 0 ? totalProductsValue : selectedOrder.total_amount;
-            // Preço de Venda Líquido = Bruto - desconto do pedido
-            const precoVendaLiquido = precoVendaBruto - activeDiscount;
-
-            // Acréscimo manual (campo separado do desconto manual)
+            // ── Acréscimo ─────────────────────────────────────────────────────────
             const acrescimoValue = parseFloat(manualAcrescimo.replace(',', '.')) || 0;
 
-            // Lucro = Preço Líquido - Custo Produto - Custo Marketplace + Acréscimos
+            // ── Lucro = Líquido - Custo Produto - Custo Marketplace + Acréscimo ──
             const realProfit = isFreeSample
               ? -totalProductCost
               : (precoVendaLiquido - totalProductCost - subtotalMarketplace + acrescimoValue);
-            // Margem calculada sobre o preço líquido
             const marginBase = precoVendaLiquido > 0 ? precoVendaLiquido : selectedOrder.total_amount;
             const margin = marginBase > 0
               ? ((realProfit / marginBase) * 100).toFixed(1) : '0.0';
             const profitPositive = realProfit >= 0;
 
-            // Imagem: usar product_image_url ou fallback para imagem do primeiro produto
-            // Garantir que a URL da imagem seja válida
+            // Imagem: product_image_url do pedido → image_url do primeiro produto enriquecido
             let heroImage = selectedOrder.product_image_url
               || (products[0] as { image_url?: string })?.image_url
               || null;
-            
-            // Validar se a URL da imagem é válida (não vazia, não 'null', não 'undefined')
             if (heroImage && (heroImage === 'null' || heroImage === 'undefined' || heroImage.trim() === '')) {
               heroImage = null;
             }
@@ -2023,34 +2019,34 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                     </div>
                   </div>
 
-                  {/* Preço de venda — Bruto e Líquido */}
+                  {/* Preço de venda — Líquido (topo) + Bruto (sub-linha) */}
                   <div className="rounded-xl overflow-hidden bg-zinc-900/30">
-                    {/* Cabeçalho: Preço de Venda Bruto */}
+                    {/* Cabeçalho: Preço de Venda Líquido */}
                     <div className="flex items-center justify-between bg-zinc-900 px-4 py-3">
                       <div className="flex items-center gap-2 text-zinc-400 text-sm">
                         <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span>Preço de venda bruto</span>
+                        <span>Preço de venda líquido</span>
                         {hasMultipleProducts && <span className="text-zinc-600 text-xs ml-1">({products.length} itens)</span>}
                       </div>
                       <span className="text-emerald-400 font-bold text-lg tabular-nums">
-                        {formatCurrency(precoVendaBruto)}
+                        {formatCurrency(precoVendaLiquido)}
                       </span>
                     </div>
 
-                    {/* Linha: Preço de Venda Líquido (bruto - desconto) */}
+                    {/* Sub-linha: Preço de Venda Bruto */}
                     <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-900/60 border-t border-zinc-800/60">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] text-zinc-400 font-medium">Preço de venda líquido</span>
+                        <span className="text-[11px] text-zinc-500">Preço de venda bruto</span>
                         {activeDiscount > 0 && (
                           <span className="text-[10px] text-yellow-500/70 font-mono bg-yellow-950/30 px-1.5 py-0.5 rounded">
                             -{formatCurrency(activeDiscount)}
                           </span>
                         )}
                       </div>
-                      <span className={`text-sm font-bold tabular-nums ${activeDiscount > 0 ? 'text-emerald-300' : 'text-emerald-400'}`}>
-                        {formatCurrency(precoVendaLiquido)}
+                      <span className="text-[12px] text-zinc-400 font-semibold tabular-nums">
+                        {formatCurrency(precoVendaBruto)}
                       </span>
                     </div>
 
@@ -2216,7 +2212,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           <div className="flex justify-between text-sm">
                             <div className="flex items-center gap-1.5">
                               <span className="text-zinc-400">Taxa de serviço SFP</span>
-                              <span className="text-[10px] text-zinc-600 font-mono">(6% × R${selectedOrder.total_amount.toFixed(2)})</span>
+                              <span className="text-[10px] text-zinc-600 font-mono">(6% × {formatCurrency(precoVendaLiquido)})</span>
                             </div>
                             <span className="text-orange-400 font-medium tabular-nums">-{formatCurrency(sfpFee)}</span>
                           </div>
