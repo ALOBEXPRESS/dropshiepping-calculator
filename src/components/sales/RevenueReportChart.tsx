@@ -284,6 +284,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [manualAcrescimo, setManualAcrescimo] = useState<string>('');
   // reembolso TikTok = valor do desconto, somado ao lucro
   const [tiktokReembolsoEnabled, setTiktokReembolsoEnabled] = useState(true);
+  // Taxas editáveis do fornecedor no modal
+  const [manualSupplierFeePercent, setManualSupplierFeePercent] = useState<string>('');
+  const [manualGatewayFeeFixed, setManualGatewayFeeFixed] = useState<string>('');
   
   const chartRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef(data);
@@ -1368,6 +1371,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             setManualDesconto('');
             setManualAcrescimo('');
             setTiktokReembolsoEnabled(true);
+            setManualSupplierFeePercent('');
+            setManualGatewayFeeFixed('');
             setDetailDialogOpen(true);
           } catch (err) {
             console.error('Error parsing order data:', err);
@@ -1435,6 +1440,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       setManualDesconto('');
       setManualAcrescimo('');
       setTiktokReembolsoEnabled(true);
+      setManualSupplierFeePercent('');
+      setManualGatewayFeeFixed('');
       
       // Fechar o tooltip do ApexCharts
       const tooltipEl = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
@@ -1908,13 +1915,16 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const gwFeeVal = Number(gwFeeProduct?.supplier_gateway_fee_value ?? 0);
             const gwFeeType = gwFeeProduct?.supplier_gateway_fee_type ?? 'fixed';
 
-            // Taxa % aplicada sobre custo total; gateway fixo aplicado uma vez
-            const orderSupplierFee = supFeeVal > 0
-              ? supFeeType === 'percent' ? (totalBaseCost * supFeeVal) / 100 : supFeeVal
-              : 0;
-            const orderGatewayFee = gwFeeVal > 0
-              ? gwFeeType === 'fixed' ? gwFeeVal : (totalBaseCost * gwFeeVal) / 100
-              : 0;
+            // Manual overrides: user can edit supplier fee % and gateway fee fixed
+            const effectiveSupFeePercent = manualSupplierFeePercent !== ''
+              ? parseFloat(manualSupplierFeePercent.replace(',', '.')) || 0
+              : (supFeeType === 'percent' ? supFeeVal : 0);
+            const effectiveGwFeeFixed = manualGatewayFeeFixed !== ''
+              ? parseFloat(manualGatewayFeeFixed.replace(',', '.')) || 0
+              : (gwFeeType === 'fixed' ? gwFeeVal : 0);
+
+            const orderSupplierFee = (totalBaseCost * effectiveSupFeePercent) / 100;
+            const orderGatewayFee = effectiveGwFeeFixed;
 
             const totalProductCost = totalBaseCost + orderSupplierFee + orderGatewayFee;
             const isFreeSample = selectedOrder.is_free_sample === true;
@@ -1931,9 +1941,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
             // ── Preços de venda ───────────────────────────────────────────────────
             const precoVendaBruto = totalProductsValue > 0 ? totalProductsValue : selectedOrder.total_amount;
-            const precoVendaLiquido = precoVendaBruto - activeDiscount;
-
-            // ── Custos marketplace ────────────────────────────────────────────────
+            const precoVendaPagoCliente = precoVendaBruto - activeDiscount;
             const fixedFee = Number(resolvedMarketplaceConfig?.fixed_fee ?? selectedOrder.marketplace_fixed_fee ?? 0);
             const commissionRate = Number(resolvedMarketplaceConfig?.commission_rate ?? selectedOrder.commission_rate ?? 0);
             const affiliateRate = Number(resolvedMarketplaceConfig?.affiliate_commission_rate ?? 0);
@@ -1961,14 +1969,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const acrescimoValue = acrescimoManual + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0);
 
             // Preço líquido final = pago pelo cliente + reembolso se marcado - taxas
-            const precoVendaPagoCliente = precoVendaBruto - activeDiscount;
             const precoVendaLiquidoFinal = precoVendaPagoCliente + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0) - subtotalMarketplace;
 
-            // ── Lucro = Líquido - Custo Produto - Custo Marketplace + Acréscimo ──
+            // ── Lucro = precoVendaLiquidoFinal - totalProductCost + acrescimoManual ──
+            // precoVendaLiquidoFinal = pagoCliente + reembolso - taxas (já inclui tudo)
             const realProfit = isFreeSample
               ? -totalProductCost
-              : (precoVendaLiquido - totalProductCost - subtotalMarketplace + acrescimoValue);
-            const marginBase = precoVendaLiquido > 0 ? precoVendaLiquido : selectedOrder.total_amount;
+              : (precoVendaLiquidoFinal - totalProductCost + acrescimoManual);
+            const marginBase = precoVendaLiquidoFinal > 0 ? precoVendaLiquidoFinal : selectedOrder.total_amount;
             const margin = marginBase > 0
               ? ((realProfit / marginBase) * 100).toFixed(1) : '0.0';
             const profitPositive = realProfit >= 0;
@@ -2164,45 +2172,50 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             </div>
                           ))}
                         </div>
-                        {/* Taxas do fornecedor — aplicadas sobre o custo total */}
-                        {(orderSupplierFee > 0 || orderGatewayFee > 0) && (
-                          <div className="border-t border-red-950/30 bg-red-950/15 px-4 py-3 space-y-2">
-                            <p className="text-[10px] font-semibold text-red-500/70 uppercase tracking-widest mb-1">Taxas do Fornecedor</p>
-                            {orderSupplierFee > 0 && (
-                              <div className="flex justify-between items-center">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="w-1 h-1 rounded-full bg-red-500/60 shrink-0" />
-                                  <span className="text-xs text-zinc-400">
-                                    Taxa fornecedor
-                                    {supFeeType === 'percent'
-                                      ? <span className="ml-1 text-[10px] text-zinc-600 font-mono">({supFeeVal}% × R${totalBaseCost.toFixed(2)})</span>
-                                      : <span className="ml-1 text-[10px] text-zinc-600 font-mono">(fixo)</span>}
-                                  </span>
-                                </div>
+                        {/* Taxas do fornecedor — editáveis */}
+                        <div className="border-t border-red-950/30 bg-red-950/15 px-4 py-3 space-y-2">
+                          <p className="text-[10px] font-semibold text-red-500/70 uppercase tracking-widest mb-2">Taxas do Fornecedor</p>
+                          {/* Taxa % fornecedor (ex: 6% Dogama) */}
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-xs text-zinc-400 shrink-0">Taxa fornecedor (%)</span>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                placeholder={String(supFeeType === 'percent' ? supFeeVal : 0)}
+                                value={manualSupplierFeePercent}
+                                onChange={(e) => setManualSupplierFeePercent(e.target.value.replace(/[^0-9,.]/g, ''))}
+                                className="w-16 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-red-500 tabular-nums text-right"
+                              />
+                              <span className="text-zinc-600 text-xs">%</span>
+                              {orderSupplierFee > 0 && (
                                 <span className="text-red-400 text-xs font-semibold tabular-nums">-{formatCurrency(orderSupplierFee)}</span>
-                              </div>
-                            )}
-                            {orderGatewayFee > 0 && (
-                              <div className="flex justify-between items-center">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="w-1 h-1 rounded-full bg-red-500/60 shrink-0" />
-                                  <span className="text-xs text-zinc-400">
-                                    Gateway fornecedor
-                                    {gwFeeType === 'percent'
-                                      ? <span className="ml-1 text-[10px] text-zinc-600 font-mono">({gwFeeVal}%)</span>
-                                      : <span className="ml-1 text-[10px] text-zinc-600 font-mono">(fixo)</span>}
-                                  </span>
-                                </div>
-                                <span className="text-red-400 text-xs font-semibold tabular-nums">-{formatCurrency(orderGatewayFee)}</span>
-                              </div>
-                            )}
-                            {/* Subtotal custo produto */}
-                            <div className="flex justify-between items-center pt-1.5 border-t border-red-950/20">
-                              <span className="text-[11px] text-zinc-400 font-medium">Subtotal custo</span>
-                              <span className="text-red-400 text-[12px] font-bold tabular-nums">-{formatCurrency(totalProductCost)}</span>
+                              )}
                             </div>
                           </div>
-                        )}
+                          {/* Taxa de transação fixa (ex: R$2 Dogama gateway) */}
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-xs text-zinc-400 shrink-0">Taxa de transação (R$)</span>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                placeholder={String(gwFeeType === 'fixed' ? gwFeeVal : 0)}
+                                value={manualGatewayFeeFixed}
+                                onChange={(e) => setManualGatewayFeeFixed(e.target.value.replace(/[^0-9,.]/g, ''))}
+                                className="w-16 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-red-500 tabular-nums text-right"
+                              />
+                              {orderGatewayFee > 0 && (
+                                <span className="text-red-400 text-xs font-semibold tabular-nums">-{formatCurrency(orderGatewayFee)}</span>
+                              )}
+                            </div>
+                          </div>
+                          {/* Subtotal custo produto */}
+                          <div className="flex justify-between items-center pt-1.5 border-t border-red-950/20">
+                            <span className="text-[11px] text-zinc-400 font-medium">Subtotal custo</span>
+                            <span className="text-red-400 text-[12px] font-bold tabular-nums">-{formatCurrency(totalProductCost)}</span>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
