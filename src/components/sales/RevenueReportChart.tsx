@@ -2045,7 +2045,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                     </div>
                   </div>
 
-                  {/* Preço de venda — Líquido (topo) + Bruto (sub-linha) */}
+                  {/* Preço de venda — Líquido (topo) + breakdown */}
                   <div className="rounded-xl overflow-hidden bg-zinc-900/30">
                     {/* Cabeçalho: Preço de Venda Líquido */}
                     <div className="flex items-center justify-between bg-zinc-900 px-4 py-3">
@@ -2061,19 +2061,28 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       </span>
                     </div>
 
-                    {/* Sub-linha: Preço de Venda Bruto */}
-                    <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-900/60 border-t border-zinc-800/60">
+                    {/* Preço de venda bruto */}
+                    <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/60 border-t border-zinc-800/50">
+                      <span className="text-[11px] text-zinc-500">Preço de venda bruto</span>
+                      <span className="text-[12px] text-zinc-400 font-semibold tabular-nums">{formatCurrency(precoVendaBruto)}</span>
+                    </div>
+
+                    {/* Total de desconto → valor após desconto */}
+                    <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/50 border-t border-zinc-800/40">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] text-zinc-500">Preço de venda bruto</span>
-                        {activeDiscount > 0 && (
-                          <span className="text-[10px] text-yellow-500/70 font-mono bg-yellow-950/30 px-1.5 py-0.5 rounded">
-                            -{formatCurrency(activeDiscount)}
-                          </span>
-                        )}
+                        <span className="text-[11px] text-zinc-500">Total de desconto</span>
+                        <span className="text-[10px] text-yellow-500/80 font-mono tabular-nums">-{formatCurrency(activeDiscount)}</span>
                       </div>
-                      <span className="text-[12px] text-zinc-400 font-semibold tabular-nums">
-                        {formatCurrency(precoVendaBruto)}
-                      </span>
+                      <span className="text-[12px] text-zinc-300 font-semibold tabular-nums">{formatCurrency(precoVendaBruto - activeDiscount)}</span>
+                    </div>
+
+                    {/* Total de taxas → valor após taxas */}
+                    <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/40 border-t border-zinc-800/40">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] text-zinc-500">Total de taxas</span>
+                        <span className="text-[10px] text-orange-400/80 font-mono tabular-nums">-{formatCurrency(subtotalMarketplace)}</span>
+                      </div>
+                      <span className="text-[12px] text-zinc-300 font-semibold tabular-nums">{formatCurrency(precoVendaBruto - activeDiscount - subtotalMarketplace)}</span>
                     </div>
 
                     {/* Detalhamento por item (múltiplos produtos) */}
