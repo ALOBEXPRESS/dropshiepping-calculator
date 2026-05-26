@@ -2082,21 +2082,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           <span className="text-[10px] text-yellow-500/80 font-mono tabular-nums">-{formatCurrency(activeDiscount)}</span>
                         )}
                       </div>
-                      <span className="text-[12px] text-blue-300 font-bold tabular-nums">{formatCurrency(precoVendaBruto - activeDiscount)}</span>
+                      <span className="text-[12px] text-blue-300 font-bold tabular-nums">{formatCurrency(precoVendaPagoCliente)}</span>
                     </div>
 
-                    {/* Total de taxas → valor após taxas */}
-                    <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/40 border-t border-zinc-800/40">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] text-zinc-500">Total de taxas</span>
-                        <span className="text-[10px] text-orange-400/80 font-mono tabular-nums">-{formatCurrency(subtotalMarketplace)}</span>
-                      </div>
-                      <span className="text-[12px] text-blue-300 font-bold tabular-nums">{formatCurrency(precoVendaBruto - activeDiscount - subtotalMarketplace)}</span>
-                    </div>
-
-                    {/* Reembolso TikTok — abaixo de Total de taxas */}
+                    {/* Reembolso TikTok — sobre precoVendaPagoCliente */}
                     {tiktokReembolsoValue > 0 && (
-                      <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/30 border-t border-zinc-800/30">
+                      <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/40 border-t border-zinc-800/30">
                         <div className="flex items-center gap-2">
                           <Checkbox
                             id="tiktok-reembolso-price-check"
@@ -2109,10 +2100,19 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           <span className="text-[10px] text-emerald-500/60 font-mono tabular-nums">+{formatCurrency(tiktokReembolsoValue)}</span>
                         </div>
                         <span className={`text-[12px] font-bold tabular-nums ${tiktokReembolsoEnabled ? 'text-blue-300' : 'text-zinc-600'}`}>
-                          {formatCurrency(precoVendaBruto - activeDiscount - subtotalMarketplace + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0))}
+                          {formatCurrency(precoVendaPagoCliente + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0))}
                         </span>
                       </div>
                     )}
+
+                    {/* Total de taxas — sobre pago+reembolso */}
+                    <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/30 border-t border-zinc-800/40">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] text-zinc-500">Total de taxas</span>
+                        <span className="text-[10px] text-orange-400/80 font-mono tabular-nums">-{formatCurrency(subtotalMarketplace)}</span>
+                      </div>
+                      <span className="text-[12px] text-blue-300 font-bold tabular-nums">{formatCurrency(precoVendaPagoCliente + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0) - subtotalMarketplace)}</span>
+                    </div>
 
                     {/* Detalhamento por item (múltiplos produtos) */}
                     {hasMultipleProducts && (
