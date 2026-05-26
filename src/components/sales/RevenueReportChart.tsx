@@ -282,6 +282,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [manualDesconto, setManualDesconto] = useState<string>('');
   // acréscimo manual (valor em R$)
   const [manualAcrescimo, setManualAcrescimo] = useState<string>('');
+  // reembolso TikTok = valor do desconto, somado ao lucro
+  const [tiktokReembolsoEnabled, setTiktokReembolsoEnabled] = useState(true);
   
   const chartRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef(data);
@@ -1365,6 +1367,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             setBlingDiscountEnabled(true);
             setManualDesconto('');
             setManualAcrescimo('');
+            setTiktokReembolsoEnabled(true);
             setDetailDialogOpen(true);
           } catch (err) {
             console.error('Error parsing order data:', err);
@@ -1431,6 +1434,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       setBlingDiscountEnabled(true);
       setManualDesconto('');
       setManualAcrescimo('');
+      setTiktokReembolsoEnabled(true);
       
       // Fechar o tooltip do ApexCharts
       const tooltipEl = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
@@ -1951,7 +1955,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const subtotalMarketplace = isFreeSample ? 0 : (commissionPercent + affiliateCommission + fixedFee + sfpFee + selectedOrder.shipping_cost + selectedOrder.other_expenses);
 
             // ── Acréscimo ─────────────────────────────────────────────────────────
-            const acrescimoValue = parseFloat(manualAcrescimo.replace(',', '.')) || 0;
+            const acrescimoManual = parseFloat(manualAcrescimo.replace(',', '.')) || 0;
+            // Reembolso TikTok = valor do desconto ativo (marketplace reembolsa o desconto)
+            const tiktokReembolsoValue = activeDiscount;
+            const acrescimoValue = acrescimoManual + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0);
 
             // ── Lucro = Líquido - Custo Produto - Custo Marketplace + Acréscimo ──
             const realProfit = isFreeSample
@@ -2073,7 +2080,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         <span className="text-[11px] text-zinc-500">Total de desconto</span>
                         <span className="text-[10px] text-yellow-500/80 font-mono tabular-nums">-{formatCurrency(activeDiscount)}</span>
                       </div>
-                      <span className="text-[12px] text-zinc-300 font-semibold tabular-nums">{formatCurrency(precoVendaBruto - activeDiscount)}</span>
+                      <span className="text-[12px] text-blue-300 font-bold tabular-nums">{formatCurrency(precoVendaBruto - activeDiscount)}</span>
                     </div>
 
                     {/* Total de taxas → valor após taxas */}
@@ -2082,8 +2089,28 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         <span className="text-[11px] text-zinc-500">Total de taxas</span>
                         <span className="text-[10px] text-orange-400/80 font-mono tabular-nums">-{formatCurrency(subtotalMarketplace)}</span>
                       </div>
-                      <span className="text-[12px] text-zinc-300 font-semibold tabular-nums">{formatCurrency(precoVendaBruto - activeDiscount - subtotalMarketplace)}</span>
+                      <span className="text-[12px] text-blue-300 font-bold tabular-nums">{formatCurrency(precoVendaBruto - activeDiscount - subtotalMarketplace)}</span>
                     </div>
+
+                    {/* Reembolso TikTok — abaixo de Total de taxas */}
+                    {tiktokReembolsoValue > 0 && (
+                      <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/30 border-t border-zinc-800/30">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="tiktok-reembolso-price-check"
+                            checked={tiktokReembolsoEnabled}
+                            onCheckedChange={(v) => setTiktokReembolsoEnabled(v === true)}
+                          />
+                          <label htmlFor="tiktok-reembolso-price-check" className="text-[11px] text-emerald-400/80 cursor-pointer select-none">
+                            Reembolso TikTok
+                          </label>
+                          <span className="text-[10px] text-emerald-500/60 font-mono tabular-nums">+{formatCurrency(tiktokReembolsoValue)}</span>
+                        </div>
+                        <span className={`text-[12px] font-bold tabular-nums ${tiktokReembolsoEnabled ? 'text-blue-300' : 'text-zinc-600'}`}>
+                          {formatCurrency(precoVendaBruto - activeDiscount - subtotalMarketplace + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0))}
+                        </span>
+                      </div>
+                    )}
 
                     {/* Detalhamento por item (múltiplos produtos) */}
                     {hasMultipleProducts && (
@@ -2419,6 +2446,25 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                     </button>
                     {openAcrescimos && (
                       <div className="px-4 py-3 space-y-3 bg-zinc-900/40 border-t border-blue-950/20">
+                        {/* Reembolso TikTok */}
+                        {tiktokReembolsoValue > 0 && (
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                id="tiktok-reembolso-acc-check"
+                                checked={tiktokReembolsoEnabled}
+                                onCheckedChange={(v) => setTiktokReembolsoEnabled(v === true)}
+                              />
+                              <label htmlFor="tiktok-reembolso-acc-check" className="text-zinc-300 text-sm cursor-pointer select-none">
+                                Reembolso TikTok
+                              </label>
+                            </div>
+                            <span className={`text-sm font-semibold tabular-nums ${tiktokReembolsoEnabled ? 'text-emerald-400' : 'text-zinc-600 line-through'}`}>
+                              +{formatCurrency(tiktokReembolsoValue)}
+                            </span>
+                          </div>
+                        )}
+                        {/* Acréscimo manual */}
                         <div className="flex items-center gap-3">
                           <label className="text-zinc-400 text-sm whitespace-nowrap">Valor (R$)</label>
                           <input
@@ -2432,7 +2478,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             }}
                             className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500 tabular-nums"
                           />
-                          {acrescimoValue > 0 && (
+                          {acrescimoManual > 0 && (
                             <button
                               onClick={() => setManualAcrescimo('')}
                               className="text-zinc-500 hover:text-zinc-300 transition-colors"
