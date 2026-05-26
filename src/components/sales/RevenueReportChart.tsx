@@ -1919,14 +1919,22 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               ? (blingDiscountValue > 0 ? blingDiscountValue : 0)
               : manualDiscountValue;
 
+            // Preço de Venda Bruto = Total dos itens (totalProdutos do Bling)
+            const precoVendaBruto = totalProductsValue > 0 ? totalProductsValue : selectedOrder.total_amount;
+            // Preço de Venda Líquido = Bruto - desconto do pedido
+            const precoVendaLiquido = precoVendaBruto - activeDiscount;
+
             // Acréscimo manual (campo separado do desconto manual)
             const acrescimoValue = parseFloat(manualAcrescimo.replace(',', '.')) || 0;
 
+            // Lucro = Preço Líquido - Custo Produto - Custo Marketplace + Acréscimos
             const realProfit = isFreeSample
               ? -totalProductCost
-              : (selectedOrder.total_amount - totalProductCost - subtotalMarketplace - activeDiscount + acrescimoValue);
-            const margin = selectedOrder.total_amount > 0
-              ? ((realProfit / selectedOrder.total_amount) * 100).toFixed(1) : '0.0';
+              : (precoVendaLiquido - totalProductCost - subtotalMarketplace + acrescimoValue);
+            // Margem calculada sobre o preço líquido
+            const marginBase = precoVendaLiquido > 0 ? precoVendaLiquido : selectedOrder.total_amount;
+            const margin = marginBase > 0
+              ? ((realProfit / marginBase) * 100).toFixed(1) : '0.0';
             const profitPositive = realProfit >= 0;
 
             // Imagem: usar product_image_url ou fallback para imagem do primeiro produto
@@ -2015,26 +2023,38 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                     </div>
                   </div>
 
-                  {/* Preço de venda — accordion por item se múltiplos */}
+                  {/* Preço de venda — Bruto e Líquido */}
                   <div className="rounded-xl overflow-hidden bg-zinc-900/30">
+                    {/* Cabeçalho: Preço de Venda Bruto */}
                     <div className="flex items-center justify-between bg-zinc-900 px-4 py-3">
                       <div className="flex items-center gap-2 text-zinc-400 text-sm">
                         <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        Preço de venda {hasMultipleProducts && <span className="text-zinc-600 text-xs ml-1">({products.length} itens)</span>}
+                        <span>Preço de venda bruto</span>
+                        {hasMultipleProducts && <span className="text-zinc-600 text-xs ml-1">({products.length} itens)</span>}
                       </div>
                       <span className="text-emerald-400 font-bold text-lg tabular-nums">
-                        {formatCurrency(selectedOrder.total_amount)}
+                        {formatCurrency(precoVendaBruto)}
                       </span>
                     </div>
-                    {/* Total dos itens (totalProdutos do Bling) */}
-                    {selectedOrder.total_products != null && selectedOrder.total_products !== selectedOrder.total_amount && (
-                      <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/50 border-t border-zinc-800/50">
-                        <span className="text-[11px] text-zinc-500">Total dos itens</span>
-                        <span className="text-[12px] text-zinc-300 font-semibold tabular-nums">{formatCurrency(selectedOrder.total_products)}</span>
+
+                    {/* Linha: Preço de Venda Líquido (bruto - desconto) */}
+                    <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-900/60 border-t border-zinc-800/60">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] text-zinc-400 font-medium">Preço de venda líquido</span>
+                        {activeDiscount > 0 && (
+                          <span className="text-[10px] text-yellow-500/70 font-mono bg-yellow-950/30 px-1.5 py-0.5 rounded">
+                            -{formatCurrency(activeDiscount)}
+                          </span>
+                        )}
                       </div>
-                    )}
+                      <span className={`text-sm font-bold tabular-nums ${activeDiscount > 0 ? 'text-emerald-300' : 'text-emerald-400'}`}>
+                        {formatCurrency(precoVendaLiquido)}
+                      </span>
+                    </div>
+
+                    {/* Detalhamento por item (múltiplos produtos) */}
                     {hasMultipleProducts && (
                       <div className="border-t border-zinc-800/60 divide-y divide-zinc-800/40">
                         {productItems.map((p, i) => (
