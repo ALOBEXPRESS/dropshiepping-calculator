@@ -1960,6 +1960,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const tiktokReembolsoValue = activeDiscount;
             const acrescimoValue = acrescimoManual + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0);
 
+            // Preço líquido final = bruto - desconto - taxas + reembolso (valor exibido no header)
+            const precoVendaLiquidoFinal = precoVendaBruto - activeDiscount - subtotalMarketplace + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0);
+
             // ── Lucro = Líquido - Custo Produto - Custo Marketplace + Acréscimo ──
             const realProfit = isFreeSample
               ? -totalProductCost
@@ -2064,7 +2067,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         {hasMultipleProducts && <span className="text-zinc-600 text-xs ml-1">({products.length} itens)</span>}
                       </div>
                       <span className="text-emerald-400 font-bold text-lg tabular-nums">
-                        {formatCurrency(precoVendaLiquido)}
+                        {formatCurrency(precoVendaLiquidoFinal)}
                       </span>
                     </div>
 
