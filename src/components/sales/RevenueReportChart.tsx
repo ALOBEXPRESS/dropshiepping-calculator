@@ -1960,11 +1960,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const tiktokReembolsoValue = activeDiscount;
             const acrescimoValue = acrescimoManual + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0);
 
-            // Preço líquido final = pago pelo cliente + reembolso se marcado
-            // Sem reembolso: bruto - desconto (= pago pelo cliente)
-            // Com reembolso: bruto - desconto + reembolso
+            // Preço líquido final = pago pelo cliente + reembolso se marcado - taxas
             const precoVendaPagoCliente = precoVendaBruto - activeDiscount;
-            const precoVendaLiquidoFinal = precoVendaPagoCliente + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0);
+            const precoVendaLiquidoFinal = precoVendaPagoCliente + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0) - subtotalMarketplace;
 
             // ── Lucro = Líquido - Custo Produto - Custo Marketplace + Acréscimo ──
             const realProfit = isFreeSample
