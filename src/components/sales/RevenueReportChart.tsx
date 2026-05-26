@@ -1960,8 +1960,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const tiktokReembolsoValue = activeDiscount;
             const acrescimoValue = acrescimoManual + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0);
 
-            // Preço líquido final = bruto - desconto - taxas + reembolso (valor exibido no header)
-            const precoVendaLiquidoFinal = precoVendaBruto - activeDiscount - subtotalMarketplace + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0);
+            // Preço líquido final = pago pelo cliente + reembolso se marcado
+            // Sem reembolso: bruto - desconto (= pago pelo cliente)
+            // Com reembolso: bruto - desconto + reembolso
+            const precoVendaPagoCliente = precoVendaBruto - activeDiscount;
+            const precoVendaLiquidoFinal = precoVendaPagoCliente + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0);
 
             // ── Lucro = Líquido - Custo Produto - Custo Marketplace + Acréscimo ──
             const realProfit = isFreeSample
@@ -2057,7 +2060,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
                   {/* Preço de venda — Líquido (topo) + breakdown */}
                   <div className="rounded-xl overflow-hidden bg-zinc-900/30">
-                    {/* Cabeçalho: Preço de Venda Líquido */}
+                    {/* Cabeçalho: Preço de Venda Líquido = pago pelo cliente + reembolso se marcado */}
                     <div className="flex items-center justify-between bg-zinc-900 px-4 py-3">
                       <div className="flex items-center gap-2 text-zinc-400 text-sm">
                         <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2071,17 +2074,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       </span>
                     </div>
 
-                    {/* Preço de venda bruto */}
-                    <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/60 border-t border-zinc-800/50">
-                      <span className="text-[11px] text-zinc-500">Preço de venda bruto</span>
-                      <span className="text-[12px] text-zinc-400 font-semibold tabular-nums">{formatCurrency(precoVendaBruto)}</span>
-                    </div>
-
-                    {/* Total de desconto → valor após desconto */}
+                    {/* Preço de venda pago pelo cliente = bruto - desconto */}
                     <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/50 border-t border-zinc-800/40">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] text-zinc-500">Total de desconto</span>
-                        <span className="text-[10px] text-yellow-500/80 font-mono tabular-nums">-{formatCurrency(activeDiscount)}</span>
+                        <span className="text-[11px] text-zinc-500">Preço de venda pago pelo cliente</span>
+                        {activeDiscount > 0 && (
+                          <span className="text-[10px] text-yellow-500/80 font-mono tabular-nums">-{formatCurrency(activeDiscount)}</span>
+                        )}
                       </div>
                       <span className="text-[12px] text-blue-300 font-bold tabular-nums">{formatCurrency(precoVendaBruto - activeDiscount)}</span>
                     </div>
