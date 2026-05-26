@@ -1,4 +1,4 @@
-// @ts-nocheck
+/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 /**
  * Example usage of useDashboardData hook
  * 
@@ -77,8 +77,8 @@ export function DashboardExample() {
             ${data?.profit.current.toLocaleString()}
           </p>
           {data?.profit.growth !== null && (
-            <p className={`text-sm ${data.profit.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {data.profit.growth >= 0 ? '↑' : '↓'} {Math.abs(data.profit.growth).toFixed(1)}%
+            <p className={`text-sm ${data?.profit.growth != null && data.profit.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {data?.profit.growth != null && data.profit.growth >= 0 ? '↑' : '↓'} {Math.abs(data?.profit.growth ?? 0).toFixed(1)}%
             </p>
           )}
         </div>
@@ -87,11 +87,11 @@ export function DashboardExample() {
         <div className="p-4 bg-white border rounded shadow">
           <h3 className="text-sm text-gray-600 mb-2">Orders</h3>
           <p className="text-2xl font-bold">
-            {data?.orders.current.toLocaleString()}
+            {data?.customers.current.toLocaleString()}
           </p>
-          {data?.orders.growth !== null && (
-            <p className={`text-sm ${data.orders.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {data.orders.growth >= 0 ? '↑' : '↓'} {Math.abs(data.orders.growth).toFixed(1)}%
+          {data?.customers.growth !== null && (
+            <p className={`text-sm ${data?.customers.growth != null && data.customers.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {data?.customers.growth != null && data.customers.growth >= 0 ? '↑' : '↓'} {Math.abs(data?.customers.growth ?? 0).toFixed(1)}%
             </p>
           )}
         </div>
@@ -103,8 +103,8 @@ export function DashboardExample() {
             {data?.customers.current.toLocaleString()}
           </p>
           {data?.customers.growth !== null && (
-            <p className={`text-sm ${data.customers.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {data.customers.growth >= 0 ? '↑' : '↓'} {Math.abs(data.customers.growth).toFixed(1)}%
+            <p className={`text-sm ${data?.customers.growth != null && data.customers.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {data?.customers.growth != null && data.customers.growth >= 0 ? '↑' : '↓'} {Math.abs(data?.customers.growth ?? 0).toFixed(1)}%
             </p>
           )}
         </div>
@@ -116,8 +116,8 @@ export function DashboardExample() {
             {data?.products.current.toLocaleString()}
           </p>
           {data?.products.growth !== null && (
-            <p className={`text-sm ${data.products.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {data.products.growth >= 0 ? '↑' : '↓'} {Math.abs(data.products.growth).toFixed(1)}%
+            <p className={`text-sm ${data?.products.growth != null && data.products.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {data?.products.growth != null && data.products.growth >= 0 ? '↑' : '↓'} {Math.abs(data?.products.growth ?? 0).toFixed(1)}%
             </p>
           )}
         </div>
@@ -147,7 +147,7 @@ export function DashboardWithCustomLoading() {
       ) : (
         <div>
           <h2>Profit: ${data?.profit.current}</h2>
-          <h2>Orders: {data?.orders.current}</h2>
+          <h2>Orders: {data?.customers.current}</h2>
         </div>
       )}
     </div>

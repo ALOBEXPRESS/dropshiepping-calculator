@@ -278,6 +278,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [openAcrescimos, setOpenAcrescimos] = useState(false);
   // desconto do Bling pré-selecionado por padrão
   const [blingDiscountEnabled, setBlingDiscountEnabled] = useState(true);
+  // desconto manual (quando checkbox desmarcado)
+  const [manualDesconto, setManualDesconto] = useState<string>('');
   // acréscimo manual (valor em R$)
   const [manualAcrescimo, setManualAcrescimo] = useState<string>('');
   
@@ -1333,6 +1335,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             setOpenDescontos(false);
             setOpenAcrescimos(false);
             setBlingDiscountEnabled(true);
+            setManualDesconto('');
             setManualAcrescimo('');
             setDetailDialogOpen(true);
           } catch (err) {
@@ -1398,6 +1401,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       setOpenDescontos(false);
       setOpenAcrescimos(false);
       setBlingDiscountEnabled(true);
+      setManualDesconto('');
       setManualAcrescimo('');
       
       // Fechar o tooltip do ApexCharts
@@ -1882,29 +1886,40 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
             const totalProductCost = totalBaseCost + orderSupplierFee + orderGatewayFee;
             const isFreeSample = selectedOrder.is_free_sample === true;
+
+            // total_products = valor bruto dos itens (antes do desconto do marketplace)
+            // Usado como base para comissão e desconto
+            const totalProductsValue = Number(selectedOrder.total_products ?? selectedOrder.total_amount ?? 0);
             
             const fixedFee = Number(resolvedMarketplaceConfig?.fixed_fee ?? selectedOrder.marketplace_fixed_fee ?? 0);
             const commissionRate = Number(resolvedMarketplaceConfig?.commission_rate ?? selectedOrder.commission_rate ?? 0);
             const affiliateRate = Number(resolvedMarketplaceConfig?.affiliate_commission_rate ?? 0);
             
-            // Para amostras grátis: sem custo de marketplace
+            // Comissão calculada sobre total_products (valor bruto dos itens), não sobre total_amount
+            // Isso é correto para TikTok e outros marketplaces que cobram sobre o valor do item
+            const commissionBase = totalProductsValue > 0 ? totalProductsValue : selectedOrder.total_amount;
             const commissionPercent = isFreeSample ? 0 : (commissionRate > 0
-              ? (selectedOrder.total_amount * commissionRate) / 100
+              ? (commissionBase * commissionRate) / 100
               : Math.max(0, selectedOrder.marketplace_commission - fixedFee));
             const affiliateCommission = isFreeSample
               ? 0
               : (cameFromAffiliate && affiliateRate > 0
-                ? (selectedOrder.total_amount * affiliateRate) / 100
+                ? (commissionBase * affiliateRate) / 100
                 : 0);
             const sfpEnabled = !isFreeSample && selectedOrder.tiktok_sfp_enabled === true;
-            const sfpFee = sfpEnabled ? selectedOrder.total_amount * 0.06 : 0;
+            const sfpFee = sfpEnabled ? commissionBase * 0.06 : 0;
             const subtotalMarketplace = isFreeSample ? 0 : (commissionPercent + affiliateCommission + fixedFee + sfpFee + selectedOrder.shipping_cost + selectedOrder.other_expenses);
 
-            // Desconto do Bling (desconto.valor) — aplicado se checkbox marcado
+            // Desconto do Bling (desconto.valor) — aplicado sobre total_products
             const blingDiscountValue = Number(selectedOrder.discount_value ?? 0);
-            const activeDiscount = blingDiscountEnabled && blingDiscountValue > 0 ? blingDiscountValue : 0;
+            // Se checkbox marcado: usa desconto do Bling; se desmarcado: usa valor manual
+            const manualDiscountValue = parseFloat(manualDesconto.replace(',', '.').replace(/[^0-9.]/g, '')) || 0;
+            // activeDiscount: quando checkbox marcado usa blingDiscount, quando desmarcado usa campo manual
+            const activeDiscount = blingDiscountEnabled
+              ? (blingDiscountValue > 0 ? blingDiscountValue : 0)
+              : manualDiscountValue;
 
-            // Acréscimo manual
+            // Acréscimo manual (campo separado do desconto manual)
             const acrescimoValue = parseFloat(manualAcrescimo.replace(',', '.')) || 0;
 
             const realProfit = isFreeSample
@@ -2138,7 +2153,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       <div className="px-4 py-3 space-y-2 bg-zinc-900/40 border-t border-orange-950/20">
                         {commissionPercent > 0 && (
                           <div className="flex justify-between text-sm">
-                            <span className="text-zinc-400">Comissão{commissionRate > 0 ? ` (${commissionRate}%)` : ''}</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-zinc-400">Comissão{commissionRate > 0 ? ` (${commissionRate}%)` : ''}</span>
+                              {totalProductsValue > 0 && totalProductsValue !== selectedOrder.total_amount && (
+                                <span className="text-[10px] text-zinc-600 font-mono">sobre {formatCurrency(totalProductsValue)}</span>
+                              )}
+                            </div>
                             <span className="text-orange-400 font-medium tabular-nums">-{formatCurrency(commissionPercent)}</span>
                           </div>
                         )}
@@ -2242,23 +2262,84 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       <div className="px-4 py-3 space-y-3 bg-zinc-900/40 border-t border-yellow-950/20">
                         {/* Desconto do Bling */}
                         {blingDiscountValue > 0 ? (
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Checkbox
-                                id="bling-discount-check"
-                                checked={blingDiscountEnabled}
-                                onCheckedChange={(v) => setBlingDiscountEnabled(v === true)}
-                              />
-                              <label htmlFor="bling-discount-check" className="text-zinc-300 text-sm cursor-pointer select-none">
-                                Desconto do pedido
-                              </label>
+                          <>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Checkbox
+                                  id="bling-discount-check"
+                                  checked={blingDiscountEnabled}
+                                  onCheckedChange={(v) => {
+                                    setBlingDiscountEnabled(v === true);
+                                    setManualDesconto('');
+                                  }}
+                                />
+                                <label htmlFor="bling-discount-check" className="text-zinc-300 text-sm cursor-pointer select-none">
+                                  Desconto do pedido
+                                </label>
+                              </div>
+                              <span className={`text-sm font-semibold tabular-nums ${blingDiscountEnabled ? 'text-yellow-400' : 'text-zinc-600 line-through'}`}>
+                                -{formatCurrency(blingDiscountValue)}
+                              </span>
                             </div>
-                            <span className={`text-sm font-semibold tabular-nums ${blingDiscountEnabled ? 'text-yellow-400' : 'text-zinc-600 line-through'}`}>
-                              -{formatCurrency(blingDiscountValue)}
-                            </span>
-                          </div>
+                            {/* Campo manual quando checkbox desmarcado */}
+                            {!blingDiscountEnabled && (
+                              <div className="flex items-center gap-3 pt-1">
+                                <label className="text-zinc-400 text-sm whitespace-nowrap">Desconto manual (R$)</label>
+                                <input
+                                  type="text"
+                                  inputMode="decimal"
+                                  placeholder="0,00"
+                                  value={manualDesconto}
+                                  onChange={(e) => {
+                                    const v = e.target.value.replace(/[^0-9,.]/g, '');
+                                    setManualDesconto(v);
+                                  }}
+                                  className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-yellow-500 tabular-nums"
+                                />
+                                {manualDiscountValue > 0 && (
+                                  <button
+                                    onClick={() => setManualDesconto('')}
+                                    className="text-zinc-500 hover:text-zinc-300 transition-colors"
+                                    title="Limpar"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </>
                         ) : (
-                          <p className="text-[11px] text-zinc-600 italic">Nenhum desconto registrado neste pedido.</p>
+                          /* Sem desconto do Bling — campo manual direto */
+                          <div className="space-y-2">
+                            <p className="text-[11px] text-zinc-500 italic">Nenhum desconto registrado neste pedido. Insira manualmente se necessário.</p>
+                            <div className="flex items-center gap-3">
+                              <label className="text-zinc-400 text-sm whitespace-nowrap">Desconto (R$)</label>
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                placeholder="0,00"
+                                value={manualDesconto}
+                                onChange={(e) => {
+                                  const v = e.target.value.replace(/[^0-9,.]/g, '');
+                                  setManualDesconto(v);
+                                }}
+                                className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-yellow-500 tabular-nums"
+                              />
+                              {manualDiscountValue > 0 && (
+                                <button
+                                  onClick={() => setManualDesconto('')}
+                                  className="text-zinc-500 hover:text-zinc-300 transition-colors"
+                                  title="Limpar"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              )}
+                            </div>
+                          </div>
                         )}
                       </div>
                     )}

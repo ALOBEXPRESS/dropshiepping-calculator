@@ -197,10 +197,10 @@ export async function calculateShipping(
       const responseText = await response.text();
       console.error('[Melhor Envio] Error response:', responseText);
 
-      let errorData: any = {};
+      let errorData: Record<string, string> = {};
       try {
         errorData = JSON.parse(responseText);
-      } catch (e) {
+      } catch (_e) {
         // Ignore parse error
       }
 
@@ -242,11 +242,11 @@ export async function calculateShipping(
 
     // Mapear resposta para o formato esperado
     const shippingOptions: ShippingOption[] = data
-      .filter((item: any) => item.error === undefined || item.error === null)
-      .map((item: any) => ({
+      .filter((item: { error?: unknown }) => item.error === undefined || item.error === null)
+      .map((item: { name?: string; price?: string; delivery_time?: string; company?: { id: number; name: string; picture: string } }) => ({
         name: item.name || 'Serviço desconhecido',
-        price: parseFloat(item.price) || 0,
-        deliveryTime: parseInt(item.delivery_time) || 0,
+        price: parseFloat(item.price ?? '0') || 0,
+        deliveryTime: parseInt(item.delivery_time ?? '0') || 0,
         company: item.company ? {
           id: item.company.id,
           name: item.company.name,
