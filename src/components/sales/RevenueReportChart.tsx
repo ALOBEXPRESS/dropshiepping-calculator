@@ -869,6 +869,31 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           }
         }
 
+        // Fallback: fetch image from products_variations_bling for SKUs still missing image_url
+        const skusMissingImage = candidateSkus.filter((sku) => {
+          const row = productsBySku[sku];
+          return !row || !row.image_url;
+        });
+        if (skusMissingImage.length > 0) {
+          for (const skuChunk of chunk(skusMissingImage, 50)) {
+            const { data: blingVarRows } = await supabase
+              .from('products_variations_bling')
+              .select('sku, image_url1, image_url2')
+              .in('sku', skuChunk);
+            for (const bvRow of (blingVarRows ?? []) as { sku?: string; image_url1?: string; image_url2?: string }[]) {
+              const sku = String(bvRow.sku ?? '').trim();
+              const img = String(bvRow.image_url1 ?? bvRow.image_url2 ?? '').trim();
+              if (!sku || !img) continue;
+              // Merge image into existing lookup row or create minimal entry
+              if (productsBySku[sku]) {
+                productsBySku[sku] = { ...productsBySku[sku], image_url: img };
+              } else {
+                productsBySku[sku] = { sku, image_url: img } as ProductLookupRow;
+              }
+            }
+          }
+        }
+
         const grouped = typedItemsRows.reduce<Record<string, OrderItemRow[]>>((acc, item) => {
           const orderId = String(item.order_id ?? '');
           if (!orderId) return acc;
@@ -1919,9 +1944,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               : (cameFromAffiliate && affiliateRate > 0
                 ? (commissionBase * affiliateRate) / 100
                 : 0);
-            // SFP 6% sobre preço líquido
-            const sfpEnabled = !isFreeSample && selectedOrder.tiktok_sfp_enabled === true;
-            const sfpFee = sfpEnabled ? precoVendaLiquido * 0.06 : 0;
+            // SFP 6% sobre preço bruto — ativo quando TikTok (independente do flag do produto)
+            const isTikTok = resolvedMarketplaceName.toLowerCase().includes('tiktok');
+            const sfpEnabled = !isFreeSample && (selectedOrder.tiktok_sfp_enabled === true || isTikTok);
+            const sfpFee = sfpEnabled ? precoVendaBruto * 0.06 : 0;
             const subtotalMarketplace = isFreeSample ? 0 : (commissionPercent + affiliateCommission + fixedFee + sfpFee + selectedOrder.shipping_cost + selectedOrder.other_expenses);
 
             // ── Acréscimo ─────────────────────────────────────────────────────────
@@ -2212,7 +2238,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           <div className="flex justify-between text-sm">
                             <div className="flex items-center gap-1.5">
                               <span className="text-zinc-400">Taxa de serviço SFP</span>
-                              <span className="text-[10px] text-zinc-600 font-mono">(6% × {formatCurrency(precoVendaLiquido)})</span>
+                              <span className="text-[10px] text-zinc-600 font-mono">(6% × {formatCurrency(precoVendaBruto)})</span>
                             </div>
                             <span className="text-orange-400 font-medium tabular-nums">-{formatCurrency(sfpFee)}</span>
                           </div>
