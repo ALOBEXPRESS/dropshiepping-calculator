@@ -61,12 +61,14 @@ interface OrderDetail {
     supplier_gateway_fee_type?: string;
   }[];
   total_amount: number;
+  total_products?: number;
   total_cost: number;
   product_cost_price?: number;
   marketplace_commission: number;
   commission_rate: number;
   shipping_cost: number;
   other_expenses: number;
+  discount_value?: number;
   supplier_fee_value?: string;
   supplier_fee_type?: string;
   supplier_gateway_fee_value?: string;
@@ -272,6 +274,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
   const [openProduto, setOpenProduto] = useState(false);
   const [openMarketplace, setOpenMarketplace] = useState(false);
+  const [openDescontos, setOpenDescontos] = useState(false);
+  const [openAcrescimos, setOpenAcrescimos] = useState(false);
+  // desconto do Bling pré-selecionado por padrão
+  const [blingDiscountEnabled, setBlingDiscountEnabled] = useState(true);
+  // acréscimo manual (valor em R$)
+  const [manualAcrescimo, setManualAcrescimo] = useState<string>('');
   
   const chartRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef(data);
@@ -1230,12 +1238,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                     || undefined,
                   products: (mergedOrder as { products?: unknown[] }).products,
                   total_amount: Number(order.total_amount ?? 0),
+                  total_products: Number((order as { total_products?: number | string | null }).total_products ?? order.total_amount ?? 0),
                   total_cost: Number((mergedOrder as { total_cost?: number | string | null }).total_cost ?? 0),
                   product_cost_price: Number((mergedOrder as { product_cost_price?: number | string | null }).product_cost_price ?? 0),
                   marketplace_commission: Number(order.marketplace_commission ?? 0),
                   commission_rate: Number(resolvedMarketplaceConfig?.commission_rate ?? order.commission_rate ?? 0),
                   shipping_cost: Number(order.shipping_cost ?? 0),
                   other_expenses: Number(order.other_expenses ?? 0),
+                  discount_value: Number((order as { discount_value?: number | string | null }).discount_value ?? 0),
                   supplier_fee_value: (order as { supplier_fee_value?: string }).supplier_fee_value,
                   supplier_fee_type: (order as { supplier_fee_type?: string }).supplier_fee_type,
                   supplier_gateway_fee_value: (order as { supplier_gateway_fee_value?: string }).supplier_gateway_fee_value,
@@ -1320,6 +1330,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             setCameFromAffiliate(Boolean(affiliateByOrderIdRef.current?.[merged.order_id]));
             setOpenProduto(false);
             setOpenMarketplace(false);
+            setOpenDescontos(false);
+            setOpenAcrescimos(false);
+            setBlingDiscountEnabled(true);
+            setManualAcrescimo('');
             setDetailDialogOpen(true);
           } catch (err) {
             console.error('Error parsing order data:', err);
@@ -1381,6 +1395,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       // Resetar accordions do dialog
       setOpenProduto(false);
       setOpenMarketplace(false);
+      setOpenDescontos(false);
+      setOpenAcrescimos(false);
+      setBlingDiscountEnabled(true);
+      setManualAcrescimo('');
       
       // Fechar o tooltip do ApexCharts
       const tooltipEl = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
@@ -1624,12 +1642,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             product_image_url: mergedOrder.product_image_url || undefined,
             products: mergedOrder.products as OrderDetail['products'],
             total_amount: orderRevenue,
+            total_products: Number((order as { total_products?: number | string | null }).total_products ?? orderRevenue),
             total_cost: Number(mergedOrder.total_cost ?? 0),
             product_cost_price: Number(mergedOrder.product_cost_price ?? 0),
             marketplace_commission: Number(order.marketplace_commission ?? 0),
             commission_rate: Number(resolvedMarketplaceConfig?.commission_rate ?? order.commission_rate ?? 0),
             shipping_cost: Number(order.shipping_cost ?? 0),
             other_expenses: Number(order.other_expenses ?? 0),
+            discount_value: Number((order as { discount_value?: number | string | null }).discount_value ?? 0),
             supplier_fee_value: (order as { supplier_fee_value?: string }).supplier_fee_value,
             supplier_fee_type: (order as { supplier_fee_type?: string }).supplier_fee_type,
             supplier_gateway_fee_value: (order as { supplier_gateway_fee_value?: string }).supplier_gateway_fee_value,
@@ -1879,7 +1899,17 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const sfpEnabled = !isFreeSample && selectedOrder.tiktok_sfp_enabled === true;
             const sfpFee = sfpEnabled ? selectedOrder.total_amount * 0.06 : 0;
             const subtotalMarketplace = isFreeSample ? 0 : (commissionPercent + affiliateCommission + fixedFee + sfpFee + selectedOrder.shipping_cost + selectedOrder.other_expenses);
-            const realProfit = isFreeSample ? -totalProductCost : (selectedOrder.total_amount - totalProductCost - subtotalMarketplace);
+
+            // Desconto do Bling (desconto.valor) — aplicado se checkbox marcado
+            const blingDiscountValue = Number(selectedOrder.discount_value ?? 0);
+            const activeDiscount = blingDiscountEnabled && blingDiscountValue > 0 ? blingDiscountValue : 0;
+
+            // Acréscimo manual
+            const acrescimoValue = parseFloat(manualAcrescimo.replace(',', '.')) || 0;
+
+            const realProfit = isFreeSample
+              ? -totalProductCost
+              : (selectedOrder.total_amount - totalProductCost - subtotalMarketplace - activeDiscount + acrescimoValue);
             const margin = selectedOrder.total_amount > 0
               ? ((realProfit / selectedOrder.total_amount) * 100).toFixed(1) : '0.0';
             const profitPositive = realProfit >= 0;
@@ -1983,6 +2013,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         {formatCurrency(selectedOrder.total_amount)}
                       </span>
                     </div>
+                    {/* Total dos itens (totalProdutos do Bling) */}
+                    {selectedOrder.total_products != null && selectedOrder.total_products !== selectedOrder.total_amount && (
+                      <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/50 border-t border-zinc-800/50">
+                        <span className="text-[11px] text-zinc-500">Total dos itens</span>
+                        <span className="text-[12px] text-zinc-300 font-semibold tabular-nums">{formatCurrency(selectedOrder.total_products)}</span>
+                      </div>
+                    )}
                     {hasMultipleProducts && (
                       <div className="border-t border-zinc-800/60 divide-y divide-zinc-800/40">
                         {productItems.map((p, i) => (
@@ -2179,6 +2216,110 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       }}
                     />
                   )}
+
+                  {/* Accordion de Descontos */}
+                  <div className="rounded-xl overflow-hidden bg-yellow-950/15">
+                    <button
+                      onClick={() => setOpenDescontos(v => !v)}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-yellow-950/50 to-zinc-900/60 hover:from-yellow-950/70 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <svg className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M17 17h.01M7 17h.01M17 7h.01M3 12a9 9 0 1118 0 9 9 0 01-18 0zM9 9l6 6" />
+                        </svg>
+                        <span className="text-yellow-400 font-semibold text-xs uppercase tracking-wide">Descontos</span>
+                        {activeDiscount > 0 && (
+                          <span className="text-[10px] text-yellow-500/80 font-mono bg-yellow-950/40 px-1.5 py-0.5 rounded">
+                            -{formatCurrency(activeDiscount)}
+                          </span>
+                        )}
+                      </div>
+                      <svg className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${openDescontos ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {openDescontos && (
+                      <div className="px-4 py-3 space-y-3 bg-zinc-900/40 border-t border-yellow-950/20">
+                        {/* Desconto do Bling */}
+                        {blingDiscountValue > 0 ? (
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                id="bling-discount-check"
+                                checked={blingDiscountEnabled}
+                                onCheckedChange={(v) => setBlingDiscountEnabled(v === true)}
+                              />
+                              <label htmlFor="bling-discount-check" className="text-zinc-300 text-sm cursor-pointer select-none">
+                                Desconto do pedido
+                              </label>
+                            </div>
+                            <span className={`text-sm font-semibold tabular-nums ${blingDiscountEnabled ? 'text-yellow-400' : 'text-zinc-600 line-through'}`}>
+                              -{formatCurrency(blingDiscountValue)}
+                            </span>
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-zinc-600 italic">Nenhum desconto registrado neste pedido.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Accordion de Acréscimos */}
+                  <div className="rounded-xl overflow-hidden bg-blue-950/15">
+                    <button
+                      onClick={() => setOpenAcrescimos(v => !v)}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-950/50 to-zinc-900/60 hover:from-blue-950/70 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <svg className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span className="text-blue-400 font-semibold text-xs uppercase tracking-wide">Acréscimos</span>
+                        {acrescimoValue > 0 && (
+                          <span className="text-[10px] text-blue-400/80 font-mono bg-blue-950/40 px-1.5 py-0.5 rounded">
+                            +{formatCurrency(acrescimoValue)}
+                          </span>
+                        )}
+                      </div>
+                      <svg className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${openAcrescimos ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {openAcrescimos && (
+                      <div className="px-4 py-3 space-y-3 bg-zinc-900/40 border-t border-blue-950/20">
+                        <div className="flex items-center gap-3">
+                          <label className="text-zinc-400 text-sm whitespace-nowrap">Valor (R$)</label>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="0,00"
+                            value={manualAcrescimo}
+                            onChange={(e) => {
+                              const v = e.target.value.replace(/[^0-9,.]/g, '');
+                              setManualAcrescimo(v);
+                            }}
+                            className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500 tabular-nums"
+                          />
+                          {acrescimoValue > 0 && (
+                            <button
+                              onClick={() => setManualAcrescimo('')}
+                              className="text-zinc-500 hover:text-zinc-300 transition-colors"
+                              title="Limpar"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                        {acrescimoValue > 0 && (
+                          <p className="text-[11px] text-blue-400/70">
+                            +{formatCurrency(acrescimoValue)} será somado ao lucro
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
 
                   {/* Lucro Real */}
                   <div className={`rounded-xl px-4 py-4 border ${profitPositive ? 'bg-emerald-950/25 border-emerald-800/40' : 'bg-red-950/25 border-red-800/40'}`}>
