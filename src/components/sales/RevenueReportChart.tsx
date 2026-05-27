@@ -1929,9 +1929,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const supFeeVal = Number(supFeeProduct?.supplier_fee_value ?? 0);
             const supFeeType = supFeeProduct?.supplier_fee_type ?? 'percent';
 
-            // Taxas do fornecedor — só Dogama tem taxa % + gateway fixo R$2
-            // Detecta Dogama: produto tem supplier_fee_value configurado OU usuário inseriu manualmente
-            const isDogama = supFeeVal > 0 || manualSupplierFeePercent !== '';
+            // ── Marketplace flags ─────────────────────────────────────────────────
+            const isTikTok = resolvedMarketplaceName.toLowerCase().includes('tiktok');
+
+            // Taxas do fornecedor — Dogama tem taxa % + gateway fixo R$2
+            // Para TikTok: sempre assume Dogama (todos produtos TikTok desta org são Dogama)
+            // Para outros: detecta via supplier_fee_value no produto
+            const isDogama = isTikTok || supFeeVal > 0 || manualSupplierFeePercent !== '';
             const DEFAULT_SUPPLIER_FEE_PERCENT = 6;
             const DOGAMA_GATEWAY_FEE = 2;
             const effectiveSupFeePercent = isDogama
@@ -1954,9 +1958,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const activeDiscount = blingDiscountEnabled
               ? (blingDiscountValue > 0 ? blingDiscountValue : 0)
               : manualDiscountValue;
-
-            // ── Marketplace flags ─────────────────────────────────────────────────
-            const isTikTok = resolvedMarketplaceName.toLowerCase().includes('tiktok');
 
             // ── Preços de venda ───────────────────────────────────────────────────
             // TikTok: bruto = totalProdutos (antes desconto), pagoCliente = bruto - desconto
