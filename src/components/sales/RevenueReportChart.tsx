@@ -286,7 +286,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [tiktokReembolsoEnabled, setTiktokReembolsoEnabled] = useState(true);
   // Taxas editáveis do fornecedor no modal
   const [manualSupplierFeePercent, setManualSupplierFeePercent] = useState<string>('');
-  const [manualGatewayFeeFixed, setManualGatewayFeeFixed] = useState<string>('');
   
   const chartRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef(data);
@@ -1372,7 +1371,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             setManualAcrescimo('');
             setTiktokReembolsoEnabled(true);
             setManualSupplierFeePercent('');
-            setManualGatewayFeeFixed('');
             setDetailDialogOpen(true);
           } catch (err) {
             console.error('Error parsing order data:', err);
@@ -1441,7 +1439,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       setManualAcrescimo('');
       setTiktokReembolsoEnabled(true);
       setManualSupplierFeePercent('');
-      setManualGatewayFeeFixed('');
       
       // Fechar o tooltip do ApexCharts
       const tooltipEl = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
@@ -1900,31 +1897,23 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const totalBaseCost = productItems.reduce((s, p) => s + p.baseCost, 0);
 
             // Taxas do fornecedor: derivar do produto que tem taxa configurada (o RPC usa MIN() no nível do pedido, que pega 0)
-            // Buscar o produto com maior taxa percentual e o maior gateway fixo
+            // Buscar o produto com maior taxa percentual
             const supFeeProduct = products.reduce((best, p) => {
               const v = Number(p.supplier_fee_value ?? 0);
               return v > Number(best?.supplier_fee_value ?? 0) ? p : best;
             }, products[0]);
-            const gwFeeProduct = products.reduce((best, p) => {
-              const v = Number(p.supplier_gateway_fee_value ?? 0);
-              return v > Number(best?.supplier_gateway_fee_value ?? 0) ? p : best;
-            }, products[0]);
 
             const supFeeVal = Number(supFeeProduct?.supplier_fee_value ?? 0);
             const supFeeType = supFeeProduct?.supplier_fee_type ?? 'percent';
-            const gwFeeVal = Number(gwFeeProduct?.supplier_gateway_fee_value ?? 0);
-            const gwFeeType = gwFeeProduct?.supplier_gateway_fee_type ?? 'fixed';
 
-            // Manual overrides: user can edit supplier fee % and gateway fee fixed
+            // Manual overrides: user can edit supplier fee %, gateway always R$2 (Dogama)
+            const DEFAULT_SUPPLIER_FEE_PERCENT = 6;
+            const DOGAMA_GATEWAY_FEE = 2;
             const effectiveSupFeePercent = manualSupplierFeePercent !== ''
               ? parseFloat(manualSupplierFeePercent.replace(',', '.')) || 0
-              : (supFeeType === 'percent' ? supFeeVal : 0);
-            const effectiveGwFeeFixed = manualGatewayFeeFixed !== ''
-              ? parseFloat(manualGatewayFeeFixed.replace(',', '.')) || 0
-              : (gwFeeType === 'fixed' ? gwFeeVal : 0);
-
+              : (supFeeType === 'percent' && supFeeVal > 0 ? supFeeVal : DEFAULT_SUPPLIER_FEE_PERCENT);
             const orderSupplierFee = (totalBaseCost * effectiveSupFeePercent) / 100;
-            const orderGatewayFee = effectiveGwFeeFixed;
+            const orderGatewayFee = DOGAMA_GATEWAY_FEE;
 
             const totalProductCost = totalBaseCost + orderSupplierFee + orderGatewayFee;
             const isFreeSample = selectedOrder.is_free_sample === true;
@@ -1971,11 +1960,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             // Preço líquido final = pago pelo cliente + reembolso se marcado - taxas
             const precoVendaLiquidoFinal = precoVendaPagoCliente + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0) - subtotalMarketplace;
 
-            // ── Lucro = precoVendaLiquidoFinal - totalProductCost + acrescimoManual ──
-            // precoVendaLiquidoFinal = pagoCliente + reembolso - taxas (já inclui tudo)
+            // ── Lucro = Preço de Venda Líquido - (Custo Produto + Total de Taxas) ──
             const realProfit = isFreeSample
               ? -totalProductCost
-              : (precoVendaLiquidoFinal - totalProductCost + acrescimoManual);
+              : (precoVendaLiquidoFinal - (totalProductCost + subtotalMarketplace) + acrescimoManual);
             const marginBase = precoVendaLiquidoFinal > 0 ? precoVendaLiquidoFinal : selectedOrder.total_amount;
             const margin = marginBase > 0
               ? ((realProfit / marginBase) * 100).toFixed(1) : '0.0';
@@ -2175,40 +2163,26 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         {/* Taxas do fornecedor — editáveis */}
                         <div className="border-t border-red-950/30 bg-red-950/15 px-4 py-3 space-y-2">
                           <p className="text-[10px] font-semibold text-red-500/70 uppercase tracking-widest mb-2">Taxas do Fornecedor</p>
-                          {/* Taxa % fornecedor (ex: 6% Dogama) */}
+                          {/* Taxa % fornecedor — editável, default 6% */}
                           <div className="flex items-center justify-between gap-3">
-                            <span className="text-xs text-zinc-400 shrink-0">Taxa fornecedor (%)</span>
+                            <span className="text-xs text-zinc-400 shrink-0">Taxa fornecedor</span>
                             <div className="flex items-center gap-2">
                               <input
                                 type="text"
                                 inputMode="decimal"
-                                placeholder={String(supFeeType === 'percent' ? supFeeVal : 0)}
+                                placeholder="6"
                                 value={manualSupplierFeePercent}
                                 onChange={(e) => setManualSupplierFeePercent(e.target.value.replace(/[^0-9,.]/g, ''))}
-                                className="w-16 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-red-500 tabular-nums text-right"
+                                className="w-14 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 tabular-nums text-right"
                               />
-                              <span className="text-zinc-600 text-xs">%</span>
-                              {orderSupplierFee > 0 && (
-                                <span className="text-red-400 text-xs font-semibold tabular-nums">-{formatCurrency(orderSupplierFee)}</span>
-                              )}
+                              <span className="text-zinc-500 text-xs">%</span>
+                              <span className="text-red-400 text-xs font-semibold tabular-nums">-{formatCurrency(orderSupplierFee)}</span>
                             </div>
                           </div>
-                          {/* Taxa de transação fixa (ex: R$2 Dogama gateway) */}
+                          {/* Taxa de transação Dogama — R$2 fixo, não editável */}
                           <div className="flex items-center justify-between gap-3">
-                            <span className="text-xs text-zinc-400 shrink-0">Taxa de transação (R$)</span>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="text"
-                                inputMode="decimal"
-                                placeholder={String(gwFeeType === 'fixed' ? gwFeeVal : 0)}
-                                value={manualGatewayFeeFixed}
-                                onChange={(e) => setManualGatewayFeeFixed(e.target.value.replace(/[^0-9,.]/g, ''))}
-                                className="w-16 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-red-500 tabular-nums text-right"
-                              />
-                              {orderGatewayFee > 0 && (
-                                <span className="text-red-400 text-xs font-semibold tabular-nums">-{formatCurrency(orderGatewayFee)}</span>
-                              )}
-                            </div>
+                            <span className="text-xs text-zinc-400 shrink-0">Taxa de transação (Dogama)</span>
+                            <span className="text-red-400 text-xs font-semibold tabular-nums">-{formatCurrency(orderGatewayFee)}</span>
                           </div>
                           {/* Subtotal custo produto */}
                           <div className="flex justify-between items-center pt-1.5 border-t border-red-950/20">
