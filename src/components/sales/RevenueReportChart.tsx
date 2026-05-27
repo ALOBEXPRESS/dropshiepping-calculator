@@ -62,6 +62,7 @@ interface OrderDetail {
   }[];
   total_amount: number;
   total_products?: number;
+  base_value?: number;
   total_cost: number;
   product_cost_price?: number;
   marketplace_commission: number;
@@ -1296,6 +1297,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   products: (mergedOrder as { products?: unknown[] }).products,
                   total_amount: Number(order.total_amount ?? 0),
                   total_products: Number((order as { total_products?: number | string | null }).total_products ?? order.total_amount ?? 0),
+                  base_value: Number((order as { base_value?: number | string | null }).base_value ?? 0),
                   total_cost: Number((mergedOrder as { total_cost?: number | string | null }).total_cost ?? 0),
                   product_cost_price: Number((mergedOrder as { product_cost_price?: number | string | null }).product_cost_price ?? 0),
                   marketplace_commission: Number(order.marketplace_commission ?? 0),
@@ -1706,6 +1708,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             products: mergedOrder.products as OrderDetail['products'],
             total_amount: orderRevenue,
             total_products: Number((order as { total_products?: number | string | null }).total_products ?? orderRevenue),
+            base_value: Number((order as { base_value?: number | string | null }).base_value ?? 0),
             total_cost: Number(mergedOrder.total_cost ?? 0),
             product_cost_price: Number(mergedOrder.product_cost_price ?? 0),
             marketplace_commission: Number(order.marketplace_commission ?? 0),
@@ -1961,13 +1964,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
             // ── Preços de venda ───────────────────────────────────────────────────
             // TikTok: bruto = totalProdutos (antes desconto), pagoCliente = bruto - desconto
-            // Outros: pagoCliente = total_amount (o que o cliente pagou), bruto = pagoCliente
+            // Outros: pagoCliente = base_value (valor cliente pagou) ou total_amount
+            const baseValue = Number(selectedOrder.base_value ?? 0);
             const precoVendaBruto = isTikTok
               ? (totalProductsValue > 0 ? totalProductsValue : selectedOrder.total_amount)
               : selectedOrder.total_amount;
             const precoVendaPagoCliente = isTikTok
               ? precoVendaBruto - activeDiscount
-              : selectedOrder.total_amount;
+              : (baseValue > 0 ? baseValue : selectedOrder.total_amount);
 
             const fixedFee = Number(resolvedMarketplaceConfig?.fixed_fee ?? selectedOrder.marketplace_fixed_fee ?? 0);
             const commissionRate = Number(resolvedMarketplaceConfig?.commission_rate ?? selectedOrder.commission_rate ?? 0);
