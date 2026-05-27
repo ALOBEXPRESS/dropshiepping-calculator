@@ -873,7 +873,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           }
         }
 
-        // Fallback: fetch image from products_variations_bling for SKUs still missing image_url
+        // Fallback: fetch image from products_variations_bling for SKUs/names still missing image_url
         const skusMissingImage = candidateSkus.filter((sku) => {
           const row = productsBySku[sku];
           return !row || !row.image_url;
@@ -882,17 +882,40 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           for (const skuChunk of chunk(skusMissingImage, 50)) {
             const { data: blingVarRows } = await supabase
               .from('products_variations_bling')
-              .select('sku, image_url1, image_url2')
+              .select('sku, name, image_url1, image_url2')
               .in('sku', skuChunk);
-            for (const bvRow of (blingVarRows ?? []) as { sku?: string; image_url1?: string; image_url2?: string }[]) {
+            for (const bvRow of (blingVarRows ?? []) as { sku?: string; name?: string; image_url1?: string; image_url2?: string }[]) {
               const sku = String(bvRow.sku ?? '').trim();
               const img = String(bvRow.image_url1 ?? bvRow.image_url2 ?? '').trim();
               if (!sku || !img) continue;
-              // Merge image into existing lookup row or create minimal entry
               if (productsBySku[sku]) {
                 productsBySku[sku] = { ...productsBySku[sku], image_url: img };
               } else {
                 productsBySku[sku] = { sku, image_url: img } as ProductLookupRow;
+              }
+            }
+          }
+        }
+        // Also query products_variations_bling by name for items whose SKU is the variation SKU
+        const namesMissingImage = candidateNames.filter((name) => {
+          const row = productsByName[name];
+          return !row || !row.image_url;
+        });
+        if (namesMissingImage.length > 0) {
+          for (const nameChunk of chunk(namesMissingImage, 50)) {
+            const { data: blingVarByName } = await supabase
+              .from('products_variations_bling')
+              .select('sku, name, image_url1, image_url2')
+              .in('name', nameChunk);
+            for (const bvRow of (blingVarByName ?? []) as { sku?: string; name?: string; image_url1?: string; image_url2?: string }[]) {
+              const sku = String(bvRow.sku ?? '').trim();
+              const name = String(bvRow.name ?? '').trim();
+              const img = String(bvRow.image_url1 ?? bvRow.image_url2 ?? '').trim();
+              if (!img) continue;
+              if (sku && !productsBySku[sku]) productsBySku[sku] = { sku, image_url: img } as ProductLookupRow;
+              if (name && !productsByName[name]) productsByName[name] = { sku, image_url: img } as ProductLookupRow;
+              else if (name && productsByName[name] && !productsByName[name].image_url) {
+                productsByName[name] = { ...productsByName[name], image_url: img };
               }
             }
           }
@@ -2099,10 +2122,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       </div>
                     )}
 
-                    {/* Total de taxas — sobre pago+reembolso */}
+                    {/* Preço de venda bruto = pago+reembolso-taxas */}
                     <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/30 border-t border-zinc-800/40">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] text-zinc-500">Total de taxas</span>
+                        <span className="text-[11px] text-zinc-500">Preço de venda bruto</span>
                         <span className="text-[10px] text-orange-400/80 font-mono tabular-nums">-{formatCurrency(subtotalMarketplace)}</span>
                       </div>
                       <span className="text-[12px] text-blue-300 font-bold tabular-nums">{formatCurrency(precoVendaPagoCliente + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0) - subtotalMarketplace)}</span>
