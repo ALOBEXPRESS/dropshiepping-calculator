@@ -1929,19 +1929,23 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const supFeeVal = Number(supFeeProduct?.supplier_fee_value ?? 0);
             const supFeeType = supFeeProduct?.supplier_fee_type ?? 'percent';
 
-            // Manual overrides: user can edit supplier fee %, gateway always R$2 (Dogama)
+            // Taxas do fornecedor — só Dogama tem taxa % + gateway fixo R$2
+            // Detecta Dogama: produto tem supplier_fee_value configurado OU usuário inseriu manualmente
+            const isDogama = supFeeVal > 0 || manualSupplierFeePercent !== '';
             const DEFAULT_SUPPLIER_FEE_PERCENT = 6;
             const DOGAMA_GATEWAY_FEE = 2;
-            const effectiveSupFeePercent = manualSupplierFeePercent !== ''
-              ? parseFloat(manualSupplierFeePercent.replace(',', '.')) || 0
-              : (supFeeType === 'percent' && supFeeVal > 0 ? supFeeVal : DEFAULT_SUPPLIER_FEE_PERCENT);
-            const orderSupplierFee = (totalBaseCost * effectiveSupFeePercent) / 100;
-            const orderGatewayFee = DOGAMA_GATEWAY_FEE;
+            const effectiveSupFeePercent = isDogama
+              ? (manualSupplierFeePercent !== ''
+                  ? parseFloat(manualSupplierFeePercent.replace(',', '.')) || 0
+                  : (supFeeType === 'percent' && supFeeVal > 0 ? supFeeVal : DEFAULT_SUPPLIER_FEE_PERCENT))
+              : 0;
+            const orderSupplierFee = isDogama ? (totalBaseCost * effectiveSupFeePercent) / 100 : 0;
+            const orderGatewayFee = isDogama ? DOGAMA_GATEWAY_FEE : 0;
 
             const totalProductCost = totalBaseCost + orderSupplierFee + orderGatewayFee;
             const isFreeSample = selectedOrder.is_free_sample === true;
 
-            // total_products = valor bruto dos itens (antes do desconto do marketplace)
+            // total_products = valor bruto dos itens (Bling totalProdutos)
             const totalProductsValue = Number(selectedOrder.total_products ?? selectedOrder.total_amount ?? 0);
 
             // ── Desconto ──────────────────────────────────────────────────────────
@@ -1951,14 +1955,24 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               ? (blingDiscountValue > 0 ? blingDiscountValue : 0)
               : manualDiscountValue;
 
+            // ── Marketplace flags ─────────────────────────────────────────────────
+            const isTikTok = resolvedMarketplaceName.toLowerCase().includes('tiktok');
+
             // ── Preços de venda ───────────────────────────────────────────────────
-            const precoVendaBruto = totalProductsValue > 0 ? totalProductsValue : selectedOrder.total_amount;
-            const precoVendaPagoCliente = precoVendaBruto - activeDiscount;
+            // TikTok: bruto = totalProdutos (antes desconto), pagoCliente = bruto - desconto
+            // Outros: pagoCliente = total_amount (o que o cliente pagou), bruto = pagoCliente
+            const precoVendaBruto = isTikTok
+              ? (totalProductsValue > 0 ? totalProductsValue : selectedOrder.total_amount)
+              : selectedOrder.total_amount;
+            const precoVendaPagoCliente = isTikTok
+              ? precoVendaBruto - activeDiscount
+              : selectedOrder.total_amount;
+
             const fixedFee = Number(resolvedMarketplaceConfig?.fixed_fee ?? selectedOrder.marketplace_fixed_fee ?? 0);
             const commissionRate = Number(resolvedMarketplaceConfig?.commission_rate ?? selectedOrder.commission_rate ?? 0);
             const affiliateRate = Number(resolvedMarketplaceConfig?.affiliate_commission_rate ?? 0);
 
-            // Comissão sobre preço bruto (total_products)
+            // Comissão sobre preço bruto
             const commissionBase = precoVendaBruto;
             const commissionPercent = isFreeSample ? 0 : (commissionRate > 0
               ? (commissionBase * commissionRate) / 100
@@ -1968,26 +1982,30 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               : (cameFromAffiliate && affiliateRate > 0
                 ? (commissionBase * affiliateRate) / 100
                 : 0);
-            // SFP 6% sobre preço bruto — ativo quando TikTok (independente do flag do produto)
-            const isTikTok = resolvedMarketplaceName.toLowerCase().includes('tiktok');
+            // SFP 6% — só TikTok
             const sfpEnabled = !isFreeSample && (selectedOrder.tiktok_sfp_enabled === true || isTikTok);
             const sfpFee = sfpEnabled ? precoVendaBruto * 0.06 : 0;
             const subtotalMarketplace = isFreeSample ? 0 : (commissionPercent + affiliateCommission + fixedFee + sfpFee + selectedOrder.shipping_cost + selectedOrder.other_expenses);
 
             // ── Acréscimo ─────────────────────────────────────────────────────────
             const acrescimoManual = parseFloat(manualAcrescimo.replace(',', '.')) || 0;
-            // Reembolso TikTok = valor do desconto ativo (marketplace reembolsa o desconto)
-            const tiktokReembolsoValue = activeDiscount;
-            const acrescimoValue = acrescimoManual + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0);
+            // Reembolso TikTok = desconto ativo (só TikTok)
+            const tiktokReembolsoValue = isTikTok ? activeDiscount : 0;
+            const acrescimoValue = acrescimoManual + (tiktokReembolsoEnabled && isTikTok ? tiktokReembolsoValue : 0);
 
-            // Preço líquido final = pago pelo cliente + reembolso se marcado - taxas
-            const precoVendaLiquidoFinal = precoVendaPagoCliente + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0) - subtotalMarketplace;
+            // ── Preço de venda líquido ────────────────────────────────────────────
+            // TikTok: pagoCliente + reembolso - taxas
+            // Outros: pagoCliente - taxas - desconto
+            const precoVendaLiquidoFinal = isTikTok
+              ? precoVendaPagoCliente + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0) - subtotalMarketplace
+              : precoVendaPagoCliente - subtotalMarketplace - activeDiscount;
 
-            // ── Lucro = Preço de Venda Líquido - (Custo Produto + Total de Taxas) ──
+            // ── Lucro = Preço Líquido - Custo Produto ────────────────────────────
+            // taxas marketplace já descontadas no precoVendaLiquidoFinal
             const realProfit = isFreeSample
               ? -totalProductCost
-              : (precoVendaLiquidoFinal - (totalProductCost + subtotalMarketplace) + acrescimoManual);
-            const marginBase = precoVendaLiquidoFinal > 0 ? precoVendaLiquidoFinal : selectedOrder.total_amount;
+              : (precoVendaLiquidoFinal - totalProductCost + acrescimoManual);
+            const marginBase = Math.abs(precoVendaLiquidoFinal) > 0 ? Math.abs(precoVendaLiquidoFinal) : selectedOrder.total_amount;
             const margin = marginBase > 0
               ? ((realProfit / marginBase) * 100).toFixed(1) : '0.0';
             const profitPositive = realProfit >= 0;
@@ -2077,7 +2095,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
                   {/* Preço de venda — Líquido (topo) + breakdown */}
                   <div className="rounded-xl overflow-hidden bg-zinc-900/30">
-                    {/* Cabeçalho: Preço de Venda Líquido = pago pelo cliente + reembolso se marcado */}
+                    {/* Cabeçalho: Preço de Venda Líquido */}
                     <div className="flex items-center justify-between bg-zinc-900 px-4 py-3">
                       <div className="flex items-center gap-2 text-zinc-400 text-sm">
                         <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2091,45 +2109,75 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       </span>
                     </div>
 
-                    {/* Preço de venda pago pelo cliente = bruto - desconto */}
-                    <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/50 border-t border-zinc-800/40">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] text-zinc-500">Preço de venda pago pelo cliente</span>
-                        {activeDiscount > 0 && (
-                          <span className="text-[10px] text-yellow-500/80 font-mono tabular-nums">-{formatCurrency(activeDiscount)}</span>
-                        )}
-                      </div>
-                      <span className="text-[12px] text-blue-300 font-bold tabular-nums">{formatCurrency(precoVendaPagoCliente)}</span>
-                    </div>
-
-                    {/* Reembolso TikTok — sobre precoVendaPagoCliente */}
-                    {tiktokReembolsoValue > 0 && (
-                      <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/40 border-t border-zinc-800/30">
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            id="tiktok-reembolso-price-check"
-                            checked={tiktokReembolsoEnabled}
-                            onCheckedChange={(v) => setTiktokReembolsoEnabled(v === true)}
-                          />
-                          <label htmlFor="tiktok-reembolso-price-check" className="text-[11px] text-emerald-400/80 cursor-pointer select-none">
-                            Reembolso TikTok
-                          </label>
-                          <span className="text-[10px] text-emerald-500/60 font-mono tabular-nums">+{formatCurrency(tiktokReembolsoValue)}</span>
+                    {isTikTok ? (
+                      <>
+                        {/* TikTok: pago pelo cliente (bruto - desconto) */}
+                        <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/50 border-t border-zinc-800/40">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] text-zinc-500">Preço de venda pago pelo cliente</span>
+                            {activeDiscount > 0 && (
+                              <span className="text-[10px] text-yellow-500/80 font-mono tabular-nums">-{formatCurrency(activeDiscount)}</span>
+                            )}
+                          </div>
+                          <span className="text-[12px] text-blue-300 font-bold tabular-nums">{formatCurrency(precoVendaPagoCliente)}</span>
                         </div>
-                        <span className={`text-[12px] font-bold tabular-nums ${tiktokReembolsoEnabled ? 'text-blue-300' : 'text-zinc-600'}`}>
-                          {formatCurrency(precoVendaPagoCliente + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0))}
-                        </span>
-                      </div>
-                    )}
 
-                    {/* Preço de venda bruto = pago+reembolso-taxas */}
-                    <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/30 border-t border-zinc-800/40">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] text-zinc-500">Preço de venda bruto</span>
-                        <span className="text-[10px] text-orange-400/80 font-mono tabular-nums">-{formatCurrency(subtotalMarketplace)}</span>
-                      </div>
-                      <span className="text-[12px] text-blue-300 font-bold tabular-nums">{formatCurrency(precoVendaPagoCliente + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0) - subtotalMarketplace)}</span>
-                    </div>
+                        {/* Reembolso TikTok */}
+                        {tiktokReembolsoValue > 0 && (
+                          <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/40 border-t border-zinc-800/30">
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                id="tiktok-reembolso-price-check"
+                                checked={tiktokReembolsoEnabled}
+                                onCheckedChange={(v) => setTiktokReembolsoEnabled(v === true)}
+                              />
+                              <label htmlFor="tiktok-reembolso-price-check" className="text-[11px] text-emerald-400/80 cursor-pointer select-none">
+                                Reembolso TikTok
+                              </label>
+                              <span className="text-[10px] text-emerald-500/60 font-mono tabular-nums">+{formatCurrency(tiktokReembolsoValue)}</span>
+                            </div>
+                            <span className={`text-[12px] font-bold tabular-nums ${tiktokReembolsoEnabled ? 'text-blue-300' : 'text-zinc-600'}`}>
+                              {formatCurrency(precoVendaPagoCliente + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0))}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Preço de venda bruto (após taxas) */}
+                        <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/30 border-t border-zinc-800/40">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] text-zinc-500">Preço de venda bruto</span>
+                            <span className="text-[10px] text-orange-400/80 font-mono tabular-nums">-{formatCurrency(subtotalMarketplace)}</span>
+                          </div>
+                          <span className="text-[12px] text-blue-300 font-bold tabular-nums">
+                            {formatCurrency(precoVendaPagoCliente + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0) - subtotalMarketplace)}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        {/* Outros marketplaces: pago pelo cliente = total_amount */}
+                        <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/50 border-t border-zinc-800/40">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] text-zinc-500">Preço de venda pago pelo cliente</span>
+                          </div>
+                          <span className="text-[12px] text-blue-300 font-bold tabular-nums">{formatCurrency(precoVendaPagoCliente)}</span>
+                        </div>
+
+                        {/* Preço de venda bruto = pagoCliente - taxas */}
+                        <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/30 border-t border-zinc-800/40">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] text-zinc-500">Preço de venda bruto</span>
+                            <span className="text-[10px] text-orange-400/80 font-mono tabular-nums">-{formatCurrency(subtotalMarketplace)}</span>
+                            {activeDiscount > 0 && (
+                              <span className="text-[10px] text-yellow-500/80 font-mono tabular-nums">-{formatCurrency(activeDiscount)}</span>
+                            )}
+                          </div>
+                          <span className="text-[12px] text-blue-300 font-bold tabular-nums">
+                            {formatCurrency(precoVendaPagoCliente - subtotalMarketplace - activeDiscount)}
+                          </span>
+                        </div>
+                      </>
+                    )}
 
                     {/* Detalhamento por item (múltiplos produtos) */}
                     {hasMultipleProducts && (
@@ -2183,36 +2231,38 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             </div>
                           ))}
                         </div>
-                        {/* Taxas do fornecedor — editáveis */}
-                        <div className="border-t border-red-950/30 bg-red-950/15 px-4 py-3 space-y-2">
-                          <p className="text-[10px] font-semibold text-red-500/70 uppercase tracking-widest mb-2">Taxas do Fornecedor</p>
-                          {/* Taxa % fornecedor — editável, default 6% */}
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="text-xs text-zinc-400 shrink-0">Taxa fornecedor</span>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="text"
-                                inputMode="decimal"
-                                placeholder="6"
-                                value={manualSupplierFeePercent}
-                                onChange={(e) => setManualSupplierFeePercent(e.target.value.replace(/[^0-9,.]/g, ''))}
-                                className="w-14 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 tabular-nums text-right"
-                              />
-                              <span className="text-zinc-500 text-xs">%</span>
-                              <span className="text-red-400 text-xs font-semibold tabular-nums">-{formatCurrency(orderSupplierFee)}</span>
+                        {/* Taxas do fornecedor — só Dogama */}
+                        {isDogama && (
+                          <div className="border-t border-red-950/30 bg-red-950/15 px-4 py-3 space-y-2">
+                            <p className="text-[10px] font-semibold text-red-500/70 uppercase tracking-widest mb-2">Taxas do Fornecedor</p>
+                            {/* Taxa % fornecedor — editável, default 6% */}
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="text-xs text-zinc-400 shrink-0">Taxa fornecedor</span>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  inputMode="decimal"
+                                  placeholder="6"
+                                  value={manualSupplierFeePercent}
+                                  onChange={(e) => setManualSupplierFeePercent(e.target.value.replace(/[^0-9,.]/g, ''))}
+                                  className="w-14 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 tabular-nums text-right"
+                                />
+                                <span className="text-zinc-500 text-xs">%</span>
+                                <span className="text-red-400 text-xs font-semibold tabular-nums">-{formatCurrency(orderSupplierFee)}</span>
+                              </div>
+                            </div>
+                            {/* Taxa de transação Dogama — R$2 fixo, não editável */}
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="text-xs text-zinc-400 shrink-0">Taxa de transação (Dogama)</span>
+                              <span className="text-red-400 text-xs font-semibold tabular-nums">-{formatCurrency(orderGatewayFee)}</span>
+                            </div>
+                            {/* Subtotal custo produto */}
+                            <div className="flex justify-between items-center pt-1.5 border-t border-red-950/20">
+                              <span className="text-[11px] text-zinc-400 font-medium">Subtotal custo</span>
+                              <span className="text-red-400 text-[12px] font-bold tabular-nums">-{formatCurrency(totalProductCost)}</span>
                             </div>
                           </div>
-                          {/* Taxa de transação Dogama — R$2 fixo, não editável */}
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="text-xs text-zinc-400 shrink-0">Taxa de transação (Dogama)</span>
-                            <span className="text-red-400 text-xs font-semibold tabular-nums">-{formatCurrency(orderGatewayFee)}</span>
-                          </div>
-                          {/* Subtotal custo produto */}
-                          <div className="flex justify-between items-center pt-1.5 border-t border-red-950/20">
-                            <span className="text-[11px] text-zinc-400 font-medium">Subtotal custo</span>
-                            <span className="text-red-400 text-[12px] font-bold tabular-nums">-{formatCurrency(totalProductCost)}</span>
-                          </div>
-                        </div>
+                        )}
                       </div>
                     )}
                   </div>
