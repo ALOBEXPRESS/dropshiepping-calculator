@@ -80,6 +80,7 @@ interface OrderDetail {
 
 export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organizationId, refreshTrigger, onOrderDeleted, period: externalPeriod, onPeriodChange }) => {
   const [period, setPeriod] = useState<PeriodFilter>(externalPeriod || 'monthly');
+  const [windowOffset, setWindowOffset] = useState(0);
   const { data, loading, error, refetch } = useRevenueReport(organizationId, period);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<{ id: string; number: string; store: string } | null>(null);
@@ -112,6 +113,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   // Notificar mudança de período para o componente pai
   const handlePeriodChange = useCallback((newPeriod: PeriodFilter) => {
     setPeriod(newPeriod);
+    setWindowOffset(0);
     if (onPeriodChange) {
       onPeriodChange(newPeriod);
     }
@@ -1590,9 +1592,22 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     });
   }, [data, orderEnrichmentById, affiliateByOrderId, computeOrderRealProfit]);
 
-  const totalRevenue = recalculatedData.reduce((sum, item) => sum + Number(item.total_revenue), 0);
-  const totalCost = recalculatedData.reduce((sum, item) => sum + Number(item.total_cost), 0);
-  const totalProfit = recalculatedData.reduce((sum, item) => sum + Number(item.total_profit), 0);
+  // Window size per period
+  const windowSize = period === 'daily' ? 14 : period === 'weekly' ? 12 : period === 'monthly' ? 6 : 5;
+  const maxOffset = Math.max(0, recalculatedData.length - windowSize);
+  const visibleData = recalculatedData.slice(windowOffset, windowOffset + windowSize);
+
+  // Jump to latest window when data loads
+  useEffect(() => {
+    if (recalculatedData.length > 0) {
+      setWindowOffset(Math.max(0, recalculatedData.length - windowSize));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recalculatedData.length, period]);
+
+  const totalRevenue = visibleData.reduce((sum, item) => sum + Number(item.total_revenue), 0);
+  const totalCost = visibleData.reduce((sum, item) => sum + Number(item.total_cost), 0);
+  const totalProfit = visibleData.reduce((sum, item) => sum + Number(item.total_profit), 0);
 
 
   const chartOptions: ApexOptions = {
@@ -1635,7 +1650,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     },
     colors: ['#8b5cf6'],
     xaxis: {
-      categories: recalculatedData.map((item) => item.period_label),
+      categories: visibleData.map((item) => item.period_label),
       labels: {
         style: {
           colors: '#6b7280',
@@ -1877,8 +1892,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const chartSeries = [
     {
       name: 'Lucro',
-      data: recalculatedData.map((item, idx) => {
-        const currentPageUnsafe = tooltipPages[idx] ?? 0;
+      data: visibleData.map((item, idx) => {
+        const currentPageUnsafe = tooltipPages[windowOffset + idx] ?? 0;
         const orders = item.orders_data ?? [];
         const currentPage = orders.length > 0 ? Math.min(currentPageUnsafe, orders.length - 1) : 0;
         if (orders.length > 0 && orders[currentPage]) {
@@ -2701,17 +2716,44 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             </div>
           </div>
         </div>
-        <Select value={period} onValueChange={(value) => handlePeriodChange(value as PeriodFilter)}>
-          <SelectTrigger className="w-[140px] border-gray-200 dark:border-zinc-800">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="daily">Diário</SelectItem>
-            <SelectItem value="weekly">Semanal</SelectItem>
-            <SelectItem value="monthly">Mensal</SelectItem>
-            <SelectItem value="yearly">Anual</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          {/* Navigation arrows */}
+          {recalculatedData.length > windowSize && (
+            <>
+              <button
+                onClick={() => setWindowOffset(o => Math.max(0, o - 1))}
+                disabled={windowOffset === 0}
+                className="p-1.5 rounded-md border border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                title="Anterior"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setWindowOffset(o => Math.min(maxOffset, o + 1))}
+                disabled={windowOffset >= maxOffset}
+                className="p-1.5 rounded-md border border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                title="Próximo"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </>
+          )}
+          <Select value={period} onValueChange={(value) => handlePeriodChange(value as PeriodFilter)}>
+            <SelectTrigger className="w-[140px] border-gray-200 dark:border-zinc-800">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="daily">Diário</SelectItem>
+              <SelectItem value="weekly">Semanal</SelectItem>
+              <SelectItem value="monthly">Mensal</SelectItem>
+              <SelectItem value="yearly">Anual</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {data.length > 0 ? (
