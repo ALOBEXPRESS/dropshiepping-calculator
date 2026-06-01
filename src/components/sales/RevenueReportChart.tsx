@@ -2731,7 +2731,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               </svg>
             </button>
           )}
-          <Chart key={`${JSON.stringify(data.map(d => d.period_label + '_' + d.total_revenue))}`} options={chartOptions} series={chartSeries} type="area" height={300} />
+          <Chart key={`${JSON.stringify(visibleData.map(d => d.period_label + '_' + d.total_profit))}_${windowOffset}`} options={chartOptions} series={chartSeries} type="area" height={300} />
         </div>
       ) : (
         <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
