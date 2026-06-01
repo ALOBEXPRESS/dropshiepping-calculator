@@ -15,4 +15,6 @@ export interface PendingOrder {
   estimated_profit: number;
   net_revenue: number;
   total_cost: number;
+  valor_bruto: number;
+  expected_price: number;
 }
