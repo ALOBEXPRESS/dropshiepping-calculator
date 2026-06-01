@@ -2689,31 +2689,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {/* Navigation arrows */}
-          {recalculatedData.length > windowSize && (
-            <>
-              <button
-                onClick={() => setWindowOffset(o => Math.max(0, o - 1))}
-                disabled={windowOffset === 0}
-                className="p-1.5 rounded-md border border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                title="Anterior"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <button
-                onClick={() => setWindowOffset(o => Math.min(maxOffset, o + 1))}
-                disabled={windowOffset >= maxOffset}
-                className="p-1.5 rounded-md border border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                title="Próximo"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </>
-          )}
           <Select value={period} onValueChange={(value) => handlePeriodChange(value as PeriodFilter)}>
             <SelectTrigger className="w-[140px] border-gray-200 dark:border-zinc-800">
               <SelectValue />
@@ -2730,6 +2705,32 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
       {data.length > 0 ? (
         <div ref={chartRef} className="relative">
+          {/* Left arrow — overlaid on chart */}
+          {period !== 'yearly' && (
+            <button
+              onClick={() => setWindowOffset(o => Math.max(0, o - 1))}
+              disabled={windowOffset === 0}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-16 flex items-center justify-center bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700/60 rounded-r-lg text-zinc-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all"
+              title="Anterior"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+          {/* Right arrow — overlaid on chart */}
+          {period !== 'yearly' && (
+            <button
+              onClick={() => setWindowOffset(o => Math.min(maxOffset, o + 1))}
+              disabled={windowOffset >= maxOffset}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-16 flex items-center justify-center bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700/60 rounded-l-lg text-zinc-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all"
+              title="Próximo"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
           <Chart key={`${JSON.stringify(data.map(d => d.period_label + '_' + d.total_revenue))}`} options={chartOptions} series={chartSeries} type="area" height={300} />
         </div>
       ) : (
