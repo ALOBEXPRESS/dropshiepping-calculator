@@ -92,6 +92,16 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const affiliateByOrderIdRef = useRef<Record<string, boolean>>({});
   affiliateByOrderIdRef.current = affiliateByOrderId;
 
+  // Persist modal state per order_id (discount, acrescimo, supplier fee, reembolso)
+  type OrderModalState = {
+    blingDiscountEnabled: boolean;
+    manualDesconto: string;
+    manualAcrescimo: string;
+    tiktokReembolsoEnabled: boolean;
+    manualSupplierFeePercent: string;
+  };
+  const orderModalStateRef = useRef<Record<string, OrderModalState>>({});
+
   // Sincronizar período externo com interno
   useEffect(() => {
     if (externalPeriod && externalPeriod !== period) {
@@ -190,6 +200,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     const o = order as {
       order_id?: string;
       total_amount?: number;
+      total_products?: number;
+      base_value?: number;
+      discount_value?: number;
       shipping_cost?: number;
       other_expenses?: number;
       marketplace_commission?: number;
@@ -205,11 +218,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       }[];
       tiktok_sfp_enabled?: boolean | string;
       is_free_sample?: boolean | string;
+      marketplace?: string;
     };
 
     const totalAmount = Number(o.total_amount ?? 0);
     const isFreeSample = o.is_free_sample === true || String(o.is_free_sample ?? '') === 'true';
     const products = o.products ?? [];
+    const isTikTok = (o.marketplace ?? '').toLowerCase().includes('tiktok');
 
     const totalBaseCost = products.reduce((sum, p) => {
       const qty = Number(p.quantity ?? 1);
@@ -222,41 +237,50 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       return v > Number(best?.supplier_fee_value ?? 0) ? p : best;
     }, products[0]);
 
-    const gwFeeProduct = products.reduce((best, p) => {
-      const v = Number(p.supplier_gateway_fee_value ?? 0);
-      return v > Number(best?.supplier_gateway_fee_value ?? 0) ? p : best;
-    }, products[0]);
-
     const supFeeVal = Number(supFeeProduct?.supplier_fee_value ?? 0);
     const supFeeType = supFeeProduct?.supplier_fee_type ?? 'percent';
-    const gwFeeVal = Number(gwFeeProduct?.supplier_gateway_fee_value ?? 0);
-    const gwFeeType = gwFeeProduct?.supplier_gateway_fee_type ?? 'fixed';
 
-    const orderSupplierFee = supFeeVal > 0
-      ? (supFeeType === 'percent' ? (totalBaseCost * supFeeVal) / 100 : supFeeVal)
+    // Dogama: TikTok always, or product has supplier_fee_value
+    const isDogama = isTikTok || supFeeVal > 0;
+    const DEFAULT_SUPPLIER_FEE_PERCENT = 6;
+    const DOGAMA_GATEWAY_FEE = 2;
+    const effectiveSupFeePercent = isDogama
+      ? (supFeeType === 'percent' && supFeeVal > 0 ? supFeeVal : DEFAULT_SUPPLIER_FEE_PERCENT)
       : 0;
-    const orderGatewayFee = gwFeeVal > 0
-      ? (gwFeeType === 'fixed' ? gwFeeVal : (totalBaseCost * gwFeeVal) / 100)
-      : 0;
+    const orderSupplierFee = isDogama ? (totalBaseCost * effectiveSupFeePercent) / 100 : 0;
+    const orderGatewayFee = isDogama ? DOGAMA_GATEWAY_FEE : 0;
 
     const totalProductCost = totalBaseCost + orderSupplierFee + orderGatewayFee;
+
+    // Preços de venda — mirror modal logic
+    const totalProductsValue = Number(o.total_products ?? totalAmount);
+    const baseValue = Number(o.base_value ?? 0);
+    const activeDiscount = Number(o.discount_value ?? 0);
+
+    const precoVendaBruto = isTikTok
+      ? (totalProductsValue > 0 ? totalProductsValue : totalAmount)
+      : totalAmount;
+    const precoVendaPagoCliente = isTikTok
+      ? precoVendaBruto - activeDiscount
+      : (baseValue > 0 ? baseValue : totalAmount);
 
     const fixedFee = Number(marketplaceConfig?.fixed_fee ?? o.marketplace_fixed_fee ?? 0);
     const commissionRate = Number(marketplaceConfig?.commission_rate ?? o.commission_rate ?? 0);
     const affiliateRate = Number(marketplaceConfig?.affiliate_commission_rate ?? 0);
 
+    const commissionBase = precoVendaBruto;
     const cameFromAffiliate = cameFromAffiliateOverride ?? Boolean(o.order_id && affiliateByOrderIdRef.current?.[o.order_id]);
     const affiliateCommission = isFreeSample
       ? 0
-      : (cameFromAffiliate && affiliateRate > 0 ? (totalAmount * affiliateRate) / 100 : 0);
+      : (cameFromAffiliate && affiliateRate > 0 ? (commissionBase * affiliateRate) / 100 : 0);
 
-    const sfpEnabled = o.tiktok_sfp_enabled === true || String(o.tiktok_sfp_enabled ?? '') === 'true';
-    const sfpFee = isFreeSample ? 0 : (sfpEnabled ? totalAmount * 0.06 : 0);
+    const sfpEnabled = !isFreeSample && (o.tiktok_sfp_enabled === true || String(o.tiktok_sfp_enabled ?? '') === 'true' || isTikTok);
+    const sfpFee = sfpEnabled ? precoVendaBruto * 0.06 : 0;
 
     const commissionPercent = isFreeSample
       ? 0
       : (commissionRate > 0
-        ? (totalAmount * commissionRate) / 100
+        ? (commissionBase * commissionRate) / 100
         : Math.max(0, Number(o.marketplace_commission ?? 0) - fixedFee));
 
     const shipping = Number(o.shipping_cost ?? 0);
@@ -265,7 +289,16 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       ? 0
       : (commissionPercent + fixedFee + sfpFee + shipping + other + affiliateCommission);
 
-    const realProfit = totalAmount - totalProductCost - subtotalMarketplace;
+    // TikTok reembolso = desconto (default enabled)
+    const tiktokReembolso = isTikTok ? activeDiscount : 0;
+
+    const precoVendaLiquidoFinal = isTikTok
+      ? precoVendaPagoCliente + tiktokReembolso - subtotalMarketplace
+      : precoVendaPagoCliente - subtotalMarketplace - activeDiscount;
+
+    const realProfit = isFreeSample
+      ? -totalProductCost
+      : (precoVendaLiquidoFinal - totalProductCost);
 
     return {
       realProfit,
@@ -1391,11 +1424,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             setOpenMarketplace(false);
             setOpenDescontos(false);
             setOpenAcrescimos(false);
-            setBlingDiscountEnabled(true);
-            setManualDesconto('');
-            setManualAcrescimo('');
-            setTiktokReembolsoEnabled(true);
-            setManualSupplierFeePercent('');
+            // Restore persisted state for this order, or use defaults
+            const saved = orderModalStateRef.current[merged.order_id];
+            setBlingDiscountEnabled(saved?.blingDiscountEnabled ?? true);
+            setManualDesconto(saved?.manualDesconto ?? '');
+            setManualAcrescimo(saved?.manualAcrescimo ?? '');
+            setTiktokReembolsoEnabled(saved?.tiktokReembolsoEnabled ?? true);
+            setManualSupplierFeePercent(saved?.manualSupplierFeePercent ?? '');
             setDetailDialogOpen(true);
           } catch (err) {
             console.error('Error parsing order data:', err);
@@ -1887,7 +1922,19 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   return (
     <>
       {/* Dialog de detalhes do pedido — Dark Premium */}
-      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+      <Dialog open={detailDialogOpen} onOpenChange={(open) => {
+          if (!open && selectedOrder) {
+            // Persist modal state for this order
+            orderModalStateRef.current[selectedOrder.order_id] = {
+              blingDiscountEnabled,
+              manualDesconto,
+              manualAcrescimo,
+              tiktokReembolsoEnabled,
+              manualSupplierFeePercent,
+            };
+          }
+          setDetailDialogOpen(open);
+        }}>
         <DialogContent className="max-w-lg p-0 overflow-hidden border-0 bg-zinc-950 rounded-2xl shadow-2xl [&>button]:hidden">
           <DialogTitle className="sr-only">Detalhes do pedido</DialogTitle>
           <DialogDescription className="sr-only">Informações do pedido selecionado.</DialogDescription>
@@ -2168,17 +2215,20 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           <span className="text-[12px] text-blue-300 font-bold tabular-nums">{formatCurrency(precoVendaPagoCliente)}</span>
                         </div>
 
-                        {/* Preço de venda bruto = pagoCliente - taxas */}
+                        {/* Preço de venda bruto = pagoCliente, badges mostram deduções */}
                         <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/30 border-t border-zinc-800/40">
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="text-[11px] text-zinc-500">Preço de venda bruto</span>
                             <span className="text-[10px] text-orange-400/80 font-mono tabular-nums">-{formatCurrency(subtotalMarketplace)}</span>
                             {activeDiscount > 0 && (
-                              <span className="text-[10px] text-yellow-500/80 font-mono tabular-nums">-{formatCurrency(activeDiscount)}</span>
+                              <span className="text-[10px] text-yellow-400/90 font-mono tabular-nums">-{formatCurrency(activeDiscount)}</span>
+                            )}
+                            {acrescimoManual > 0 && (
+                              <span className="text-[10px] text-emerald-400/80 font-mono tabular-nums">+{formatCurrency(acrescimoManual)}</span>
                             )}
                           </div>
                           <span className="text-[12px] text-blue-300 font-bold tabular-nums">
-                            {formatCurrency(precoVendaPagoCliente - subtotalMarketplace - activeDiscount)}
+                            {formatCurrency(precoVendaPagoCliente)}
                           </span>
                         </div>
                       </>
