@@ -92,6 +92,7 @@ export function GenderClassificationJobButton({
   return (
     <>
       <button
+        id="gender-classify-btn"
         onClick={handleRunJob}
         disabled={isRunning}
         aria-label={isRunning ? 'Classificando leads...' : 'Executar classificação de gênero em lote'}

@@ -19,9 +19,8 @@ import type { TimePeriod } from '../types/dashboard';
 /**
  * Props for LeadsDashboard component
  */
-export interface LeadsDashboardProps {
-  // No props needed - component is self-contained
-}
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface LeadsDashboardProps {}
 
 /**
  * LeadsDashboard Component
@@ -87,7 +86,7 @@ const LeadsDashboard: React.FC<LeadsDashboardProps> = () => {
                 period={period}
                 marketplaceId={selectedMarketplace}
                 onClassifyClick={() => {
-                  const button = document.querySelector('[data-gender-classify-button]') as HTMLButtonElement;
+                  const button = document.getElementById('gender-classify-btn') as HTMLButtonElement;
                   if (button) button.click();
                 }}
               />
