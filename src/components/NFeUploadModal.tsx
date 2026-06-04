@@ -26,7 +26,7 @@ interface ParsedNFe {
   labelState: string;
   labelZip: string;
   labelStreet: string;
-  items: { descricao: string; qtd: number; vUnit: number; vTotal: number }[];
+  items: { descricao: string; qtd: number; vUnit: number; vTotal: number; sku: string }[];
   intermediadorCnpj: string | null;
   chNFe: string;
 }
@@ -52,6 +52,7 @@ function parseNFe(xml: string): ParsedNFe {
     const prod = det.getElementsByTagNameNS(ns, 'prod')[0];
     return {
       descricao: g('xProd', prod),
+      sku: g('cProd', prod),
       qtd: parseFloat(g('qCom', prod) || '1'),
       vUnit: parseFloat(g('vUnCom', prod) || '0'),
       vTotal: parseFloat(g('vProd', prod) || '0'),
@@ -124,11 +125,12 @@ export function NFeUploadModal({ open, onClose, onSuccess }: NFeUploadModalProps
         ? (INTERMEDIADOR_MAP[nfe.intermediadorCnpj] ?? 'Manual')
         : 'Manual';
 
+      // Match by name (e.g. "TikTok Shop") or by marketplace column
       const { data: scRows } = await supabase
         .from('sales_channels')
-        .select('id, bling_store_id')
+        .select('id, bling_store_id, marketplace_id')
         .eq('organization_id', organizationId)
-        .ilike('marketplace', `%${marketplaceName.split(' ')[0]}%`)
+        .or(`name.ilike.%${marketplaceName}%,marketplace.ilike.%${marketplaceName.split(' ')[0]}%`)
         .limit(1);
 
       const salesChannelId = scRows?.[0]?.id ?? null;
@@ -150,7 +152,34 @@ export function NFeUploadModal({ open, onClose, onSuccess }: NFeUploadModalProps
         return;
       }
 
-      const { error: insertError } = await supabase.from('bling_orders').insert({
+      // Look up products by SKU (cProd) or name (xProd) for each item
+      const itemProductIds: Record<number, { productId: string | null; costPrice: number; imageUrl: string | null }> = {};
+      for (let i = 0; i < nfe.items.length; i++) {
+        const item = nfe.items[i];
+        const nameWords = item.descricao.split(' ').slice(0, 4).join(' ');
+        // Try SKU exact match first, then name fuzzy
+        const { data: prodBySku } = item.sku ? await supabase
+          .from('products')
+          .select('id, cost_price, image_url')
+          .eq('organization_id', organizationId)
+          .eq('sku', item.sku)
+          .limit(1) : { data: null };
+        const prod = prodBySku?.[0] ?? (() => { return null; })();
+        if (prod) {
+          itemProductIds[i] = { productId: prod.id, costPrice: prod.cost_price ?? 0, imageUrl: prod.image_url ?? null };
+        } else {
+          const { data: prodByName } = await supabase
+            .from('products')
+            .select('id, cost_price, image_url')
+            .eq('organization_id', organizationId)
+            .ilike('name', `%${nameWords}%`)
+            .limit(1);
+          const p2 = prodByName?.[0];
+          itemProductIds[i] = { productId: p2?.id ?? null, costPrice: p2?.cost_price ?? 0, imageUrl: p2?.image_url ?? null };
+        }
+      }
+
+      const { data: orderRow, error: insertError } = await supabase.from('bling_orders').insert({
         organization_id: organizationId,
         bling_order_id: syntheticBlingId,
         order_number: nfe.nNF,
@@ -163,7 +192,7 @@ export function NFeUploadModal({ open, onClose, onSuccess }: NFeUploadModalProps
         discount_value: nfe.desconto,
         shipping_cost: nfe.frete,
         other_expenses: 0,
-        status_id: 9, // pendente
+        status_id: 9,
         contact_name: nfe.contactName,
         contact_type: nfe.contactCnpj ? 'J' : 'F',
         contact_document: nfe.contactCpf ?? nfe.contactCnpj ?? '',
@@ -174,9 +203,30 @@ export function NFeUploadModal({ open, onClose, onSuccess }: NFeUploadModalProps
         label_address: nfe.labelStreet,
         processed_to_orders: false,
         raw_data: null,
-      });
+      }).select('id').single();
 
       if (insertError) throw insertError;
+
+      // Insert bling_order_items for each NF item
+      if (orderRow?.id && nfe.items.length > 0) {
+        const itemRows = nfe.items.map((item, i) => ({
+          order_id: orderRow.id,
+          bling_item_id: Math.abs(syntheticBlingId) * 1000 + i,
+          product_id: itemProductIds[i]?.productId ?? null,
+          code: item.sku ?? '',
+          description: item.descricao,
+          unit: 'UN',
+          quantity: item.qtd,
+          unit_value: item.vUnit,
+          total_value: item.vTotal,
+          discount: 0,
+          ipi_rate: 0,
+          commission_base: 0,
+          commission_rate: 0,
+          commission_value: 0,
+        }));
+        await supabase.from('bling_order_items').insert(itemRows);
+      }
 
       setStatus('success');
       setTimeout(() => { onSuccess(); onClose(); reset(); }, 1500);
