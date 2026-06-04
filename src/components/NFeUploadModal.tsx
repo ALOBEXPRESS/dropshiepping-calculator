@@ -125,13 +125,27 @@ export function NFeUploadModal({ open, onClose, onSuccess }: NFeUploadModalProps
         ? (INTERMEDIADOR_MAP[nfe.intermediadorCnpj] ?? 'Manual')
         : 'Manual';
 
-      // Match by name (e.g. "TikTok Shop") or by marketplace column
-      const { data: scRows } = await supabase
-        .from('sales_channels')
-        .select('id, bling_store_id, marketplace_id')
-        .eq('organization_id', organizationId)
-        .or(`name.ilike.%${marketplaceName}%,marketplace.ilike.%${marketplaceName.split(' ')[0]}%`)
-        .limit(1);
+      // Match exact marketplace name first (e.g. "TikTok Shop"), then partial
+      let scRows: { id: string; bling_store_id: number; marketplace_id: string | null }[] | null = null;
+      if (marketplaceName !== 'Manual') {
+        const { data: exact } = await supabase
+          .from('sales_channels')
+          .select('id, bling_store_id, marketplace_id')
+          .eq('organization_id', organizationId)
+          .ilike('name', `%${marketplaceName}%`)
+          .limit(1);
+        scRows = exact;
+        if (!scRows?.length) {
+          const keyword = marketplaceName.split(' ')[0]; // "TikTok", "Shopee"
+          const { data: partial } = await supabase
+            .from('sales_channels')
+            .select('id, bling_store_id, marketplace_id')
+            .eq('organization_id', organizationId)
+            .ilike('marketplace', `%${keyword}%`)
+            .limit(1);
+          scRows = partial;
+        }
+      }
 
       const salesChannelId = scRows?.[0]?.id ?? null;
       const blingStoreId = scRows?.[0]?.bling_store_id ?? 0;
@@ -153,30 +167,30 @@ export function NFeUploadModal({ open, onClose, onSuccess }: NFeUploadModalProps
       }
 
       // Look up products by SKU (cProd) or name (xProd) for each item
+      // Strip accents for fuzzy name match
+      const stripAccents = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
       const itemProductIds: Record<number, { productId: string | null; costPrice: number; imageUrl: string | null }> = {};
       for (let i = 0; i < nfe.items.length; i++) {
         const item = nfe.items[i];
-        const nameWords = item.descricao.split(' ').slice(0, 4).join(' ');
-        // Try SKU exact match first, then name fuzzy
-        const { data: prodBySku } = item.sku ? await supabase
-          .from('products')
-          .select('id, cost_price, image_url')
-          .eq('organization_id', organizationId)
-          .eq('sku', item.sku)
-          .limit(1) : { data: null };
-        const prod = prodBySku?.[0] ?? (() => { return null; })();
-        if (prod) {
-          itemProductIds[i] = { productId: prod.id, costPrice: prod.cost_price ?? 0, imageUrl: prod.image_url ?? null };
-        } else {
-          const { data: prodByName } = await supabase
-            .from('products')
-            .select('id, cost_price, image_url')
-            .eq('organization_id', organizationId)
-            .ilike('name', `%${nameWords}%`)
-            .limit(1);
-          const p2 = prodByName?.[0];
-          itemProductIds[i] = { productId: p2?.id ?? null, costPrice: p2?.cost_price ?? 0, imageUrl: p2?.image_url ?? null };
+        // 1. Try exact SKU in products
+        if (item.sku) {
+          const { data: bySku } = await supabase.from('products').select('id, cost_price, image_url').eq('organization_id', organizationId).eq('sku', item.sku).limit(1);
+          if (bySku?.[0]) { itemProductIds[i] = { productId: bySku[0].id, costPrice: bySku[0].cost_price ?? 0, imageUrl: bySku[0].image_url ?? null }; continue; }
         }
+        // 2. Fuzzy name match in products (first 3 meaningful words, stripped)
+        const words = stripAccents(item.descricao).split(/\s+/).slice(0, 3).join(' ');
+        const { data: byName } = await supabase.from('products').select('id, cost_price, image_url').eq('organization_id', organizationId).ilike('name', `%${words.split(' ')[0]}%`).limit(5);
+        // Pick best match by checking more words
+        const best = byName?.find(p => {
+          const pNameStripped = stripAccents((p as unknown as { name?: string }).name ?? '');
+          return pNameStripped.includes(words.split(' ')[1] ?? words.split(' ')[0]);
+        }) ?? byName?.[0];
+        if (best) { itemProductIds[i] = { productId: best.id, costPrice: best.cost_price ?? 0, imageUrl: best.image_url ?? null }; continue; }
+        // 3. Try products_variations by name
+        const { data: byVarName } = await supabase.from('product_variations').select('id, product_id, cost_price, image_url').ilike('name', `%${words.split(' ')[0]}%`).limit(1);
+        const pv = byVarName?.[0];
+        if (pv) { itemProductIds[i] = { productId: pv.product_id ?? null, costPrice: pv.cost_price ?? 0, imageUrl: pv.image_url ?? null }; continue; }
+        itemProductIds[i] = { productId: null, costPrice: 0, imageUrl: null };
       }
 
       const { data: orderRow, error: insertError } = await supabase.from('bling_orders').insert({
