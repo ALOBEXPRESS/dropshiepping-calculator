@@ -3,8 +3,9 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useSettings } from '@/contexts/SettingsContext';
-import { Loader2, CheckCircle, AlertCircle, Package, ChevronLeft, ChevronRight, Trash2, GripVertical } from 'lucide-react';
+import { Loader2, CheckCircle, AlertCircle, Package, ChevronLeft, ChevronRight, Trash2, GripVertical, FileText } from 'lucide-react';
 import { ProcessOrderModal } from './ProcessOrderModal';
+import { NFeUploadModal } from './NFeUploadModal';
 import { useAutoGenderClassification } from '@/hooks/useAutoGenderClassification';
 import type { PendingOrder } from '@/types/pendingOrder';
 
@@ -76,6 +77,7 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
   const [error, setError] = useState<string | null>(null);
   const [processResult, setProcessResult] = useState<ProcessResult | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [nfeModalOpen, setNfeModalOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
@@ -307,6 +309,12 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
         result={processResult}
       />
       
+      <NFeUploadModal
+        open={nfeModalOpen}
+        onClose={() => setNfeModalOpen(false)}
+        onSuccess={() => loadPendingOrders(false)}
+      />
+
       <div className="space-y-4">
         <div className="flex items-center justify-between">
         <div>
@@ -317,14 +325,25 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
             {pendingOrders.length} {pendingOrders.length === 1 ? 'venda pendente' : 'vendas pendentes'}
           </p>
         </div>
-        <Button
-          onClick={() => loadPendingOrders(false)}
-          variant="outline"
-          size="sm"
-          disabled={loading}
-        >
-          Atualizar
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setNfeModalOpen(true)}
+            variant="outline"
+            size="sm"
+            className="border-emerald-600 text-emerald-400 hover:bg-emerald-950/40 hover:border-emerald-400"
+          >
+            <FileText className="w-3.5 h-3.5 mr-1.5" />
+            Carregar NF
+          </Button>
+          <Button
+            onClick={() => loadPendingOrders(false)}
+            variant="outline"
+            size="sm"
+            disabled={loading}
+          >
+            Atualizar
+          </Button>
+        </div>
       </div>
 
       {error && (
