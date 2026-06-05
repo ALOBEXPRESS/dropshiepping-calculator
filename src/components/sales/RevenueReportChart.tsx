@@ -303,16 +303,20 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       ? precoVendaPagoCliente + tiktokReembolso - subtotalMarketplace
       : precoVendaPagoCliente - subtotalMarketplace - activeDiscount;
 
-    const realProfit = isFreeSample
+    const realProfitRaw = isFreeSample
       ? -totalProductCost
       : (precoVendaLiquidoFinal - totalProductCost);
+    // Round to 2 decimal places to avoid floating point accumulation errors
+    const realProfit = Math.round(realProfitRaw * 100) / 100;
+    const totalProductCostRounded = Math.round(totalProductCost * 100) / 100;
+    const precoVendaLiquidoFinalRounded = Math.round(precoVendaLiquidoFinal * 100) / 100;
 
     return {
       realProfit,
       isFreeSample,
-      totalProductCost,
-      precoVendaLiquidoFinal,
-      subtotalMarketplace,
+      totalProductCost: totalProductCostRounded,
+      precoVendaLiquidoFinal: precoVendaLiquidoFinalRounded,
+      subtotalMarketplace: Math.round(subtotalMarketplace * 100) / 100,
     };
   }, []);
 
