@@ -1239,13 +1239,15 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const key = navButton.getAttribute('data-nav-key');
         const max = Number(navButton.getAttribute('data-nav-max'));
         if (key) {
-          const dataPointIndex = parseInt(key.replace('tooltip_page_', ''), 10);
-          const currentUnsafe = tooltipPagesRef.current[dataPointIndex] ?? 0;
+          const visualIdx = parseInt(key.replace('tooltip_page_', ''), 10);
+          const windowOffsetCurrent = (window as unknown as { __chartWindowOffset?: number }).__chartWindowOffset ?? 0;
+          const globalIdx = windowOffsetCurrent + visualIdx;
+          const currentUnsafe = tooltipPagesRef.current[globalIdx] ?? 0;
           const current = Number.isFinite(max) ? Math.min(currentUnsafe, max) : currentUnsafe;
           const next = dir === 'next' ? Math.min(current + 1, max) : Math.max(current - 1, 0);
 
-          // Atualizar estado React
-          setTooltipPages(prev => ({ ...prev, [dataPointIndex]: next }));
+          // Atualizar estado React (key = globalIdx para consistência com série)
+          setTooltipPages(prev => ({ ...prev, [globalIdx]: next }));
 
           // Atualizar a série do gráfico via ApexCharts API (sem fechar o tooltip)
           const canvas = document.querySelector('.apexcharts-canvas');
@@ -1256,7 +1258,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               const instance = ApexChartsGlobal.getChartByID(chartId);
               if (instance) {
                 const newSeriesData = dataRef.current.map((item, idx) => {
-                  const pageUnsafe = idx === dataPointIndex ? next : (tooltipPagesRef.current[idx] ?? 0);
+                  const pageUnsafe = idx === globalIdx ? next : (tooltipPagesRef.current[idx] ?? 0);
                   const orders = item.orders_data ?? [];
                   const page = orders.length > 0 ? Math.min(pageUnsafe, orders.length - 1) : 0;
                   if (orders.length > 0 && orders[page]) {
@@ -1286,8 +1288,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const tooltipEl = document.querySelector('.apexcharts-tooltip.apexcharts-active');
           if (tooltipEl) {
             const currentData = dataRef.current;
-            if (!isNaN(dataPointIndex) && currentData[dataPointIndex]) {
-              const periodData = currentData[dataPointIndex];
+            if (!isNaN(globalIdx) && currentData[globalIdx]) {
+              const periodData = currentData[globalIdx];
               const ordersCount = periodData.orders_data?.length || 0;
               const safeNext = ordersCount > 0 ? Math.min(next, ordersCount - 1) : 0;
               const order = periodData.orders_data?.[safeNext];
@@ -1583,6 +1585,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const maxOffset = Math.max(0, recalculatedData.length - windowSize);
   const visibleData = recalculatedData.slice(windowOffset, windowOffset + windowSize);
 
+  // Expose windowOffset to global so tooltip nav click handler (outside React scope) can read it
+  useEffect(() => {
+    (window as unknown as { __chartWindowOffset: number }).__chartWindowOffset = windowOffset;
+  }, [windowOffset]);
+
   // Jump to latest window when data loads
   useEffect(() => {
     if (recalculatedData.length > 0) {
@@ -1675,7 +1682,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
         // Estado de paginação do tooltip por período (via estado React)
         const stateKey = `tooltip_page_${dataPointIndex}`;
-        const currentPageUnsafe: number = tooltipPagesRef.current[dataPointIndex] ?? 0;
+        const globalDataIdx = ((window as unknown as { __chartWindowOffset?: number }).__chartWindowOffset ?? 0) + dataPointIndex;
+        const currentPageUnsafe: number = tooltipPagesRef.current[globalDataIdx] ?? 0;
         const currentPage = ordersCount > 0 ? Math.min(currentPageUnsafe, ordersCount - 1) : 0;
         const order = periodData.orders_data?.[currentPage];
 
