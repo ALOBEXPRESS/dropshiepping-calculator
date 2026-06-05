@@ -220,7 +220,7 @@ export function LeadFormDialog({
         });
       }
     }
-  }, [open, lead, form]);
+  }, [open, lead]); // eslint-disable-line react-hooks/exhaustive-deps
   
   /**
    * Handle form submission
