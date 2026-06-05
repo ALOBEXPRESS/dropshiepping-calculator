@@ -177,11 +177,17 @@ export function NFeUploadModal({ open, onClose, onSuccess }: NFeUploadModalProps
           const { data: bySku } = await supabase.from('products').select('id, cost_price, image_url').eq('organization_id', organizationId).eq('sku', item.sku).limit(1);
           if (bySku?.[0]) { itemProductIds[i] = { productId: bySku[0].id, costPrice: bySku[0].cost_price ?? 0, imageUrl: bySku[0].image_url ?? null }; continue; }
         }
-        // 2. Fuzzy name match in products (first 3 meaningful words, stripped)
+        // 2. Fuzzy name match in products — prefer matching marketplace + account_holder (CNPJ)
         const words = stripAccents(item.descricao).split(/\s+/).slice(0, 3).join(' ');
-        const { data: byName } = await supabase.from('products').select('id, cost_price, image_url').eq('organization_id', organizationId).ilike('name', `%${words.split(' ')[0]}%`).limit(5);
-        // Pick best match by checking more words
+        const { data: byName } = await supabase.from('products').select('id, cost_price, image_url, marketplace, account_type').eq('organization_id', organizationId).ilike('name', `%${words.split(' ')[0]}%`).limit(10);
+        // Prefer product that matches marketplace name and account_type=cnpj
         const best = byName?.find(p => {
+          const pNameStripped = stripAccents((p as unknown as { name?: string }).name ?? '');
+          const matchesName = pNameStripped.includes(words.split(' ')[1] ?? words.split(' ')[0]);
+          const matchesMarketplace = (p as { marketplace?: string }).marketplace?.toLowerCase().includes(marketplaceName.toLowerCase().split(' ')[0] ?? '');
+          const matchesCnpj = (p as { account_type?: string }).account_type === 'cnpj';
+          return matchesName && matchesMarketplace && matchesCnpj;
+        }) ?? byName?.find(p => {
           const pNameStripped = stripAccents((p as unknown as { name?: string }).name ?? '');
           return pNameStripped.includes(words.split(' ')[1] ?? words.split(' ')[0]);
         }) ?? byName?.[0];
@@ -193,6 +199,39 @@ export function NFeUploadModal({ open, onClose, onSuccess }: NFeUploadModalProps
         itemProductIds[i] = { productId: null, costPrice: 0, imageUrl: null };
       }
 
+      // Upsert lead from NF dest data — find by CPF/CNPJ or create new
+      let leadId: string | null = null;
+      const destDoc = nfe.contactCpf ?? nfe.contactCnpj ?? null;
+      if (destDoc) {
+        // Try find existing lead by document
+        const { data: existingLead } = await supabase
+          .from('leads')
+          .select('id')
+          .eq('organization_id', organizationId)
+          .eq('document_number', destDoc.replace(/\D/g, ''))
+          .limit(1);
+        if (existingLead?.[0]) {
+          leadId = existingLead[0].id;
+        } else {
+          // Create new lead from NF dest
+          const scMarketplaceId = scRows?.[0]?.marketplace_id ?? null;
+          const { data: newLead } = await supabase.from('leads').insert({
+            organization_id: organizationId,
+            name: nfe.contactName,
+            document_type: nfe.contactCpf ? 'CPF' : 'CNPJ',
+            document_number: destDoc.replace(/\D/g, ''),
+            address_street: nfe.labelStreet,
+            address_city: nfe.labelCity,
+            address_state: nfe.labelState,
+            address_zip: nfe.labelZip,
+            marketplace_id: scMarketplaceId,
+            lead_status: 'new',
+            lead_source: marketplaceName,
+          }).select('id').single();
+          leadId = newLead?.id ?? null;
+        }
+      }
+
       const { data: orderRow, error: insertError } = await supabase.from('bling_orders').insert({
         organization_id: organizationId,
         bling_order_id: syntheticBlingId,
@@ -200,6 +239,7 @@ export function NFeUploadModal({ open, onClose, onSuccess }: NFeUploadModalProps
         marketplace_order_number: `NF-${nfe.nNF}`,
         sales_channel_id: salesChannelId,
         bling_store_id: blingStoreId,
+        lead_id: leadId,
         order_date: nfe.dhEmi,
         total_products: nfe.totalProdutos,
         total_amount: nfe.vLiq,
