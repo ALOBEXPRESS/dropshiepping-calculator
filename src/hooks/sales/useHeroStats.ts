@@ -16,10 +16,14 @@ interface OrderWithProducts {
   order_id: string;
   customer_id: string;
   total_amount: number;
+  total_products: number;
+  discount_value: number;
   marketplace: string;
   shipping_cost: number;
   other_expenses: number;
   marketplace_commission: number;
+  commission_rate: number;
+  fixed_fee: number;
   is_free_sample: boolean;
   order_date: string;
   products: {
@@ -32,87 +36,65 @@ interface OrderWithProducts {
   }[];
 }
 
-// Função para calcular taxas da Shopee baseado no preço
-const getShopeeRates = (price: number): { commission: number; fixed: number } => {
-  if (price <= 79.99) return { commission: 20, fixed: 4 };
-  if (price <= 99.99) return { commission: 14, fixed: 16 };
-  if (price <= 199.99) return { commission: 14, fixed: 20 };
-  if (price <= 499.99) return { commission: 14, fixed: 26 };
-  return { commission: 14, fixed: 26 };
-};
+// Função removida — taxas Shopee agora vêm do marketplace join
 
-// Função para calcular o lucro real de um pedido
+// Função para calcular o lucro real de um pedido — espelha computeOrderRealProfit do chart
 const calculateOrderProfit = (order: OrderWithProducts): number => {
   const totalAmount = Number(order.total_amount ?? 0);
   const isFreeSample = order.is_free_sample === true;
-  
-  // Calcular custo base dos produtos
+  const isTikTok = (order.marketplace ?? '').toLowerCase().includes('tiktok');
+
   const totalBaseCost = order.products.reduce((sum, p) => {
-    const qty = Number(p.quantity ?? 1);
-    const unitCost = Number(p.unit_cost ?? 0);
-    return sum + unitCost * qty;
+    return sum + Number(p.unit_cost ?? 0) * Number(p.quantity ?? 1);
   }, 0);
-  
-  // Calcular taxas do fornecedor
+
   const supFeeProduct = order.products.reduce((best, p) => {
     const v = Number(p.supplier_fee_value ?? 0);
     return v > Number(best?.supplier_fee_value ?? 0) ? p : best;
   }, order.products[0]);
-  
-  const gwFeeProduct = order.products.reduce((best, p) => {
-    const v = Number(p.supplier_gateway_fee_value ?? 0);
-    return v > Number(best?.supplier_gateway_fee_value ?? 0) ? p : best;
-  }, order.products[0]);
-  
+
   const supFeeVal = Number(supFeeProduct?.supplier_fee_value ?? 0);
   const supFeeType = supFeeProduct?.supplier_fee_type ?? 'percent';
-  const gwFeeVal = Number(gwFeeProduct?.supplier_gateway_fee_value ?? 0);
-  const gwFeeType = gwFeeProduct?.supplier_gateway_fee_type ?? 'fixed';
-  
-  const orderSupplierFee = supFeeVal > 0
-    ? supFeeType === 'percent' ? (totalBaseCost * supFeeVal) / 100 : supFeeVal
+  const productGatewayFee = Number(supFeeProduct?.supplier_gateway_fee_value ?? 2);
+
+  const isDogama = isTikTok || supFeeVal > 0;
+  const DEFAULT_SUPPLIER_FEE_PERCENT = 6;
+  const effectiveSupFeePercent = isDogama
+    ? (supFeeType === 'percent' && supFeeVal > 0 ? supFeeVal : DEFAULT_SUPPLIER_FEE_PERCENT)
     : 0;
-  const orderGatewayFee = gwFeeVal > 0
-    ? gwFeeType === 'fixed' ? gwFeeVal : (totalBaseCost * gwFeeVal) / 100
-    : 0;
-  
-  const totalProductCost = totalBaseCost + orderSupplierFee + orderGatewayFee;
-  
-  // Calcular taxas do marketplace
-  let commissionRate = 0;
-  let fixedFee = 0;
-  
-  // Se for Shopee, calcular taxas baseadas no preço de venda
-  if (order.marketplace?.toLowerCase() === 'shopee') {
-    const shopeeRates = getShopeeRates(totalAmount);
-    commissionRate = shopeeRates.commission;
-    fixedFee = shopeeRates.fixed;
-  } else {
-    // Para outros marketplaces, usar a comissão já calculada
-    commissionRate = 0;
-    fixedFee = 0;
-  }
-  
+  const orderSupplierFee = isDogama ? (totalBaseCost * effectiveSupFeePercent) / 100 : 0;
+  const orderGatewayFee = isDogama ? productGatewayFee : 0;
+  const totalProductCost = Math.round((totalBaseCost + orderSupplierFee + orderGatewayFee) * 100) / 100;
+
+  // Preços de venda — TikTok usa total_products como bruto
+  const totalProductsValue = Number(order.total_products ?? totalAmount);
+  const activeDiscount = Number(order.discount_value ?? 0);
+  const precoVendaBruto = isTikTok ? (totalProductsValue > 0 ? totalProductsValue : totalAmount) : totalAmount;
+  const precoVendaPagoCliente = isTikTok ? precoVendaBruto - activeDiscount : totalAmount;
+
+  // Marketplace fees
+  const commissionRate = Number(order.commission_rate ?? 0);
+  const fixedFee = Number(order.fixed_fee ?? 0);
+  const commissionBase = precoVendaBruto;
   const commissionPercent = isFreeSample ? 0 : (commissionRate > 0
-    ? (totalAmount * commissionRate) / 100
-    : Math.max(0, order.marketplace_commission));
-  
-  // TikTok SFP não está mais na tabela, então removemos
-  const sfpFee = 0;
-  
-  const subtotalMarketplace = isFreeSample ? 0 : (
-    commissionPercent + 
-    fixedFee + 
-    sfpFee + 
-    Number(order.shipping_cost ?? 0) + 
-    Number(order.other_expenses ?? 0)
-  );
-  
-  const realProfit = isFreeSample 
-    ? -totalProductCost 
-    : (totalAmount - totalProductCost - subtotalMarketplace);
-  
-  return realProfit;
+    ? (commissionBase * commissionRate) / 100
+    : Math.max(0, Number(order.marketplace_commission ?? 0) - fixedFee));
+
+  const sfpEnabled = !isFreeSample && isTikTok;
+  const sfpFee = sfpEnabled ? precoVendaBruto * 0.06 : 0;
+  const rawShipping = Number(order.shipping_cost ?? 0);
+  const shipping = sfpEnabled ? 0 : rawShipping;
+  const other = Number(order.other_expenses ?? 0);
+
+  const subtotalMarketplace = isFreeSample ? 0 : (commissionPercent + fixedFee + sfpFee + shipping + other);
+
+  const tiktokReembolso = isTikTok ? activeDiscount : 0;
+  const precoVendaLiquidoFinal = isTikTok
+    ? precoVendaPagoCliente + tiktokReembolso - subtotalMarketplace
+    : precoVendaPagoCliente - subtotalMarketplace - activeDiscount;
+
+  const realProfit = isFreeSample ? -totalProductCost : (precoVendaLiquidoFinal - totalProductCost);
+  return Math.round(realProfit * 100) / 100;
 };
 
 // Função para obter range de datas baseado no período
@@ -209,12 +191,14 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
             id,
             customer_id,
             total_amount,
+            discount_value,
             marketplace_id,
             shipping_cost,
             other_expenses,
             marketplace_commission,
             is_free_sample,
-            order_date
+            order_date,
+            bling_orders(total_products)
           `)
           .eq('organization_id', organizationId)
           .gte('order_date', dateRange.current.start)
@@ -227,14 +211,18 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
         const marketplaceIds = [...new Set((currentOrders || []).map(o => o.marketplace_id).filter(Boolean))];
         const { data: marketplaces, error: marketplacesError } = await supabase
           .from('marketplaces')
-          .select('id, name')
+          .select('id, name, commission_rate, fixed_fee')
           .in('id', marketplaceIds);
 
         if (marketplacesError) throw marketplacesError;
 
-        // Criar um map de marketplace_id -> name
+        // Criar maps de marketplace_id -> name/rates
         const marketplaceMap = (marketplaces || []).reduce((acc: Record<string, string>, m: { id: string; name: string }) => {
           acc[m.id] = m.name;
+          return acc;
+        }, {});
+        const marketplaceRatesMap = (marketplaces || []).reduce((acc: Record<string, { commission_rate: number; fixed_fee: number }>, m: { id: string; commission_rate: number; fixed_fee: number }) => {
+          acc[m.id] = { commission_rate: Number(m.commission_rate ?? 0), fixed_fee: Number(m.fixed_fee ?? 0) };
           return acc;
         }, {});
 
@@ -277,10 +265,18 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
           .filter(order => itemsByOrder[order.id]?.length > 0)
           .map(order => {
             const marketplaceName = order.marketplace_id ? marketplaceMap[order.marketplace_id] || '' : '';
+            const rates = order.marketplace_id ? marketplaceRatesMap[order.marketplace_id] ?? { commission_rate: 0, fixed_fee: 0 } : { commission_rate: 0, fixed_fee: 0 };
+            const blingOrder = Array.isArray((order as unknown as { bling_orders?: { total_products?: number }[] }).bling_orders)
+              ? (order as unknown as { bling_orders: { total_products?: number }[] }).bling_orders[0]
+              : null;
             return {
               ...order,
               order_id: order.id,
               marketplace: marketplaceName,
+              commission_rate: rates.commission_rate,
+              fixed_fee: rates.fixed_fee,
+              total_products: Number(blingOrder?.total_products ?? order.total_amount ?? 0),
+              discount_value: Number((order as unknown as { discount_value?: number }).discount_value ?? 0),
               products: itemsByOrder[order.id] || []
             };
           }) as OrderWithProducts[];
@@ -353,10 +349,15 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
               .filter(order => previousItemsByOrder[order.id]?.length > 0)
               .map(order => {
                 const marketplaceName = order.marketplace_id ? marketplaceMap[order.marketplace_id] || '' : '';
+                const rates = order.marketplace_id ? marketplaceRatesMap[order.marketplace_id] ?? { commission_rate: 0, fixed_fee: 0 } : { commission_rate: 0, fixed_fee: 0 };
                 return {
                   ...order,
                   order_id: order.id,
                   marketplace: marketplaceName,
+                  commission_rate: rates.commission_rate,
+                  fixed_fee: rates.fixed_fee,
+                  total_products: Number(order.total_amount ?? 0),
+                  discount_value: Number((order as unknown as { discount_value?: number }).discount_value ?? 0),
                   products: previousItemsByOrder[order.id] || []
                 };
               }) as OrderWithProducts[];
