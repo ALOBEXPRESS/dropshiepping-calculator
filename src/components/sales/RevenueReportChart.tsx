@@ -1602,9 +1602,18 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recalculatedData.length, period]);
 
+  // Lucro acumulado até cada período (running total across ALL data, não só visível)
+  const cumulativeProfits = recalculatedData.reduce<number[]>((acc, item) => {
+    const prev = acc.length > 0 ? acc[acc.length - 1] : 0;
+    acc.push(Math.round((prev + Number(item.total_profit ?? 0)) * 100) / 100);
+    return acc;
+  }, []);
+
   const totalRevenue = visibleData.reduce((sum, item) => sum + Number(item.total_revenue), 0);
   const totalCost = visibleData.reduce((sum, item) => sum + Number(item.total_cost), 0);
-  const totalProfit = visibleData.reduce((sum, item) => sum + Number(item.total_profit), 0);
+  // Lucro = último valor acumulado da janela visível (running total até o período mais recente exibido)
+  const lastVisibleIdx = windowOffset + visibleData.length - 1;
+  const totalProfit = cumulativeProfits[lastVisibleIdx] ?? 0;
 
 
   const chartOptions: ApexOptions = {
@@ -1886,13 +1895,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       },
     },
   };
-
-  // Lucro acumulado até cada período (running total across ALL data, não só visível)
-  const cumulativeProfits = recalculatedData.reduce<number[]>((acc, item) => {
-    const prev = acc.length > 0 ? acc[acc.length - 1] : 0;
-    acc.push(Math.round((prev + Number(item.total_profit ?? 0)) * 100) / 100);
-    return acc;
-  }, []);
 
   const chartSeries = [
     {
