@@ -125,29 +125,34 @@ export function NFeUploadModal({ open, onClose, onSuccess }: NFeUploadModalProps
         ? (INTERMEDIADOR_MAP[nfe.intermediadorCnpj] ?? 'Manual')
         : 'Manual';
 
-      // Match exact marketplace name first (e.g. "TikTok Shop"), then partial
+      // Direct CNPJ → sales_channel_id hardcoded fallback (most reliable)
+      const CNPJ_TO_SALES_CHANNEL: Record<string, string> = {
+        '27415911000136': '18cc394e-edd5-4a88-b412-f7170acfe9ad', // TikTok Shop
+      };
+      const cnpjDirectMatch = nfe.intermediadorCnpj ? CNPJ_TO_SALES_CHANNEL[nfe.intermediadorCnpj] : null;
+
+      // Match exact marketplace name first, then partial, then CNPJ direct
       let scRows: { id: string; bling_store_id: number; marketplace_id: string | null }[] | null = null;
       if (marketplaceName !== 'Manual') {
         const { data: exact } = await supabase
           .from('sales_channels')
           .select('id, bling_store_id, marketplace_id')
-          .eq('organization_id', organizationId)
           .ilike('name', `%${marketplaceName}%`)
           .limit(1);
         scRows = exact;
         if (!scRows?.length) {
-          const keyword = marketplaceName.split(' ')[0]; // "TikTok", "Shopee"
+          const keyword = marketplaceName.split(' ')[0];
           const { data: partial } = await supabase
             .from('sales_channels')
             .select('id, bling_store_id, marketplace_id')
-            .eq('organization_id', organizationId)
             .ilike('marketplace', `%${keyword}%`)
             .limit(1);
           scRows = partial;
         }
       }
 
-      const salesChannelId = scRows?.[0]?.id ?? null;
+      // Use direct CNPJ match as ultimate fallback
+      const salesChannelId = scRows?.[0]?.id ?? cnpjDirectMatch ?? null;
       const blingStoreId = scRows?.[0]?.bling_store_id ?? 0;
 
       // Use chNFe hash as synthetic bling_order_id (negative to avoid collision)
