@@ -1609,11 +1609,15 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     return acc;
   }, []);
 
+  const useAccumulated = period === 'monthly' || period === 'weekly' || period === 'daily';
+
   const totalRevenue = visibleData.reduce((sum, item) => sum + Number(item.total_revenue), 0);
   const totalCost = visibleData.reduce((sum, item) => sum + Number(item.total_cost), 0);
-  // Lucro = último valor acumulado da janela visível (running total até o período mais recente exibido)
+  // Anual: soma simples do período visível. Mensal/semanal/diário: último acumulado da janela
   const lastVisibleIdx = windowOffset + visibleData.length - 1;
-  const totalProfit = cumulativeProfits[lastVisibleIdx] ?? 0;
+  const totalProfit = useAccumulated
+    ? (cumulativeProfits[lastVisibleIdx] ?? 0)
+    : visibleData.reduce((sum, item) => sum + Number(item.total_profit ?? 0), 0);
 
 
   const chartOptions: ApexOptions = {
@@ -1898,10 +1902,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
   const chartSeries = [
     {
-      name: 'Lucro Acumulado',
-      data: visibleData.map((_, idx) => {
-        // Lucro acumulado até este período (inclui todos períodos anteriores)
-        return cumulativeProfits[windowOffset + idx] ?? 0;
+      name: useAccumulated ? 'Lucro Acumulado' : 'Lucro',
+      data: visibleData.map((item, idx) => {
+        if (useAccumulated) {
+          return cumulativeProfits[windowOffset + idx] ?? 0;
+        }
+        return Number(item.total_profit ?? 0);
       }),
     },
   ];
