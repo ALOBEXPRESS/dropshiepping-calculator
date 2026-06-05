@@ -1689,7 +1689,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       intersect: false,
       shared: false,
       fixed: {
-        enabled: false,
+        enabled: true,
+        position: 'topRight',
+        offsetX: -10,
+        offsetY: 10,
       },
       custom: ({ dataPointIndex }: { dataPointIndex: number }) => {
         const currentData = dataRef.current;
