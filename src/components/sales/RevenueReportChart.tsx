@@ -100,6 +100,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     manualAcrescimo: string;
     tiktokReembolsoEnabled: boolean;
     manualSupplierFeePercent: string;
+    manualGatewayFee: string;
+    manualCostOverrides: Record<number, string>; // index → cost override per item
   };
   const orderModalStateRef = useRef<Record<string, OrderModalState>>({});
 
@@ -325,6 +327,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [tiktokReembolsoEnabled, setTiktokReembolsoEnabled] = useState(true);
   // Taxas editáveis do fornecedor no modal
   const [manualSupplierFeePercent, setManualSupplierFeePercent] = useState<string>('');
+  const [manualGatewayFee, setManualGatewayFee] = useState<string>('');
+  const [manualCostOverrides, setManualCostOverrides] = useState<Record<number, string>>({});
   
   const chartRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef(data);
@@ -1436,6 +1440,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             setManualAcrescimo(saved?.manualAcrescimo ?? '');
             setTiktokReembolsoEnabled(saved?.tiktokReembolsoEnabled ?? true);
             setManualSupplierFeePercent(saved?.manualSupplierFeePercent ?? '');
+            setManualGatewayFee(saved?.manualGatewayFee ?? '');
+            setManualCostOverrides(saved?.manualCostOverrides ?? {});
             setDetailDialogOpen(true);
           } catch (err) {
             console.error('Error parsing order data:', err);
@@ -1504,6 +1510,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       setManualAcrescimo('');
       setTiktokReembolsoEnabled(true);
       setManualSupplierFeePercent('');
+      setManualGatewayFee('');
+      setManualCostOverrides({});
       
       // Fechar o tooltip do ApexCharts
       const tooltipEl = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
@@ -1918,6 +1926,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               manualAcrescimo,
               tiktokReembolsoEnabled,
               manualSupplierFeePercent,
+              manualGatewayFee,
+              manualCostOverrides,
             };
           }
           setDetailDialogOpen(open);
@@ -1944,20 +1954,24 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const resolvedMarketplaceName = resolvedMarketplaceConfig?.name
               ?? (hasExplicitMarketplace ? rawMarketplace : 'Sem marketplace');
 
-            // Calcular custos por produto usando os dados de cada item
-            const productItems = products.map(p => {
+            // Calcular custos por produto usando os dados de cada item (com override manual por índice)
+            const productItems = products.map((p, i) => {
               const qty = p.quantity ?? 1;
-              const unitCost = p.unit_cost ?? 0;
+              const unitCostRaw = p.unit_cost ?? 0;
               const unitPrice = p.unit_price ?? 0;
+              // Manual override: user can type new cost per item
+              const overrideRaw = manualCostOverrides[i];
+              const unitCost = overrideRaw !== undefined && overrideRaw !== ''
+                ? (parseFloat(overrideRaw.replace(',', '.')) || 0)
+                : unitCostRaw;
               const baseCost = unitCost * qty;
               const totalPrice = unitPrice * qty;
-              return { name: p.name, sku: p.sku, qty, unitPrice, totalPrice, baseCost };
+              return { name: p.name, sku: p.sku, qty, unitPrice, totalPrice, baseCost, unitCost, unitCostRaw };
             });
 
             const totalBaseCost = productItems.reduce((s, p) => s + p.baseCost, 0);
 
-            // Taxas do fornecedor: derivar do produto que tem taxa configurada (o RPC usa MIN() no nível do pedido, que pega 0)
-            // Buscar o produto com maior taxa percentual
+            // Taxas do fornecedor: derivar do produto que tem taxa configurada
             const supFeeProduct = products.reduce((best, p) => {
               const v = Number(p.supplier_fee_value ?? 0);
               return v > Number(best?.supplier_fee_value ?? 0) ? p : best;
@@ -1965,23 +1979,28 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
             const supFeeVal = Number(supFeeProduct?.supplier_fee_value ?? 0);
             const supFeeType = supFeeProduct?.supplier_fee_type ?? 'percent';
+            // Default gateway fee from product, fallback to R$2
+            const productGatewayFee = Number(supFeeProduct?.supplier_gateway_fee_value ?? 2);
 
             // ── Marketplace flags ─────────────────────────────────────────────────
             const isTikTok = resolvedMarketplaceName.toLowerCase().includes('tiktok');
 
-            // Taxas do fornecedor — Dogama tem taxa % + gateway fixo R$2
-            // Para TikTok: sempre assume Dogama (todos produtos TikTok desta org são Dogama)
-            // Para outros: detecta via supplier_fee_value no produto
+            // Taxas do fornecedor — Dogama tem taxa % + gateway fixo
             const isDogama = isTikTok || supFeeVal > 0 || manualSupplierFeePercent !== '';
             const DEFAULT_SUPPLIER_FEE_PERCENT = 6;
-            const DOGAMA_GATEWAY_FEE = 2;
             const effectiveSupFeePercent = isDogama
               ? (manualSupplierFeePercent !== ''
                   ? parseFloat(manualSupplierFeePercent.replace(',', '.')) || 0
                   : (supFeeType === 'percent' && supFeeVal > 0 ? supFeeVal : DEFAULT_SUPPLIER_FEE_PERCENT))
               : 0;
             const orderSupplierFee = isDogama ? (totalBaseCost * effectiveSupFeePercent) / 100 : 0;
-            const orderGatewayFee = isDogama ? DOGAMA_GATEWAY_FEE : 0;
+            // Gateway fee: manual override if set, else product value, else R$2
+            const effectiveGatewayFee = isDogama
+              ? (manualGatewayFee !== ''
+                  ? (parseFloat(manualGatewayFee.replace(',', '.')) || 0)
+                  : productGatewayFee)
+              : 0;
+            const orderGatewayFee = effectiveGatewayFee;
 
             const totalProductCost = totalBaseCost + orderSupplierFee + orderGatewayFee;
             const isFreeSample = selectedOrder.is_free_sample === true;
@@ -2264,12 +2283,26 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         {/* Itens — apenas custo base por produto */}
                         <div className="divide-y divide-zinc-800/30">
                           {productItems.map((p, i) => (
-                            <div key={i} className="flex items-center justify-between px-4 py-2.5">
-                              <div className="flex-1 min-w-0 text-left mr-3">
+                            <div key={i} className="flex items-center justify-between px-4 py-2.5 gap-2">
+                              <div className="flex-1 min-w-0 text-left">
                                 <p className="text-[11px] text-zinc-300 truncate">{p.name}</p>
                                 {p.sku && <p className="text-[10px] text-zinc-600 font-mono">{p.sku}</p>}
+                                {p.qty > 1 && <p className="text-[10px] text-zinc-500">{p.qty}×</p>}
                               </div>
-                              <span className="text-red-400 text-[12px] font-semibold tabular-nums shrink-0">-{formatCurrency(p.baseCost)}</span>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <input
+                                  type="text"
+                                  inputMode="decimal"
+                                  placeholder={String(p.unitCostRaw)}
+                                  value={manualCostOverrides[i] ?? ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value.replace(/[^0-9,.]/g, '');
+                                    setManualCostOverrides(prev => ({ ...prev, [i]: val }));
+                                  }}
+                                  className="w-16 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 tabular-nums text-right"
+                                />
+                                <span className="text-red-400 text-[12px] font-semibold tabular-nums">-{formatCurrency(p.baseCost)}</span>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -2277,14 +2310,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         {isDogama && (
                           <div className="border-t border-red-950/30 bg-red-950/15 px-4 py-3 space-y-2">
                             <p className="text-[10px] font-semibold text-red-500/70 uppercase tracking-widest mb-2">Taxas do Fornecedor</p>
-                            {/* Taxa % fornecedor — editável, default 6% */}
+                            {/* Taxa % fornecedor — editável, pré-preenche com valor do produto */}
                             <div className="flex items-center justify-between gap-3">
                               <span className="text-xs text-zinc-400 shrink-0">Taxa fornecedor</span>
                               <div className="flex items-center gap-2">
                                 <input
                                   type="text"
                                   inputMode="decimal"
-                                  placeholder="6"
+                                  placeholder={String(effectiveSupFeePercent)}
                                   value={manualSupplierFeePercent}
                                   onChange={(e) => setManualSupplierFeePercent(e.target.value.replace(/[^0-9,.]/g, ''))}
                                   className="w-14 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 tabular-nums text-right"
@@ -2293,10 +2326,20 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                 <span className="text-red-400 text-xs font-semibold tabular-nums">-{formatCurrency(orderSupplierFee)}</span>
                               </div>
                             </div>
-                            {/* Taxa de transação Dogama — R$2 fixo, não editável */}
+                            {/* Taxa de transação Dogama — editável (0 para zerar) */}
                             <div className="flex items-center justify-between gap-3">
                               <span className="text-xs text-zinc-400 shrink-0">Taxa de transação (Dogama)</span>
-                              <span className="text-red-400 text-xs font-semibold tabular-nums">-{formatCurrency(orderGatewayFee)}</span>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  inputMode="decimal"
+                                  placeholder={String(productGatewayFee)}
+                                  value={manualGatewayFee}
+                                  onChange={(e) => setManualGatewayFee(e.target.value.replace(/[^0-9,.]/g, ''))}
+                                  className="w-14 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 tabular-nums text-right"
+                                />
+                                <span className="text-red-400 text-xs font-semibold tabular-nums">-{formatCurrency(orderGatewayFee)}</span>
+                              </div>
                             </div>
                             {/* Subtotal custo produto */}
                             <div className="flex justify-between items-center pt-1.5 border-t border-red-950/20">
