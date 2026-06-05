@@ -7,7 +7,7 @@
  * Requirements: 11.4
  */
 
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 
 interface UseKeyboardNavigationProps {
   itemCount: number;
@@ -38,6 +38,7 @@ export function useKeyboardNavigation({
   enabled = true,
 }: UseKeyboardNavigationProps) {
   const focusedIndexRef = useRef<number>(-1);
+  const [focusedIndex, setFocusedIndex] = useState<number>(-1);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -49,6 +50,7 @@ export function useKeyboardNavigation({
       if (key === 'ArrowDown') {
         event.preventDefault();
         focusedIndexRef.current = Math.min(focusedIndexRef.current + 1, itemCount - 1);
+        setFocusedIndex(focusedIndexRef.current);
         
         // Focus the row
         const row = document.querySelector(`[data-row-index="${focusedIndexRef.current}"]`) as HTMLElement;
@@ -59,6 +61,7 @@ export function useKeyboardNavigation({
       if (key === 'ArrowUp') {
         event.preventDefault();
         focusedIndexRef.current = Math.max(focusedIndexRef.current - 1, 0);
+        setFocusedIndex(focusedIndexRef.current);
         
         // Focus the row
         const row = document.querySelector(`[data-row-index="${focusedIndexRef.current}"]`) as HTMLElement;
@@ -69,6 +72,7 @@ export function useKeyboardNavigation({
       if (key === 'Home') {
         event.preventDefault();
         focusedIndexRef.current = 0;
+        setFocusedIndex(0);
         
         const row = document.querySelector(`[data-row-index="0"]`) as HTMLElement;
         row?.focus();
@@ -78,6 +82,7 @@ export function useKeyboardNavigation({
       if (key === 'End') {
         event.preventDefault();
         focusedIndexRef.current = itemCount - 1;
+        setFocusedIndex(itemCount - 1);
         
         const row = document.querySelector(`[data-row-index="${itemCount - 1}"]`) as HTMLElement;
         row?.focus();
@@ -109,6 +114,6 @@ export function useKeyboardNavigation({
   }, [enabled, handleKeyDown]);
 
   return {
-    focusedIndex: focusedIndexRef.current,
+    focusedIndex,
   };
 }

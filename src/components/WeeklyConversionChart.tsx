@@ -89,12 +89,12 @@ const formatCurrency = (value: number): string => {
  * Custom tooltip component for the bar chart
  * Displays formatted currency values on hover
  */
-const CustomTooltip = ({ active, payload }: any) => {
+const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ color: string; name: string; value: number; payload: { week: string } }> }) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-[#1c1c1c] border border-gray-700 rounded-lg p-3 shadow-lg">
         <p className="text-white font-semibold mb-2">{payload[0].payload.week}</p>
-        {payload.map((entry: any, index: number) => (
+        {payload.map((entry, index: number) => (
           <p key={index} className="text-sm" style={{ color: entry.color }}>
             {entry.name}: {formatCurrency(entry.value)}
           </p>
@@ -121,22 +121,9 @@ const CustomTooltip = ({ active, payload }: any) => {
  * @returns React component
  */
 export const WeeklyConversionChart = React.memo(({ data, mostProfitableDay }: WeeklyConversionChartProps) => {
-  // Handle missing or empty data gracefully
-  if (!data || data.length === 0) {
-    return (
-      <Card className="bg-[#1c1c1c] border-none rounded-2xl shadow-xl h-full flex flex-col">
-        <CardHeader>
-          <CardTitle className="text-white text-xl font-semibold">Conversion</CardTitle>
-        </CardHeader>
-        <CardContent className="flex-1 flex items-center justify-center">
-          <p className="text-[#a3a3a3] text-center">Nenhum dado de conversão disponível</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   // Memoize data sanitization to prevent recalculation on every render
   const sanitizedData = useMemo(() => {
+    if (!data || data.length === 0) return [];
     return data.map(item => ({
       day: item.day || 'N/A',
       fees: item.fees ?? 0,
@@ -158,6 +145,20 @@ export const WeeklyConversionChart = React.memo(({ data, mostProfitableDay }: We
       { fees: 0, revenue: 0, profit: 0 }
     );
   }, [sanitizedData]);
+
+  // Handle missing or empty data gracefully — early return AFTER hooks
+  if (!data || data.length === 0) {
+    return (
+      <Card className="bg-[#1c1c1c] border-none rounded-2xl shadow-xl h-full flex flex-col">
+        <CardHeader>
+          <CardTitle className="text-white text-xl font-semibold">Conversion</CardTitle>
+        </CardHeader>
+        <CardContent className="flex-1 flex items-center justify-center">
+          <p className="text-[#a3a3a3] text-center">Nenhum dado de conversão disponível</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="bg-[#1c1c1c] border-none rounded-2xl shadow-xl h-full flex flex-col">

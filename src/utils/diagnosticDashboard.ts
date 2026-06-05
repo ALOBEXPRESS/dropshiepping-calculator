@@ -187,4 +187,5 @@ export async function runDashboardDiagnostic() {
 }
 
 // Função auxiliar para executar no console do navegador
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).runDashboardDiagnostic = runDashboardDiagnostic;

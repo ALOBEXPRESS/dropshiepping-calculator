@@ -7,6 +7,7 @@
  * Requirements: 11.1, 11.2
  */
 
+import React from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -56,7 +57,6 @@ export function LeadMobileCard({
   onEdit,
   onDelete,
 }: LeadMobileCardProps) {
-  const StatusIcon = getStatusIcon(lead.lead_status || 'new');
 
   return (
     <Card
@@ -97,7 +97,7 @@ export function LeadMobileCard({
               className={`${getStatusColor(lead.lead_status)} shrink-0`}
               aria-label={`Status: ${getStatusLabel(lead.lead_status)}`}
             >
-              <StatusIcon className="h-3 w-3 mr-1" aria-hidden="true" />
+              {React.createElement(getStatusIcon(lead.lead_status || 'new'), { className: "h-3 w-3 mr-1", "aria-hidden": "true" })}
               <span className="text-xs">{getStatusLabel(lead.lead_status)}</span>
             </Badge>
           )}

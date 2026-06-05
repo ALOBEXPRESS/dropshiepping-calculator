@@ -63,22 +63,10 @@ const calculateBubbleRadius = (count: number, maxCount: number): number => {
  * Performance optimized with memoization.
  */
 export const LeadStatusChart = React.memo<LeadStatusChartProps>(({ data, recentSignups }) => {
-  // Handle missing or empty data gracefully
-  if (!data || data.length === 0) {
-    return (
-      <Card className="bg-[#1c1c1c] rounded-2xl border-none shadow-xl h-full flex flex-col">
-        <CardHeader>
-          <CardTitle className="text-white text-xl font-semibold">Leads</CardTitle>
-        </CardHeader>
-        <CardContent className="flex-1 flex items-center justify-center">
-          <p className="text-[#a3a3a3] text-center">Nenhum dado de status de leads disponível</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
+  // All hooks must be called unconditionally before any early returns
   // Memoize data sanitization to prevent recalculation on every render
   const sanitizedData = useMemo(() => {
+    if (!data || data.length === 0) return [];
     return data.map(item => ({
       status: item.status || 'unknown',
       label: item.label || item.status || 'unknown',
@@ -94,12 +82,6 @@ export const LeadStatusChart = React.memo<LeadStatusChartProps>(({ data, recentS
   }, [sanitizedData]);
 
   // Memoize bubble data transformation with calculated radii
-  // This prevents recalculating bubble positions and sizes on every render
-  // Bubble positioning: Horizontal spacing creates overlapping effect
-  // - First bubble (Completed): x=150 (left side)
-  // - Second bubble (Ongoing): x=250 (center, overlaps with first)
-  // - Third bubble (Awaiting): x=350 (right side, overlaps with second)
-  // All bubbles centered vertically at y=150
   const bubbleData = useMemo(() => {
     return sanitizedData.map((item, index) => ({
       x: index === 0 ? 150 : index === 1 ? 250 : 350, // Horizontal positioning for overlap
@@ -111,6 +93,20 @@ export const LeadStatusChart = React.memo<LeadStatusChartProps>(({ data, recentS
       percentage: item.percentage,
     }));
   }, [sanitizedData, maxCount]);
+
+  // Early return AFTER hooks
+  if (!data || data.length === 0) {
+    return (
+      <Card className="bg-[#1c1c1c] rounded-2xl border-none shadow-xl h-full flex flex-col">
+        <CardHeader>
+          <CardTitle className="text-white text-xl font-semibold">Leads</CardTitle>
+        </CardHeader>
+        <CardContent className="flex-1 flex items-center justify-center">
+          <p className="text-[#a3a3a3] text-center">Nenhum dado de status de leads disponível</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="bg-[#1c1c1c] rounded-2xl border-none shadow-xl h-full flex flex-col">

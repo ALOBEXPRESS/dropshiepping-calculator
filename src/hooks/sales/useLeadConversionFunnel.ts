@@ -117,7 +117,7 @@ export const useLeadConversionFunnel = (
             const createdInPeriod = new Date(lead.created_at) >= startDate;
             
             // OU se teve algum pedido processado no período
-            const hasOrderInPeriod = Array.isArray(lead.orders) && lead.orders.some((order: any) => {
+            const hasOrderInPeriod = Array.isArray(lead.orders) && lead.orders.some((order: { order_date?: string }) => {
               if (!order.order_date) return false;
               return new Date(order.order_date) >= startDate;
             });

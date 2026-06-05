@@ -62,7 +62,7 @@ function formatDateForCSV(dateString: string | null | undefined): string {
   try {
     const date = new Date(dateString);
     return format(date, 'dd/MM/yyyy HH:mm:ss', { locale: ptBR });
-  } catch (error) {
+  } catch (_error) {
     return '';
   }
 }
@@ -215,13 +215,14 @@ export function leadsToCSV(
         case 'last_order_date':
           return escapeCSVField(formatDateForCSV(lead[col.key as keyof Lead] as string));
         
-        default:
+        default: {
           const value = lead[col.key as keyof Lead];
           // Handle boolean values
           if (typeof value === 'boolean') {
             return escapeCSVField(value ? 'Sim' : 'Não');
           }
           return escapeCSVField(value);
+        }
       }
     }).join(opts.delimiter);
 

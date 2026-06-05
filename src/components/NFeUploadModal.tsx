@@ -97,6 +97,22 @@ const INTERMEDIADOR_MAP: Record<string, string> = {
   '03007331000104': 'Mercado Livre',
 };
 
+// Direct CNPJ → sales_channel_id + marketplace_id (most reliable, no DB query needed)
+const CNPJ_TO_CHANNEL_INFO: Record<string, { salesChannelId: string; marketplaceId: string }> = {
+  '27415911000136': {
+    salesChannelId: '18cc394e-edd5-4a88-b412-f7170acfe9ad', // TikTok Shop
+    marketplaceId: 'c736e8ae-b765-44b6-b23f-468639bd8c13',  // TikTok marketplace
+  },
+  '20956256000178': {
+    salesChannelId: '35bad7f8-3237-440d-ad73-11b4d1353495', // Shopee
+    marketplaceId: '91cbf5ca-edd3-469a-b723-d8bb240d641a',  // Shopee marketplace
+  },
+  '03007331000104': {
+    salesChannelId: 'e1c613fc-edf8-400b-a0d1-0452835f0231', // MercadoLivre
+    marketplaceId: 'a60c0efb-be3d-41f4-b730-0f3891e59200',  // Mercado Livre marketplace
+  },
+};
+
 export function NFeUploadModal({ open, onClose, onSuccess }: NFeUploadModalProps) {
   const { organizationId } = useSettings();
   const [dragging, setDragging] = useState(false);
@@ -120,40 +136,30 @@ export function NFeUploadModal({ open, onClose, onSuccess }: NFeUploadModalProps
       setParsed(nfe);
       setStatus('saving');
 
-      // Find sales_channel by marketplace name derived from intermediador
+      // Resolve marketplace name from intermediador CNPJ
       const marketplaceName = nfe.intermediadorCnpj
         ? (INTERMEDIADOR_MAP[nfe.intermediadorCnpj] ?? 'Manual')
         : 'Manual';
 
-      // Direct CNPJ → sales_channel_id hardcoded fallback (most reliable)
-      const CNPJ_TO_SALES_CHANNEL: Record<string, string> = {
-        '27415911000136': '18cc394e-edd5-4a88-b412-f7170acfe9ad', // TikTok Shop
-      };
-      const cnpjDirectMatch = nfe.intermediadorCnpj ? CNPJ_TO_SALES_CHANNEL[nfe.intermediadorCnpj] : null;
+      // Use hardcoded CNPJ map as primary source (most reliable, avoids bad column queries)
+      const cnpjInfo = nfe.intermediadorCnpj ? CNPJ_TO_CHANNEL_INFO[nfe.intermediadorCnpj] : null;
+      let salesChannelId: string | null = cnpjInfo?.salesChannelId ?? null;
+      let resolvedMarketplaceId: string | null = cnpjInfo?.marketplaceId ?? null;
+      let blingStoreId = 0;
 
-      // Match exact marketplace name first, then partial, then CNPJ direct
-      let scRows: { id: string; bling_store_id: number; marketplace_id: string | null }[] | null = null;
-      if (marketplaceName !== 'Manual') {
-        const { data: exact } = await supabase
+      // If no hardcoded match, query DB by name
+      if (!salesChannelId && marketplaceName !== 'Manual') {
+        const { data: scRows } = await supabase
           .from('sales_channels')
           .select('id, bling_store_id, marketplace_id')
           .ilike('name', `%${marketplaceName}%`)
           .limit(1);
-        scRows = exact;
-        if (!scRows?.length) {
-          const keyword = marketplaceName.split(' ')[0];
-          const { data: partial } = await supabase
-            .from('sales_channels')
-            .select('id, bling_store_id, marketplace_id')
-            .ilike('marketplace', `%${keyword}%`)
-            .limit(1);
-          scRows = partial;
+        if (scRows?.[0]) {
+          salesChannelId = scRows[0].id;
+          resolvedMarketplaceId = scRows[0].marketplace_id ?? null;
+          blingStoreId = scRows[0].bling_store_id ?? 0;
         }
       }
-
-      // Use direct CNPJ match as ultimate fallback
-      const salesChannelId = scRows?.[0]?.id ?? cnpjDirectMatch ?? null;
-      const blingStoreId = scRows?.[0]?.bling_store_id ?? 0;
 
       // Use chNFe hash as synthetic bling_order_id (negative to avoid collision)
       const syntheticBlingId = -Math.abs(parseInt(nfe.chNFe.slice(-8), 16) % 2147483647);
@@ -208,28 +214,32 @@ export function NFeUploadModal({ open, onClose, onSuccess }: NFeUploadModalProps
       let leadId: string | null = null;
       const destDoc = nfe.contactCpf ?? nfe.contactCnpj ?? null;
       if (destDoc) {
+        const cleanDoc = destDoc.replace(/\D/g, '');
         // Try find existing lead by document
         const { data: existingLead } = await supabase
           .from('leads')
           .select('id')
           .eq('organization_id', organizationId)
-          .eq('document_number', destDoc.replace(/\D/g, ''))
+          .eq('document_number', cleanDoc)
           .limit(1);
         if (existingLead?.[0]) {
           leadId = existingLead[0].id;
+          // Update marketplace_id if currently null
+          if (resolvedMarketplaceId) {
+            await supabase.from('leads').update({ marketplace_id: resolvedMarketplaceId }).eq('id', leadId);
+          }
         } else {
-          // Create new lead from NF dest
-          const scMarketplaceId = scRows?.[0]?.marketplace_id ?? null;
+          // Create new lead from NF dest with correct marketplace_id
           const { data: newLead } = await supabase.from('leads').insert({
             organization_id: organizationId,
             name: nfe.contactName,
             document_type: nfe.contactCpf ? 'CPF' : 'CNPJ',
-            document_number: destDoc.replace(/\D/g, ''),
+            document_number: cleanDoc,
             address_street: nfe.labelStreet,
             address_city: nfe.labelCity,
             address_state: nfe.labelState,
             address_zip: nfe.labelZip,
-            marketplace_id: scMarketplaceId,
+            marketplace_id: resolvedMarketplaceId,
             lead_status: 'new',
             lead_source: marketplaceName,
           }).select('id').single();
