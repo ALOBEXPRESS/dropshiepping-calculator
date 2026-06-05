@@ -132,6 +132,9 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
     if (!silent) setLoading(true);
     setError(null);
     try {
+      // Re-match unlinked items to products (handles case where product was registered after NF import)
+      await supabase.rpc('rematch_bling_order_items_products', { p_organization_id: organizationId });
+
       const { data, error: fetchError } = await supabase
         .from('pending_orders_to_process')
         .select('*')
