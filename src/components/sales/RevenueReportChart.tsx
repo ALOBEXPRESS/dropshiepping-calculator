@@ -244,16 +244,16 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
     const supFeeVal = Number(supFeeProduct?.supplier_fee_value ?? 0);
     const supFeeType = supFeeProduct?.supplier_fee_type ?? 'percent';
+    const productGatewayFee = Number(supFeeProduct?.supplier_gateway_fee_value ?? 2);
 
     // Dogama: TikTok always, or product has supplier_fee_value
     const isDogama = isTikTok || supFeeVal > 0;
     const DEFAULT_SUPPLIER_FEE_PERCENT = 6;
-    const DOGAMA_GATEWAY_FEE = 2;
     const effectiveSupFeePercent = isDogama
       ? (supFeeType === 'percent' && supFeeVal > 0 ? supFeeVal : DEFAULT_SUPPLIER_FEE_PERCENT)
       : 0;
     const orderSupplierFee = isDogama ? (totalBaseCost * effectiveSupFeePercent) / 100 : 0;
-    const orderGatewayFee = isDogama ? DOGAMA_GATEWAY_FEE : 0;
+    const orderGatewayFee = isDogama ? productGatewayFee : 0;
 
     const totalProductCost = totalBaseCost + orderSupplierFee + orderGatewayFee;
 
@@ -288,7 +288,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         ? (commissionBase * commissionRate) / 100
         : Math.max(0, Number(o.marketplace_commission ?? 0) - fixedFee));
 
-    const shipping = Number(o.shipping_cost ?? 0);
+    // TikTok+SFP: frete incluso na taxa SFP → não cobrar shipping separado
+    const rawShipping = Number(o.shipping_cost ?? 0);
+    const shipping = sfpEnabled ? 0 : rawShipping;
     const other = Number(o.other_expenses ?? 0);
     const subtotalMarketplace = isFreeSample
       ? 0
@@ -1576,8 +1578,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     });
   }, [data, orderEnrichmentById, affiliateByOrderId, computeOrderRealProfit]);
 
-  // Window size per period
-  const windowSize = period === 'daily' ? 14 : period === 'weekly' ? 12 : period === 'monthly' ? 6 : 5;
+  // Window size per period — mensal: 2 (mês atual + anterior), outros mantêm janela maior
+  const windowSize = period === 'daily' ? 14 : period === 'weekly' ? 12 : period === 'monthly' ? 2 : 5;
   const maxOffset = Math.max(0, recalculatedData.length - windowSize);
   const visibleData = recalculatedData.slice(windowOffset, windowOffset + windowSize);
 
