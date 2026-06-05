@@ -2791,7 +2791,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             <button
               onClick={() => setWindowOffset(o => Math.max(0, o - 1))}
               disabled={windowOffset === 0}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-16 flex items-center justify-center bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700/60 rounded-r-lg text-zinc-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all"
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-30 w-8 h-16 flex items-center justify-center bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700/60 rounded-r-lg text-zinc-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all"
               title="Anterior"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -2804,7 +2804,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             <button
               onClick={() => setWindowOffset(o => Math.min(maxOffset, o + 1))}
               disabled={windowOffset >= maxOffset}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-16 flex items-center justify-center bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700/60 rounded-l-lg text-zinc-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all"
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-30 w-8 h-16 flex items-center justify-center bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700/60 rounded-l-lg text-zinc-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all"
               title="Próximo"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

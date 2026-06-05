@@ -192,13 +192,13 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
             customer_id,
             total_amount,
             discount_value,
+            bling_order_id,
             marketplace_id,
             shipping_cost,
             other_expenses,
             marketplace_commission,
             is_free_sample,
-            order_date,
-            bling_orders(total_products)
+            order_date
           `)
           .eq('organization_id', organizationId)
           .gte('order_date', dateRange.current.start)
@@ -206,6 +206,19 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
           .not('order_date', 'is', null);
 
         if (currentOrdersError) throw currentOrdersError;
+
+        // Buscar total_products dos bling_orders correspondentes
+        const blingOrderIds = (currentOrders || []).map(o => (o as unknown as { bling_order_id?: string }).bling_order_id).filter(Boolean) as string[];
+        const blingOrdersTotalProducts: Record<string, number> = {};
+        if (blingOrderIds.length > 0) {
+          const { data: blingOrdersData } = await supabase
+            .from('bling_orders')
+            .select('id, total_products')
+            .in('id', blingOrderIds);
+          (blingOrdersData || []).forEach((bo: { id: string; total_products?: number }) => {
+            blingOrdersTotalProducts[bo.id] = Number(bo.total_products ?? 0);
+          });
+        }
 
         // Buscar marketplaces para os pedidos (incluindo marketplaces de sistema)
         const marketplaceIds = [...new Set((currentOrders || []).map(o => o.marketplace_id).filter(Boolean))];
@@ -266,16 +279,15 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
           .map(order => {
             const marketplaceName = order.marketplace_id ? marketplaceMap[order.marketplace_id] || '' : '';
             const rates = order.marketplace_id ? marketplaceRatesMap[order.marketplace_id] ?? { commission_rate: 0, fixed_fee: 0 } : { commission_rate: 0, fixed_fee: 0 };
-            const blingOrder = Array.isArray((order as unknown as { bling_orders?: { total_products?: number }[] }).bling_orders)
-              ? (order as unknown as { bling_orders: { total_products?: number }[] }).bling_orders[0]
-              : null;
+            const blingOrderId = (order as unknown as { bling_order_id?: string }).bling_order_id;
+            const totalProducts = blingOrderId ? (blingOrdersTotalProducts[blingOrderId] ?? Number(order.total_amount ?? 0)) : Number(order.total_amount ?? 0);
             return {
               ...order,
               order_id: order.id,
               marketplace: marketplaceName,
               commission_rate: rates.commission_rate,
               fixed_fee: rates.fixed_fee,
-              total_products: Number(blingOrder?.total_products ?? order.total_amount ?? 0),
+              total_products: totalProducts,
               discount_value: Number((order as unknown as { discount_value?: number }).discount_value ?? 0),
               products: itemsByOrder[order.id] || []
             };
