@@ -1680,13 +1680,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       },
       custom: ({ dataPointIndex }: { dataPointIndex: number }) => {
         const currentData = dataRef.current;
-        if (!currentData[dataPointIndex]) return '';
-        const periodData = currentData[dataPointIndex];
+        const globalDataIdx = ((window as unknown as { __chartWindowOffset?: number }).__chartWindowOffset ?? 0) + dataPointIndex;
+        if (!currentData[globalDataIdx]) return '';
+        const periodData = currentData[globalDataIdx];
         const ordersCount = periodData.orders_data?.length || 0;
 
         // Estado de paginação do tooltip por período (via estado React)
         const stateKey = `tooltip_page_${dataPointIndex}`;
-        const globalDataIdx = ((window as unknown as { __chartWindowOffset?: number }).__chartWindowOffset ?? 0) + dataPointIndex;
         const currentPageUnsafe: number = tooltipPagesRef.current[globalDataIdx] ?? 0;
         const currentPage = ordersCount > 0 ? Math.min(currentPageUnsafe, ordersCount - 1) : 0;
         const order = periodData.orders_data?.[currentPage];
