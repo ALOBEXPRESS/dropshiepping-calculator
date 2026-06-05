@@ -2181,14 +2181,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           </div>
                         )}
 
-                        {/* Preço de venda bruto — valor bruto (precoVendaBruto), badge mostra taxas marketplace deduzidas */}
+                        {/* Preço de venda bruto — pago pelo cliente + taxas marketplace (custo total do canal) */}
                         <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/30 border-t border-zinc-800/40">
                           <div className="flex items-center gap-1.5">
                             <span className="text-[11px] text-zinc-500">Preço de venda bruto</span>
-                            <span className="text-[10px] text-orange-400/80 font-mono tabular-nums">-taxas</span>
+                            <span className="text-[10px] text-orange-400/80 font-mono tabular-nums">+{formatCurrency(subtotalMarketplace)}</span>
                           </div>
                           <span className="text-[12px] text-blue-300 font-bold tabular-nums">
-                            {formatCurrency(precoVendaBruto)}
+                            {formatCurrency(precoVendaPagoCliente + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0) + subtotalMarketplace)}
                           </span>
                         </div>
                       </>
@@ -2202,11 +2202,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           <span className="text-[12px] text-blue-300 font-bold tabular-nums">{formatCurrency(precoVendaPagoCliente)}</span>
                         </div>
 
-                        {/* Preço de venda bruto — valor bruto original, badges mostram deduções */}
+                        {/* Preço de venda bruto — pago pelo cliente + taxas (custo total do canal) */}
                         <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/30 border-t border-zinc-800/40">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="text-[11px] text-zinc-500">Preço de venda bruto</span>
-                            <span className="text-[10px] text-orange-400/80 font-mono tabular-nums">-taxas</span>
+                            <span className="text-[10px] text-orange-400/80 font-mono tabular-nums">+{formatCurrency(subtotalMarketplace)}</span>
                             {activeDiscount > 0 && (
                               <span className="text-[10px] text-yellow-400/90 font-mono tabular-nums">-desc</span>
                             )}
@@ -2215,7 +2215,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             )}
                           </div>
                           <span className="text-[12px] text-blue-300 font-bold tabular-nums">
-                            {formatCurrency(precoVendaBruto)}
+                            {formatCurrency(precoVendaPagoCliente + subtotalMarketplace + acrescimoManual - activeDiscount)}
                           </span>
                         </div>
                       </>
