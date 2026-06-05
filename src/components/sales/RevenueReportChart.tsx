@@ -101,7 +101,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     tiktokReembolsoEnabled: boolean;
     manualSupplierFeePercent: string;
     manualGatewayFee: string;
-    manualCostOverrides: Record<number, string>; // index → cost override per item
+    manualCostOverrides: Record<number, string>;
+    manualShipping: string;
   };
   const orderModalStateRef = useRef<Record<string, OrderModalState>>({});
 
@@ -329,6 +330,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [manualSupplierFeePercent, setManualSupplierFeePercent] = useState<string>('');
   const [manualGatewayFee, setManualGatewayFee] = useState<string>('');
   const [manualCostOverrides, setManualCostOverrides] = useState<Record<number, string>>({});
+  const [manualShipping, setManualShipping] = useState<string>('');
   
   const chartRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef(data);
@@ -1442,6 +1444,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             setManualSupplierFeePercent(saved?.manualSupplierFeePercent ?? '');
             setManualGatewayFee(saved?.manualGatewayFee ?? '');
             setManualCostOverrides(saved?.manualCostOverrides ?? {});
+            setManualShipping(saved?.manualShipping ?? '');
             setDetailDialogOpen(true);
           } catch (err) {
             console.error('Error parsing order data:', err);
@@ -1512,6 +1515,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       setManualSupplierFeePercent('');
       setManualGatewayFee('');
       setManualCostOverrides({});
+      setManualShipping('');
       
       // Fechar o tooltip do ApexCharts
       const tooltipEl = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
@@ -1928,6 +1932,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               manualSupplierFeePercent,
               manualGatewayFee,
               manualCostOverrides,
+              manualShipping,
             };
           }
           setDetailDialogOpen(open);
@@ -2043,7 +2048,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             // SFP 6% — só TikTok
             const sfpEnabled = !isFreeSample && (selectedOrder.tiktok_sfp_enabled === true || isTikTok);
             const sfpFee = sfpEnabled ? precoVendaBruto * 0.06 : 0;
-            const subtotalMarketplace = isFreeSample ? 0 : (commissionPercent + affiliateCommission + fixedFee + sfpFee + selectedOrder.shipping_cost + selectedOrder.other_expenses);
+            // Frete: TikTok com SFP = incluso (default 0); manual override possível
+            const effectiveShipping = manualShipping !== ''
+              ? (parseFloat(manualShipping.replace(',', '.')) || 0)
+              : (sfpEnabled ? 0 : selectedOrder.shipping_cost);
+            const subtotalMarketplace = isFreeSample ? 0 : (commissionPercent + affiliateCommission + fixedFee + sfpFee + effectiveShipping + selectedOrder.other_expenses);
 
             // ── Acréscimo ─────────────────────────────────────────────────────────
             const acrescimoManual = parseFloat(manualAcrescimo.replace(',', '.')) || 0;
@@ -2424,12 +2433,26 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             <span className="text-orange-400 font-medium tabular-nums">-{formatCurrency(sfpFee)}</span>
                           </div>
                         )}
-                        {selectedOrder.shipping_cost > 0 && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-zinc-400">Frete</span>
-                            <span className="text-orange-400 font-medium tabular-nums">-{formatCurrency(selectedOrder.shipping_cost)}</span>
+                        {/* Frete — editável; TikTok+SFP default 0 (incluso na taxa SFP) */}
+                        <div className="flex justify-between text-sm items-center gap-2">
+                          <span className="text-zinc-400 shrink-0">Frete</span>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              placeholder={sfpEnabled ? '0' : String(selectedOrder.shipping_cost)}
+                              value={manualShipping}
+                              onChange={(e) => setManualShipping(e.target.value.replace(/[^0-9,.]/g, ''))}
+                              className="w-16 bg-zinc-800/60 border border-zinc-700 rounded px-2 py-0.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 tabular-nums text-right"
+                            />
+                            {effectiveShipping > 0 && (
+                              <span className="text-orange-400 font-medium tabular-nums text-xs">-{formatCurrency(effectiveShipping)}</span>
+                            )}
+                            {effectiveShipping === 0 && sfpEnabled && (
+                              <span className="text-emerald-600 text-[10px] font-medium">incluso SFP</span>
+                            )}
                           </div>
-                        )}
+                        </div>
                         {selectedOrder.other_expenses > 0 && (
                           <div className="flex justify-between text-sm">
                             <span className="text-zinc-400">Outras despesas</span>
