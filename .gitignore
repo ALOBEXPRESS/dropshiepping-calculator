@@ -1,4 +1,11 @@
 # ============================================
+# NF-e XML FILES (keep local only)
+# ============================================
+*-nfe.xml
+*.nfe.xml
+nfe/
+
+# ============================================
 # SECURITY - CRITICAL FILES (NEVER COMMIT)
 # ============================================
 .env
@@ -179,6 +186,9 @@ video/
 .vercel
 # Added by code-review-graph
 .code-review-graph/
+
+# NF
+33260363764197000155550010000000041252778900-nfe.xml
 
 # ============================================
 # LIGHTRAG KNOWLEDGE GRAPH

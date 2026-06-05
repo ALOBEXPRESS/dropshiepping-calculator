@@ -2143,8 +2143,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         <span>Preço de venda líquido</span>
                         {hasMultipleProducts && <span className="text-zinc-600 text-xs ml-1">({products.length} itens)</span>}
                       </div>
-                      <span className="text-emerald-400 font-bold text-lg tabular-nums">
-                        {formatCurrency(precoVendaLiquidoFinal)}
+                      <span className={`font-bold text-lg tabular-nums ${realProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {realProfit < 0 ? '-' : ''}{formatCurrency(Math.abs(realProfit))}
                       </span>
                     </div>
 
@@ -2181,14 +2181,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           </div>
                         )}
 
-                        {/* Preço de venda bruto (após taxas) */}
+                        {/* Preço de venda bruto — valor bruto (precoVendaBruto), badge mostra taxas marketplace deduzidas */}
                         <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/30 border-t border-zinc-800/40">
                           <div className="flex items-center gap-1.5">
                             <span className="text-[11px] text-zinc-500">Preço de venda bruto</span>
-                            <span className="text-[10px] text-orange-400/80 font-mono tabular-nums">-{formatCurrency(subtotalMarketplace)}</span>
+                            <span className="text-[10px] text-orange-400/80 font-mono tabular-nums">-taxas</span>
                           </div>
                           <span className="text-[12px] text-blue-300 font-bold tabular-nums">
-                            {formatCurrency(precoVendaPagoCliente + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0) - subtotalMarketplace)}
+                            {formatCurrency(precoVendaBruto)}
                           </span>
                         </div>
                       </>
@@ -2202,20 +2202,20 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           <span className="text-[12px] text-blue-300 font-bold tabular-nums">{formatCurrency(precoVendaPagoCliente)}</span>
                         </div>
 
-                        {/* Preço de venda bruto = pagoCliente, badges mostram deduções */}
+                        {/* Preço de venda bruto — valor bruto original, badges mostram deduções */}
                         <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/30 border-t border-zinc-800/40">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="text-[11px] text-zinc-500">Preço de venda bruto</span>
-                            <span className="text-[10px] text-orange-400/80 font-mono tabular-nums">-{formatCurrency(subtotalMarketplace)}</span>
+                            <span className="text-[10px] text-orange-400/80 font-mono tabular-nums">-taxas</span>
                             {activeDiscount > 0 && (
-                              <span className="text-[10px] text-yellow-400/90 font-mono tabular-nums">-{formatCurrency(activeDiscount)}</span>
+                              <span className="text-[10px] text-yellow-400/90 font-mono tabular-nums">-desc</span>
                             )}
                             {acrescimoManual > 0 && (
                               <span className="text-[10px] text-emerald-400/80 font-mono tabular-nums">+{formatCurrency(acrescimoManual)}</span>
                             )}
                           </div>
                           <span className="text-[12px] text-blue-300 font-bold tabular-nums">
-                            {formatCurrency(precoVendaPagoCliente)}
+                            {formatCurrency(precoVendaBruto)}
                           </span>
                         </div>
                       </>
