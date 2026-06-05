@@ -1887,12 +1887,19 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     },
   };
 
+  // Lucro acumulado até cada período (running total across ALL data, não só visível)
+  const cumulativeProfits = recalculatedData.reduce<number[]>((acc, item) => {
+    const prev = acc.length > 0 ? acc[acc.length - 1] : 0;
+    acc.push(Math.round((prev + Number(item.total_profit ?? 0)) * 100) / 100);
+    return acc;
+  }, []);
+
   const chartSeries = [
     {
-      name: 'Lucro',
-      data: visibleData.map((item) => {
-        // Show total profit for the period (sum of all orders), consistent with KPI
-        return Number(item.total_profit ?? 0);
+      name: 'Lucro Acumulado',
+      data: visibleData.map((_, idx) => {
+        // Lucro acumulado até este período (inclui todos períodos anteriores)
+        return cumulativeProfits[windowOffset + idx] ?? 0;
       }),
     },
   ];
