@@ -1890,25 +1890,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const chartSeries = [
     {
       name: 'Lucro',
-      data: visibleData.map((item, idx) => {
-        const currentPageUnsafe = tooltipPages[windowOffset + idx] ?? 0;
-        const orders = item.orders_data ?? [];
-        const currentPage = orders.length > 0 ? Math.min(currentPageUnsafe, orders.length - 1) : 0;
-        if (orders.length > 0 && orders[currentPage]) {
-          const o = orders[currentPage] as unknown as {
-            marketplace?: string;
-            commission_rate?: number;
-            marketplace_fixed_fee?: number;
-          };
-          const cfg = resolveMarketplaceConfig(
-            o.marketplace,
-            Number(o.commission_rate ?? 0),
-            Number(o.marketplace_fixed_fee ?? 0)
-          );
-          const mergedOrder = mergeOrderForTooltip(orders[currentPage]);
-          return computeOrderRealProfit(mergedOrder, cfg).realProfit;
-        }
-        // Usar total_profit recalculado
+      data: visibleData.map((item) => {
+        // Show total profit for the period (sum of all orders), consistent with KPI
         return Number(item.total_profit ?? 0);
       }),
     },
