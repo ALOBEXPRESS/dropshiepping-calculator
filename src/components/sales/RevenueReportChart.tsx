@@ -1584,8 +1584,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     });
   }, [data, orderEnrichmentById, affiliateByOrderId, computeOrderRealProfit]);
 
-  // Window size per period — mensal: 2 (mês atual + anterior), outros mantêm janela maior
-  const windowSize = period === 'daily' ? 14 : period === 'weekly' ? 12 : period === 'monthly' ? 2 : 5;
+  // Window size per period — mensal: todos os meses (sem janela), semanal/diário: parcial com setas
+  const windowSize = period === 'daily' ? 14 : period === 'weekly' ? 12 : period === 'monthly' ? Math.max(recalculatedData.length, 1) : 5;
   const maxOffset = Math.max(0, recalculatedData.length - windowSize);
   const visibleData = recalculatedData.slice(windowOffset, windowOffset + windowSize);
 
@@ -1652,13 +1652,35 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     fill: {
       type: 'gradient',
       gradient: {
-        shadeIntensity: 1,
-        opacityFrom: 0.4,
+        shadeIntensity: 0,
+        opacityFrom: 0.5,
         opacityTo: 0.05,
-        stops: [0, 90, 100],
+        colorStops: (() => {
+          const vals = visibleData.map((_, idx) => cumulativeProfits[windowOffset + idx] ?? 0);
+          const nonAccumVals = visibleData.map(item => Number(item.total_profit ?? 0));
+          const plotVals = useAccumulated ? vals : nonAccumVals;
+          const minVal = Math.min(...plotVals, 0);
+          const maxVal = Math.max(...plotVals, 0);
+          const range = maxVal - minVal;
+          // Zero position as percentage from top (maxVal at 0%, minVal at 100%)
+          const zeroOffset = range > 0 ? Math.round(((maxVal - 0) / range) * 100) : 50;
+          const clampedZero = Math.max(0, Math.min(100, zeroOffset));
+          return [
+            { offset: 0, color: '#22c55e', opacity: 0.5 },           // top = green
+            { offset: clampedZero, color: '#22c55e', opacity: 0.1 },  // zero line
+            { offset: clampedZero, color: '#8b5cf6', opacity: 0.1 },  // zero line (purple starts)
+            { offset: 100, color: '#8b5cf6', opacity: 0.05 },         // bottom = purple
+          ];
+        })(),
       },
     },
-    colors: ['#8b5cf6'],
+    colors: (() => {
+      const vals = visibleData.map((_, idx) => cumulativeProfits[windowOffset + idx] ?? 0);
+      const nonAccumVals = visibleData.map(item => Number(item.total_profit ?? 0));
+      const plotVals = useAccumulated ? vals : nonAccumVals;
+      const lastVal = plotVals[plotVals.length - 1] ?? 0;
+      return [lastVal >= 0 ? '#22c55e' : '#8b5cf6'];
+    })(),
     xaxis: {
       categories: visibleData.map((item) => item.period_label),
       labels: {
@@ -1690,8 +1712,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       shared: false,
       fixed: {
         enabled: true,
-        position: 'topRight',
-        offsetX: -10,
+        position: 'topLeft',
+        offsetX: 10,
         offsetY: 10,
       },
       custom: ({ dataPointIndex }: { dataPointIndex: number }) => {
