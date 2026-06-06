@@ -1639,15 +1639,34 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     stroke: {
       curve: 'smooth',
       width: 2,
+      colors: (() => {
+        // Line color: green if last visible value >= 0, red if < 0
+        const vals = visibleData.map((_, idx) => useAccumulated
+          ? (cumulativeProfits[windowOffset + idx] ?? 0)
+          : Number(visibleData[idx]?.total_profit ?? 0)
+        );
+        const lastVal = vals[vals.length - 1] ?? 0;
+        return [lastVal >= 0 ? '#22c55e' : '#ef4444'];
+      })(),
     },
     markers: {
       size: 6,
-      colors: ['#8b5cf6'],
-      strokeColors: '#ede9fe',
+      strokeColors: '#fff',
       strokeWidth: 1,
-      hover: {
-        size: 8,
-      },
+      hover: { size: 8 },
+      discrete: (() => {
+        const vals = visibleData.map((_, idx) => useAccumulated
+          ? (cumulativeProfits[windowOffset + idx] ?? 0)
+          : Number(visibleData[idx]?.total_profit ?? 0)
+        );
+        return vals.map((v, i) => ({
+          seriesIndex: 0,
+          dataPointIndex: i,
+          fillColor: v >= 0 ? '#22c55e' : '#ef4444',
+          strokeColor: '#fff',
+          size: 6,
+        }));
+      })(),
     },
     fill: {
       type: 'gradient',
@@ -1668,8 +1687,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           return [
             { offset: 0, color: '#22c55e', opacity: 0.5 },           // top = green
             { offset: clampedZero, color: '#22c55e', opacity: 0.1 },  // zero line
-            { offset: clampedZero, color: '#8b5cf6', opacity: 0.1 },  // zero line (purple starts)
-            { offset: 100, color: '#8b5cf6', opacity: 0.05 },         // bottom = purple
+            { offset: clampedZero, color: '#ef4444', opacity: 0.1 },  // zero line (red starts)
+            { offset: 100, color: '#ef4444', opacity: 0.05 },         // bottom = red
           ];
         })(),
       },
@@ -1679,7 +1698,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       const nonAccumVals = visibleData.map(item => Number(item.total_profit ?? 0));
       const plotVals = useAccumulated ? vals : nonAccumVals;
       const lastVal = plotVals[plotVals.length - 1] ?? 0;
-      return [lastVal >= 0 ? '#22c55e' : '#8b5cf6'];
+      return [lastVal >= 0 ? '#22c55e' : '#ef4444'];
     })(),
     xaxis: {
       categories: visibleData.map((item) => item.period_label),
@@ -2807,13 +2826,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       </div>
 
       {data.length > 0 ? (
-        <div ref={chartRef} className="relative">
-          {/* Left arrow — overlaid on chart */}
+        <div className="relative">
+          {/* Navigation arrows — outside chart div to avoid ApexCharts SVG intercept */}
           {period !== 'yearly' && (
             <button
               onClick={() => setWindowOffset(o => Math.max(0, o - 1))}
               disabled={windowOffset === 0}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-30 w-8 h-16 flex items-center justify-center bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700/60 rounded-r-lg text-zinc-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all"
+              style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', zIndex: 50 }}
+              className="w-8 h-16 flex items-center justify-center bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-700/60 rounded-r-lg text-zinc-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all"
               title="Anterior"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -2821,12 +2841,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               </svg>
             </button>
           )}
-          {/* Right arrow — overlaid on chart */}
           {period !== 'yearly' && (
             <button
               onClick={() => setWindowOffset(o => Math.min(maxOffset, o + 1))}
               disabled={windowOffset >= maxOffset}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-30 w-8 h-16 flex items-center justify-center bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700/60 rounded-l-lg text-zinc-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all"
+              style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', zIndex: 50 }}
+              className="w-8 h-16 flex items-center justify-center bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-700/60 rounded-l-lg text-zinc-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all"
               title="Próximo"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -2834,7 +2854,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               </svg>
             </button>
           )}
+          <div ref={chartRef}>
           <Chart key={`${JSON.stringify(visibleData.map(d => d.period_label + '_' + d.total_profit))}_${windowOffset}`} options={chartOptions} series={chartSeries} type="area" height={300} />
+          </div>
         </div>
       ) : (
         <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
