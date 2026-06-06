@@ -130,22 +130,18 @@ export default function LeadsTable({
   // Update pagination total count when data changes
   // Also adjust current page if it's now out of bounds (e.g., after deleting last item on a page)
   React.useEffect(() => {
-    if (leadsData?.totalCount !== undefined && leadsData.totalCount !== prevTotalCountRef.current) {
-      prevTotalCountRef.current = leadsData.totalCount;
-      
-      const newTotalPages = Math.ceil(leadsData.totalCount / pagination.pageSize);
+    if (leadsData?.totalCount === undefined) return;
+    if (leadsData.totalCount === prevTotalCountRef.current) return;
+    prevTotalCountRef.current = leadsData.totalCount;
+
+    setPagination(prev => {
+      const newTotalPages = Math.ceil(leadsData.totalCount / prev.pageSize);
       const maxValidPage = Math.max(0, newTotalPages - 1);
-      
-      // If current page is now out of bounds, go to the last valid page
-      const adjustedPage = pagination.page > maxValidPage ? maxValidPage : pagination.page;
-      
-      setPagination(prev => ({
-        ...prev,
-        totalCount: leadsData.totalCount,
-        page: adjustedPage,
-      }));
-    }
-  }, [leadsData?.totalCount, pagination.page, pagination.pageSize]);
+      const adjustedPage = prev.page > maxValidPage ? maxValidPage : prev.page;
+      return { ...prev, totalCount: leadsData.totalCount, page: adjustedPage };
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leadsData?.totalCount]);
 
   // Handlers for state updates
   const handleFiltersChange = (newFilters: LeadFilters) => {
@@ -218,8 +214,16 @@ export default function LeadsTable({
     );
   }
 
-  // Empty state
-  if (leadsData && leadsData.data.length === 0 && !filters.searchText) {
+  // Check if any filter is active (beyond just searchText)
+  const hasActiveFilters = !!(
+    filters.searchText ||
+    (filters.marketplaceId && filters.marketplaceId.length > 0) ||
+    (filters.status && filters.status.length > 0) ||
+    (filters.gender && filters.gender.length > 0)
+  );
+
+  // Empty state — no active filters = truly no leads
+  if (leadsData && leadsData.data.length === 0 && !hasActiveFilters) {
     return (
       <div className={className}>
         <EmptyState
@@ -235,8 +239,8 @@ export default function LeadsTable({
     );
   }
 
-  // Empty state with filters applied
-  if (leadsData && leadsData.data.length === 0 && filters.searchText) {
+  // Empty state with filters applied — always show clear option
+  if (leadsData && leadsData.data.length === 0 && hasActiveFilters) {
     return (
       <div className={className}>
         <EmptyState
@@ -249,7 +253,7 @@ export default function LeadsTable({
               setFilters({
                 searchText: undefined,
                 status: undefined,
-                marketplaceId: marketplaceId ? [marketplaceId] : undefined,
+                marketplaceId: undefined,
                 gender: undefined,
                 dateRange: period || undefined,
               });
