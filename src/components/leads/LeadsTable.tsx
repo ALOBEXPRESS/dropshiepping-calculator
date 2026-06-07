@@ -106,8 +106,23 @@ export default function LeadsTable({
   // Fetch organization data for CSV filename
   const { data: organization } = useOrganization(organizationId);
 
-  // Sync external filters with internal state
+  // Sync external filters with internal state — use ref comparison to avoid infinite loop
+  // when parent passes period as inline object (new reference each render)
+  const prevPeriodRef = React.useRef<typeof period>(undefined);
+  const prevMarketplaceIdRef = React.useRef<typeof marketplaceId>(undefined);
+
   React.useEffect(() => {
+    const prevPeriod = prevPeriodRef.current;
+    const periodChanged = period?.from?.getTime() !== prevPeriod?.from?.getTime()
+      || period?.to?.getTime() !== prevPeriod?.to?.getTime()
+      || (period == null) !== (prevPeriod == null);
+    const marketplaceChanged = marketplaceId !== prevMarketplaceIdRef.current;
+
+    if (!periodChanged && !marketplaceChanged) return;
+
+    prevPeriodRef.current = period;
+    prevMarketplaceIdRef.current = marketplaceId;
+
     setFilters(prev => ({
       ...prev,
       marketplaceId: marketplaceId ? [marketplaceId] : undefined,
@@ -162,9 +177,24 @@ export default function LeadsTable({
     setSelectedLeads(leadIds);
   };
 
-  const handleRetry = () => {
+  // Stable callbacks — useCallback prevents new references on each render
+  // which would cause Radix UI collection setRef to loop infinitely
+  // MUST be before any early returns (Rules of Hooks)
+  const handleDialogSuccess = React.useCallback(() => {
+    // Dialogs close automatically; React Query refetches via invalidation
+  }, []);
+
+  const handleEditOpenChange = React.useCallback((open: boolean) => {
+    if (!open) setEditingLead(null);
+  }, []);
+
+  const handleDeleteOpenChange = React.useCallback((open: boolean) => {
+    if (!open) setDeletingLead(null);
+  }, []);
+
+  const handleRetry = React.useCallback(() => {
     refetchLeads();
-  };
+  }, [refetchLeads]);
 
   // Loading state
   if (isLoadingLeads && !leadsData) {
@@ -280,11 +310,6 @@ export default function LeadsTable({
     setIsAddLeadDialogOpen(true);
   };
 
-  const handleDialogSuccess = () => {
-    // Dialogs will close automatically
-    // React Query will refetch data automatically via invalidation
-  };
-
   const handleExportCSV = async () => {
     if (!leadsData?.data || leadsData.data.length === 0) {
       return;
@@ -379,7 +404,7 @@ export default function LeadsTable({
       <Suspense fallback={<div className="sr-only">Carregando formulário...</div>}>
         <LeadFormDialog
           open={!!editingLead}
-          onOpenChange={(open) => !open && setEditingLead(null)}
+          onOpenChange={handleEditOpenChange}
           lead={editingLead}
           organizationId={organizationId}
           onSuccess={handleDialogSuccess}
@@ -391,7 +416,7 @@ export default function LeadsTable({
         <Suspense fallback={<div className="sr-only">Carregando diálogo...</div>}>
           <DeleteConfirmDialog
             open={!!deletingLead}
-            onOpenChange={(open) => !open && setDeletingLead(null)}
+            onOpenChange={handleDeleteOpenChange}
             leadId={deletingLead.id}
             leadName={deletingLead.name}
             organizationId={organizationId}

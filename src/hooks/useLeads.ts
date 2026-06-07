@@ -29,7 +29,9 @@ export function useLeads(
   pagination: PaginationConfig
 ) {
   return useQuery({
-    queryKey: ['leads', organizationId, filters, sort, pagination],
+    // Exclude pagination.totalCount from queryKey — it's a derived value that changes after fetch,
+    // causing infinite refetch loops. Only page and pageSize affect the actual query.
+    queryKey: ['leads', organizationId, filters, sort, { page: pagination.page, pageSize: pagination.pageSize }],
     queryFn: () => LeadsService.fetchLeads(organizationId, filters, sort, pagination),
     staleTime: LEADS_STALE_TIME,
     gcTime: LEADS_CACHE_TIME, // Changed from cacheTime in React Query v5
