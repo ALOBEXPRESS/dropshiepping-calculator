@@ -195,7 +195,9 @@ export function LeadFormDialog({
           email: lead.email || '',
           phone: lead.phone || '',
           mobile_phone: lead.mobile_phone || '',
-          document_type: lead.document_type || undefined,
+          document_type: lead.document_type
+            ? (lead.document_type.toLowerCase() as 'cpf' | 'cnpj')
+            : undefined,
           document_number: lead.document_number || '',
           company_name: lead.company_name || '',
           trade_name: lead.trade_name || '',
