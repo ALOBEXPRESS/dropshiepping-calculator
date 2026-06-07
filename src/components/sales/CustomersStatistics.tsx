@@ -17,6 +17,7 @@ const STAGE_COLORS: Record<string, string> = {
   'Recorrentes':  '#6366f1', // indigo-500
   'Convertidos':  '#22c55e', // green-500
   'Qualificados': '#10b981', // emerald-500
+  'Perdidos':     '#ef4444', // red-500
 };
 
 export const CustomersStatistics: React.FC<CustomersStatisticsProps> = ({

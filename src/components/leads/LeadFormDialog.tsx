@@ -111,7 +111,7 @@ const leadFormSchema = z.object({
   marketplace_id: z.string()
     .optional(),
   
-  lead_status: z.enum(['new', 'contacted', 'qualified', 'lost', 'converted'] as const)
+  lead_status: z.enum(['new', 'contacted', 'qualified', 'lost', 'converted', 'recurrent'] as const)
     .optional(),
   
   lead_source: z.string()

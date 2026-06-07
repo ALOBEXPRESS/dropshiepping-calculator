@@ -9,7 +9,7 @@
 /**
  * Lead status enum
  */
-export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'lost' | 'converted';
+export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'lost' | 'converted' | 'recurrent';
 
 /**
  * Document type enum

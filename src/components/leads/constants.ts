@@ -34,8 +34,9 @@ export const LEAD_STATUS_OPTIONS: { value: LeadStatus; label: string }[] = [
   { value: 'new', label: 'Novo' },
   { value: 'contacted', label: 'Contatado' },
   { value: 'qualified', label: 'Qualificado' },
-  { value: 'lost', label: 'Perdido' },
+  { value: 'recurrent', label: 'Recorrente' },
   { value: 'converted', label: 'Convertido' },
+  { value: 'lost', label: 'Perdido' },
 ];
 
 /**
@@ -82,6 +83,7 @@ export const STATUS_COLORS: Record<LeadStatus, string> = {
   qualified: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
   lost: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
   converted: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
+  recurrent: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300',
 };
 
 /**

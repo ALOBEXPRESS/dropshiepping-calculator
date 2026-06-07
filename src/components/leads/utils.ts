@@ -9,7 +9,8 @@ import {
   Phone, 
   CheckCircle2, 
   XCircle, 
-  TrendingUp 
+  TrendingUp,
+  Users,
 } from 'lucide-react';
 
 /**
@@ -26,6 +27,7 @@ export function getStatusIcon(status: LeadStatus | null | undefined) {
     qualified: CheckCircle2,
     lost: XCircle,
     converted: TrendingUp,
+    recurrent: Users,
   };
   
   return icons[status] || CircleDot;
@@ -112,6 +114,7 @@ export function getStatusLabel(status: LeadStatus | null | undefined): string {
     qualified: 'Qualificado',
     lost: 'Perdido',
     converted: 'Convertido',
+    recurrent: 'Recorrente',
   };
   
   return labels[status] || status;
