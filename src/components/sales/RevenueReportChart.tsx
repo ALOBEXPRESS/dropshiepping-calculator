@@ -1291,7 +1291,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           }
 
           // Atualizar o HTML do tooltip diretamente no DOM (resposta imediata)
-          const tooltipEl = document.querySelector('.apexcharts-tooltip.apexcharts-active');
+          // Nota: não exigir .apexcharts-active pois ao clicar botão dentro do tooltip
+          // o ApexCharts pode ter removido a classe antes do click event disparar
+          const tooltipEl = document.querySelector('.apexcharts-tooltip.apexcharts-active')
+            ?? document.querySelector('.apexcharts-tooltip');
           if (tooltipEl) {
             const currentData = dataRef.current;
             if (!isNaN(globalIdx) && currentData[globalIdx]) {

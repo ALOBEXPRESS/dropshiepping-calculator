@@ -136,8 +136,12 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     fetchSettings();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      if (event === 'SIGNED_IN') {
         fetchSettings();
+      } else if (event === 'TOKEN_REFRESHED') {
+        // Token refresh não precisa re-buscar settings — organizationId já está carregado
+        // Re-buscar causaria auto-reload ao trocar de aba (Supabase refresha token no focus)
+        setOrganizationId(prev => prev); // no-op, mantém estado
       } else if (event === 'SIGNED_OUT') {
         setOrganizationId(null);
         setWorkingCapital('0');
