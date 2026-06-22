@@ -155,7 +155,7 @@ export default function LeadsTable({
       const adjustedPage = prev.page > maxValidPage ? maxValidPage : prev.page;
       return { ...prev, totalCount: leadsData.totalCount, page: adjustedPage };
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [leadsData?.totalCount]);
 
   // Handlers for state updates

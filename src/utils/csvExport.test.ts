@@ -285,9 +285,9 @@ describe('csvExport', () => {
         style: {},
       };
       
-      vi.spyOn(document, 'createElement').mockReturnValue(mockLink as any);
-      vi.spyOn(document.body, 'appendChild').mockImplementation(() => mockLink as any);
-      vi.spyOn(document.body, 'removeChild').mockImplementation(() => mockLink as any);
+      vi.spyOn(document, 'createElement').mockReturnValue(mockLink as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+      vi.spyOn(document.body, 'appendChild').mockImplementation(() => mockLink as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+      vi.spyOn(document.body, 'removeChild').mockImplementation(() => mockLink as any); // eslint-disable-line @typescript-eslint/no-explicit-any
     });
 
     it('should throw error for empty leads array', async () => {

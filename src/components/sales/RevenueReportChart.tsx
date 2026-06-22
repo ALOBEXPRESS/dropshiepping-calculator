@@ -1250,6 +1250,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const current = Number.isFinite(max) ? Math.min(currentUnsafe, max) : currentUnsafe;
           const next = dir === 'next' ? Math.min(current + 1, max) : Math.max(current - 1, 0);
 
+          // Atualizar ref imediatamente (antes do DOM update, não aguarda re-render)
+          tooltipPagesRef.current = { ...tooltipPagesRef.current, [globalIdx]: next };
           // Atualizar estado React (key = globalIdx para consistência com série)
           setTooltipPages(prev => ({ ...prev, [globalIdx]: next }));
 

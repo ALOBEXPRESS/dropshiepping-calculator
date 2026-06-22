@@ -41,7 +41,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useLeadMarketplaces } from '@/hooks/useLeads';
-import type { LeadFilters, LeadStatus } from '@/types/leads';
+import type { LeadFilters, LeadStatus, Gender } from '@/types/leads';
 import { LEAD_STATUS_OPTIONS } from './constants';
 
 interface FilterBarProps {
@@ -153,9 +153,9 @@ export function FilterBar({
   const handleGenderChange = (gender: string) => {
     const currentGenders = filters.gender || [];
     const genderValue = gender === 'unknown' ? null : gender;
-    const newGenders = currentGenders.includes(genderValue as any)
+    const newGenders = currentGenders.includes(genderValue as (Gender | null))
       ? currentGenders.filter(g => g !== genderValue)
-      : [...currentGenders, genderValue as any];
+      : [...currentGenders, genderValue as (Gender | null)];
     
     onFiltersChange({
       ...filters,
@@ -374,8 +374,8 @@ export function FilterBar({
                     type="checkbox"
                     checked={
                       option.value === 'unknown'
-                        ? filters.gender?.includes(null as any) || false
-                        : filters.gender?.includes(option.value as any) || false
+                        ? filters.gender?.includes(null) || false
+                        : filters.gender?.includes(option.value as Gender) || false
                     }
                     onChange={() => handleGenderChange(option.value)}
                     className="rounded border-gray-300"
@@ -706,8 +706,8 @@ export function FilterBar({
                           type="checkbox"
                           checked={
                             option.value === 'unknown'
-                              ? filters.gender?.includes(null as any) || false
-                              : filters.gender?.includes(option.value as any) || false
+                              ? filters.gender?.includes(null) || false
+                              : filters.gender?.includes(option.value as Gender) || false
                           }
                           onChange={() => handleGenderChange(option.value)}
                           className="rounded border-gray-300"
