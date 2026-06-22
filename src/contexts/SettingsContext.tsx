@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 
 interface SettingsContextType {
@@ -132,22 +132,32 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     fetchSettings();
   }, [fetchSettings]);
 
+  const initialLoadDoneRef = useRef(false);
+
   useEffect(() => {
-    fetchSettings();
+    fetchSettings().then(() => {
+      initialLoadDoneRef.current = true;
+    });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_IN') {
-        fetchSettings();
+        // Supabase v2 dispara SIGNED_IN em todo refresh de token ao voltar de aba.
+        // Só re-buscar se ainda não carregou (ex: login inicial).
+        if (!initialLoadDoneRef.current) {
+          fetchSettings().then(() => {
+            initialLoadDoneRef.current = true;
+          });
+        }
       } else if (event === 'TOKEN_REFRESHED') {
-        // Token refresh não precisa re-buscar settings — organizationId já está carregado
-        // Re-buscar causaria auto-reload ao trocar de aba (Supabase refresha token no focus)
-        setOrganizationId(prev => prev); // no-op, mantém estado
+        // Token refresh não precisa re-buscar settings
+        // Supabase dispara TOKEN_REFRESHED ao focar na aba — ignorar
       } else if (event === 'SIGNED_OUT') {
+        initialLoadDoneRef.current = false;
         setOrganizationId(null);
         setWorkingCapital('0');
         setEmergencyReserve('0');
         setCapitalMarketing('0');
-      setGrossInvestment('0');
+        setGrossInvestment('0');
       }
     });
 
