@@ -53,7 +53,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       controller.abort();
       setSettingsError('Tempo limite excedido ao carregar configurações.');
       setLoading(false);
-    }, 10_000);
+    }, 30_000);
 
     try {
       setLoading(true);
