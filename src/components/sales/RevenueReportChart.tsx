@@ -1188,6 +1188,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       .apexcharts-tooltip:hover {
         display: block !important;
         opacity: 1 !important;
+        visibility: visible !important;
+      }
+      .apexcharts-tooltip.apexcharts-tooltip-hover-lock {
+        display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
       }
     `;
     document.head.appendChild(style);
@@ -1204,6 +1211,28 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     // Capturar na fase de captura ANTES do ApexCharts
     document.addEventListener('mousedown', preventTooltipClose, true);
     document.addEventListener('touchstart', preventTooltipClose as EventListener, true);
+
+    // Lock tooltip visibility while mouse is over it — prevents ApexCharts from hiding it
+    // when mouse moves from chart SVG onto the tooltip element
+    const lockTooltip = () => {
+      const tt = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
+      if (tt) {
+        tt.classList.add('apexcharts-tooltip-hover-lock');
+        tt.style.opacity = '1';
+        tt.style.display = 'block';
+      }
+    };
+    const unlockTooltip = () => {
+      const tt = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
+      if (tt) tt.classList.remove('apexcharts-tooltip-hover-lock');
+    };
+    document.addEventListener('mouseover', (e) => {
+      if ((e.target as HTMLElement).closest('.apexcharts-tooltip')) lockTooltip();
+    }, true);
+    document.addEventListener('mouseout', (e) => {
+      const related = (e as MouseEvent).relatedTarget as HTMLElement | null;
+      if (!(related?.closest?.('.apexcharts-tooltip'))) unlockTooltip();
+    }, true);
 
     return () => {
       document.head.removeChild(style);
@@ -1249,6 +1278,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const currentUnsafe = tooltipPagesRef.current[globalIdx] ?? 0;
           const current = Number.isFinite(max) ? Math.min(currentUnsafe, max) : currentUnsafe;
           const next = dir === 'next' ? Math.min(current + 1, max) : Math.max(current - 1, 0);
+
+          // Lock tooltip visible before DOM update
+          const tooltipLock = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
+          if (tooltipLock) {
+            tooltipLock.classList.add('apexcharts-tooltip-hover-lock');
+            tooltipLock.style.opacity = '1';
+            tooltipLock.style.display = 'block';
+          }
 
           // Atualizar ref imediatamente (antes do DOM update, não aguarda re-render)
           tooltipPagesRef.current = { ...tooltipPagesRef.current, [globalIdx]: next };
@@ -1417,7 +1454,15 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 `;
 
                 const orderRoot = tooltipEl.querySelector('[data-tooltip-order-root]') as HTMLElement | null;
-                if (orderRoot) orderRoot.innerHTML = newOrderInnerHtml;
+                if (orderRoot) {
+                  orderRoot.innerHTML = newOrderInnerHtml;
+                  // Force repaint — browser may defer paint when mouse is over tooltip (not chart)
+                  // Reading offsetHeight flushes layout and forces visual update
+                  void (tooltipEl as HTMLElement).offsetHeight;
+                  // Also ensure tooltip stays visible
+                  (tooltipEl as HTMLElement).style.opacity = '1';
+                  (tooltipEl as HTMLElement).style.display = 'block';
+                }
 
               }
             }
