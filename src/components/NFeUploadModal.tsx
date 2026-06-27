@@ -164,7 +164,20 @@ export function NFeUploadModal({ open, onClose, onSuccess }: NFeUploadModalProps
       // Use chNFe hash as synthetic bling_order_id (negative to avoid collision)
       const syntheticBlingId = -Math.abs(parseInt(nfe.chNFe.slice(-8), 16) % 2147483647);
 
-      // Check if already inserted
+      // Check if already inserted (by chNFe stored in marketplace_order_number)
+      const { data: existingByChNFe } = await supabase
+        .from('bling_orders')
+        .select('id')
+        .eq('marketplace_order_number', `NF-chave-${nfe.chNFe}`)
+        .limit(1);
+
+      if (existingByChNFe && existingByChNFe.length > 0) {
+        setErrorMsg('NF-e já foi importada anteriormente.');
+        setStatus('error');
+        return;
+      }
+
+      // Check if already inserted (legacy: by synthetic bling_order_id)
       const { data: existing } = await supabase
         .from('bling_orders')
         .select('id')
@@ -174,6 +187,42 @@ export function NFeUploadModal({ open, onClose, onSuccess }: NFeUploadModalProps
       if (existing && existing.length > 0) {
         setErrorMsg('NF-e já foi importada anteriormente.');
         setStatus('error');
+        return;
+      }
+
+      // --- Match NF to existing pending Bling order ---
+      // Try to find unprocessed order with same CPF/CNPJ + matching product value
+      const destDoc = nfe.contactCpf ?? nfe.contactCnpj ?? null;
+      let matchedBlingOrderId: string | null = null;
+
+      if (destDoc) {
+        const cleanDoc = destDoc.replace(/\D/g, '');
+        // Find unprocessed orders for same contact + similar total_products value (±R$1)
+        const { data: candidateOrders } = await supabase
+          .from('bling_orders')
+          .select('id, bling_order_id, order_number, total_products, total_amount')
+          .eq('organization_id', organizationId)
+          .eq('contact_document', cleanDoc)
+          .eq('processed_to_orders', false)
+          .gte('total_products', nfe.totalProdutos - 1)
+          .lte('total_products', nfe.totalProdutos + 1)
+          .limit(5);
+
+        if (candidateOrders && candidateOrders.length > 0) {
+          // Prefer most recent match
+          matchedBlingOrderId = candidateOrders[0].id;
+        }
+      }
+
+      // If matched existing order, tag it with NF chave and skip creating synthetic
+      if (matchedBlingOrderId) {
+        await supabase.from('bling_orders').update({
+          marketplace_order_number: `NF-chave-${nfe.chNFe}`,
+          order_date: nfe.dhEmi,
+        }).eq('id', matchedBlingOrderId);
+
+        setStatus('success');
+        setTimeout(() => { onSuccess(); onClose(); reset(); }, 1500);
         return;
       }
 
@@ -212,7 +261,7 @@ export function NFeUploadModal({ open, onClose, onSuccess }: NFeUploadModalProps
 
       // Upsert lead from NF dest data — find by CPF/CNPJ or create new
       let leadId: string | null = null;
-      const destDoc = nfe.contactCpf ?? nfe.contactCnpj ?? null;
+      // destDoc already declared above in match section
       if (destDoc) {
         const cleanDoc = destDoc.replace(/\D/g, '');
         // Try find existing lead by document
