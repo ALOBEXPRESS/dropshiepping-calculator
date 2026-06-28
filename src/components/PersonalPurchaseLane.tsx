@@ -187,6 +187,7 @@ export const PersonalPurchaseLane: React.FC<PersonalPurchaseLaneProps> = ({
                   onReturnToPending={onReturnOrder ? () => onReturnOrder(order) : undefined}
                   processLabel="Processar Lucro"
                   processButtonClass="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700"
+                  isPersonalPurchase={true}
                 />
                 {/* Override process button label via overlay not possible — handled inside FreeSampleCard */}
               </div>

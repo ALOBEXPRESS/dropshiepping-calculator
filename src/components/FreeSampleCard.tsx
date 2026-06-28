@@ -48,6 +48,7 @@ interface FreeSampleCardProps {
   onReturnToPending?: () => void;
   processLabel?: string;
   processButtonClass?: string;
+  isPersonalPurchase?: boolean;
 }
 
 export const FreeSampleCard: React.FC<FreeSampleCardProps> = ({
@@ -56,6 +57,7 @@ export const FreeSampleCard: React.FC<FreeSampleCardProps> = ({
   isProcessing,
   processLabel = 'Amostra Grátis',
   processButtonClass = 'bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700',
+  isPersonalPurchase = false,
 }) => {
   const icon = getMarketplaceIcon(order.marketplace_name);
 
@@ -195,11 +197,24 @@ export const FreeSampleCard: React.FC<FreeSampleCardProps> = ({
           </div>
         </div>
 
-        {/* Zero profit indicator */}
-        <div className="text-xs text-violet-600 dark:text-violet-400 font-medium flex items-center gap-1">
-          <Gift className="w-3 h-3" />
-          Lucro: R$ 0,00 (amostra grátis)
-        </div>
+        {/* Profit indicator */}
+        {isPersonalPurchase ? (
+          (() => {
+            // Real profit = price - cost - marketplace fee
+            const estimatedProfit = Number(order.estimated_profit ?? 0);
+            const color = estimatedProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400';
+            return (
+              <div className={`text-xs font-medium flex items-center gap-1 ${color}`}>
+                Lucro estimado: {formatCurrency(estimatedProfit)}
+              </div>
+            );
+          })()
+        ) : (
+          <div className="text-xs text-violet-600 dark:text-violet-400 font-medium flex items-center gap-1">
+            <Gift className="w-3 h-3" />
+            Lucro: R$ 0,00 (amostra grátis)
+          </div>
+        )}
       </div>
 
       {/* Action button */}

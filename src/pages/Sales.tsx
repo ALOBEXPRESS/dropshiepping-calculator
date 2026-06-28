@@ -117,15 +117,16 @@ const Sales: React.FC = () => {
     [handleOrderProcessed]
   );
 
-  // Return a free sample order back to the pending lane
+  // Return any lane order back to pending — clears from both freeSample and personalPurchase
   const handleReturnToPending = useCallback((order: PendingOrder) => {
     setFreeSampleOrders((prev) => {
       const next = prev.filter((o) => o.bling_order_id !== order.bling_order_id);
-      try {
-        sessionStorage.setItem('freeSampleOrders', JSON.stringify(next));
-      } catch {
-        // sessionStorage unavailable
-      }
+      try { sessionStorage.setItem('freeSampleOrders', JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+    setPersonalPurchaseOrders((prev) => {
+      const next = prev.filter((o) => o.bling_order_id !== order.bling_order_id);
+      try { sessionStorage.setItem('personalPurchaseOrders', JSON.stringify(next)); } catch { /* ignore */ }
       return next;
     });
   }, []);
@@ -230,6 +231,10 @@ const Sales: React.FC = () => {
           onOrderProcessed={handleOrderProcessed}
           onMoveToFreeSample={handleMoveToFreeSample}
           onReturnFromFreeSample={handleReturnToPending}
+          excludeOrderIds={[
+            ...freeSampleOrders.map(o => o.bling_order_id),
+            ...personalPurchaseOrders.map(o => o.bling_order_id),
+          ]}
         />
       </div>
 

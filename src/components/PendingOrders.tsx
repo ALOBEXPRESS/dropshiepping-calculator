@@ -51,9 +51,10 @@ interface PendingOrdersProps {
   onOrderProcessed?: () => void;
   onMoveToFreeSample?: (order: PendingOrder) => void;
   onReturnFromFreeSample?: (order: PendingOrder) => void;
+  excludeOrderIds?: string[]; // IDs already in other lanes (free sample, personal purchase)
 }
 
-export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, onReturnFromFreeSample }) => {
+export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, onReturnFromFreeSample, excludeOrderIds = [] }) => {
   const { organizationId } = useSettings();
   const { handlePostOrderProcessing } = useAutoGenderClassification();
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>(() => {
@@ -307,7 +308,9 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
     );
   }
 
-  if (pendingOrders.length === 0) {
+  const visibleOrders = pendingOrders.filter(o => !excludeOrderIds.includes(o.bling_order_id));
+
+  if (visibleOrders.length === 0 && pendingOrders.length === 0) {
     return (
       <Card className="p-6 border-green-200 dark:border-green-900/50 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-zinc-900 dark:to-zinc-800">
         <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -350,7 +353,7 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
             Vendas a Processar
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {pendingOrders.length} {pendingOrders.length === 1 ? 'venda pendente' : 'vendas pendentes'}
+            {visibleOrders.length} {visibleOrders.length === 1 ? 'venda pendente' : 'vendas pendentes'}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -446,7 +449,7 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
             WebkitOverflowScrolling: 'touch',
           }}
         >
-        {pendingOrders.map((order) => (
+        {visibleOrders.filter(o => !excludeOrderIds.includes(o.bling_order_id)).map((order) => (
           <Card
             key={order.bling_order_id}
             draggable
