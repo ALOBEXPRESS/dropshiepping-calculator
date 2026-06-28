@@ -120,12 +120,10 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
       if (!blingOrder) throw new Error('Pedido Bling não encontrado');
 
       // 2. Insert bling_order_item linking this product
-      const imageUrl = selectedVariation?.image_url1 ?? selectedProduct.image_url1 ?? null;
       const productName = selectedVariation
         ? `${selectedProduct.name} — ${selectedVariation.variacao_nome ?? selectedVariation.name}`
         : selectedProduct.name;
       const unitValue = Number(order.total_amount ?? 0);
-      const costPrice = Number(selectedVariation?.cost_price ?? selectedProduct.cost_price ?? 0);
 
       const { error: insertError } = await supabase
         .from('bling_order_items')
@@ -173,9 +171,6 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
     setSelectedVariation(null);
     onClose();
   };
-
-  const imageFor = (v: Variation | ProductBling | null) =>
-    v ? ((v as ProductBling).image_url1 ?? null) : null;
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
