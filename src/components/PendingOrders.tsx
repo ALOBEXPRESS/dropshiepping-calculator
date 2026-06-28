@@ -81,6 +81,17 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
   const [nfeModalOpen, setNfeModalOpen] = useState(false);
   const [productInfoId, setProductInfoId] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const droppedSuccessfullyRef = useRef<string | null>(null); // tracks bling_order_id dropped to free sample
+
+  // Listen for successful drop to free sample lane (fired by FreeSampleLane)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const ev = e as CustomEvent<{ blingOrderId: string }>;
+      droppedSuccessfullyRef.current = ev.detail.blingOrderId;
+    };
+    window.addEventListener('pending-order-dropped-to-free-sample', handler);
+    return () => window.removeEventListener('pending-order-dropped-to-free-sample', handler);
+  }, []);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -462,8 +473,10 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
               const card = e.currentTarget as HTMLElement;
               card.style.opacity = '1';
               card.style.transform = 'scale(1)';
-              // Se o drop foi aceito pela drop zone, remove o card da lista
-              if (e.dataTransfer.dropEffect === 'move') {
+              // Only remove if successfully dropped to free sample zone
+              // dropEffect === 'move' is unreliable — some browsers return 'move' even on failed drops
+              if (droppedSuccessfullyRef.current === order.bling_order_id) {
+                droppedSuccessfullyRef.current = null;
                 setPendingOrders((prev) =>
                   prev.filter((o) => o.bling_order_id !== order.bling_order_id)
                 );
@@ -480,7 +493,7 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
             <div
               className="relative w-full h-32 mb-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-zinc-900 dark:to-zinc-800 rounded-xl overflow-hidden shadow-sm cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all"
               onClick={() => {
-                const pid = (order as unknown as { first_product_id?: string }).first_product_id;
+                const pid = order.first_product_id;
                 if (pid) setProductInfoId(pid);
               }}
               title="Clique para ver informações do produto"

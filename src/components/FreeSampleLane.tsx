@@ -97,8 +97,18 @@ export const FreeSampleLane: React.FC<FreeSampleLaneProps> = ({
     setIsDragOver(false);
     try {
       const order = JSON.parse(e.dataTransfer.getData('application/json')) as PendingOrder;
+      const source = e.dataTransfer.getData('text/source');
       if (order && onDropOrder) {
         onDropOrder(order);
+        // Notify PendingOrders that this card was successfully dropped here
+        // so onDragEnd doesn't remove it via the unreliable dropEffect check
+        if (source === 'pending') {
+          window.dispatchEvent(
+            new CustomEvent('pending-order-dropped-to-free-sample', {
+              detail: { blingOrderId: order.bling_order_id },
+            })
+          );
+        }
       }
     } catch {
       // Invalid drag data — ignore
