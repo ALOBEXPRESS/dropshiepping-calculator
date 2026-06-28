@@ -129,7 +129,7 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
         .from('bling_order_items')
         .insert({
           order_id: blingOrder.id,
-          bling_item_id: null,
+          bling_item_id: Date.now(), // synthetic unique ID (bigint NOT NULL)
           product_bling_id: selectedProduct.id,
           product_variation_id: selectedVariation?.id ?? null,
           code: selectedVariation?.sku ?? selectedProduct.sku ?? '',
@@ -157,7 +157,8 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
       onLinked();
       onClose();
     } catch (err) {
-      toast.error(`Erro ao vincular: ${err instanceof Error ? err.message : String(err)}`);
+      const msg = err instanceof Error ? err.message : (typeof err === 'object' && err !== null && 'message' in err) ? String((err as {message: unknown}).message) : JSON.stringify(err);
+      toast.error(`Erro ao vincular: ${msg}`);
     } finally {
       setLinking(false);
     }
