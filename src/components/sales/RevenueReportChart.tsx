@@ -1196,6 +1196,18 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         visibility: visible !important;
         pointer-events: auto !important;
       }
+      /* Gap bridge: extends pointer-events area 200px to the right so mouse
+         traveling from data point (right side of chart) to tooltip (top-left)
+         doesn't trigger mouseleave on the chart SVG */
+      .apexcharts-tooltip.apexcharts-active::after {
+        content: '';
+        position: absolute;
+        top: -20px;
+        left: 100%;
+        width: 300px;
+        height: calc(100% + 40px);
+        pointer-events: auto;
+      }
     `;
     document.head.appendChild(style);
 
@@ -1800,11 +1812,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     },
     tooltip: {
       enabled: true,
-      followCursor: true,
+      followCursor: false,
       intersect: false,
       shared: false,
       fixed: {
-        enabled: false,
+        enabled: true,
         position: 'topLeft',
         offsetX: 10,
         offsetY: 10,
