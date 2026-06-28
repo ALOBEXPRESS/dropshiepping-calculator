@@ -672,18 +672,6 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
 
             {/* Botões de ação */}
             <div className="flex flex-col gap-2">
-              {/* Link product button — shown when order has no items */}
-              {(order.items_count === 0 || !order.first_product_id) && (
-                <Button
-                  onClick={() => setLinkProductOrder(order)}
-                  variant="outline"
-                  size="sm"
-                  className="w-full border-blue-400 text-blue-500 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/30 font-semibold"
-                >
-                  <Link2 className="w-4 h-4 mr-2" />
-                  Linkar Produto
-                </Button>
-              )}
               <div className="flex gap-2">
               <Button
                 onClick={() => processOrder(order.bling_order_id)}
@@ -713,6 +701,16 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
                 )}
               </Button>
             </div>
+              {/* Link/re-link product — always visible */}
+              <Button
+                onClick={() => setLinkProductOrder(order)}
+                variant="outline"
+                size="sm"
+                className="w-full border-blue-400 text-blue-500 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/30 font-semibold"
+              >
+                <Link2 className="w-4 h-4 mr-2" />
+                Linkar outro produto
+              </Button>
             </div>
           </Card>
         ))}
