@@ -46,12 +46,16 @@ interface FreeSampleCardProps {
   onProcess: () => void;
   isProcessing: boolean;
   onReturnToPending?: () => void;
+  processLabel?: string;
+  processButtonClass?: string;
 }
 
 export const FreeSampleCard: React.FC<FreeSampleCardProps> = ({
   order,
   onProcess,
   isProcessing,
+  processLabel = 'Amostra Grátis',
+  processButtonClass = 'bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700',
 }) => {
   const icon = getMarketplaceIcon(order.marketplace_name);
 
@@ -198,12 +202,12 @@ export const FreeSampleCard: React.FC<FreeSampleCardProps> = ({
         </div>
       </div>
 
-      {/* Action button — violet accent */}
+      {/* Action button */}
       <Button
         onClick={onProcess}
         disabled={isProcessing}
         size="sm"
-        className="w-full bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-semibold text-xs"
+        className={`w-full ${processButtonClass} text-white font-semibold text-xs`}
       >
         {isProcessing ? (
           <>
@@ -213,7 +217,7 @@ export const FreeSampleCard: React.FC<FreeSampleCardProps> = ({
         ) : (
           <>
             <Gift className="w-3.5 h-3.5 mr-1.5" />
-            Amostra Grátis
+            {processLabel}
           </>
         )}
       </Button>

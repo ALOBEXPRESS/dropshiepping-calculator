@@ -12,6 +12,7 @@ import {
 import { RealtimeStatusBadge } from '@/components/sales/RealtimeStatusBadge';
 import { PendingOrders } from '@/components/PendingOrders';
 import { FreeSampleLane } from '@/components/FreeSampleLane';
+import { PersonalPurchaseLane } from '@/components/PersonalPurchaseLane';
 import { useHeroStats } from '@/hooks/sales/useHeroStats';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import { useFilterPersistence } from '@/hooks/useFilterPersistence';
@@ -33,6 +34,16 @@ const Sales: React.FC = () => {
   const [freeSampleOrders, setFreeSampleOrders] = useState<PendingOrder[]>(() => {
     try {
       const stored = sessionStorage.getItem('freeSampleOrders');
+      return stored ? (JSON.parse(stored) as PendingOrder[]) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Personal purchase lane state
+  const [personalPurchaseOrders, setPersonalPurchaseOrders] = useState<PendingOrder[]>(() => {
+    try {
+      const stored = sessionStorage.getItem('personalPurchaseOrders');
       return stored ? (JSON.parse(stored) as PendingOrder[]) : [];
     } catch {
       return [];
@@ -115,6 +126,33 @@ const Sales: React.FC = () => {
       } catch {
         // sessionStorage unavailable
       }
+      return next;
+    });
+  }, []);
+
+  // Move pending order to personal purchase lane
+  const handleMoveToPersonalPurchase = useCallback((order: PendingOrder) => {
+    setPersonalPurchaseOrders((prev) => {
+      if (prev.some((o) => o.bling_order_id === order.bling_order_id)) return prev;
+      const next = [...prev, order];
+      try { sessionStorage.setItem('personalPurchaseOrders', JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  }, []);
+
+  const handlePersonalPurchaseProcessed = useCallback((blingOrderId: string) => {
+    setPersonalPurchaseOrders((prev) => {
+      const next = prev.filter((o) => o.bling_order_id !== blingOrderId);
+      try { sessionStorage.setItem('personalPurchaseOrders', JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+    handleOrderProcessed();
+  }, [handleOrderProcessed]);
+
+  const handleReturnPersonalToPending = useCallback((order: PendingOrder) => {
+    setPersonalPurchaseOrders((prev) => {
+      const next = prev.filter((o) => o.bling_order_id !== order.bling_order_id);
+      try { sessionStorage.setItem('personalPurchaseOrders', JSON.stringify(next)); } catch { /* ignore */ }
       return next;
     });
   }, []);
@@ -204,6 +242,19 @@ const Sales: React.FC = () => {
             onOrderProcessed={handleFreeSampleProcessed}
             onDropOrder={handleMoveToFreeSample}
             onReturnOrder={handleReturnToPending}
+          />
+        </div>
+      )}
+
+      {/* Compras pessoais — Jonatan & Alyson */}
+      {organizationId && (
+        <div className="mb-6 animate-on-load">
+          <PersonalPurchaseLane
+            orders={personalPurchaseOrders}
+            organizationId={organizationId}
+            onOrderProcessed={handlePersonalPurchaseProcessed}
+            onDropOrder={handleMoveToPersonalPurchase}
+            onReturnOrder={handleReturnPersonalToPending}
           />
         </div>
       )}

@@ -85,12 +85,20 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
 
   // Listen for successful drop to free sample lane (fired by FreeSampleLane)
   useEffect(() => {
-    const handler = (e: Event) => {
+    const handlerFree = (e: Event) => {
       const ev = e as CustomEvent<{ blingOrderId: string }>;
       droppedSuccessfullyRef.current = ev.detail.blingOrderId;
     };
-    window.addEventListener('pending-order-dropped-to-free-sample', handler);
-    return () => window.removeEventListener('pending-order-dropped-to-free-sample', handler);
+    const handlerPersonal = (e: Event) => {
+      const ev = e as CustomEvent<{ blingOrderId: string }>;
+      droppedSuccessfullyRef.current = ev.detail.blingOrderId;
+    };
+    window.addEventListener('pending-order-dropped-to-free-sample', handlerFree);
+    window.addEventListener('pending-order-dropped-to-personal-purchase', handlerPersonal);
+    return () => {
+      window.removeEventListener('pending-order-dropped-to-free-sample', handlerFree);
+      window.removeEventListener('pending-order-dropped-to-personal-purchase', handlerPersonal);
+    };
   }, []);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
