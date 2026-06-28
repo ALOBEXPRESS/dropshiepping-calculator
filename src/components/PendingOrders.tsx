@@ -3,10 +3,11 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useSettings } from '@/contexts/SettingsContext';
-import { Loader2, CheckCircle, AlertCircle, Package, ChevronLeft, ChevronRight, Trash2, GripVertical, FileText } from 'lucide-react';
+import { Loader2, CheckCircle, AlertCircle, Package, ChevronLeft, ChevronRight, Trash2, GripVertical, FileText, Link2 } from 'lucide-react';
 import { ProcessOrderModal } from './ProcessOrderModal';
 import { NFeUploadModal } from './NFeUploadModal';
 import { ProductInfoModal } from './ProductInfoModal';
+import { LinkProductModal } from './LinkProductModal';
 import { useAutoGenderClassification } from '@/hooks/useAutoGenderClassification';
 import type { PendingOrder } from '@/types/pendingOrder';
 
@@ -81,6 +82,7 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
   const [showModal, setShowModal] = useState(false);
   const [nfeModalOpen, setNfeModalOpen] = useState(false);
   const [productInfoId, setProductInfoId] = useState<string | null>(null);
+  const [linkProductOrder, setLinkProductOrder] = useState<typeof pendingOrders[0] | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const droppedSuccessfullyRef = useRef<string | null>(null); // tracks bling_order_id dropped to free sample
 
@@ -345,6 +347,15 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
         productId={productInfoId}
         onClose={() => setProductInfoId(null)}
       />
+      {organizationId && linkProductOrder && (
+        <LinkProductModal
+          open={true}
+          order={linkProductOrder}
+          organizationId={organizationId}
+          onClose={() => setLinkProductOrder(null)}
+          onLinked={() => { setLinkProductOrder(null); loadPendingOrders(false); }}
+        />
+      )}
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -660,7 +671,20 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
             </div>
 
             {/* Botões de ação */}
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2">
+              {/* Link product button — shown when order has no items */}
+              {(order.items_count === 0 || !order.first_product_id) && (
+                <Button
+                  onClick={() => setLinkProductOrder(order)}
+                  variant="outline"
+                  size="sm"
+                  className="w-full border-blue-400 text-blue-500 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/30 font-semibold"
+                >
+                  <Link2 className="w-4 h-4 mr-2" />
+                  Linkar Produto
+                </Button>
+              )}
+              <div className="flex gap-2">
               <Button
                 onClick={() => processOrder(order.bling_order_id)}
                 disabled={processing === order.bling_order_id || deleting === order.bling_order_id}
@@ -688,6 +712,7 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
                   <Trash2 className="w-4 h-4" />
                 )}
               </Button>
+            </div>
             </div>
           </Card>
         ))}
