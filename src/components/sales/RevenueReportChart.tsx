@@ -1649,12 +1649,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const useAccumulated = period === 'monthly' || period === 'weekly' || period === 'daily';
 
   const totalRevenue = visibleData.reduce((sum, item) => sum + Number(item.total_revenue), 0);
-  const totalCost = visibleData.reduce((sum, item) => sum + Number(item.total_cost), 0);
   // Anual: soma simples do período visível. Mensal/semanal/diário: último acumulado da janela
   const lastVisibleIdx = windowOffset + visibleData.length - 1;
-  const totalProfit = useAccumulated
-    ? (cumulativeProfits[lastVisibleIdx] ?? 0)
-    : visibleData.reduce((sum, item) => sum + Number(item.total_profit ?? 0), 0);
+  void lastVisibleIdx; // used by cumulativeProfits index
 
   // Custo/Lucro do PERÍODO ATUAL (label "Jun", "Sem.", etc.) = último item de visibleData
   // Para período mensal/semanal/diário: mostra só o último item (mês/semana/dia atual)
