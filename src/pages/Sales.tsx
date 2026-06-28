@@ -133,6 +133,12 @@ const Sales: React.FC = () => {
 
   // Move pending order to personal purchase lane
   const handleMoveToPersonalPurchase = useCallback((order: PendingOrder) => {
+    // Remove from freeSampleOrders if it was there (cross-lane move)
+    setFreeSampleOrders((prev) => {
+      const next = prev.filter((o) => o.bling_order_id !== order.bling_order_id);
+      try { sessionStorage.setItem('freeSampleOrders', JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
     setPersonalPurchaseOrders((prev) => {
       if (prev.some((o) => o.bling_order_id === order.bling_order_id)) return prev;
       const next = [...prev, order];

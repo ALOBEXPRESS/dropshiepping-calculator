@@ -84,12 +84,21 @@ export const PersonalPurchaseLane: React.FC<PersonalPurchaseLaneProps> = ({
       const source = e.dataTransfer.getData('text/source');
       if (order && onDropOrder) {
         onDropOrder(order);
-        if (source === 'pending') {
+        // Dispatch event for both pending and freesample sources so originating lane removes card
+        if (source === 'pending' || source === 'freesample') {
           window.dispatchEvent(
             new CustomEvent('pending-order-dropped-to-personal-purchase', {
               detail: { blingOrderId: order.bling_order_id },
             })
           );
+          // Also notify free sample lane to remove if dragged from there
+          if (source === 'freesample') {
+            window.dispatchEvent(
+              new CustomEvent('pending-order-dropped-to-free-sample', {
+                detail: { blingOrderId: order.bling_order_id },
+              })
+            );
+          }
         }
       }
     } catch {
