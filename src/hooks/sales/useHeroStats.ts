@@ -190,6 +190,7 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
           .select(`
             id,
             customer_id,
+            lead_id,
             total_amount,
             discount_value,
             bling_order_id,
@@ -305,6 +306,7 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
           .select(`
             id,
             customer_id,
+            lead_id,
             total_amount,
             marketplace_id,
             shipping_cost,
@@ -402,15 +404,15 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
 
         if (previousProductsError) throw previousProductsError;
 
-        // Calcular clientes únicos
+        // Calcular clientes únicos — usa lead_id se customer_id for null
         const currentUniqueCustomers = new Set(
           processedCurrentOrders
-            .map(order => order.customer_id)
+            .map(order => (order as unknown as { lead_id?: string }).lead_id || order.customer_id)
             .filter(Boolean)
         );
         const previousUniqueCustomers = new Set(
           (previousOrdersData || [])
-            .map(order => order.customer_id)
+            .map(order => (order as unknown as { lead_id?: string }).lead_id || order.customer_id)
             .filter(Boolean)
         );
 
