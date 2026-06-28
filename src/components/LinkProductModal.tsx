@@ -147,11 +147,52 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
 
       if (insertError) throw insertError;
 
-      // 3. Update bling_order with product image (so card shows image immediately)
-      await supabase
-        .from('bling_orders')
-        .update({ contact_document: order.order_number?.toString() }) // trigger rematch
-        .eq('id', blingOrder.id);
+      // 3. Upsert in 'products' for TikTok marketplace using bling product data
+      // This makes it appear in the marketplace product catalog
+      const productSku = selectedVariation?.sku ?? selectedProduct.sku ?? '';
+      const productImage = selectedVariation?.image_url1 ?? selectedProduct.image_url1 ?? null;
+      const productPrice = Number(selectedVariation?.sale_price ?? selectedProduct.sale_price ?? 0);
+      const productCostPrice = Number(selectedVariation?.cost_price ?? selectedProduct.cost_price ?? 0);
+
+      // Check if product already exists in products table by SKU + organization
+      const { data: existingProduct } = await supabase
+        .from('products')
+        .select('id')
+        .eq('organization_id', organizationId)
+        .eq('sku', productSku)
+        .limit(1);
+
+      let productId: string | null = existingProduct?.[0]?.id ?? null;
+
+      if (!productId) {
+        // Create new product entry linked to TikTok marketplace
+        const { data: newProduct, error: productError } = await supabase
+          .from('products')
+          .insert({
+            organization_id: organizationId,
+            name: productName,
+            sku: productSku,
+            price: productPrice > 0 ? productPrice : unitValue,
+            cost_price: productCostPrice,
+            image_url: productImage,
+            marketplace: 'TikTok',
+            marketplace_id: 'c736e8ae-b765-44b6-b23f-468639bd8c13', // TikTok marketplace id
+            sales_channel_id: '18cc394e-edd5-4a88-b412-f7170acfe9ad', // TikTok Shop channel id
+          })
+          .select('id')
+          .single();
+        if (productError) throw productError;
+        productId = newProduct?.id ?? null;
+      }
+
+      // 4. Update bling_order_item to link product_id (overwrite wrong rematch result)
+      if (productId) {
+        await supabase
+          .from('bling_order_items')
+          .update({ product_id: productId })
+          .eq('order_id', blingOrder.id)
+          .eq('product_bling_id', selectedProduct.id);
+      }
 
       toast.success(`Produto "${productName}" vinculado ao Pedido #${order.order_number}`);
       onLinked();
