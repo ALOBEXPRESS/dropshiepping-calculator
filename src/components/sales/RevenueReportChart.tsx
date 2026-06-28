@@ -347,6 +347,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [tooltipPages, setTooltipPages] = useState<Record<number, number>>({});
   const tooltipPagesRef = useRef(tooltipPages);
   tooltipPagesRef.current = tooltipPages;
+
+  // Bloqueia re-render do tooltip pela custom fn por ~300ms após nav click
+  // para que o DOM update manual persista sem ser sobrescrito pelo mousemove
+  const navClickBlockUntilRef = useRef<number>(0);
   const [orderEnrichmentById, setOrderEnrichmentById] = useState<Record<string, Partial<OrderDetail>>>({});
   const orderEnrichmentByIdRef = useRef(orderEnrichmentById);
   orderEnrichmentByIdRef.current = orderEnrichmentById;
@@ -1300,6 +1304,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
           // Atualizar ref imediatamente (antes do DOM update, não aguarda re-render)
           tooltipPagesRef.current = { ...tooltipPagesRef.current, [globalIdx]: next };
+          // Bloquear custom fn por 400ms para que DOM update não seja sobrescrito pelo followCursor
+          navClickBlockUntilRef.current = Date.now() + 400;
           // Atualizar estado React (key = globalIdx para consistência com série)
           setTooltipPages(prev => ({ ...prev, [globalIdx]: next }));
 
@@ -1803,16 +1809,20 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     },
     tooltip: {
       enabled: true,
-      followCursor: false,
+      followCursor: true,
       intersect: false,
       shared: false,
       fixed: {
-        enabled: true,
+        enabled: false,
         position: 'topLeft',
         offsetX: 10,
         offsetY: 10,
       },
       custom: ({ dataPointIndex }: { dataPointIndex: number }) => {
+        // If nav arrow was just clicked, return empty to avoid overwriting the DOM update
+        if (Date.now() < navClickBlockUntilRef.current) {
+          return document.querySelector('.apexcharts-tooltip')?.innerHTML ?? '';
+        }
         const currentData = dataRef.current;
         const globalDataIdx = ((window as unknown as { __chartWindowOffset?: number }).__chartWindowOffset ?? 0) + dataPointIndex;
         if (!currentData[globalDataIdx]) return '';
