@@ -1656,6 +1656,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     ? (cumulativeProfits[lastVisibleIdx] ?? 0)
     : visibleData.reduce((sum, item) => sum + Number(item.total_profit ?? 0), 0);
 
+  // Custo/Lucro do PERÍODO ATUAL (label "Jun", "Sem.", etc.) = último item de visibleData
+  // Para período mensal/semanal/diário: mostra só o último item (mês/semana/dia atual)
+  // Para anual: soma simples dos visíveis (já é por ano)
+  const currentPeriodItem = visibleData[visibleData.length - 1];
+  const currentPeriodCost = currentPeriodItem ? Number(currentPeriodItem.total_cost ?? 0) : 0;
+  const currentPeriodProfit = currentPeriodItem ? Number(currentPeriodItem.total_profit ?? 0) : 0;
+
   // Lucro total de TODOS os dados do período (não só janela visível)
   const allDataTotalProfit = recalculatedData.reduce((sum, item) => sum + Number(item.total_profit ?? 0), 0);
 
@@ -2889,7 +2896,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">{costLabel}</p>
-              <p className="text-xl font-bold text-red-600">{formatCurrency(totalCost)}</p>
+              <p className="text-xl font-bold text-red-600">{formatCurrency(currentPeriodCost)}</p>
             </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Custo Total</p>
@@ -2897,7 +2904,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">{periodLabel}</p>
-              <p className={`text-xl font-bold ${totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(totalProfit)}</p>
+              <p className={`text-xl font-bold ${currentPeriodProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(currentPeriodProfit)}</p>
             </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Lucro Total</p>
