@@ -82,6 +82,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [period, setPeriod] = useState<PeriodFilter>(externalPeriod || 'monthly');
   const [windowOffset, setWindowOffset] = useState(0);
   const { data, loading, error, refetch } = useRevenueReport(organizationId, period);
+  // All-time totals — always use yearly to get all data regardless of current period filter
+  const { data: yearlyData } = useRevenueReport(organizationId, 'yearly');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<{ id: string; number: string; store: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -1606,9 +1608,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const realProfit = typeof result === 'number' ? result : result.realProfit;
         const productCost = typeof result === 'number' ? 0 : result.totalProductCost;
         const liquidoFinal = typeof result === 'number' ? Number(o.total_amount ?? 0) : result.precoVendaLiquidoFinal;
+        // Custo real = receita líquida - lucro = inclui produto + marketplace + frete + supplier fees
+        const realCost = liquidoFinal - realProfit;
 
         totalRevenue += liquidoFinal;
-        totalCost += productCost;
+        totalCost += realCost;
         totalProfit += realProfit;
       });
 
@@ -1660,11 +1664,40 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const currentPeriodCost = currentPeriodItem ? Number(currentPeriodItem.total_cost ?? 0) : 0;
   const currentPeriodProfit = currentPeriodItem ? Number(currentPeriodItem.total_profit ?? 0) : 0;
 
-  // Lucro total de TODOS os dados do período (não só janela visível)
-  const allDataTotalProfit = recalculatedData.reduce((sum, item) => sum + Number(item.total_profit ?? 0), 0);
+  // Lucro total de TODOS os dados — calculado sobre yearlyData (todos os meses do ano)
+  // independente do filtro de período selecionado
+  const allDataTotalProfit = useMemo(() => {
+    return yearlyData.reduce((sum, item) => {
+      const orders = item.orders_data ?? [];
+      return sum + orders.reduce((s, o) => {
+        const mergedOrder = mergeOrderForTooltip(o);
+        const cfg = resolveMarketplaceConfig(
+          (o as { marketplace?: string }).marketplace,
+          Number((o as { commission_rate?: number }).commission_rate ?? 0),
+          Number((o as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0)
+        );
+        return s + computeOrderRealProfit(mergedOrder, cfg).realProfit;
+      }, 0);
+    }, 0);
+  }, [yearlyData, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig]);
 
-  // Custo total de TODOS os dados
-  const allDataTotalCost = recalculatedData.reduce((sum, item) => sum + Number(item.total_cost ?? 0), 0);
+  // Custo total = receita - lucro (inclui produto + marketplace + frete + supplier)
+  const allDataTotalCost = useMemo(() => {
+    return yearlyData.reduce((sum, item) => {
+      const orders = item.orders_data ?? [];
+      return sum + orders.reduce((s, o) => {
+        const mergedOrder = mergeOrderForTooltip(o);
+        const cfg = resolveMarketplaceConfig(
+          (o as { marketplace?: string }).marketplace,
+          Number((o as { commission_rate?: number }).commission_rate ?? 0),
+          Number((o as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0)
+        );
+        const { realProfit, precoVendaLiquidoFinal } = computeOrderRealProfit(mergedOrder, cfg);
+        const realCost = precoVendaLiquidoFinal - realProfit;
+        return s + realCost;
+      }, 0);
+    }, 0);
+  }, [yearlyData, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig]);
 
   // Label dinâmico para "Custo {período atual}"
   const costLabel = (() => {
