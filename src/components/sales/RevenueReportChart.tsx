@@ -1669,6 +1669,30 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     ? (cumulativeProfits[lastVisibleIdx] ?? 0)
     : visibleData.reduce((sum, item) => sum + Number(item.total_profit ?? 0), 0);
 
+  // Lucro total de TODOS os dados do período (não só janela visível)
+  const allDataTotalProfit = recalculatedData.reduce((sum, item) => sum + Number(item.total_profit ?? 0), 0);
+
+  // Label dinâmico para "Lucro {período atual}"
+  const periodLabel = (() => {
+    const now = new Date();
+    if (period === 'daily') {
+      return `Lucro ${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+    }
+    if (period === 'weekly') {
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      const d = startOfWeek.getDate().toString().padStart(2, '0');
+      const m = (startOfWeek.getMonth() + 1).toString().padStart(2, '0');
+      return `Lucro Sem. ${d}/${m}`;
+    }
+    if (period === 'monthly') {
+      const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      return `Lucro ${months[now.getMonth()]}`;
+    }
+    // yearly
+    return `Lucro ${now.getFullYear()}`;
+  })();
+
 
   const chartOptions: ApexOptions = {
     chart: {
@@ -1776,11 +1800,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     },
     tooltip: {
       enabled: true,
-      followCursor: false,
+      followCursor: true,
       intersect: false,
       shared: false,
       fixed: {
-        enabled: true,
+        enabled: false,
         position: 'topLeft',
         offsetX: 10,
         offsetY: 10,
@@ -2855,8 +2879,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               <p className="text-xl font-bold text-red-600">{formatCurrency(totalCost)}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Lucro</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{periodLabel}</p>
               <p className={`text-xl font-bold ${totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(totalProfit)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Lucro Total</p>
+              <p className={`text-xl font-bold ${allDataTotalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(allDataTotalProfit)}</p>
             </div>
           </div>
         </div>
