@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Package, Tag, DollarSign, Warehouse, Ruler, Truck } from 'lucide-react';
+import { X, Package, Tag, Warehouse, Ruler } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 interface ProductInfo {
