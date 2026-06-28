@@ -6,6 +6,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { Loader2, CheckCircle, AlertCircle, Package, ChevronLeft, ChevronRight, Trash2, GripVertical, FileText } from 'lucide-react';
 import { ProcessOrderModal } from './ProcessOrderModal';
 import { NFeUploadModal } from './NFeUploadModal';
+import { ProductInfoModal } from './ProductInfoModal';
 import { useAutoGenderClassification } from '@/hooks/useAutoGenderClassification';
 import type { PendingOrder } from '@/types/pendingOrder';
 
@@ -78,6 +79,7 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
   const [processResult, setProcessResult] = useState<ProcessResult | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [nfeModalOpen, setNfeModalOpen] = useState(false);
+  const [productInfoId, setProductInfoId] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
@@ -317,6 +319,10 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
         onClose={() => setNfeModalOpen(false)}
         onSuccess={() => loadPendingOrders(false)}
       />
+      <ProductInfoModal
+        productId={productInfoId}
+        onClose={() => setProductInfoId(null)}
+      />
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -471,7 +477,14 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
               <span>Arraste para Amostras Grátis</span>
             </div>
             {/* Imagem do Produto — altura reduzida */}
-            <div className="relative w-full h-32 mb-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-zinc-900 dark:to-zinc-800 rounded-xl overflow-hidden shadow-sm">
+            <div
+              className="relative w-full h-32 mb-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-zinc-900 dark:to-zinc-800 rounded-xl overflow-hidden shadow-sm cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all"
+              onClick={() => {
+                const pid = (order as unknown as { first_product_id?: string }).first_product_id;
+                if (pid) setProductInfoId(pid);
+              }}
+              title="Clique para ver informações do produto"
+            >
               {order.first_product_image ? (
                 <img
                   src={order.first_product_image}

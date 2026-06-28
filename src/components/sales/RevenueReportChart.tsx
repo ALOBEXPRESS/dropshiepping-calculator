@@ -1196,14 +1196,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         visibility: visible !important;
         pointer-events: auto !important;
       }
-      /* Gap bridge: extends pointer-events area 200px to the right so mouse
-         traveling from data point (right side of chart) to tooltip (top-left)
-         doesn't trigger mouseleave on the chart SVG */
+      /* Gap bridge: extends pointer-events area toward chart center.
+         Tooltip is fixed topRight, data points spread left → bridge goes left */
       .apexcharts-tooltip.apexcharts-active::after {
         content: '';
         position: absolute;
         top: -20px;
-        left: 100%;
+        right: 100%;
         width: 300px;
         height: calc(100% + 40px);
         pointer-events: auto;
@@ -1304,40 +1303,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           // Atualizar estado React (key = globalIdx para consistência com série)
           setTooltipPages(prev => ({ ...prev, [globalIdx]: next }));
 
-          // Atualizar a série do gráfico via ApexCharts API (sem fechar o tooltip)
-          const canvas = document.querySelector('.apexcharts-canvas');
-          if (canvas) {
-            const chartId = (canvas.id || '').replace('apexcharts', '');
-            const ApexChartsGlobal = (window as unknown as { ApexCharts?: { getChartByID: (id: string) => { updateSeries: (s: unknown[], animate?: boolean) => void } | null } }).ApexCharts;
-            if (ApexChartsGlobal && chartId) {
-              const instance = ApexChartsGlobal.getChartByID(chartId);
-              if (instance) {
-                const newSeriesData = dataRef.current.map((item, idx) => {
-                  const pageUnsafe = idx === globalIdx ? next : (tooltipPagesRef.current[idx] ?? 0);
-                  const orders = item.orders_data ?? [];
-                  const page = orders.length > 0 ? Math.min(pageUnsafe, orders.length - 1) : 0;
-                  if (orders.length > 0 && orders[page]) {
-                    const o = orders[page] as unknown as {
-                      marketplace?: string;
-                      commission_rate?: number;
-                      marketplace_fixed_fee?: number;
-                    };
-                    const cfg = resolveMarketplaceConfig(
-                      o.marketplace,
-                      Number(o.commission_rate ?? 0),
-                      Number(o.marketplace_fixed_fee ?? 0)
-                    );
-                    const mergedOrder = mergeOrderForTooltip(orders[page]);
-                    return computeOrderRealProfit(mergedOrder, cfg).realProfit;
-                  }
-                  return Number(item.total_profit ?? 0);
-                });
-                const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
-                const shouldAnimate = !reduceMotion && (periodRef.current === 'monthly' || periodRef.current === 'yearly');
-                instance.updateSeries([{ name: 'Lucro', data: newSeriesData }], shouldAnimate);
-              }
-            }
-          }
+          // NÃO chamar updateSeries aqui — updateSeries fecha/reseta o tooltip internamente
+          // o que impede a visualização imediata do novo pedido.
+          // A série só é atualizada quando o usuário mover o mouse (novo hover),
+          // o que é aceitável pois a navegação é apenas visual no tooltip.
 
           // Atualizar o HTML do tooltip diretamente no DOM (resposta imediata)
           // Nota: não exigir .apexcharts-active pois ao clicar botão dentro do tooltip
@@ -1817,8 +1786,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       shared: false,
       fixed: {
         enabled: true,
-        position: 'topLeft',
-        offsetX: 10,
+        position: 'topRight',
+        offsetX: -10,
         offsetY: 10,
       },
       custom: ({ dataPointIndex }: { dataPointIndex: number }) => {
