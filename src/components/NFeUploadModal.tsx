@@ -237,6 +237,30 @@ export function NFeUploadModal({ open, onClose, onSuccess }: NFeUploadModalProps
           const { data: bySku } = await supabase.from('products').select('id, cost_price, image_url').eq('organization_id', organizationId).eq('sku', item.sku).limit(1);
           if (bySku?.[0]) { itemProductIds[i] = { productId: bySku[0].id, costPrice: bySku[0].cost_price ?? 0, imageUrl: bySku[0].image_url ?? null }; continue; }
         }
+        // 1b. Try prefix SKU match — NF SKU may have color/size suffix (e.g. CHINELOBRA10CPBRANCO3738 vs CHINELOBRA10CP)
+        if (item.sku && item.sku.length >= 4) {
+          // Try prefixes from longest to shortest (min 4 chars)
+          for (let prefixLen = item.sku.length - 1; prefixLen >= 4; prefixLen--) {
+            const prefix = item.sku.slice(0, prefixLen);
+            const { data: bySkuPrefix } = await supabase
+              .from('products')
+              .select('id, cost_price, image_url, sku')
+              .eq('organization_id', organizationId)
+              .ilike('sku', `${prefix}%`)
+              .limit(5);
+            if (bySkuPrefix && bySkuPrefix.length > 0) {
+              // Pick the one whose SKU is the longest prefix of item.sku
+              const sorted = bySkuPrefix.sort((a, b) =>
+                (b as { sku?: string }).sku!.length - (a as { sku?: string }).sku!.length
+              );
+              const match = sorted.find(p =>
+                item.sku.toUpperCase().startsWith(((p as { sku?: string }).sku ?? '').toUpperCase())
+              );
+              if (match) { itemProductIds[i] = { productId: match.id, costPrice: match.cost_price ?? 0, imageUrl: match.image_url ?? null }; break; }
+            }
+          }
+          if (itemProductIds[i]) continue;
+        }
         // 2. Fuzzy name match in products — prefer matching marketplace + account_holder (CNPJ)
         const words = stripAccents(item.descricao).split(/\s+/).slice(0, 3).join(' ');
         const { data: byName } = await supabase.from('products').select('id, cost_price, image_url, marketplace, account_type').eq('organization_id', organizationId).ilike('name', `%${words.split(' ')[0]}%`).limit(10);
