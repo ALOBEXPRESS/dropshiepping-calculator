@@ -1196,14 +1196,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         visibility: visible !important;
         pointer-events: auto !important;
       }
-      /* Gap bridge: extends pointer-events area toward chart center.
-         Tooltip is fixed topRight, data points spread left → bridge goes left */
+      /* Gap bridge: tooltip fixed topLeft, data points spread rightward.
+         Extend pointer-events right so mouse can travel from right-side data point to tooltip */
       .apexcharts-tooltip.apexcharts-active::after {
         content: '';
         position: absolute;
         top: -20px;
-        right: 100%;
-        width: 300px;
+        left: 100%;
+        width: 600px;
         height: calc(100% + 40px);
         pointer-events: auto;
       }
@@ -1653,6 +1653,28 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   // Lucro total de TODOS os dados do período (não só janela visível)
   const allDataTotalProfit = recalculatedData.reduce((sum, item) => sum + Number(item.total_profit ?? 0), 0);
 
+  // Custo total de TODOS os dados
+  const allDataTotalCost = recalculatedData.reduce((sum, item) => sum + Number(item.total_cost ?? 0), 0);
+
+  // Label dinâmico para "Custo {período atual}"
+  const costLabel = (() => {
+    const now = new Date();
+    if (period === 'daily') {
+      return `Custo ${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+    }
+    if (period === 'weekly') {
+      // Calcular número da semana do mês
+      const weekNum = Math.ceil(now.getDate() / 7);
+      const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      return `Custo Sem. ${weekNum} ${months[now.getMonth()]}`;
+    }
+    if (period === 'monthly') {
+      const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      return `Custo ${months[now.getMonth()]}`;
+    }
+    return `Custo ${now.getFullYear()}`;
+  })();
+
   // Label dinâmico para "Lucro {período atual}"
   const periodLabel = (() => {
     const now = new Date();
@@ -1786,8 +1808,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       shared: false,
       fixed: {
         enabled: true,
-        position: 'topRight',
-        offsetX: -10,
+        position: 'topLeft',
+        offsetX: 10,
         offsetY: 10,
       },
       custom: ({ dataPointIndex }: { dataPointIndex: number }) => {
@@ -2856,8 +2878,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               <p className="text-xl font-bold text-green-600">{formatCurrency(totalRevenue)}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Custo</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{costLabel}</p>
               <p className="text-xl font-bold text-red-600">{formatCurrency(totalCost)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Custo Total</p>
+              <p className="text-xl font-bold text-red-600">{formatCurrency(allDataTotalCost)}</p>
             </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">{periodLabel}</p>
