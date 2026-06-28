@@ -1606,9 +1606,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
         const result = computeOrderRealProfit(mergedOrder, undefined, affiliateByOrderId[o.order_id]);
         const realProfit = typeof result === 'number' ? result : result.realProfit;
-        const productCost = typeof result === 'number' ? 0 : result.totalProductCost;
         const liquidoFinal = typeof result === 'number' ? Number(o.total_amount ?? 0) : result.precoVendaLiquidoFinal;
-        // Custo real = receita líquida - lucro = inclui produto + marketplace + frete + supplier fees
         const realCost = liquidoFinal - realProfit;
 
         totalRevenue += liquidoFinal;
