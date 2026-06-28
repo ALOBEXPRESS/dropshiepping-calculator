@@ -101,7 +101,6 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
 
   const handleLink = useCallback(async () => {
     if (!selectedProduct) return;
-    // If product has variations, require a variation to be selected
     if (variations.length > 0 && !selectedVariation) {
       toast.error('Selecione uma variação do produto');
       return;
@@ -109,7 +108,7 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
 
     setLinking(true);
     try {
-      // 1. Find the bling_order — get its id
+      // 1. Find bling_order id
       const { data: blingOrder } = await supabase
         .from('bling_orders')
         .select('id')
@@ -119,42 +118,63 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
 
       if (!blingOrder) throw new Error('Pedido Bling não encontrado');
 
-      // 2. Insert bling_order_item linking this product
       const productName = selectedVariation
         ? `${selectedProduct.name} — ${selectedVariation.variacao_nome ?? selectedVariation.name}`
         : selectedProduct.name;
       const unitValue = Number(order.total_amount ?? 0);
 
-      const { error: insertError } = await supabase
+      // 2. Check if item already exists (came from webhook with wrong product)
+      const { data: existingItems } = await supabase
         .from('bling_order_items')
-        .insert({
-          order_id: blingOrder.id,
-          bling_item_id: Date.now(), // synthetic unique ID (bigint NOT NULL)
-          product_bling_id: selectedProduct.id,
-          product_variation_id: selectedVariation?.id ?? null,
-          code: selectedVariation?.sku ?? selectedProduct.sku ?? '',
-          description: productName,
-          unit: 'UN',
-          quantity: 1,
-          unit_value: unitValue,
-          total_value: unitValue,
-          discount: 0,
-          ipi_rate: 0,
-          commission_base: 0,
-          commission_rate: 0,
-          commission_value: 0,
-        });
+        .select('id')
+        .eq('order_id', blingOrder.id)
+        .limit(1);
 
-      if (insertError) throw insertError;
+      const existingItemId = existingItems?.[0]?.id ?? null;
 
-      // 3. Upsert in 'products' for TikTok marketplace using bling product data
-      // This makes it appear in the marketplace product catalog
+      if (existingItemId) {
+        // Update existing item — clear wrong product_id, set correct bling refs
+        const { error: updateErr } = await supabase
+          .from('bling_order_items')
+          .update({
+            product_bling_id: selectedProduct.id,
+            product_variation_id: selectedVariation?.id ?? null,
+            product_id: null, // clear wrong match; will be set below after product creation
+            code: selectedVariation?.sku ?? selectedProduct.sku ?? '',
+            description: productName,
+          })
+          .eq('id', existingItemId);
+        if (updateErr) throw updateErr;
+      } else {
+        // Insert new item
+        const { error: insertErr } = await supabase
+          .from('bling_order_items')
+          .insert({
+            order_id: blingOrder.id,
+            bling_item_id: Date.now(),
+            product_bling_id: selectedProduct.id,
+            product_variation_id: selectedVariation?.id ?? null,
+            code: selectedVariation?.sku ?? selectedProduct.sku ?? '',
+            description: productName,
+            unit: 'UN',
+            quantity: 1,
+            unit_value: unitValue,
+            total_value: unitValue,
+            discount: 0,
+            ipi_rate: 0,
+            commission_base: 0,
+            commission_rate: 0,
+            commission_value: 0,
+          });
+        if (insertErr) throw insertErr;
+      }
+
+      // 3. Upsert in 'products' for TikTok marketplace
       const productSku = selectedVariation?.sku ?? selectedProduct.sku ?? '';
       const productImage = selectedVariation?.image_url1 ?? selectedProduct.image_url1 ?? null;
       const productPrice = Number(selectedVariation?.sale_price ?? selectedProduct.sale_price ?? 0);
       const productCostPrice = Number(selectedVariation?.cost_price ?? selectedProduct.cost_price ?? 0);
 
-      // Check if product already exists in products table by SKU + organization
       const { data: existingProduct } = await supabase
         .from('products')
         .select('id')
@@ -165,7 +185,6 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
       let productId: string | null = existingProduct?.[0]?.id ?? null;
 
       if (!productId) {
-        // Create new product entry linked to TikTok marketplace
         const { data: newProduct, error: productError } = await supabase
           .from('products')
           .insert({
@@ -176,8 +195,8 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
             cost_price: productCostPrice,
             image_url: productImage,
             marketplace: 'TikTok',
-            marketplace_id: 'c736e8ae-b765-44b6-b23f-468639bd8c13', // TikTok marketplace id
-            sales_channel_id: '18cc394e-edd5-4a88-b412-f7170acfe9ad', // TikTok Shop channel id
+            marketplace_id: 'c736e8ae-b765-44b6-b23f-468639bd8c13',
+            sales_channel_id: '18cc394e-edd5-4a88-b412-f7170acfe9ad',
           })
           .select('id')
           .single();
@@ -185,20 +204,24 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
         productId = newProduct?.id ?? null;
       }
 
-      // 4. Update bling_order_item to link product_id (overwrite wrong rematch result)
+      // 4. Update bling_order_item.product_id to correct product
       if (productId) {
         await supabase
           .from('bling_order_items')
           .update({ product_id: productId })
           .eq('order_id', blingOrder.id)
-          .eq('product_bling_id', selectedProduct.id);
+          .is('product_id', null); // only update items where product_id was cleared
       }
 
       toast.success(`Produto "${productName}" vinculado ao Pedido #${order.order_number}`);
       onLinked();
       onClose();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : (typeof err === 'object' && err !== null && 'message' in err) ? String((err as {message: unknown}).message) : JSON.stringify(err);
+      const msg = err instanceof Error
+        ? err.message
+        : (typeof err === 'object' && err !== null && 'message' in err)
+          ? String((err as { message: unknown }).message)
+          : JSON.stringify(err);
       toast.error(`Erro ao vincular: ${msg}`);
     } finally {
       setLinking(false);
