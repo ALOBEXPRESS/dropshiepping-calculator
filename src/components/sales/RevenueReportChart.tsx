@@ -228,6 +228,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       tiktok_sfp_enabled?: boolean | string;
       is_free_sample?: boolean | string;
       marketplace?: string;
+      tiktok_reembolso_disabled?: boolean;
     };
 
     const totalAmount = Number(o.total_amount ?? 0);
@@ -300,8 +301,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       ? 0
       : (commissionPercent + fixedFee + sfpFee + shipping + other + affiliateCommission);
 
-    // TikTok reembolso = desconto (default enabled)
-    const tiktokReembolso = isTikTok ? activeDiscount : 0;
+    // TikTok reembolso = desconto (default enabled, unless tiktok_reembolso_disabled=true on the order)
+    const reembolsoDisabled = (order as { tiktok_reembolso_disabled?: boolean }).tiktok_reembolso_disabled === true;
+    const tiktokReembolso = (isTikTok && !reembolsoDisabled) ? activeDiscount : 0;
 
     const precoVendaLiquidoFinal = isTikTok
       ? precoVendaPagoCliente + tiktokReembolso - subtotalMarketplace
