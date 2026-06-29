@@ -1872,7 +1872,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const order = periodData.orders_data?.[currentPage];
 
         // Gerar HTML de um único pedido (paginado)
-        const { orderInnerHtml, orderIsFreeSample } = order ? (() => {
+        const { orderInnerHtml, orderIsFreeSample, orderIsPersonalPurchase } = order ? (() => {
           const mergedOrder = mergeOrderForTooltip(order) as unknown as {
             customer_name?: string;
             product_name?: string;

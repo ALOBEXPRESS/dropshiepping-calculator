@@ -17,6 +17,7 @@ interface PersonalPurchaseLaneProps {
 
 export const PersonalPurchaseLane: React.FC<PersonalPurchaseLaneProps> = ({
   orders,
+  organizationId,
   onOrderProcessed,
   onDropOrder,
   onReturnOrder,
