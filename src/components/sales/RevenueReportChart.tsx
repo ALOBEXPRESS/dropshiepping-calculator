@@ -1377,7 +1377,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 const navBtnDisabledColor = isPersonalPurchase ? 'rgba(254,215,170,0.3)' : isFreeSample ? 'rgba(233,213,255,0.3)' : '#d1d5db';
 
                 const orderDetailData = {
-                  order_id: order.order_id, order_number: orderNumber, marketplace: marketplaceName,
+                  order_id: order.order_id,
+                  bling_order_id: (order as { bling_order_id?: string | null }).bling_order_id ?? null,
+                  tiktok_reembolso_disabled: (order as { tiktok_reembolso_disabled?: boolean }).tiktok_reembolso_disabled === true,
+                  order_number: orderNumber, marketplace: marketplaceName,
                   marketplace_fixed_fee: Number(resolvedMarketplaceConfig?.fixed_fee ?? (order as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0),
                   customer_name: customerName, product_name: mainProductName, product_sku: productSku || undefined,
                   product_image_url: (mergedOrder as { product_image_url?: string }).product_image_url
@@ -1480,6 +1483,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               ...orderData,
               ...(enrichment ?? {}),
               products: (enrichment?.products?.length ? enrichment.products : orderData.products),
+              // Always preserve these from orderData — enrichment doesn't carry them
+              bling_order_id: orderData.bling_order_id,
+              tiktok_reembolso_disabled: orderData.tiktok_reembolso_disabled,
             };
             setSelectedOrder(merged);
             setCameFromAffiliate(Boolean(affiliateByOrderIdRef.current?.[merged.order_id]));
@@ -1995,6 +2001,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
           const orderDetailData: OrderDetail = {
             order_id: order.order_id,
+            bling_order_id: (order as { bling_order_id?: string | null }).bling_order_id ?? null,
+            tiktok_reembolso_disabled: (order as { tiktok_reembolso_disabled?: boolean }).tiktok_reembolso_disabled === true,
             order_number: orderNumber,
             marketplace: marketplaceName,
             marketplace_fixed_fee: Number(resolvedMarketplaceConfig?.fixed_fee ?? (order as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0),
