@@ -85,7 +85,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [windowOffset, setWindowOffset] = useState(0);
   const { data, loading, error, refetch } = useRevenueReport(organizationId, period);
   // All-time totals — always use yearly to get all data regardless of current period filter
-  const { data: yearlyData } = useRevenueReport(organizationId, 'yearly');
+  const { data: yearlyData, refetch: refetchYearly } = useRevenueReport(organizationId, 'yearly');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<{ id: string; number: string; store: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -1527,8 +1527,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     if (refreshTrigger && refreshTrigger > 0) {
       console.log('🔄 RevenueReportChart: refreshTrigger mudou, refazendo query...', refreshTrigger);
       refetch();
+      refetchYearly();
     }
-  }, [refreshTrigger, refetch]);
+  }, [refreshTrigger, refetch, refetchYearly]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -1595,6 +1596,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       setTimeout(() => setCostsSaved(false), 3000);
       // Refetch chart data so Lucro totals reflect new cost_price
       refetch();
+      refetchYearly();
     } catch (err) {
       console.error('Erro ao salvar custos:', err);
     } finally {
@@ -1655,6 +1657,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       
       // Recarregar dados
       await refetch();
+      await refetchYearly();
       // Notificar o pai para atualizar KPIs (Pedidos, Clientes, etc.)
       onOrderDeleted?.();
     } catch (err) {
@@ -2482,6 +2485,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                         .eq('id', selectedOrder.bling_order_id);
                                       setSelectedOrder({ ...selectedOrder, tiktok_reembolso_disabled: !tiktokReembolsoEnabled });
                                       refetch();
+                                      refetchYearly();
                                     } finally {
                                       setSavingReembolso(false);
                                     }
