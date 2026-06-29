@@ -93,9 +93,6 @@ export const PersonalPurchaseLane: React.FC<PersonalPurchaseLaneProps> = ({
     }
     await doProcess(order);
   };
-      setProcessing(null);
-    }
-  };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
