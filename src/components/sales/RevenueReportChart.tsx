@@ -2481,6 +2481,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                         .update({ tiktok_reembolso_disabled: !tiktokReembolsoEnabled })
                                         .eq('id', selectedOrder.bling_order_id);
                                       setSelectedOrder({ ...selectedOrder, tiktok_reembolso_disabled: !tiktokReembolsoEnabled });
+                                      refetch();
                                     } finally {
                                       setSavingReembolso(false);
                                     }
