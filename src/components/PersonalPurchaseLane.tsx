@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, ChevronRight, ShoppingBag, Package } from 'lucide-react';
 import { FreeSampleCard } from './FreeSampleCard';
+import { RegisterProductBeforeProcessModal } from './RegisterProductBeforeProcessModal';
 import { supabase } from '@/lib/supabase';
 import type { PendingOrder } from '@/types/pendingOrder';
 
@@ -22,6 +23,7 @@ export const PersonalPurchaseLane: React.FC<PersonalPurchaseLaneProps> = ({
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [processing, setProcessing] = useState<string | null>(null);
+  const [registerOrder, setRegisterOrder] = useState<PendingOrder | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
@@ -44,11 +46,10 @@ export const PersonalPurchaseLane: React.FC<PersonalPurchaseLaneProps> = ({
     setTimeout(checkArrows, 350);
   };
 
-  const handleProcess = async (order: PendingOrder) => {
+  const doProcess = async (order: PendingOrder) => {
     if (processing) return;
     setProcessing(order.bling_order_id);
     try {
-      // Mark as personal purchase before processing
       await supabase
         .from('bling_orders')
         .update({ is_personal_purchase: true })
@@ -68,6 +69,30 @@ export const PersonalPurchaseLane: React.FC<PersonalPurchaseLaneProps> = ({
     } catch (err) {
       alert(`Erro: ${err instanceof Error ? err.message : 'Erro desconhecido'}`);
     } finally {
+      setProcessing(null);
+    }
+  };
+
+  const handleProcess = async (order: PendingOrder) => {
+    // Check if product needs registration before processing
+    if (order.first_product_id) {
+      const { data: prod } = await supabase
+        .from('products')
+        .select('cost_price, supplier_id')
+        .eq('id', order.first_product_id)
+        .single();
+      const cp = Number((prod as { cost_price?: number | null } | null)?.cost_price ?? 0);
+      const sid = (prod as { supplier_id?: string | null } | null)?.supplier_id;
+      if (cp === 0 || !sid) {
+        setRegisterOrder(order);
+        return;
+      }
+    } else {
+      setRegisterOrder(order);
+      return;
+    }
+    await doProcess(order);
+  };
       setProcessing(null);
     }
   };
@@ -113,6 +138,20 @@ export const PersonalPurchaseLane: React.FC<PersonalPurchaseLaneProps> = ({
   };
 
   return (
+    <>
+      {organizationId && registerOrder && (
+        <RegisterProductBeforeProcessModal
+          open={true}
+          order={registerOrder}
+          organizationId={organizationId}
+          onConfirm={() => {
+            const o = registerOrder;
+            setRegisterOrder(null);
+            doProcess(o);
+          }}
+          onCancel={() => setRegisterOrder(null)}
+        />
+      )}
     <div
       className={`w-full rounded-xl transition-colors duration-200 ${
         isDragOver
@@ -221,5 +260,6 @@ export const PersonalPurchaseLane: React.FC<PersonalPurchaseLaneProps> = ({
         </div>
       )}
     </div>
+    </>
   );
 };
