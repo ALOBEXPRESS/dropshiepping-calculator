@@ -40,10 +40,12 @@ interface RevenueReportChartProps {
 
 interface OrderDetail {
   order_id: string;
+  bling_order_id?: string | null;
   order_number: string;
   marketplace: string;
   marketplace_fixed_fee?: number;
   is_free_sample?: boolean;
+  tiktok_reembolso_disabled?: boolean;
   customer_name?: string;
   product_name?: string;
   product_sku?: string;
@@ -341,6 +343,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [manualShipping, setManualShipping] = useState<string>('');
   const [savingCosts, setSavingCosts] = useState(false);
   const [costsSaved, setCostsSaved] = useState(false);
+  const [savingReembolso, setSavingReembolso] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef(data);
   dataRef.current = data;
@@ -1489,7 +1492,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             setBlingDiscountEnabled(saved?.blingDiscountEnabled ?? true);
             setManualDesconto(saved?.manualDesconto ?? '');
             setManualAcrescimo(saved?.manualAcrescimo ?? '');
-            setTiktokReembolsoEnabled(saved?.tiktokReembolsoEnabled ?? true);
+            setTiktokReembolsoEnabled(
+              saved?.tiktokReembolsoEnabled ??
+              !(merged.tiktok_reembolso_disabled === true)
+            );
             setManualSupplierFeePercent(saved?.manualSupplierFeePercent ?? '');
             setManualGatewayFee(saved?.manualGatewayFee ?? '');
             setManualCostOverrides(saved?.manualCostOverrides ?? {});
@@ -2452,6 +2458,33 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                 Reembolso TikTok
                               </label>
                               <span className="text-[10px] text-emerald-500/60 font-mono tabular-nums">+{formatCurrency(tiktokReembolsoValue)}</span>
+                              {/* Save button — visible when state differs from DB value */}
+                              {tiktokReembolsoEnabled !== !(selectedOrder?.tiktok_reembolso_disabled === true) && (
+                                <button
+                                  disabled={savingReembolso}
+                                  onClick={async () => {
+                                    if (!selectedOrder?.bling_order_id) return;
+                                    setSavingReembolso(true);
+                                    try {
+                                      await supabase
+                                        .from('bling_orders')
+                                        .update({ tiktok_reembolso_disabled: !tiktokReembolsoEnabled })
+                                        .eq('id', selectedOrder.bling_order_id);
+                                      setSelectedOrder({ ...selectedOrder, tiktok_reembolso_disabled: !tiktokReembolsoEnabled });
+                                    } finally {
+                                      setSavingReembolso(false);
+                                    }
+                                  }}
+                                  className="flex items-center gap-1 bg-emerald-700/80 hover:bg-emerald-600 disabled:opacity-50 text-white text-[10px] font-semibold px-2 py-0.5 rounded transition-colors"
+                                >
+                                  {savingReembolso ? (
+                                    <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                                  ) : (
+                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                                  )}
+                                  Salvar
+                                </button>
+                              )}
                             </div>
                             <span className={`text-[12px] font-bold tabular-nums ${tiktokReembolsoEnabled ? 'text-blue-300' : 'text-zinc-600'}`}>
                               {formatCurrency(precoVendaPagoCliente + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0))}
