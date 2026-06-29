@@ -1593,6 +1593,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
       setCostsSaved(true);
       setTimeout(() => setCostsSaved(false), 3000);
+      // Refetch chart data so Lucro totals reflect new cost_price
+      refetch();
     } catch (err) {
       console.error('Erro ao salvar custos:', err);
     } finally {
