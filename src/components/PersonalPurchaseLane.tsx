@@ -48,6 +48,12 @@ export const PersonalPurchaseLane: React.FC<PersonalPurchaseLaneProps> = ({
     if (processing) return;
     setProcessing(order.bling_order_id);
     try {
+      // Mark as personal purchase before processing
+      await supabase
+        .from('bling_orders')
+        .update({ is_personal_purchase: true })
+        .eq('id', order.bling_order_id);
+
       const { data, error } = await supabase.rpc('process_bling_order_to_profit', {
         p_bling_order_id: order.bling_order_id,
         p_user_id: null,

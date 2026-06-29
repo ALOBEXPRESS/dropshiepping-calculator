@@ -8,6 +8,7 @@ import { ProcessOrderModal } from './ProcessOrderModal';
 import { NFeUploadModal } from './NFeUploadModal';
 import { ProductInfoModal } from './ProductInfoModal';
 import { LinkProductModal } from './LinkProductModal';
+import { RegisterProductBeforeProcessModal } from './RegisterProductBeforeProcessModal';
 import { useAutoGenderClassification } from '@/hooks/useAutoGenderClassification';
 import type { PendingOrder } from '@/types/pendingOrder';
 
@@ -83,6 +84,7 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
   const [nfeModalOpen, setNfeModalOpen] = useState(false);
   const [productInfoId, setProductInfoId] = useState<string | null>(null);
   const [linkProductOrder, setLinkProductOrder] = useState<typeof pendingOrders[0] | null>(null);
+  const [registerProductOrder, setRegisterProductOrder] = useState<typeof pendingOrders[0] | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const droppedSuccessfullyRef = useRef<string | null>(null); // tracks bling_order_id dropped to free sample
 
@@ -354,6 +356,19 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
           organizationId={organizationId}
           onClose={() => setLinkProductOrder(null)}
           onLinked={() => { setLinkProductOrder(null); loadPendingOrders(false); }}
+        />
+      )}
+      {organizationId && registerProductOrder && (
+        <RegisterProductBeforeProcessModal
+          open={true}
+          order={registerProductOrder}
+          organizationId={organizationId}
+          onConfirm={() => {
+            const boid = registerProductOrder.bling_order_id;
+            setRegisterProductOrder(null);
+            processOrder(boid);
+          }}
+          onCancel={() => setRegisterProductOrder(null)}
         />
       )}
 
@@ -674,7 +689,30 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
             <div className="flex flex-col gap-2">
               <div className="flex gap-2">
               <Button
-                onClick={() => processOrder(order.bling_order_id)}
+                onClick={async () => {
+                  // Check if product needs registration (cost_price=0 or no supplier)
+                  const needsRegister = !order.first_product_id || order.total_cost === 0;
+                  if (needsRegister) {
+                    // Check product cost_price in DB
+                    if (order.first_product_id) {
+                      const { data: prod } = await supabase
+                        .from('products')
+                        .select('cost_price, supplier_id')
+                        .eq('id', order.first_product_id)
+                        .single();
+                      const cp = Number((prod as { cost_price?: number | null } | null)?.cost_price ?? 0);
+                      const sid = (prod as { supplier_id?: string | null } | null)?.supplier_id;
+                      if (cp === 0 || !sid) {
+                        setRegisterProductOrder(order);
+                        return;
+                      }
+                    } else {
+                      setRegisterProductOrder(order);
+                      return;
+                    }
+                  }
+                  processOrder(order.bling_order_id);
+                }}
                 disabled={processing === order.bling_order_id || deleting === order.bling_order_id}
                 className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold"
               >

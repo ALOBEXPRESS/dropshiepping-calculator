@@ -1357,19 +1357,20 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 const productCount = productNamesFromItems.length;
                 const productSku = mergedOrder.product_sku || (productsForDisplay[0]?.sku ?? null);
                 const { realProfit, isFreeSample } = computeOrderRealProfit(mergedOrder, resolvedMarketplaceConfig);
+                const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true;
                 const profitLabel = realProfit >= 0 ? 'Lucro:' : 'Prejuízo:';
                 const profitValue = realProfit >= 0
                   ? formatCurrency(realProfit)
                   : `- ${formatCurrency(Math.abs(realProfit))}`;
-                const profitColor = isFreeSample ? '#e9d5ff' : (realProfit >= 0 ? '#16a34a' : '#dc2626');
+                const profitColor = isPersonalPurchase ? '#fed7aa' : isFreeSample ? '#e9d5ff' : (realProfit >= 0 ? '#16a34a' : '#dc2626');
 
-                const textPrimary = isFreeSample ? '#f3e8ff' : '#374151';
-                const textSecondary = isFreeSample ? '#d8b4fe' : '#6b7280';
-                const dividerColor = isFreeSample ? 'rgba(167,139,250,0.3)' : 'rgba(2,6,23,0.08)';
-                const navBtnBg = isFreeSample ? 'rgba(109,40,217,0.4)' : '#e5e7eb';
-                const navBtnColor = isFreeSample ? '#e9d5ff' : '#374151';
-                const navBtnDisabledBg = isFreeSample ? 'rgba(109,40,217,0.15)' : 'rgba(2,6,23,0.06)';
-                const navBtnDisabledColor = isFreeSample ? 'rgba(233,213,255,0.3)' : '#d1d5db';
+                const textPrimary = isPersonalPurchase ? '#fff7ed' : isFreeSample ? '#f3e8ff' : '#374151';
+                const textSecondary = isPersonalPurchase ? '#fdba74' : isFreeSample ? '#d8b4fe' : '#6b7280';
+                const dividerColor = isPersonalPurchase ? 'rgba(251,146,60,0.3)' : isFreeSample ? 'rgba(167,139,250,0.3)' : 'rgba(2,6,23,0.08)';
+                const navBtnBg = isPersonalPurchase ? 'rgba(234,88,12,0.4)' : isFreeSample ? 'rgba(109,40,217,0.4)' : '#e5e7eb';
+                const navBtnColor = isPersonalPurchase ? '#fed7aa' : isFreeSample ? '#e9d5ff' : '#374151';
+                const navBtnDisabledBg = isPersonalPurchase ? 'rgba(234,88,12,0.15)' : isFreeSample ? 'rgba(109,40,217,0.15)' : 'rgba(2,6,23,0.06)';
+                const navBtnDisabledColor = isPersonalPurchase ? 'rgba(254,215,170,0.3)' : isFreeSample ? 'rgba(233,213,255,0.3)' : '#d1d5db';
 
                 const orderDetailData = {
                   order_id: order.order_id, order_number: orderNumber, marketplace: marketplaceName,
@@ -1898,7 +1899,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const orderNumber = order.order_number || 'S/N';
 
           const { realProfit, isFreeSample } = computeOrderRealProfit(mergedOrder, resolvedMarketplaceConfig);
-          const profitColor = isFreeSample ? '#e9d5ff' : (realProfit >= 0 ? '#16a34a' : '#dc2626');
+          const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true;
+          const profitColor = isPersonalPurchase ? '#fed7aa' : isFreeSample ? '#e9d5ff' : (realProfit >= 0 ? '#16a34a' : '#dc2626');
           const profitLabel = realProfit >= 0 ? 'Lucro:' : 'Prejuízo:';
           const profitValue = realProfit >= 0
             ? formatCurrency(realProfit)
@@ -1914,14 +1916,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const safeStore = marketplaceName;
           const orderRevenue = Number(order.total_amount ?? 0);
 
-          // Cores do tema: branco para texto normal, roxo para amostra grátis
-          const textPrimary = isFreeSample ? '#f3e8ff' : '#374151';
-          const textSecondary = isFreeSample ? '#d8b4fe' : '#6b7280';
-          const dividerColor = isFreeSample ? 'rgba(167,139,250,0.3)' : 'rgba(2,6,23,0.08)';
-          const navBtnBg = isFreeSample ? 'rgba(109,40,217,0.4)' : '#e5e7eb';
-          const navBtnColor = isFreeSample ? '#e9d5ff' : '#374151';
-          const navBtnDisabledBg = isFreeSample ? 'rgba(109,40,217,0.15)' : 'rgba(2,6,23,0.06)';
-          const navBtnDisabledColor = isFreeSample ? 'rgba(233,213,255,0.3)' : '#d1d5db';
+          // Cores: laranja = compra pessoal, roxo = amostra grátis, branco = normal
+          const textPrimary = isPersonalPurchase ? '#fff7ed' : isFreeSample ? '#f3e8ff' : '#374151';
+          const textSecondary = isPersonalPurchase ? '#fdba74' : isFreeSample ? '#d8b4fe' : '#6b7280';
+          const dividerColor = isPersonalPurchase ? 'rgba(251,146,60,0.3)' : isFreeSample ? 'rgba(167,139,250,0.3)' : 'rgba(2,6,23,0.08)';
+          const navBtnBg = isPersonalPurchase ? 'rgba(234,88,12,0.4)' : isFreeSample ? 'rgba(109,40,217,0.4)' : '#e5e7eb';
+          const navBtnColor = isPersonalPurchase ? '#fed7aa' : isFreeSample ? '#e9d5ff' : '#374151';
+          const navBtnDisabledBg = isPersonalPurchase ? 'rgba(234,88,12,0.15)' : isFreeSample ? 'rgba(109,40,217,0.15)' : 'rgba(2,6,23,0.06)';
+          const navBtnDisabledColor = isPersonalPurchase ? 'rgba(254,215,170,0.3)' : isFreeSample ? 'rgba(233,213,255,0.3)' : '#d1d5db';
 
           const orderDetailData: OrderDetail = {
             order_id: order.order_id,
@@ -1986,6 +1988,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
           return {
             orderIsFreeSample: isFreeSample,
+            orderIsPersonalPurchase: isPersonalPurchase,
             orderInnerHtml: `
               ${navHtml}
               ${freeSampleBadge}
@@ -2024,23 +2027,30 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               </div>
             `,
           };
-        })() : { orderInnerHtml: '', orderIsFreeSample: false };
+        })() : { orderInnerHtml: '', orderIsFreeSample: false, orderIsPersonalPurchase: false };
 
-        // Detectar se o pedido atual é amostra grátis para colorir o tooltip
+        // Detectar tipo de pedido para colorir tooltip
         const currentOrderIsFreeSample = orderIsFreeSample;
-        const tooltipBg = currentOrderIsFreeSample
+        const currentOrderIsPersonal = orderIsPersonalPurchase;
+        const tooltipBg = currentOrderIsPersonal
+          ? 'linear-gradient(135deg, #431407 0%, #7c2d12 50%, #431407 100%)'
+          : currentOrderIsFreeSample
           ? 'linear-gradient(135deg, #3b0764 0%, #4c1d95 50%, #2e1065 100%)'
           : 'rgba(255,255,255,0.98)';
-        const tooltipBorder = currentOrderIsFreeSample
+        const tooltipBorder = currentOrderIsPersonal
+          ? '1px solid rgba(251,146,60,0.5)'
+          : currentOrderIsFreeSample
           ? '1px solid rgba(167,139,250,0.5)'
           : '1px solid rgba(2,6,23,0.08)';
-        const tooltipShadow = currentOrderIsFreeSample
+        const tooltipShadow = currentOrderIsPersonal
+          ? '0 8px 34px rgba(234,88,12,0.35)'
+          : currentOrderIsFreeSample
           ? '0 8px 34px rgba(109,40,217,0.35)'
           : '0 18px 50px rgba(2,6,23,0.14)';
-        const tooltipHeaderColor = currentOrderIsFreeSample ? '#e9d5ff' : '#111827';
-        const tooltipSubColor = currentOrderIsFreeSample ? '#c4b5fd' : '#6b7280';
-        const tooltipBadgeBg = currentOrderIsFreeSample ? 'rgba(109,40,217,0.4)' : 'rgba(2,6,23,0.06)';
-        const tooltipBadgeColor = currentOrderIsFreeSample ? '#e9d5ff' : '#6b7280';
+        const tooltipHeaderColor = currentOrderIsPersonal ? '#fed7aa' : currentOrderIsFreeSample ? '#e9d5ff' : '#111827';
+        const tooltipSubColor = currentOrderIsPersonal ? '#fdba74' : currentOrderIsFreeSample ? '#c4b5fd' : '#6b7280';
+        const tooltipBadgeBg = currentOrderIsPersonal ? 'rgba(234,88,12,0.4)' : currentOrderIsFreeSample ? 'rgba(109,40,217,0.4)' : 'rgba(2,6,23,0.06)';
+        const tooltipBadgeColor = currentOrderIsPersonal ? '#fed7aa' : currentOrderIsFreeSample ? '#e9d5ff' : '#6b7280';
 
         return `
           <div class="apexcharts-tooltip-custom" style="background:${tooltipBg};border:${tooltipBorder};border-radius:12px;padding:10px 12px;box-shadow:${tooltipShadow};backdrop-filter:blur(10px);min-width:270px;max-width:360px;pointer-events:auto;">
