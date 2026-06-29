@@ -23,7 +23,8 @@ interface RegisterProductBeforeProcessModalProps {
   onCancel: () => void;
 }
 
-const ACCOUNT_HOLDERS = ['Jonatan', 'Alyson', 'João', 'Emelyn', ''];
+const ACCOUNT_HOLDERS = ['Jonatan', 'Alyson', 'João', 'Emelyn'];
+const ACCOUNT_HOLDER_NONE = '__none__';
 const ACCOUNT_TYPES = [
   { value: 'cpf', label: 'CPF' },
   { value: 'cnpj', label: 'CNPJ' },
@@ -47,6 +48,7 @@ export const RegisterProductBeforeProcessModal: React.FC<RegisterProductBeforePr
   const [productId, setProductId] = useState<string | null>(null);
   const [productName, setProductName] = useState('');
   const [productImage, setProductImage] = useState<string | null>(null);
+  const [productSku, setProductSku] = useState('');
   const [marketplace, setMarketplace] = useState('');
 
   // Editable fields
@@ -89,12 +91,13 @@ export const RegisterProductBeforeProcessModal: React.FC<RegisterProductBeforePr
         if (item.product_id) {
           const { data: prod } = await supabase
             .from('products')
-            .select('id, name, price, cost_price, image_url, marketplace, supplier_id, account_holder, account_type')
+            .select('id, name, price, cost_price, image_url, marketplace, supplier_id, account_holder, account_type, sku')
             .eq('id', item.product_id)
             .single();
           if (prod) {
             setProductId(prod.id);
             setProductName(prod.name);
+            setProductSku((prod as { sku?: string | null }).sku ?? item.code ?? '');
             setProductImage((prod as { image_url?: string | null }).image_url ?? null);
             setMarketplace((prod as { marketplace?: string }).marketplace ?? order.marketplace_name);
             setPrice(String(prod.price ?? ''));
@@ -110,11 +113,12 @@ export const RegisterProductBeforeProcessModal: React.FC<RegisterProductBeforePr
         if (item.product_bling_id) {
           const { data: pb } = await supabase
             .from('products_bling')
-            .select('id, name, sale_price, cost_price, image_url1')
+            .select('id, name, sale_price, cost_price, image_url1, sku')
             .eq('id', item.product_bling_id)
             .single();
           if (pb) {
             setProductName(item.description ?? (pb as { name?: string }).name ?? '');
+            setProductSku((pb as { sku?: string | null }).sku ?? item.code ?? '');
             setProductImage((pb as { image_url1?: string | null }).image_url1 ?? null);
             setMarketplace(order.marketplace_name);
             setPrice(String((pb as { sale_price?: number | null }).sale_price ?? order.total_amount ?? ''));
@@ -124,18 +128,20 @@ export const RegisterProductBeforeProcessModal: React.FC<RegisterProductBeforePr
           if (item.product_variation_id) {
             const { data: pv } = await supabase
               .from('products_variations_bling')
-              .select('cost_price, sale_price, image_url1')
+              .select('cost_price, sale_price, image_url1, sku')
               .eq('id', item.product_variation_id)
               .single();
             if (pv) {
               if ((pv as { cost_price?: number | null }).cost_price) setCostPrice(String((pv as { cost_price?: number | null }).cost_price));
               if ((pv as { sale_price?: number | null }).sale_price) setPrice(String((pv as { sale_price?: number | null }).sale_price));
               if ((pv as { image_url1?: string | null }).image_url1) setProductImage((pv as { image_url1?: string | null }).image_url1 ?? null);
+              if ((pv as { sku?: string | null }).sku) setProductSku((pv as { sku?: string | null }).sku ?? item.code ?? '');
             }
           }
         } else {
           // No bling link — use order data
           setProductName(item.description ?? order.first_product_name ?? '');
+          setProductSku(item.code ?? '');
           setMarketplace(order.marketplace_name);
           setPrice(String(order.total_amount ?? ''));
           setCostPrice('0');
@@ -154,15 +160,50 @@ export const RegisterProductBeforeProcessModal: React.FC<RegisterProductBeforePr
       const priceNum = parseFloat(price.replace(',', '.')) || 0;
       const costNum = parseFloat(costPrice.replace(',', '.')) || 0;
 
+      const payload = {
+        price: priceNum,
+        cost_price: costNum,
+        supplier_id: supplierId || null,
+        account_holder: accountHolder || null,
+        account_type: accountType,
+      };
+
       if (productId) {
         // Update existing product
-        await supabase.from('products').update({
-          price: priceNum,
-          cost_price: costNum,
-          supplier_id: supplierId || null,
-          account_holder: accountHolder || null,
-          account_type: accountType,
-        }).eq('id', productId);
+        await supabase.from('products').update(payload).eq('id', productId);
+      } else {
+        // INSERT new product from bling data
+        const name = productName || order.first_product_name || '';
+        const sku = productSku || undefined;
+        const { data: inserted, error: insertErr } = await supabase.from('products').insert({
+          ...payload,
+          organization_id: organizationId,
+          name,
+          sku: sku || undefined,
+          image_url: productImage || undefined,
+          marketplace: marketplace || order.marketplace_name || undefined,
+          stock_quantity: 0,
+        }).select('id').single();
+
+        if (insertErr) throw insertErr;
+
+        // Link bling_order_item to new product if possible
+        if (inserted?.id) {
+          // Find bling_order + item to update product_id FK
+          const { data: bo } = await supabase
+            .from('bling_orders')
+            .select('id')
+            .eq('order_number', order.order_number)
+            .eq('organization_id', organizationId)
+            .single();
+          if (bo?.id) {
+            await supabase
+              .from('bling_order_items')
+              .update({ product_id: inserted.id })
+              .eq('order_id', bo.id)
+              .is('product_id', null);
+          }
+        }
       }
 
       onConfirm();
@@ -235,12 +276,12 @@ export const RegisterProductBeforeProcessModal: React.FC<RegisterProductBeforePr
 
             <div className="space-y-1">
               <Label className="text-xs text-gray-500">Fornecedor</Label>
-              <Select value={supplierId} onValueChange={setSupplierId}>
+              <Select value={supplierId || 'none'} onValueChange={(v) => setSupplierId(v === 'none' ? '' : v)}>
                 <SelectTrigger className="text-sm">
                   <SelectValue placeholder="Selecione o fornecedor" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sem fornecedor</SelectItem>
+                  <SelectItem value="none">Sem fornecedor</SelectItem>
                   {suppliers.map((s) => (
                     <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                   ))}
@@ -251,13 +292,14 @@ export const RegisterProductBeforeProcessModal: React.FC<RegisterProductBeforePr
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs text-gray-500">Titular</Label>
-                <Select value={accountHolder} onValueChange={setAccountHolder}>
+                <Select value={accountHolder || ACCOUNT_HOLDER_NONE} onValueChange={(v) => setAccountHolder(v === ACCOUNT_HOLDER_NONE ? '' : v)}>
                   <SelectTrigger className="text-sm">
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value={ACCOUNT_HOLDER_NONE}>Sem titular</SelectItem>
                     {ACCOUNT_HOLDERS.map((h) => (
-                      <SelectItem key={h} value={h}>{h || 'Sem titular'}</SelectItem>
+                      <SelectItem key={h} value={h}>{h}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
