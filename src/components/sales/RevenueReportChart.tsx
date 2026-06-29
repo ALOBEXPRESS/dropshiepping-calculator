@@ -339,7 +339,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [manualGatewayFee, setManualGatewayFee] = useState<string>('');
   const [manualCostOverrides, setManualCostOverrides] = useState<Record<number, string>>({});
   const [manualShipping, setManualShipping] = useState<string>('');
-  
+  const [savingCosts, setSavingCosts] = useState(false);
+  const [costsSaved, setCostsSaved] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef(data);
   dataRef.current = data;
@@ -1526,6 +1527,67 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     }).format(value);
   };
 
+  const handleSaveCosts = async (
+    products: OrderDetail['products'],
+    costOverrides: Record<number, string>,
+    supplierFeePercent: string,
+    gatewayFee: string,
+  ) => {
+    if (!products || products.length === 0) return;
+    setSavingCosts(true);
+    setCostsSaved(false);
+    try {
+      for (let i = 0; i < products.length; i++) {
+        const p = products[i];
+        const sku = p.sku?.trim();
+        if (!sku) continue;
+
+        const overrideRaw = costOverrides[i];
+        if (overrideRaw !== undefined && overrideRaw !== '') {
+          const costVal = parseFloat(overrideRaw.replace(',', '.')) || 0;
+          await supabase
+            .from('products')
+            .update({ cost_price: costVal })
+            .eq('sku', sku)
+            .eq('organization_id', organizationId);
+          await supabase
+            .from('products_variations_bling')
+            .update({ cost_price: costVal })
+            .eq('sku', sku)
+            .eq('organization_id', organizationId);
+        }
+      }
+
+      // Supplier fee + gateway fee: apply to all products in this order (by sku)
+      for (const p of products) {
+        const sku = p.sku?.trim();
+        if (!sku) continue;
+        const feeUpdates: { supplier_fee_value?: number; supplier_fee_type?: string; supplier_gateway_fee_value?: number } = {};
+        if (supplierFeePercent !== '') {
+          feeUpdates.supplier_fee_value = parseFloat(supplierFeePercent.replace(',', '.')) || 0;
+          feeUpdates.supplier_fee_type = 'percent';
+        }
+        if (gatewayFee !== '') {
+          feeUpdates.supplier_gateway_fee_value = parseFloat(gatewayFee.replace(',', '.')) || 0;
+        }
+        if (Object.keys(feeUpdates).length > 0) {
+          await supabase
+            .from('products')
+            .update(feeUpdates)
+            .eq('sku', sku)
+            .eq('organization_id', organizationId);
+        }
+      }
+
+      setCostsSaved(true);
+      setTimeout(() => setCostsSaved(false), 3000);
+    } catch (err) {
+      console.error('Erro ao salvar custos:', err);
+    } finally {
+      setSavingCosts(false);
+    }
+  };
+
   const handleDeleteOrder = async () => {
     if (!orderToDelete) return;
     
@@ -2548,6 +2610,47 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       </div>
                     )}
                   </div>
+
+                  {/* Salvar custos no banco */}
+                  {(Object.keys(manualCostOverrides).some(k => manualCostOverrides[Number(k)] !== '') || manualSupplierFeePercent !== '' || manualGatewayFee !== '') && (
+                    <div className="flex items-center justify-end gap-3 px-1 py-1">
+                      {costsSaved && (
+                        <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                          Salvo!
+                        </span>
+                      )}
+                      <button
+                        onClick={() => handleSaveCosts(
+                          selectedOrder?.products ?? [],
+                          manualCostOverrides,
+                          manualSupplierFeePercent,
+                          manualGatewayFee,
+                        )}
+                        disabled={savingCosts}
+                        className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        {savingCosts ? (
+                          <>
+                            <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                            </svg>
+                            Salvando...
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                            </svg>
+                            Salvar custos
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
 
                   {/* Custo Marketplace — oculto para amostras grátis */}
                   {!isFreeSample && (
