@@ -1380,17 +1380,37 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                             <SelectValue placeholder="Selecione o tipo" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="gratis">Grátis (0% - Sem visibilidade)</SelectItem>
-                            <SelectItem value="classico">Clássico (11.5% a 14.5% + taxa fixa)</SelectItem>
-                            <SelectItem value="premium">Premium (16.5% a 19.5% + taxa fixa)</SelectItem>
+                            <SelectItem value="gratis">Grátis (0% — sem visibilidade)</SelectItem>
+                            <SelectItem value="classico">
+                              Clássico — {((mercadoLivreTaxes.classico[formData.mlCategory || 'eletronicos']?.rate ?? mercadoLivreTaxes.classico['eletronicos'].rate))}% comissão
+                            </SelectItem>
+                            <SelectItem value="premium">
+                              Premium — {((mercadoLivreTaxes.premium[formData.mlCategory || 'eletronicos']?.rate ?? mercadoLivreTaxes.premium['eletronicos'].rate))}% comissão
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="grid grid-cols-4">
-                        <div className="col-span-3 col-start-2 text-[10px] text-gray-500 dark:text-gray-400">
-                          Modalidades: Clássico (visibilidade média) | Premium (máxima visibilidade + 12x sem juros)
+                      {formData.adType && formData.adType !== 'gratis' && (
+                        <div className="grid grid-cols-4">
+                          <div className="col-span-3 col-start-2">
+                            <div className="flex items-center gap-2 rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 px-3 py-1.5">
+                              <span className="text-[11px] font-semibold text-yellow-700 dark:text-yellow-400">
+                                Comissão ML:
+                              </span>
+                              <span className="text-[11px] font-bold text-yellow-800 dark:text-yellow-300">
+                                {formData.adType === 'classico'
+                                  ? (mercadoLivreTaxes.classico[formData.mlCategory || 'eletronicos']?.rate ?? mercadoLivreTaxes.classico['eletronicos'].rate)
+                                  : (mercadoLivreTaxes.premium[formData.mlCategory || 'eletronicos']?.rate ?? mercadoLivreTaxes.premium['eletronicos'].rate)
+                                }%
+                              </span>
+                              <span className="text-[10px] text-yellow-600 dark:text-yellow-500">
+                                ({mercadoLivreTaxes.classico[formData.mlCategory || 'eletronicos']?.name ?? 'categoria'})
+                                {formData.adType === 'premium' ? ' + 12x sem juros' : ''}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      )}
                       <div className="grid grid-cols-4 items-center gap-4">
                         <Label className="text-right dark:text-white">
                           Reputação
@@ -3040,9 +3060,20 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                         disabled
                       />
                       {organicMetrics && (
-                        <p className="text-xs text-muted-foreground">
-                          {organicMetrics.taxDescription}
-                        </p>
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">
+                            {organicMetrics.taxDescription}
+                          </p>
+                          {formData.marketplace === 'mercadolivre' && formData.adType && formData.adType !== 'gratis' && (
+                            <p className="text-[11px] font-semibold text-yellow-600 dark:text-yellow-400">
+                              Comissão ML ({formData.adType === 'classico' ? 'Clássico' : 'Premium'}):&nbsp;
+                              {formData.adType === 'classico'
+                                ? (mercadoLivreTaxes.classico[formData.mlCategory || 'eletronicos']?.rate ?? mercadoLivreTaxes.classico['eletronicos'].rate)
+                                : (mercadoLivreTaxes.premium[formData.mlCategory || 'eletronicos']?.rate ?? mercadoLivreTaxes.premium['eletronicos'].rate)
+                              }% já descontado no lucro
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
