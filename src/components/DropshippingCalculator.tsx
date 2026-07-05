@@ -55,6 +55,7 @@ import type { BlingProductItem } from '@/hooks/useProductsBling';
 import { ReferenceService, type Supplier, type AccountHolder, type Marketplace } from '../services/referenceService';
 import { useSettings } from '../contexts/SettingsContext';
 import type { CalculationResult, ProductItem, ProductVariationRecord } from '../types/calculator';
+import { mercadoLivreTaxes } from '../services/pricingService';
 import { formatCurrency, handleCurrencyChange, parseCurrency } from '../utils/currency';
 import { supabase } from '@/lib/supabase';
 import { useMultipleProductsSalesStats } from '../hooks/useMultipleProductsSalesStats';
@@ -99,21 +100,27 @@ const mapBlingCategoryToMlKey = (label: string) => {
   if (!label) return '';
   const normalized = normalizeCategoryText(label);
   const matchers: Array<{ key: string; patterns: string[] }> = [
-    { key: 'celulares', patterns: ['celular', 'smartphone', 'telefone'] },
-    { key: 'informatica', patterns: ['informatica', 'computador', 'notebook', 'periferico'] },
-    { key: 'relogios', patterns: ['relogio', 'relógio', 'pulseira'] },
-    { key: 'calcados', patterns: ['calcado', 'calçado', 'sapato', 'tenis', 'tênis'] },
-    { key: 'eletronicos', patterns: ['eletronico', 'eletrônico', 'audio', 'áudio', 'video', 'vídeo', 'tv', 'camera', 'câmera', 'videogame'] },
-    { key: 'moda', patterns: ['moda', 'vestuario', 'vestuário', 'acessorio', 'acessório', 'joia', 'bijuteria', 'bolsa'] },
-    { key: 'casa', patterns: ['casa', 'decoracao', 'decoração', 'cozinha', 'jardim', 'iluminacao', 'iluminação', 'luminaria', 'luminária', 'utensilio', 'utensílio'] },
-    { key: 'moveis', patterns: ['movel', 'móvel', 'moveis', 'móveis'] },
-    { key: 'beleza', patterns: ['beleza', 'cuidado pessoal', 'cuidados pessoal', 'cuidados pessoais', 'higiene', 'higiene pessoal', 'barbearia', 'cabelo', 'maquiagem', 'massagem', 'perfumaria', 'cosmetico', 'cosmeticos', 'skincare', 'estetica', 'dermocosmetico', 'dermocosmeticos'] },
-    { key: 'esportes', patterns: ['esporte', 'fitness', 'lazer'] },
-    { key: 'brinquedos', patterns: ['brinquedo', 'infantil', 'bebe', 'bebê'] },
-    { key: 'ferramentas', patterns: ['ferramenta'] },
-    { key: 'pet', patterns: ['pet', 'animal'] },
-    { key: 'livros', patterns: ['livro'] },
-    { key: 'automotivo', patterns: ['auto', 'carro', 'moto', 'automot'] }
+    // Specific matches first (before broad catches)
+    { key: 'games',            patterns: ['game', 'console', 'videogame', 'playstation', 'xbox', 'nintendo'] },
+    { key: 'cameras',          patterns: ['camera', 'câmera', 'fotografica', 'fotografica', 'reflex', 'mirrorless', 'analogica'] },
+    { key: 'eletrodomesticos', patterns: ['eletrodomestico', 'eletrodoméstico', 'liquidificador', 'processador', 'climatizador', 'ventilador', 'geladeira', 'microondas', 'fritadeira'] },
+    { key: 'saude',            patterns: ['saude', 'saúde', 'massageador', 'hidromassageador', 'umidificador', 'nebulizador', 'termometro', 'oximetro', 'aparelho de pressao', 'fisioterapia'] },
+    { key: 'papelaria',        patterns: ['papelaria', 'material escolar', 'caderno', 'estojo', 'marcador', 'caneta', 'lapis', 'armario escolar', 'armarinho'] },
+    { key: 'celulares',        patterns: ['celular', 'smartphone', 'telefone', 'carregador', 'cabo usb', 'suporte veicular', 'smartwatch', 'smartband'] },
+    { key: 'informatica',      patterns: ['informatica', 'computador', 'notebook', 'periferico', 'mouse', 'teclado', 'impressora', 'leitor de cartao', 'scanner'] },
+    { key: 'relogios',         patterns: ['relogio', 'relógio', 'porta joia', 'porta-joia', 'caixa de joia', 'bijuteria', 'joia'] },
+    { key: 'calcados',         patterns: ['calcado', 'calçado', 'sapato', 'tenis', 'tênis', 'chaveiro', 'acessorio de moda', 'acessório de moda'] },
+    { key: 'eletronicos',      patterns: ['eletronico', 'eletrônico', 'audio', 'áudio', 'video', 'vídeo', 'tv ', 'fone', 'caixa de som', 'bluetooth', 'projetor', 'media stream', 'streaming'] },
+    { key: 'moda',             patterns: ['moda', 'vestuario', 'vestuário', 'acessorio', 'acessório', 'bolsa', 'mochila'] },
+    { key: 'casa',             patterns: ['casa', 'decoracao', 'decoração', 'cozinha', 'jardim', 'iluminacao', 'iluminação', 'luminaria', 'luminária', 'utensilio', 'utensílio', 'faca', 'talher', 'seguranca para casa', 'câmera de segurança', 'lampada'] },
+    { key: 'moveis',           patterns: ['movel', 'móvel', 'moveis', 'móveis'] },
+    { key: 'beleza',           patterns: ['beleza', 'cuidado pessoal', 'barbearia', 'cabelo', 'maquiagem', 'massagem', 'perfumaria', 'cosmetico', 'skincare', 'estetica', 'higiene'] },
+    { key: 'esportes',         patterns: ['esporte', 'fitness', 'lazer', 'camping', 'pesca', 'termico', 'térmico', 'garrafa', 'caneca', 'shaker'] },
+    { key: 'brinquedos',       patterns: ['brinquedo', 'infantil', 'bebe', 'bebê', 'anti-stress', 'pop it', 'lança bolha', 'lancador de agua'] },
+    { key: 'ferramentas',      patterns: ['ferramenta'] },
+    { key: 'pet',              patterns: ['pet', 'animal'] },
+    { key: 'livros',           patterns: ['livro'] },
+    { key: 'automotivo',       patterns: ['auto', 'carro', 'moto', 'automot', 'aspirador automotivo', 'limpeza automotiva'] },
   ];
   const matched = matchers.find((matcher) => matcher.patterns.some((pattern) => normalized.includes(pattern)));
   return matched?.key ?? '';
@@ -4056,8 +4063,8 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                       <SelectTrigger><SelectValue placeholder="Categoria" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Todas as categorias</SelectItem>
-                        {['Eletrônicos','Celulares e Acessórios','Informática','Moda e Acessórios','Calçados','Relógios','Casa e Decoração','Móveis','Beleza e Cuidado Pessoal','Esportes e Fitness','Brinquedos','Ferramentas','Pet Shop','Livros','Automotivo'].map((cat) => (
-                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        {Object.entries(mercadoLivreTaxes.classico).map(([key, tax]) => (
+                          <SelectItem key={key} value={key}>{tax.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

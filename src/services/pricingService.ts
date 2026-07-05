@@ -11,69 +11,130 @@ const calcTotalAffiliatePercent = (affiliates: Affiliate[]): number => {
 };
 
 export const shopeeCategories: Record<string, ShopeeCategory> = {
-  eletronicos: { name: 'Eletrônicos', avgCPC: 0.45, avgCR: 1.2 },
-  moda: { name: 'Moda e Acessórios', avgCPC: 0.35, avgCR: 2.5 },
-  casa: { name: 'Casa e Decoração', avgCPC: 0.40, avgCR: 1.8 },
-  beleza: { name: 'Beleza e Cuidados', avgCPC: 0.38, avgCR: 2.2 },
-  celulares: { name: 'Celulares e Acessórios', avgCPC: 0.55, avgCR: 1.0 },
-  informatica: { name: 'Informática', avgCPC: 0.50, avgCR: 1.1 },
-  esportes: { name: 'Esportes e Lazer', avgCPC: 0.42, avgCR: 1.5 },
-  brinquedos: { name: 'Brinquedos', avgCPC: 0.30, avgCR: 2.0 },
-  papelaria: { name: 'Papelaria', avgCPC: 0.25, avgCR: 2.8 },
-  automotivo: { name: 'Automotivo', avgCPC: 0.48, avgCR: 1.3 }
+  eletronicos:      { name: 'Eletrônicos', avgCPC: 0.45, avgCR: 1.2 },
+  cameras:          { name: 'Câmeras e Acessórios', avgCPC: 0.42, avgCR: 1.1 },
+  moda:             { name: 'Moda e Acessórios', avgCPC: 0.35, avgCR: 2.5 },
+  casa:             { name: 'Casa e Decoração', avgCPC: 0.40, avgCR: 1.8 },
+  beleza:           { name: 'Beleza e Cuidados', avgCPC: 0.38, avgCR: 2.2 },
+  celulares:        { name: 'Celulares e Acessórios', avgCPC: 0.55, avgCR: 1.0 },
+  informatica:      { name: 'Informática', avgCPC: 0.50, avgCR: 1.1 },
+  esportes:         { name: 'Esportes e Fitness', avgCPC: 0.42, avgCR: 1.5 },
+  brinquedos:       { name: 'Brinquedos e Hobbies', avgCPC: 0.30, avgCR: 2.0 },
+  papelaria:        { name: 'Papelaria e Arte', avgCPC: 0.25, avgCR: 2.8 },
+  automotivo:       { name: 'Automotivo', avgCPC: 0.48, avgCR: 1.3 },
+  eletrodomesticos: { name: 'Eletrodomésticos', avgCPC: 0.44, avgCR: 1.2 },
+  saude:            { name: 'Saúde e Bem-Estar', avgCPC: 0.40, avgCR: 1.6 },
+  games:            { name: 'Games e Consoles', avgCPC: 0.52, avgCR: 1.0 },
+  calcados:         { name: 'Calçados e Acessórios de Moda', avgCPC: 0.36, avgCR: 2.2 },
+  relogios:         { name: 'Joias, Relógios e Porta-Joias', avgCPC: 0.38, avgCR: 1.8 },
+  moveis:           { name: 'Móveis', avgCPC: 0.45, avgCR: 1.0 },
+  ferramentas:      { name: 'Ferramentas', avgCPC: 0.46, avgCR: 1.2 },
+  pet:              { name: 'Pet Shop', avgCPC: 0.35, avgCR: 2.0 },
+  livros:           { name: 'Livros', avgCPC: 0.22, avgCR: 3.0 },
 };
 
 export const mercadoLivreTaxes: MercadoLivreTaxes = {
   gratis: {
-    eletronicos: { rate: 0, name: 'Eletrônicos' },
-    celulares: { rate: 0, name: 'Celulares e Acessórios' },
-    informatica: { rate: 0, name: 'Informática' },
-    moda: { rate: 0, name: 'Moda e Acessórios' },
-    calcados: { rate: 0, name: 'Calçados' },
-    relogios: { rate: 0, name: 'Relógios' },
-    casa: { rate: 0, name: 'Casa e Decoração' },
-    moveis: { rate: 0, name: 'Móveis' },
-    beleza: { rate: 0, name: 'Beleza e Cuidado Pessoal' },
-    esportes: { rate: 0, name: 'Esportes e Fitness' },
-    brinquedos: { rate: 0, name: 'Brinquedos' },
-    ferramentas: { rate: 0, name: 'Ferramentas' },
-    pet: { rate: 0, name: 'Pet Shop' },
-    livros: { rate: 0, name: 'Livros' },
-    automotivo: { rate: 0, name: 'Automotivo' }
+    // Eletrônicos
+    eletronicos:      { rate: 0, name: 'Eletrônicos (Fones, Caixas BT, Projetores)' },
+    cameras:          { rate: 0, name: 'Câmeras e Acessórios' },
+    // Celulares
+    celulares:        { rate: 0, name: 'Celulares e Acessórios' },
+    // Informática
+    informatica:      { rate: 0, name: 'Informática' },
+    // Moda
+    moda:             { rate: 0, name: 'Moda e Acessórios' },
+    calcados:         { rate: 0, name: 'Calçados e Acessórios de Moda' },
+    relogios:         { rate: 0, name: 'Joias, Relógios e Porta-Joias' },
+    // Casa
+    casa:             { rate: 0, name: 'Casa e Decoração' },
+    moveis:           { rate: 0, name: 'Móveis' },
+    // Beleza
+    beleza:           { rate: 0, name: 'Beleza e Cuidado Pessoal' },
+    // Esportes
+    esportes:         { rate: 0, name: 'Esportes e Fitness' },
+    // Brinquedos
+    brinquedos:       { rate: 0, name: 'Brinquedos e Hobbies' },
+    // Ferramentas
+    ferramentas:      { rate: 0, name: 'Ferramentas' },
+    // Pet
+    pet:              { rate: 0, name: 'Pet Shop' },
+    // Livros
+    livros:           { rate: 0, name: 'Livros' },
+    // Automotivo
+    automotivo:       { rate: 0, name: 'Automotivo e Acessórios' },
+    // Eletrodomésticos (NEW)
+    eletrodomesticos: { rate: 0, name: 'Eletrodomésticos' },
+    // Saúde (NEW)
+    saude:            { rate: 0, name: 'Saúde e Bem-Estar' },
+    // Games (NEW)
+    games:            { rate: 0, name: 'Games e Consoles' },
+    // Papelaria (NEW)
+    papelaria:        { rate: 0, name: 'Papelaria e Arte' },
   },
   classico: {
-    eletronicos: { rate: 12, name: 'Eletrônicos' },
-    celulares: { rate: 12, name: 'Celulares e Acessórios' },
-    informatica: { rate: 12, name: 'Informática' },
-    moda: { rate: 16, name: 'Moda e Acessórios' },
-    calcados: { rate: 16, name: 'Calçados' },
-    relogios: { rate: 16, name: 'Relógios' },
-    casa: { rate: 13, name: 'Casa e Decoração' },
-    moveis: { rate: 13, name: 'Móveis' },
-    beleza: { rate: 14, name: 'Beleza e Cuidado Pessoal' },
-    esportes: { rate: 14, name: 'Esportes e Fitness' },
-    brinquedos: { rate: 14, name: 'Brinquedos' },
-    ferramentas: { rate: 13, name: 'Ferramentas' },
-    pet: { rate: 14, name: 'Pet Shop' },
-    livros: { rate: 12, name: 'Livros' },
-    automotivo: { rate: 13, name: 'Automotivo' }
+    // Eletrônicos — 13% (fones, caixas bt, projetores, media streaming)
+    eletronicos:      { rate: 13,   name: 'Eletrônicos (Fones, Caixas BT, Projetores)' },
+    // Câmeras — 11%
+    cameras:          { rate: 11,   name: 'Câmeras e Acessórios' },
+    // Celulares — 13% (carregadores, cabos, suportes veiculares); smartwatches 11% → use celulares for 13%, smartwatch niche is minority
+    celulares:        { rate: 13,   name: 'Celulares e Acessórios' },
+    // Informática — 13% (mouses, impressoras, leitores de cartão)
+    informatica:      { rate: 13,   name: 'Informática' },
+    // Moda — 16% (mantido)
+    moda:             { rate: 16,   name: 'Moda e Acessórios' },
+    // Calçados/Acessórios de Moda — 14% (chaveiros)
+    calcados:         { rate: 14,   name: 'Calçados e Acessórios de Moda' },
+    // Joias/Relógios — 12.5% (porta joias)
+    relogios:         { rate: 12.5, name: 'Joias, Relógios e Porta-Joias' },
+    // Casa — 11.5% (câmeras seg, lâmpadas, luminárias, facas, kits utensílios)
+    casa:             { rate: 11.5, name: 'Casa e Decoração' },
+    // Móveis — mantido próximo de casa
+    moveis:           { rate: 11.5, name: 'Móveis' },
+    // Beleza — 12% (escovas, pranchas, barbeadores, máquinas de cortar)
+    beleza:           { rate: 12,   name: 'Beleza e Cuidado Pessoal' },
+    // Esportes — 11.5% (térmicos, garrafinhas, smartbands, garrafas)
+    esportes:         { rate: 11.5, name: 'Esportes e Fitness' },
+    // Brinquedos — 11.5% (bolhas, lançadores de água, pop its)
+    brinquedos:       { rate: 11.5, name: 'Brinquedos e Hobbies' },
+    // Ferramentas — mantido
+    ferramentas:      { rate: 13,   name: 'Ferramentas' },
+    // Pet — mantido
+    pet:              { rate: 14,   name: 'Pet Shop' },
+    // Livros — mantido
+    livros:           { rate: 12,   name: 'Livros' },
+    // Automotivo — 11% (aspiradores)
+    automotivo:       { rate: 11,   name: 'Automotivo e Acessórios' },
+    // Eletrodomésticos (NEW) — 11% (liquidificadores, climatizadores, processadores)
+    eletrodomesticos: { rate: 11,   name: 'Eletrodomésticos' },
+    // Saúde (NEW) — 12% (umidificadores, hidromassageadores, massageadores)
+    saude:            { rate: 12,   name: 'Saúde e Bem-Estar' },
+    // Games (NEW) — 11%
+    games:            { rate: 11,   name: 'Games e Consoles' },
+    // Papelaria (NEW) — 11.5% (marcadores, cadernos, estojos)
+    papelaria:        { rate: 11.5, name: 'Papelaria e Arte' },
   },
   premium: {
-    eletronicos: { rate: 17, name: 'Eletrônicos' },
-    celulares: { rate: 17, name: 'Celulares e Acessórios' },
-    informatica: { rate: 17, name: 'Informática' },
-    moda: { rate: 19, name: 'Moda e Acessórios' },
-    calcados: { rate: 19, name: 'Calçados' },
-    relogios: { rate: 19, name: 'Relógios' },
-    casa: { rate: 18, name: 'Casa e Decoração' },
-    moveis: { rate: 18, name: 'Móveis' },
-    beleza: { rate: 19, name: 'Beleza e Cuidado Pessoal' },
-    esportes: { rate: 19, name: 'Esportes e Fitness' },
-    brinquedos: { rate: 19, name: 'Brinquedos' },
-    ferramentas: { rate: 18, name: 'Ferramentas' },
-    pet: { rate: 19, name: 'Pet Shop' },
-    livros: { rate: 17, name: 'Livros' },
-    automotivo: { rate: 18, name: 'Automotivo' }
+    eletronicos:      { rate: 18,   name: 'Eletrônicos (Fones, Caixas BT, Projetores)' },
+    cameras:          { rate: 16,   name: 'Câmeras e Acessórios' },
+    celulares:        { rate: 18,   name: 'Celulares e Acessórios' },
+    informatica:      { rate: 18,   name: 'Informática' },
+    moda:             { rate: 19,   name: 'Moda e Acessórios' },
+    calcados:         { rate: 19,   name: 'Calçados e Acessórios de Moda' },
+    relogios:         { rate: 17.5, name: 'Joias, Relógios e Porta-Joias' },
+    casa:             { rate: 16.5, name: 'Casa e Decoração' },
+    moveis:           { rate: 16.5, name: 'Móveis' },
+    beleza:           { rate: 17,   name: 'Beleza e Cuidado Pessoal' },
+    esportes:         { rate: 16.5, name: 'Esportes e Fitness' },
+    brinquedos:       { rate: 16.5, name: 'Brinquedos e Hobbies' },
+    ferramentas:      { rate: 18,   name: 'Ferramentas' },
+    pet:              { rate: 19,   name: 'Pet Shop' },
+    livros:           { rate: 17,   name: 'Livros' },
+    automotivo:       { rate: 16,   name: 'Automotivo e Acessórios' },
+    eletrodomesticos: { rate: 16,   name: 'Eletrodomésticos' },
+    saude:            { rate: 17,   name: 'Saúde e Bem-Estar' },
+    games:            { rate: 16,   name: 'Games e Consoles' },
+    papelaria:        { rate: 16.5, name: 'Papelaria e Arte' },
   }
 };
 
@@ -467,7 +528,7 @@ export const calculateMetrics = (
   // New Logic for Mercado Livre
   if (currentMarketplace === 'mercadolivre') {
       const categoryTaxes = mercadoLivreTaxes[currentAdType];
-      const tax = categoryTaxes[currentCategory];
+      const tax = categoryTaxes[currentCategory] ?? categoryTaxes['eletronicos'];
       const commissionRate = tax.rate === 0
         ? 0
         : meliPlus
@@ -669,7 +730,7 @@ export const calculateMetrics = (
           currentFixedFee = 0;
       } else {
           const categoryTaxes = mercadoLivreTaxes[currentAdType];
-          const tax = categoryTaxes[currentCategory];
+          const tax = categoryTaxes[currentCategory] ?? categoryTaxes['eletronicos'];
           currentMarketplaceFee = tax.rate;
 
           if (currentAdType === 'gratis') {
@@ -719,7 +780,7 @@ export const calculateMetrics = (
       taxDescription = `${marketplaceFee}% (Comissão ${currentMarketplace})`;
   } else {
     const categoryTaxes = mercadoLivreTaxes[currentAdType];
-    const tax = categoryTaxes[currentCategory];
+    const tax = categoryTaxes[currentCategory] ?? categoryTaxes['eletronicos'];
     marketplaceFee = tax.rate;
   }
 
