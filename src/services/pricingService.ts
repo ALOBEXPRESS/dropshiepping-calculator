@@ -717,8 +717,11 @@ export const calculateMetrics = (
           currentMarketplaceFee = rates.commission;
           currentFixedFee = currentPrice < 10 ? (currentPrice * 0.5) : rates.fixed;
       } else if (currentMarketplace === 'tiktok') {
-          currentMarketplaceFee = tiktokCommVal;
-          currentFixedFee = currentPrice < 79 ? 4 : 0;
+          // TikTok Shop rates effective 15 Jul 2026:
+          // price < R$50: 10% commission + R$4 fixed
+          // price >= R$50: 6% commission + R$6 fixed
+          currentMarketplaceFee = currentPrice < 50 ? 10 : 6;
+          currentFixedFee = currentPrice < 50 ? 4 : 6;
       } else if (currentMarketplace === 'wordpress') {
           currentMarketplaceFee = 0;
           currentFixedFee = 0;
@@ -759,8 +762,10 @@ export const calculateMetrics = (
     const shopeeFixedFee = rates.fixed;
     taxDescription = `Shopee: ${rates.commission}% comissão + R$ ${shopeeFixedFee.toFixed(2)} (Taxa Fixa) — Frete Grátis incluso`;
   } else if (currentMarketplace === 'tiktok') {
-      marketplaceFee = tiktokCommVal;
-      taxDescription = `${tiktokCommVal}% (Comissão Tiktok Shop)`; // updated after finalFixedFee
+      // Initial estimate based on manual price or 2.5x cost
+      const estimatedTiktokPrice = manualPriceVal > 0 ? manualPriceVal : (totalCost * 2.5);
+      marketplaceFee = estimatedTiktokPrice < 50 ? 10 : 6;
+      taxDescription = `${marketplaceFee}% (Comissão Tiktok Shop)`; // updated after finalFixedFee
   } else if (currentMarketplace === 'shein') {
       marketplaceFee = 16;
       taxDescription = `16% (Comissão Shein)`;
@@ -935,9 +940,11 @@ export const calculateMetrics = (
 
   // Update TikTok taxDescription now that finalFixedFee is known
   if (currentMarketplace === 'tiktok') {
+    const finalTiktokComm = finalFees.rate;
+    marketplaceFee = finalTiktokComm; // update with price-based rate
     taxDescription = finalFixedFee > 0
-      ? `${tiktokCommVal}% (Comissão Tiktok Shop) + R$ ${finalFixedFee.toFixed(2)} (Taxa Fixa)`
-      : `${tiktokCommVal}% (Comissão Tiktok Shop)`;
+      ? `${finalTiktokComm}% (Comissão Tiktok Shop) + R$ ${finalFixedFee.toFixed(2)} (Taxa Fixa)`
+      : `${finalTiktokComm}% (Comissão Tiktok Shop)`;
   }
   // Update Shopee taxDescription and marketplaceFee with real price faixa
   if (currentMarketplace === 'shopee') {
