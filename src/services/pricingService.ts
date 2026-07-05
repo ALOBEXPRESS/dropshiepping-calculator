@@ -278,7 +278,7 @@ export const calculateMetrics = (
     manualPriceVal: number,
     competitorPriceVal: number,
     competitorMarkupVal: number,
-    tiktokCommVal: number,
+    _tiktokCommVal: number,
     wpShippingVal: number,
     emergencyReserveVal: number,
     returnRateVal: number,
