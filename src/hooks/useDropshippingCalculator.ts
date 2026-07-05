@@ -181,7 +181,7 @@ export const useDropshippingCalculator = () => {
   
   const [marketplace, setMarketplace] = useState(initialMarketplace);
   const [marketplace_id, setMarketplace_id] = useState(() => typeof draft.marketplace_id === 'string' ? draft.marketplace_id : '');
-  const [tiktokCommission, setTiktokCommission] = useState('6');
+  const [tiktokCommission, setTiktokCommission] = useState('10');
   const [wordpressShipping, setWordpressShipping] = useState('0');
   const [amazonPlan, setAmazonPlan] = useState<'individual' | 'profissional'>('individual');
   const [amazonCategory, setAmazonCategory] = useState('eletronicos');

@@ -342,8 +342,8 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
                     </div>
                     {calculations.manualPrice > 0 && (
                          <div className="text-left md:text-right">
-                            <p className={`text-sm mb-1 font-bold ${styles.text}`}>Seu Preço</p>
-                            <p className={`text-3xl font-bold ${styles.accent}`}>R$ {formatMoney(calculations.manualPrice)}</p>
+                            <p className="text-sm mb-1 font-bold text-black">Seu Preço</p>
+                            <p className="text-3xl font-bold text-black">R$ {formatMoney(calculations.manualPrice)}</p>
                          </div>
                     )}
                 </div>

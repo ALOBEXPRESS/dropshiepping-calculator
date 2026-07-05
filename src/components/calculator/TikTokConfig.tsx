@@ -88,7 +88,7 @@ export const TikTokConfig: React.FC<TikTokConfigProps> = ({
             inputMode="decimal"
             value={tiktokCommission}
             onChange={(e) => handleCurrencyChange(e, setTiktokCommission)}
-            placeholder="Ex: 6"
+            placeholder="Ex: 10"
           />
         </div>
       </div>
