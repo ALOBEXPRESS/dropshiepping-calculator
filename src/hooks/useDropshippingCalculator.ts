@@ -430,8 +430,15 @@ export const useDropshippingCalculator = () => {
     };
   }, []);
 
+  // Sync TikTok commission display field with price-based rate
+  // Policy (15 Jul 2026): price < R$50 → 10%; price >= R$50 → 6%
   useEffect(() => {
-    const draft: ProductDraft = {
+    if (marketplace !== 'tiktok') return;
+    const price = parseCurrency(manualSellingPrice) || 0;
+    if (price <= 0) return; // no manual price set — keep current
+    const newRate = price < 50 ? '10' : '6';
+    setTiktokCommission(newRate);
+  }, [manualSellingPrice, marketplace]);
       productName,
       productSku,
       stockQuantity,
