@@ -439,7 +439,9 @@ export const useDropshippingCalculator = () => {
     const newRate = price < 50 ? '10' : '6';
     setTiktokCommission(newRate);
   }, [manualSellingPrice, marketplace]);
-      productName,
+
+  useEffect(() => {
+    const draft: ProductDraft = {
       productSku,
       stockQuantity,
       weight,
