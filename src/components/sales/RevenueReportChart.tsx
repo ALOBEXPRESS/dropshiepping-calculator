@@ -231,6 +231,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       is_free_sample?: boolean | string;
       marketplace?: string;
       tiktok_reembolso_disabled?: boolean;
+      tiktok_retorno_liquido?: number | null;
     };
 
     const totalAmount = Number(o.total_amount ?? 0);
@@ -307,9 +308,15 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     const reembolsoDisabled = (order as { tiktok_reembolso_disabled?: boolean }).tiktok_reembolso_disabled === true;
     const tiktokReembolso = (isTikTok && !reembolsoDisabled) ? activeDiscount : 0;
 
-    const precoVendaLiquidoFinal = isTikTok
-      ? precoVendaPagoCliente + tiktokReembolso - subtotalMarketplace
-      : precoVendaPagoCliente - subtotalMarketplace - activeDiscount;
+    // Retorno Líquido TikTok: when set, skip all marketplace fees → use it directly as net received
+    const retornoLiquido = Number(o.tiktok_retorno_liquido ?? 0);
+    const hasRetornoLiquido = isTikTok && retornoLiquido > 0;
+
+    const precoVendaLiquidoFinal = hasRetornoLiquido
+      ? retornoLiquido
+      : (isTikTok
+        ? precoVendaPagoCliente + tiktokReembolso - subtotalMarketplace
+        : precoVendaPagoCliente - subtotalMarketplace - activeDiscount);
 
     const realProfitRaw = isFreeSample
       ? -totalProductCost
