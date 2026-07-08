@@ -42,6 +42,7 @@ interface OrderDetail {
   order_id: string;
   bling_order_id?: string | null;
   order_number: string;
+  order_date?: string | null;
   marketplace: string;
   marketplace_fixed_fee?: number;
   is_free_sample?: boolean;
@@ -359,6 +360,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [costsSaved, setCostsSaved] = useState(false);
   const [savingReembolso, setSavingReembolso] = useState(false);
   const [savingRetornoLiquido, setSavingRetornoLiquido] = useState(false);
+  const [manualOrderDate, setManualOrderDate] = useState<string>('');
+  const [savingOrderDate, setSavingOrderDate] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef(data);
   dataRef.current = data;
@@ -1394,6 +1397,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 const orderDetailData = {
                   order_id: order.order_id,
                   bling_order_id: (order as { bling_order_id?: string | null }).bling_order_id ?? null,
+                  order_date: (order as { order_date?: string | null }).order_date ?? null,
                   tiktok_reembolso_disabled: (order as { tiktok_reembolso_disabled?: boolean }).tiktok_reembolso_disabled === true,
                   tiktok_retorno_liquido: (order as { tiktok_retorno_liquido?: number | null }).tiktok_retorno_liquido ?? null,
                   order_number: orderNumber, marketplace: marketplaceName,
@@ -1526,6 +1530,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               saved?.manualRetornoLiquido ??
               (merged.tiktok_retorno_liquido != null ? String(merged.tiktok_retorno_liquido).replace('.', ',') : '')
             );
+            setManualOrderDate(merged.order_date ?? '');
             setDetailDialogOpen(true);
           } catch (err) {
             console.error('Error parsing order data:', err);
@@ -1663,6 +1668,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       setManualCostOverrides({});
       setManualShipping('');
       setManualRetornoLiquido('');
+      setManualOrderDate('');
       const tooltipEl = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
       if (tooltipEl) {
         tooltipEl.style.opacity = '0';
@@ -2026,6 +2032,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const orderDetailData: OrderDetail = {
             order_id: order.order_id,
             bling_order_id: (order as { bling_order_id?: string | null }).bling_order_id ?? null,
+            order_date: (order as { order_date?: string | null }).order_date ?? null,
             tiktok_reembolso_disabled: (order as { tiktok_reembolso_disabled?: boolean }).tiktok_reembolso_disabled === true,
             tiktok_retorno_liquido: (order as { tiktok_retorno_liquido?: number | null }).tiktok_retorno_liquido ?? null,
             order_number: orderNumber,
@@ -2454,6 +2461,46 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           </svg>
                           {selectedOrder.customer_name}
                         </span>
+                      )}
+                    </div>
+                    {/* Data do pedido — editável */}
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      <svg className="w-3 h-3 text-zinc-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <input
+                        type="date"
+                        value={manualOrderDate ?? ''}
+                        onChange={(e) => setManualOrderDate(e.target.value)}
+                        className="bg-zinc-900 border border-zinc-700 rounded px-2 py-0.5 text-[11px] text-zinc-300 focus:outline-none focus:border-zinc-500 tabular-nums"
+                      />
+                      {manualOrderDate && manualOrderDate !== (selectedOrder?.order_date ?? '') && (
+                        <button
+                          disabled={savingOrderDate}
+                          onClick={async () => {
+                            if (!selectedOrder?.order_id) return;
+                            setSavingOrderDate(true);
+                            try {
+                              await supabase
+                                .from('orders')
+                                .update({ order_date: manualOrderDate })
+                                .eq('id', selectedOrder.order_id);
+                              setSelectedOrder({ ...selectedOrder, order_date: manualOrderDate });
+                              refetch();
+                              refetchYearly();
+                            } finally {
+                              setSavingOrderDate(false);
+                            }
+                          }}
+                          className="flex items-center gap-1 bg-zinc-700 hover:bg-zinc-600 disabled:opacity-50 text-white text-[10px] font-semibold px-2 py-0.5 rounded transition-colors"
+                        >
+                          {savingOrderDate ? (
+                            <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                          ) : (
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                          )}
+                          Salvar data
+                        </button>
                       )}
                     </div>
                   </div>
