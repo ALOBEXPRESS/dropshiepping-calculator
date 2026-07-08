@@ -107,6 +107,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     manualGatewayFee: string;
     manualCostOverrides: Record<number, string>;
     manualShipping: string;
+    manualRetornoLiquido: string;
   };
   const orderModalStateRef = useRef<Record<string, OrderModalState>>({});
 
@@ -330,6 +331,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [openMarketplace, setOpenMarketplace] = useState(false);
   const [openDescontos, setOpenDescontos] = useState(false);
   const [openAcrescimos, setOpenAcrescimos] = useState(false);
+  const [openRetornoLiquido, setOpenRetornoLiquido] = useState(false);
   // desconto do Bling pré-selecionado por padrão
   const [blingDiscountEnabled, setBlingDiscountEnabled] = useState(true);
   // desconto manual (quando checkbox desmarcado)
@@ -338,6 +340,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [manualAcrescimo, setManualAcrescimo] = useState<string>('');
   // reembolso TikTok = valor do desconto, somado ao lucro
   const [tiktokReembolsoEnabled, setTiktokReembolsoEnabled] = useState(true);
+  // Retorno Líquido TikTok — quando preenchido, substitui todo custo marketplace + afiliados
+  const [manualRetornoLiquido, setManualRetornoLiquido] = useState<string>('');
   // Taxas editáveis do fornecedor no modal
   const [manualSupplierFeePercent, setManualSupplierFeePercent] = useState<string>('');
   const [manualGatewayFee, setManualGatewayFee] = useState<string>('');
@@ -1508,6 +1512,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             setManualGatewayFee(saved?.manualGatewayFee ?? '');
             setManualCostOverrides(saved?.manualCostOverrides ?? {});
             setManualShipping(saved?.manualShipping ?? '');
+            setManualRetornoLiquido(saved?.manualRetornoLiquido ?? '');
             setDetailDialogOpen(true);
           } catch (err) {
             console.error('Error parsing order data:', err);
@@ -1644,8 +1649,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       setManualGatewayFee('');
       setManualCostOverrides({});
       setManualShipping('');
-      
-      // Fechar o tooltip do ApexCharts
+      setManualRetornoLiquido('');
       const tooltipEl = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
       if (tooltipEl) {
         tooltipEl.style.opacity = '0';
@@ -2204,6 +2208,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               manualGatewayFee,
               manualCostOverrides,
               manualShipping,
+              manualRetornoLiquido,
             };
           }
           setDetailDialogOpen(open);
@@ -2325,6 +2330,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               : (sfpEnabled ? 0 : selectedOrder.shipping_cost);
             const subtotalMarketplace = isFreeSample ? 0 : (commissionPercent + affiliateCommission + fixedFee + sfpFee + effectiveShipping + selectedOrder.other_expenses);
 
+            // ── Retorno Líquido TikTok ────────────────────────────────────────────
+            // When user fills this, TikTok already paid net amount → skip marketplace cost + affiliates
+            const retornoLiquidoValue = parseFloat(manualRetornoLiquido.replace(',', '.')) || 0;
+            const hasRetornoLiquido = isTikTok && retornoLiquidoValue > 0;
+
             // ── Acréscimo ─────────────────────────────────────────────────────────
             const acrescimoManual = parseFloat(manualAcrescimo.replace(',', '.')) || 0;
             // Reembolso TikTok = desconto ativo (só TikTok)
@@ -2333,10 +2343,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
             // ── Preço de venda líquido ────────────────────────────────────────────
             // TikTok: pagoCliente + reembolso - taxas
+            // TikTok com retornoLiquido: retornoLiquidoValue (já é o líquido recebido)
             // Outros: pagoCliente - taxas - desconto
-            const precoVendaLiquidoFinal = isTikTok
-              ? precoVendaPagoCliente + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0) - subtotalMarketplace
-              : precoVendaPagoCliente - subtotalMarketplace - activeDiscount;
+            const precoVendaLiquidoFinal = hasRetornoLiquido
+              ? retornoLiquidoValue
+              : (isTikTok
+                ? precoVendaPagoCliente + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0) - subtotalMarketplace
+                : precoVendaPagoCliente - subtotalMarketplace - activeDiscount);
 
             // ── Lucro = Preço Líquido - Custo Produto ────────────────────────────
             // taxas marketplace já descontadas no precoVendaLiquidoFinal
@@ -2568,6 +2581,65 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                     )}
                   </div>
 
+                  {/* Retorno Líquido TikTok — só TikTok; quando preenchido substitui custo marketplace + afiliados */}
+                  {isTikTok && (
+                  <div className="rounded-xl overflow-hidden bg-teal-950/20">
+                    <button
+                      onClick={() => setOpenRetornoLiquido(v => !v)}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-teal-950/60 to-zinc-900/60 hover:from-teal-950/80 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <svg className="w-3.5 h-3.5 text-teal-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+                        </svg>
+                        <span className="text-teal-400 font-semibold text-xs uppercase tracking-wide">Retorno Líquido TikTok</span>
+                        {hasRetornoLiquido && (
+                          <span className="text-[10px] text-teal-400/80 font-mono bg-teal-950/40 px-1.5 py-0.5 rounded">
+                            {formatCurrency(retornoLiquidoValue)}
+                          </span>
+                        )}
+                      </div>
+                      <svg className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${openRetornoLiquido ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {openRetornoLiquido && (
+                      <div className="px-4 py-3 space-y-2 bg-zinc-900/40 border-t border-teal-950/20">
+                        <p className="text-[11px] text-zinc-500">
+                          Valor líquido que o TikTok repassou por este pedido. Quando preenchido, o custo marketplace e afiliados são desconsiderados no cálculo do lucro.
+                        </p>
+                        <div className="flex items-center gap-3">
+                          <label className="text-zinc-400 text-sm whitespace-nowrap">Valor (R$)</label>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="0,00"
+                            value={manualRetornoLiquido}
+                            onChange={(e) => setManualRetornoLiquido(e.target.value.replace(/[^0-9,.]/g, ''))}
+                            className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-teal-500 tabular-nums"
+                          />
+                          {retornoLiquidoValue > 0 && (
+                            <button
+                              onClick={() => setManualRetornoLiquido('')}
+                              className="text-zinc-500 hover:text-zinc-300 transition-colors"
+                              title="Limpar"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                        {hasRetornoLiquido && (
+                          <p className="text-[11px] text-teal-400/70">
+                            Custo Marketplace e Afiliados desconsiderados. Lucro = {formatCurrency(retornoLiquidoValue)} − custo produto.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  )}
+
                   {/* Custo do Produto — accordion por item */}
                   <div className="rounded-xl overflow-hidden bg-red-950/15">
                     <button
@@ -2713,10 +2785,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         <svg className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
-                        <span className="text-orange-400 font-semibold text-xs uppercase tracking-wide">Custo Marketplace — {resolvedMarketplaceName}</span>
+                        <span className={`font-semibold text-xs uppercase tracking-wide ${hasRetornoLiquido ? 'text-zinc-600 line-through' : 'text-orange-400'}`}>Custo Marketplace — {resolvedMarketplaceName}</span>
+                        {hasRetornoLiquido && <span className="text-[10px] text-teal-500 font-medium">(retorno líquido aplicado)</span>}
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-orange-400 font-semibold text-sm tabular-nums">-{formatCurrency(subtotalMarketplace)}</span>
+                        <span className={`font-semibold text-sm tabular-nums ${hasRetornoLiquido ? 'text-zinc-600 line-through' : 'text-orange-400'}`}>-{formatCurrency(subtotalMarketplace)}</span>
                         <svg className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${openMarketplace ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
@@ -2807,21 +2880,24 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
                   {/* Accordion de Afiliados */}
                   {selectedOrder?.order_id && selectedOrder?.marketplace && (
-                    <AffiliateAccordion
-                      orderId={selectedOrder.order_id}
-                      marketplaceId={resolvedMarketplaceConfig?.id || ''}
-                      organizationId={organizationId}
-                      currentAffiliateId={selectedOrder.affiliate_id}
-                      onAffiliateChange={(affiliateId) => {
-                        // Atualizar o estado local se necessário
-                        if (selectedOrder) {
-                          setSelectedOrder({
-                            ...selectedOrder,
-                            affiliate_id: affiliateId,
-                          });
-                        }
-                      }}
-                    />
+                    <div className={hasRetornoLiquido ? 'opacity-40 pointer-events-none relative' : ''}>
+                      {hasRetornoLiquido && (
+                        <div className="absolute inset-0 flex items-center justify-center z-10">
+                          <span className="text-[10px] text-teal-500 font-medium bg-zinc-950/80 px-2 py-0.5 rounded">desconsiderado</span>
+                        </div>
+                      )}
+                      <AffiliateAccordion
+                        orderId={selectedOrder.order_id}
+                        marketplaceId={resolvedMarketplaceConfig?.id || ''}
+                        organizationId={organizationId}
+                        currentAffiliateId={selectedOrder.affiliate_id}
+                        onAffiliateChange={(affiliateId) => {
+                          if (selectedOrder) {
+                            setSelectedOrder({ ...selectedOrder, affiliate_id: affiliateId });
+                          }
+                        }}
+                      />
+                    </div>
                   )}
 
                   {/* Accordion de Descontos */}
