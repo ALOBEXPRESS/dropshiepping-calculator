@@ -46,6 +46,7 @@ interface OrderDetail {
   marketplace_fixed_fee?: number;
   is_free_sample?: boolean;
   tiktok_reembolso_disabled?: boolean;
+  tiktok_retorno_liquido?: number | null;
   customer_name?: string;
   product_name?: string;
   product_sku?: string;
@@ -350,6 +351,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [savingCosts, setSavingCosts] = useState(false);
   const [costsSaved, setCostsSaved] = useState(false);
   const [savingReembolso, setSavingReembolso] = useState(false);
+  const [savingRetornoLiquido, setSavingRetornoLiquido] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef(data);
   dataRef.current = data;
@@ -1386,6 +1388,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   order_id: order.order_id,
                   bling_order_id: (order as { bling_order_id?: string | null }).bling_order_id ?? null,
                   tiktok_reembolso_disabled: (order as { tiktok_reembolso_disabled?: boolean }).tiktok_reembolso_disabled === true,
+                  tiktok_retorno_liquido: (order as { tiktok_retorno_liquido?: number | null }).tiktok_retorno_liquido ?? null,
                   order_number: orderNumber, marketplace: marketplaceName,
                   marketplace_fixed_fee: Number(resolvedMarketplaceConfig?.fixed_fee ?? (order as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0),
                   customer_name: customerName, product_name: mainProductName, product_sku: productSku || undefined,
@@ -1512,7 +1515,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             setManualGatewayFee(saved?.manualGatewayFee ?? '');
             setManualCostOverrides(saved?.manualCostOverrides ?? {});
             setManualShipping(saved?.manualShipping ?? '');
-            setManualRetornoLiquido(saved?.manualRetornoLiquido ?? '');
+            setManualRetornoLiquido(
+              saved?.manualRetornoLiquido ??
+              (merged.tiktok_retorno_liquido != null ? String(merged.tiktok_retorno_liquido).replace('.', ',') : '')
+            );
             setDetailDialogOpen(true);
           } catch (err) {
             console.error('Error parsing order data:', err);
@@ -2014,6 +2020,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             order_id: order.order_id,
             bling_order_id: (order as { bling_order_id?: string | null }).bling_order_id ?? null,
             tiktok_reembolso_disabled: (order as { tiktok_reembolso_disabled?: boolean }).tiktok_reembolso_disabled === true,
+            tiktok_retorno_liquido: (order as { tiktok_retorno_liquido?: number | null }).tiktok_retorno_liquido ?? null,
             order_number: orderNumber,
             marketplace: marketplaceName,
             marketplace_fixed_fee: Number(resolvedMarketplaceConfig?.fixed_fee ?? (order as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0),
@@ -2479,15 +2486,16 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             <div className="flex items-center gap-2">
                               <Checkbox
                                 id="tiktok-reembolso-price-check"
-                                checked={tiktokReembolsoEnabled}
-                                onCheckedChange={(v) => setTiktokReembolsoEnabled(v === true)}
+                                checked={tiktokReembolsoEnabled && !hasRetornoLiquido}
+                                disabled={hasRetornoLiquido}
+                                onCheckedChange={(v) => { if (!hasRetornoLiquido) setTiktokReembolsoEnabled(v === true); }}
                               />
-                              <label htmlFor="tiktok-reembolso-price-check" className="text-[11px] text-emerald-400/80 cursor-pointer select-none">
+                              <label htmlFor="tiktok-reembolso-price-check" className={`text-[11px] select-none ${hasRetornoLiquido ? 'text-zinc-600 line-through cursor-not-allowed' : 'text-emerald-400/80 cursor-pointer'}`}>
                                 Reembolso TikTok
                               </label>
-                              <span className="text-[10px] text-emerald-500/60 font-mono tabular-nums">+{formatCurrency(tiktokReembolsoValue)}</span>
+                              <span className={`text-[10px] font-mono tabular-nums ${hasRetornoLiquido ? 'text-zinc-600' : 'text-emerald-500/60'}`}>+{formatCurrency(tiktokReembolsoValue)}</span>
                               {/* Save button — visible when state differs from DB value */}
-                              {tiktokReembolsoEnabled !== !(selectedOrder?.tiktok_reembolso_disabled === true) && (
+                              {!hasRetornoLiquido && tiktokReembolsoEnabled !== !(selectedOrder?.tiktok_reembolso_disabled === true) && (
                                 <button
                                   disabled={savingReembolso}
                                   onClick={async () => {
@@ -2630,6 +2638,36 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             </button>
                           )}
                         </div>
+                        {/* Save button */}
+                        {selectedOrder?.bling_order_id && (
+                          <button
+                            disabled={savingRetornoLiquido}
+                            onClick={async () => {
+                              if (!selectedOrder?.bling_order_id) return;
+                              setSavingRetornoLiquido(true);
+                              try {
+                                const saveVal = retornoLiquidoValue > 0 ? retornoLiquidoValue : null;
+                                await supabase
+                                  .from('bling_orders')
+                                  .update({ tiktok_retorno_liquido: saveVal })
+                                  .eq('id', selectedOrder.bling_order_id);
+                                setSelectedOrder({ ...selectedOrder, tiktok_retorno_liquido: saveVal });
+                                refetch();
+                                refetchYearly();
+                              } finally {
+                                setSavingRetornoLiquido(false);
+                              }
+                            }}
+                            className="flex items-center gap-1.5 bg-teal-700/80 hover:bg-teal-600 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors w-full justify-center"
+                          >
+                            {savingRetornoLiquido ? (
+                              <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                            ) : (
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                            )}
+                            Salvar Retorno Líquido
+                          </button>
+                        )}
                         {hasRetornoLiquido && (
                           <p className="text-[11px] text-teal-400/70">
                             Custo Marketplace e Afiliados desconsiderados. Lucro = {formatCurrency(retornoLiquidoValue)} − custo produto.
@@ -3037,14 +3075,16 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             <div className="flex items-center gap-2">
                               <Checkbox
                                 id="tiktok-reembolso-acc-check"
-                                checked={tiktokReembolsoEnabled}
-                                onCheckedChange={(v) => setTiktokReembolsoEnabled(v === true)}
+                                checked={tiktokReembolsoEnabled && !hasRetornoLiquido}
+                                disabled={hasRetornoLiquido}
+                                onCheckedChange={(v) => { if (!hasRetornoLiquido) setTiktokReembolsoEnabled(v === true); }}
                               />
-                              <label htmlFor="tiktok-reembolso-acc-check" className="text-zinc-300 text-sm cursor-pointer select-none">
+                              <label htmlFor="tiktok-reembolso-acc-check" className={`text-sm select-none ${hasRetornoLiquido ? 'text-zinc-600 line-through cursor-not-allowed' : 'text-zinc-300 cursor-pointer'}`}>
                                 Reembolso TikTok
+                                {hasRetornoLiquido && <span className="text-[10px] text-teal-600 ml-1 no-underline">(retorno líquido ativo)</span>}
                               </label>
                             </div>
-                            <span className={`text-sm font-semibold tabular-nums ${tiktokReembolsoEnabled ? 'text-emerald-400' : 'text-zinc-600 line-through'}`}>
+                            <span className={`text-sm font-semibold tabular-nums ${hasRetornoLiquido ? 'text-zinc-600 line-through' : tiktokReembolsoEnabled ? 'text-emerald-400' : 'text-zinc-600 line-through'}`}>
                               +{formatCurrency(tiktokReembolsoValue)}
                             </span>
                           </div>
