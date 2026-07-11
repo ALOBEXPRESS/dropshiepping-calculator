@@ -375,6 +375,8 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
   const [orgClicks] = useState('');
   const [orgSales] = useState('');
   const [extraImageUrls, setExtraImageUrls] = useState<string[]>([]);
+  // Enriched variations with images fetched from products_variations_bling
+  const [enrichedVariations, setEnrichedVariations] = useState<import('@/types/calculator').ProductVariationRecord[]>([]);
   const dragIndexRef = useRef<number | null>(null);
 
   // Fetch extra image URLs from products_bling when dialog opens
@@ -420,6 +422,50 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
         setExtraImageUrls([...new Set(urls)]);
       });
   }, [product?.sku, isOpen]);
+
+  // Fetch variation images from products_variations_bling when dialog opens
+  useEffect(() => {
+    const variations = product?.variations;
+    if (!variations || variations.length === 0 || !isOpen) {
+      setEnrichedVariations([]);
+      return;
+    }
+    // Already have images — no need to fetch
+    const alreadyHasImages = variations.some((v) => v.imageUrl || (v.imageUrls && v.imageUrls.length > 0));
+    if (alreadyHasImages) {
+      setEnrichedVariations(variations);
+      return;
+    }
+    const skus = variations.map((v) => v.sku).filter(Boolean) as string[];
+    if (skus.length === 0) {
+      setEnrichedVariations(variations);
+      return;
+    }
+    supabase
+      .from('products_variations_bling')
+      .select('sku, image_url1, image_url2, image_url3, image_url4, image_url5')
+      .in('sku', skus)
+      .then(({ data }) => {
+        if (!data || data.length === 0) {
+          setEnrichedVariations(variations);
+          return;
+        }
+        type BlingVarRow = { sku: string; image_url1?: string | null; image_url2?: string | null; image_url3?: string | null; image_url4?: string | null; image_url5?: string | null };
+        const imagesBySku: Record<string, string[]> = {};
+        for (const row of data as BlingVarRow[]) {
+          const imgs = [row.image_url1, row.image_url2, row.image_url3, row.image_url4, row.image_url5]
+            .filter((u): u is string => !!u && u.startsWith('http'));
+          if (imgs.length > 0) imagesBySku[row.sku] = imgs;
+        }
+        const enriched = variations.map((v) => {
+          if (!v.sku || v.imageUrl || (v.imageUrls && v.imageUrls.length > 0)) return v;
+          const imgs = imagesBySku[v.sku];
+          if (!imgs) return v;
+          return { ...v, imageUrl: imgs[0], imageUrls: imgs };
+        });
+        setEnrichedVariations(enriched);
+      });
+  }, [product?.variations, isOpen]);
   const videoModelLabels: Record<NonNullable<ProductItem['videoGenerationLlm']>, string> = {
     veo3: 'Veo3',
     sora2: 'Sora2',
@@ -1064,7 +1110,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                   {product?.variations && product.variations.length > 0 && (
                     <div className="pb-6 border-b border-gray-200 dark:border-zinc-700">
                       <ProductVariationsSection 
-                        variations={product.variations}
+                        variations={enrichedVariations.length > 0 ? enrichedVariations : product.variations}
                         onSelectVariation={(variation) => {
                           // Preencher os campos do formulário com os dados da variação
                           setFormData(prev => ({
