@@ -1589,6 +1589,41 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             setManualCouponType('fixed');
             setLinkedCampaignId(null);
             setAvailableCampaigns([]);
+            // Auto-load campaigns and pre-fill marketing cost
+            (async () => {
+              try {
+                const { data: campRows } = await supabase
+                  .from('campaigns')
+                  .select('id, name, campaign_products(marketing_cost_override)')
+                  .eq('organization_id', organizationId)
+                  .order('created_at', { ascending: false });
+                const camps = (campRows ?? []).map((c: Record<string, unknown>) => ({
+                  id: c.id as string,
+                  name: c.name as string,
+                  marketing_cost: ((c.campaign_products as Array<{ marketing_cost_override: number | null }>)?.[0]?.marketing_cost_override ?? null),
+                }));
+                setAvailableCampaigns(camps);
+                // Auto-fill: find campaign linked to this order via campaign_order_costs
+                const { data: existingCost } = await supabase
+                  .from('campaign_order_costs')
+                  .select('campaign_id, marketing_cost')
+                  .eq('order_id', merged.order_id)
+                  .maybeSingle();
+                if (existingCost) {
+                  const ec = existingCost as { campaign_id: string | null; marketing_cost: number };
+                  setLinkedCampaignId(ec.campaign_id);
+                  setManualMarketingCost(
+                    new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(ec.marketing_cost)
+                  );
+                } else if (camps.length > 0 && camps[0].marketing_cost != null) {
+                  // Pre-fill from first campaign's cost
+                  setManualMarketingCost(
+                    new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(camps[0].marketing_cost)
+                  );
+                  setLinkedCampaignId(camps[0].id);
+                }
+              } catch { /* graceful */ }
+            })();
             setDetailDialogOpen(true);
           } catch (err) {
             console.error('Error parsing order data:', err);
@@ -3362,22 +3397,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                               const cid = e.target.value || null;
                               setLinkedCampaignId(cid);
                               if (cid) {
-                                // Auto-fill cost from campaign_products for this order's product
-                                const productId = selectedOrder?.products?.[0]
-                                  ? undefined // will try by campaign
-                                  : undefined;
-                                const { data: cpRows } = await supabase
-                                  .from('campaign_products')
-                                  .select('marketing_cost_override')
-                                  .eq('campaign_id', cid)
-                                  .limit(1);
-                                const cost = (cpRows as Array<{ marketing_cost_override: number | null }>)?.[0]?.marketing_cost_override;
-                                if (cost != null) {
+                                const found = availableCampaigns.find((c) => c.id === cid);
+                                if (found?.marketing_cost != null) {
                                   setManualMarketingCost(
-                                    new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(cost)
+                                    new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(found.marketing_cost)
                                   );
                                 }
-                                void productId;
                               }
                             }}
                             className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-purple-500"
@@ -3385,32 +3410,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             <option value="">— Nenhuma campanha —</option>
                             {availableCampaigns.map((c) => (
                               <option key={c.id} value={c.id}>
-                                {c.name}{c.marketing_cost != null ? ` (R$ ${new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(c.marketing_cost)})` : ''}
+                                {c.name}{c.marketing_cost != null ? ` · R$ ${new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(c.marketing_cost)}` : ''}
                               </option>
                             ))}
                           </select>
-                          {availableCampaigns.length === 0 && (
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                const { data: campRows } = await supabase
-                                  .from('campaigns')
-                                  .select('id, name, campaign_products(marketing_cost_override)')
-                                  .eq('organization_id', organizationId)
-                                  .order('created_at', { ascending: false });
-                                setAvailableCampaigns(
-                                  (campRows ?? []).map((c: Record<string, unknown>) => ({
-                                    id: c.id as string,
-                                    name: c.name as string,
-                                    marketing_cost: ((c.campaign_products as Array<{ marketing_cost_override: number | null }>)?.[0]?.marketing_cost_override ?? null),
-                                  }))
-                                );
-                              }}
-                              className="text-[11px] text-purple-400 hover:text-purple-300 transition-colors"
-                            >
-                              Carregar campanhas
-                            </button>
-                          )}
                         </div>
 
                         {/* Valor manual */}
@@ -3452,13 +3455,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                   .from('campaign_order_costs')
                                   .upsert({
                                     order_id: selectedOrder.order_id,
-                                    campaign_id: linkedCampaignId,
-                                    product_id: selectedOrder.products?.[0]
-                                      ? undefined
-                                      : undefined,
+                                    campaign_id: linkedCampaignId ?? null,
                                     marketing_cost: cost,
                                     organization_id: organizationId,
-                                  }, { onConflict: 'campaign_id,order_id' });
+                                  }, { onConflict: 'order_id' });
                                 refetch();
                                 refetchYearly();
                               } finally {
