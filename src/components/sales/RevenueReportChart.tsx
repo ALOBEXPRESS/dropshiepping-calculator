@@ -3590,9 +3590,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-medium mb-0.5">Lucro s/ Marketing</p>
-                        <p className={`text-lg font-bold tabular-nums ${(realProfit + manualMarketingCostVal) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {formatCurrency(realProfit + manualMarketingCostVal)}
+                        <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-medium mb-0.5">Lucro Real</p>
+                        <p className={`text-lg font-bold tabular-nums ${realProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {formatCurrency(realProfit)}
                         </p>
                       </div>
                     </div>
@@ -3659,6 +3659,26 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               <p className="text-xs text-gray-500 dark:text-gray-400">Lucro Total</p>
               <p className={`text-xl font-bold ${allDataTotalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(allDataTotalProfit)}</p>
             </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{costLabel}</p>
+              <p className="text-xl font-bold text-red-600">{formatCurrency(currentPeriodCost)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Custo Total</p>
+              <p className="text-xl font-bold text-red-600">{formatCurrency(allDataTotalCost)}</p>
+            </div>
+            {currentPeriodMarketingCost > 0 && (
+              <div>
+                <p className="text-xs text-orange-500/80">{`Custo Marketing ${periodLabel.replace('Lucro ', '')}`}</p>
+                <p className="text-xl font-bold text-orange-500">{formatCurrency(currentPeriodMarketingCost)}</p>
+              </div>
+            )}
+            {allDataTotalMarketingCost > 0 && (
+              <div>
+                <p className="text-xs text-orange-500/80">Custo Marketing Total</p>
+                <p className="text-xl font-bold text-orange-500">{formatCurrency(allDataTotalMarketingCost)}</p>
+              </div>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -3707,30 +3727,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           )}
           <div ref={chartRef}>
           <Chart key={`${JSON.stringify(visibleData.map(d => d.period_label + '_' + d.total_profit))}_${windowOffset}`} options={chartOptions} series={chartSeries} type="area" height={300} />
-          </div>
-
-          {/* Second row: costs + marketing costs below chart */}
-          <div className="flex items-center gap-6 mt-4 pt-4 border-t border-gray-100 dark:border-zinc-800/60 flex-wrap">
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{costLabel}</p>
-              <p className="text-xl font-bold text-red-600">{formatCurrency(currentPeriodCost)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Custo Total</p>
-              <p className="text-xl font-bold text-red-600">{formatCurrency(allDataTotalCost)}</p>
-            </div>
-            {currentPeriodMarketingCost > 0 && (
-              <div>
-                <p className="text-xs text-orange-500/80">{`Custo Marketing ${periodLabel.replace('Lucro ', '')}`}</p>
-                <p className="text-xl font-bold text-orange-500">{formatCurrency(currentPeriodMarketingCost)}</p>
-              </div>
-            )}
-            {allDataTotalMarketingCost > 0 && (
-              <div>
-                <p className="text-xs text-orange-500/80">Custo Marketing Total</p>
-                <p className="text-xl font-bold text-orange-500">{formatCurrency(allDataTotalMarketingCost)}</p>
-              </div>
-            )}
           </div>
         </div>
       ) : (
