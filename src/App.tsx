@@ -17,6 +17,7 @@ const LoginPremium = lazy(() => import('./components/LoginPremium'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Sales = lazy(() => import('./pages/Sales'));
 const Leads = lazy(() => import('./pages/Leads'));
+const Campaigns = lazy(() => import('./pages/CampaignsPage'));
 
 const ProductsPage = () => (
   <ProtectedRoute>
@@ -58,6 +59,16 @@ const LeadsPage = () => (
   </ProtectedRoute>
 );
 
+const CampaignsPage = () => (
+  <ProtectedRoute>
+    <Layout>
+      <Suspense fallback={<LoadingState />}>
+        <Campaigns />
+      </Suspense>
+    </Layout>
+  </ProtectedRoute>
+);
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -94,6 +105,7 @@ function App() {
               <Route path="/produtos" element={<ProductsPage />} />
               <Route path="/vendas" element={<SalesPage />} />
               <Route path="/leads" element={<LeadsPage />} />
+              <Route path="/campanhas" element={<CampaignsPage />} />
             </Routes>
           </Suspense>
             </BrowserRouter>
