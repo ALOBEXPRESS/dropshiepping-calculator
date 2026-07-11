@@ -11,11 +11,13 @@ import { toast } from 'sonner';
 import { useCampaigns } from '@/hooks/useCampaigns';
 import { CampaignSettingsStep } from './CampaignSettingsStep';
 import { AdSetSettingsStep } from './AdSetSettingsStep';
+import { DirectioningStep } from './DirectioningStep';
 import { ProductLinkingStep } from './ProductLinkingStep';
 import type {
   CampaignWithRelations,
   CampaignFormPayload,
   CampaignObjective,
+  CampaignMarketplace,
 } from '@/types/campaigns';
 
 interface CampaignFormDialogProps {
@@ -23,19 +25,21 @@ interface CampaignFormDialogProps {
   onOpenChange: (open: boolean) => void;
   campaign?: CampaignWithRelations;
   organizationId: string;
+  marketplace?: CampaignMarketplace;
   onSaved: () => void;
 }
 
 const STEPS = [
   'Configurações da Campanha',
   'Grupo de Anúncios',
+  'Direcionamento',
   'Vincular Produtos',
 ];
 
-const buildDefault = (organizationId: string): CampaignFormPayload => ({
+const buildDefault = (organizationId: string, marketplace: CampaignMarketplace = 'tiktok'): CampaignFormPayload => ({
   campaign: {
     organization_id: organizationId,
-    marketplace: 'tiktok',
+    marketplace,
     name: '',
     objective: 'sales' as CampaignObjective,
     budget_type: 'daily',
@@ -47,6 +51,9 @@ const buildDefault = (organizationId: string): CampaignFormPayload => ({
     conversion_type: null,
     start_date: null,
     end_date: null,
+    traffic_destination: null,
+    optimization_goal: null,
+    target_cost_per_result: null,
     audience_mode: 'auto' as const,
     saved_audience_id: null,
     saved_audience_name: null,
@@ -56,66 +63,77 @@ const buildDefault = (organizationId: string): CampaignFormPayload => ({
     audience_interests: null,
     audience_behavior: null,
     placement: null,
-  },
+  } as CampaignFormPayload['adSet'],
   products: [],
 });
 
-const fromExisting = (c: CampaignWithRelations): CampaignFormPayload => ({
-  campaign: {
-    organization_id: c.organization_id,
-    marketplace: c.marketplace,
-    name: c.name,
-    objective: c.objective,
-    budget_type: c.budget_type,
-    budget_amount: c.budget_amount,
-    status: c.status,
-  },
-  adSet: c.campaign_ad_sets[0]
-    ? {
-        name: c.campaign_ad_sets[0].name,
-        conversion_type: c.campaign_ad_sets[0].conversion_type,
-        start_date: c.campaign_ad_sets[0].start_date,
-        end_date: c.campaign_ad_sets[0].end_date,
-        audience_mode: (c.campaign_ad_sets[0].audience_mode ?? 'auto') as 'auto' | 'manual' | 'saved',
-        saved_audience_id: c.campaign_ad_sets[0].saved_audience_id,
-        saved_audience_name: c.campaign_ad_sets[0].saved_audience_name,
-        audience_location: c.campaign_ad_sets[0].audience_location,
-        audience_age: c.campaign_ad_sets[0].audience_age,
-        audience_gender: c.campaign_ad_sets[0].audience_gender,
-        audience_interests: c.campaign_ad_sets[0].audience_interests,
-        audience_behavior: c.campaign_ad_sets[0].audience_behavior,
-        placement: c.campaign_ad_sets[0].placement,
-      }
-    : buildDefault(c.organization_id).adSet,
-  products: c.campaign_products.map((cp) => ({
-    product_id: cp.product_id,
-    marketing_cost_override: cp.marketing_cost_override,
-  })),
-});
+const fromExisting = (c: CampaignWithRelations): CampaignFormPayload => {
+  const adSet0 = c.campaign_ad_sets[0];
+  const ext = adSet0 as typeof adSet0 & {
+    traffic_destination?: string | null;
+    optimization_goal?: string | null;
+    target_cost_per_result?: number | null;
+  };
+  return {
+    campaign: {
+      organization_id: c.organization_id,
+      marketplace: c.marketplace,
+      name: c.name,
+      objective: c.objective,
+      budget_type: c.budget_type,
+      budget_amount: c.budget_amount,
+      status: c.status,
+    },
+    adSet: adSet0
+      ? {
+          name: adSet0.name,
+          conversion_type: adSet0.conversion_type,
+          start_date: adSet0.start_date,
+          end_date: adSet0.end_date,
+          traffic_destination: ext.traffic_destination ?? null,
+          optimization_goal: ext.optimization_goal ?? null,
+          target_cost_per_result: ext.target_cost_per_result ?? null,
+          audience_mode: (adSet0.audience_mode ?? 'auto') as 'auto' | 'manual' | 'saved',
+          saved_audience_id: adSet0.saved_audience_id,
+          saved_audience_name: adSet0.saved_audience_name,
+          audience_location: adSet0.audience_location,
+          audience_age: adSet0.audience_age,
+          audience_gender: adSet0.audience_gender,
+          audience_interests: adSet0.audience_interests,
+          audience_behavior: adSet0.audience_behavior,
+          placement: adSet0.placement,
+        } as CampaignFormPayload['adSet']
+      : buildDefault(c.organization_id).adSet,
+    products: c.campaign_products.map((cp) => ({
+      product_id: cp.product_id,
+      marketing_cost_override: cp.marketing_cost_override,
+    })),
+  };
+};
 
 export const CampaignFormDialog: React.FC<CampaignFormDialogProps> = ({
   open,
   onOpenChange,
   campaign,
   organizationId,
+  marketplace = 'tiktok',
   onSaved,
 }) => {
   const { createCampaign, updateCampaign } = useCampaigns(organizationId);
   const [step, setStep] = useState(1);
   const [payload, setPayload] = useState<CampaignFormPayload>(() =>
-    campaign ? fromExisting(campaign) : buildDefault(organizationId)
+    campaign ? fromExisting(campaign) : buildDefault(organizationId, marketplace)
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
-  // Reset on open/campaign change
   useEffect(() => {
     if (open) {
       setStep(1);
       setErrors({});
-      setPayload(campaign ? fromExisting(campaign) : buildDefault(organizationId));
+      setPayload(campaign ? fromExisting(campaign) : buildDefault(organizationId, marketplace));
     }
-  }, [open, campaign, organizationId]);
+  }, [open, campaign, organizationId, marketplace]);
 
   const setCampaignField = (
     field: keyof CampaignFormPayload['campaign'],
@@ -127,7 +145,7 @@ export const CampaignFormDialog: React.FC<CampaignFormDialogProps> = ({
 
   const setAdSetField = (
     field: keyof CampaignFormPayload['adSet'],
-    value: string | null
+    value: string | number | null
   ) => {
     setPayload((p) => ({ ...p, adSet: { ...p.adSet, [field]: value } }));
   };
@@ -144,7 +162,7 @@ export const CampaignFormDialog: React.FC<CampaignFormDialogProps> = ({
 
   const handleNext = () => {
     if (step === 1 && !validateStep1()) return;
-    setStep((s) => Math.min(s + 1, 3));
+    setStep((s) => Math.min(s + 1, STEPS.length));
   };
 
   const handleBack = () => setStep((s) => Math.max(s - 1, 1));
@@ -225,10 +243,17 @@ export const CampaignFormDialog: React.FC<CampaignFormDialogProps> = ({
           {step === 2 && (
             <AdSetSettingsStep
               data={payload.adSet}
+              campaignObjective={payload.campaign.objective as CampaignObjective}
               onChange={setAdSetField}
             />
           )}
           {step === 3 && (
+            <DirectioningStep
+              data={payload.adSet}
+              onChange={setAdSetField}
+            />
+          )}
+          {step === 4 && (
             <ProductLinkingStep
               organizationId={organizationId}
               selectedProducts={payload.products}
@@ -258,7 +283,7 @@ export const CampaignFormDialog: React.FC<CampaignFormDialogProps> = ({
                 Voltar
               </Button>
             )}
-            {step < 3 ? (
+            {step < STEPS.length ? (
               <Button
                 onClick={handleNext}
                 className="bg-orange-500 hover:bg-orange-600 text-white"

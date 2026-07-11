@@ -1,87 +1,42 @@
-import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { CampaignFormPayload } from '@/types/campaigns';
+import type { CampaignFormPayload, CampaignObjective } from '@/types/campaigns';
+
+const CONSIDERATION_OBJECTIVES: CampaignObjective[] = ['traffic', 'video_views', 'community_interaction'];
 
 interface AdSetSettingsStepProps {
   data: CampaignFormPayload['adSet'];
-  onChange: (field: keyof CampaignFormPayload['adSet'], value: string | null) => void;
+  campaignObjective: CampaignObjective;
+  onChange: (field: keyof CampaignFormPayload['adSet'], value: string | number | null) => void;
 }
 
 const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest pt-2">{children}</p>
 );
 
-// Tag chip component for interests
-const TagInput: React.FC<{
-  value: string | null;
-  onChange: (v: string | null) => void;
-  placeholder?: string;
-}> = ({ value, onChange, placeholder }) => {
-  const [input, setInput] = useState('');
-  const tags = value ? value.split(',').map((t) => t.trim()).filter(Boolean) : [];
-
-  const addTag = (raw: string) => {
-    const newTags = raw.split(',').map((t) => t.trim()).filter(Boolean);
-    const merged = [...new Set([...tags, ...newTags])];
-    onChange(merged.length ? merged.join(', ') : null);
-    setInput('');
+export const AdSetSettingsStep: React.FC<AdSetSettingsStepProps> = ({
+  data,
+  campaignObjective,
+  onChange,
+}) => {
+  const isConsideration = CONSIDERATION_OBJECTIVES.includes(campaignObjective);
+  const adSetData = data as typeof data & {
+    traffic_destination?: string | null;
+    optimization_goal?: string | null;
+    target_cost_per_result?: number | null;
   };
 
-  const removeTag = (idx: number) => {
-    const updated = tags.filter((_, i) => i !== idx);
-    onChange(updated.length ? updated.join(', ') : null);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if ((e.key === 'Enter' || e.key === ',') && input.trim()) {
-      e.preventDefault();
-      addTag(input);
-    }
-    if (e.key === 'Backspace' && !input && tags.length) {
-      removeTag(tags.length - 1);
-    }
-  };
-
-  return (
-    <div className="min-h-10 flex flex-wrap gap-1.5 items-center bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 focus-within:border-orange-500 transition-colors cursor-text"
-      onClick={() => document.getElementById('tag-input')?.focus()}
-    >
-      {tags.map((tag, i) => (
-        <span key={i} className="flex items-center gap-1 bg-orange-500/20 text-orange-300 text-xs px-2 py-0.5 rounded-full">
-          {tag}
-          <button type="button" onClick={() => removeTag(i)} className="hover:text-orange-100">
-            <X className="w-3 h-3" />
-          </button>
-        </span>
-      ))}
-      <input
-        id="tag-input"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={handleKeyDown}
-        onBlur={() => { if (input.trim()) addTag(input); }}
-        placeholder={tags.length === 0 ? placeholder : ''}
-        className="flex-1 min-w-[100px] bg-transparent text-sm text-white placeholder:text-zinc-500 outline-none"
-      />
-    </div>
-  );
-};
-
-export const AdSetSettingsStep: React.FC<AdSetSettingsStepProps> = ({ data, onChange }) => {
   const handle = (field: keyof CampaignFormPayload['adSet']) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       onChange(field, e.target.value || null);
-
-  const audienceMode = (data as { audience_mode?: string }).audience_mode ?? 'auto';
 
   return (
     <div className="space-y-4">
       <div>
         <h3 className="text-base font-semibold text-white mb-1">Grupo de Anúncios</h3>
-        <p className="text-sm text-zinc-400">Configure o público-alvo e período da campanha.</p>
+        <p className="text-sm text-zinc-400">Configure o período e opções do grupo de anúncios.</p>
       </div>
 
       <SectionLabel>CAMPANHA</SectionLabel>
@@ -117,124 +72,76 @@ export const AdSetSettingsStep: React.FC<AdSetSettingsStepProps> = ({ data, onCh
         </div>
       </div>
 
-      {/* Audience mode */}
-      <SectionLabel>PÚBLICO</SectionLabel>
-      <div className="space-y-3">
-        <Label className="text-zinc-300 text-sm">Modo de Audiência</Label>
-        <div className="flex gap-2">
-          {(['auto', 'manual', 'saved'] as const).map((mode) => {
-            const labels = { auto: 'Automático (Smart+)', manual: 'Manual', saved: 'Audiência Salva' };
-            const active = audienceMode === mode;
-            return (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => onChange('audience_mode' as keyof CampaignFormPayload['adSet'], mode)}
-                className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium border transition-all ${
-                  active
-                    ? 'bg-orange-500/15 border-orange-500 text-orange-300'
-                    : 'bg-zinc-900/30 border-zinc-700 text-zinc-400 hover:border-zinc-500'
-                }`}
+      {/* Consideration-specific fields */}
+      {isConsideration && (
+        <>
+          <SectionLabel>CONFIGURAÇÕES DE CONSIDERAÇÃO</SectionLabel>
+
+          <div className="space-y-1.5">
+            <Label className="text-zinc-300 text-sm">Destino</Label>
+            <Select
+              value={adSetData.traffic_destination ?? ''}
+              onValueChange={(v) => onChange('traffic_destination' as keyof CampaignFormPayload['adSet'], v || null)}
+            >
+              <SelectTrigger className="bg-zinc-900 border-zinc-700 text-white">
+                <SelectValue placeholder="Selecione o destino do tráfego" />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-900 border-zinc-700">
+                <SelectItem value="site">🌐 Site</SelectItem>
+                <SelectItem value="app">📱 Aplicativo</SelectItem>
+                <SelectItem value="tiktok_shop">🛍 Loja do TikTok</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-zinc-500">Para onde o tráfego será direcionado.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-zinc-300 text-sm">Objetivo de Otimização</Label>
+              <Select
+                value={adSetData.optimization_goal ?? ''}
+                onValueChange={(v) => onChange('optimization_goal' as keyof CampaignFormPayload['adSet'], v || null)}
               >
-                {labels[mode]}
-              </button>
-            );
-          })}
-        </div>
-
-        {audienceMode === 'auto' && (
-          <div className="rounded-lg bg-zinc-800/40 border border-zinc-700/50 px-4 py-3">
-            <p className="text-xs text-zinc-300 font-medium">🤖 Smart+ — Audiência Automática</p>
-            <p className="text-xs text-zinc-500 mt-1">
-              O algoritmo do TikTok define automaticamente a melhor audiência para atingir seus objetivos. Nenhuma configuração manual necessária.
-            </p>
-          </div>
-        )}
-
-        {audienceMode === 'saved' && (
-          <div className="space-y-2">
-            <Label className="text-zinc-300 text-sm">ID da Audiência Salva</Label>
-            <Input
-              placeholder="Ex: 7123456789012345678"
-              value={(data as { saved_audience_id?: string | null }).saved_audience_id ?? ''}
-              onChange={(e) => onChange('saved_audience_id' as keyof CampaignFormPayload['adSet'], e.target.value || null)}
-              className="bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500"
-            />
-            <Label className="text-zinc-300 text-sm">Nome da Audiência (opcional)</Label>
-            <Input
-              placeholder="Ex: Mulheres 25-35 Moda"
-              value={(data as { saved_audience_name?: string | null }).saved_audience_name ?? ''}
-              onChange={(e) => onChange('saved_audience_name' as keyof CampaignFormPayload['adSet'], e.target.value || null)}
-              className="bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500"
-            />
-            <p className="text-[11px] text-zinc-500">Insira o ID da audiência criada no TikTok Ads Manager → Ferramentas → Audiências.</p>
-          </div>
-        )}
-
-        {audienceMode === 'manual' && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-zinc-300 text-sm">Localização</Label>
-                <Input
-                  placeholder="Ex: Brasil, São Paulo"
-                  value={data.audience_location ?? ''}
-                  onChange={handle('audience_location')}
-                  className="bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-zinc-300 text-sm">Faixa Etária</Label>
-                <Input
-                  placeholder="Ex: 18-35"
-                  value={data.audience_age ?? ''}
-                  onChange={handle('audience_age')}
-                  className="bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-zinc-300 text-sm">Gênero</Label>
-                <Select
-                  value={data.audience_gender ?? 'all'}
-                  onValueChange={(v) => onChange('audience_gender', v)}
-                >
-                  <SelectTrigger className="bg-zinc-900 border-zinc-700 text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-zinc-900 border-zinc-700">
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="male">Masculino</SelectItem>
-                    <SelectItem value="female">Feminino</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-zinc-300 text-sm">Interesses</Label>
-                <TagInput
-                  value={data.audience_interests}
-                  onChange={(v) => onChange('audience_interests', v)}
-                  placeholder="Digite e pressione Enter ou vírgula"
-                />
-                <p className="text-[11px] text-zinc-500">Pressione Enter ou vírgula para adicionar.</p>
-              </div>
+                <SelectTrigger className="bg-zinc-900 border-zinc-700 text-white">
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-900 border-zinc-700">
+                  <SelectItem value="click">Clique</SelectItem>
+                  <SelectItem value="landing_page_view">Visualização da Página Inicial</SelectItem>
+                  <SelectItem value="engagement_session">Sessão de Engajamento</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-zinc-300 text-sm">Comportamento</Label>
-              <textarea
-                placeholder="Descreva os comportamentos do público-alvo..."
-                value={data.audience_behavior ?? ''}
-                onChange={handle('audience_behavior')}
-                rows={3}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-orange-500 resize-none"
-              />
+              <Label className="text-zinc-300 text-sm">
+                Custo Alvo por Resultado (R$)
+                <span className="text-zinc-500 font-normal ml-1">— opcional</span>
+              </Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm pointer-events-none">R$</span>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="0,00"
+                  value={
+                    adSetData.target_cost_per_result != null
+                      ? new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(adSetData.target_cost_per_result)
+                      : ''
+                  }
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/\./g, '').replace(',', '.');
+                    const num = parseFloat(raw);
+                    onChange('target_cost_per_result' as keyof CampaignFormPayload['adSet'], isNaN(num) ? null : num);
+                  }}
+                  className="pl-9 bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-orange-500"
+                />
+              </div>
+              <p className="text-[11px] text-zinc-500">Custo máximo desejado por resultado obtido.</p>
             </div>
           </div>
-        )}
-      </div>
+        </>
+      )}
 
       <SectionLabel>POSICIONAMENTO</SectionLabel>
       <div className="space-y-1.5">

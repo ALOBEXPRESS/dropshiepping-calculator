@@ -16,8 +16,9 @@ import { toast } from 'sonner';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useCampaigns } from '@/hooks/useCampaigns';
 import { CampaignFormDialog } from '@/components/campaigns/CampaignFormDialog';
+import { MarketplacePickerModal } from '@/components/campaigns/MarketplacePickerModal';
 import { getObjectiveLabel } from '@/types/campaigns';
-import type { CampaignWithRelations, CampaignStatus } from '@/types/campaigns';
+import type { CampaignWithRelations, CampaignStatus, CampaignMarketplace } from '@/types/campaigns';
 
 const statusConfig: Record<CampaignStatus, { label: string; className: string }> = {
   active:  { label: 'Ativo',     className: 'bg-green-500/15 text-green-400 border-green-500/30' },
@@ -40,8 +41,15 @@ const CampaignsPage: React.FC = () => {
   const [editingCampaign, setEditingCampaign] = useState<CampaignWithRelations | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [marketplacePickerOpen, setMarketplacePickerOpen] = useState(false);
+  const [selectedMarketplace, setSelectedMarketplace] = useState<CampaignMarketplace>('tiktok');
 
-  const handleNew = () => { setEditingCampaign(null); setDialogOpen(true); };
+  const handleNew = () => { setMarketplacePickerOpen(true); };
+  const handleMarketplaceSelect = (mp: CampaignMarketplace) => {
+    setSelectedMarketplace(mp);
+    setEditingCampaign(null);
+    setDialogOpen(true);
+  };
   const handleEdit = (c: CampaignWithRelations) => { setEditingCampaign(c); setDialogOpen(true); };
   const handleDeleteConfirm = async () => {
     if (!deleteId) return;
@@ -162,6 +170,13 @@ const CampaignsPage: React.FC = () => {
         </div>
       )}
 
+      {/* Marketplace picker */}
+      <MarketplacePickerModal
+        open={marketplacePickerOpen}
+        onOpenChange={setMarketplacePickerOpen}
+        onSelect={handleMarketplaceSelect}
+      />
+
       {/* Form dialog */}
       {organizationId && (
         <CampaignFormDialog
@@ -169,6 +184,7 @@ const CampaignsPage: React.FC = () => {
           onOpenChange={setDialogOpen}
           campaign={editingCampaign ?? undefined}
           organizationId={organizationId}
+          marketplace={editingCampaign?.marketplace ?? selectedMarketplace}
           onSaved={() => {}}
         />
       )}

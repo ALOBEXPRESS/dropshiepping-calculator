@@ -37,6 +37,11 @@ export interface CampaignAdSet {
   conversion_type: string | null;
   start_date: string | null;  // 'YYYY-MM-DD'
   end_date: string | null;    // 'YYYY-MM-DD'
+  // Consideration: destination + optimization
+  traffic_destination: 'site' | 'app' | 'tiktok_shop' | null; // Site / Aplicativo / Loja TikTok
+  optimization_goal: 'click' | 'landing_page_view' | 'engagement_session' | null;
+  target_cost_per_result: number | null; // optional CPA target
+  // Audience (step 3 Direcionamento)
   audience_mode: 'auto' | 'manual' | 'saved'; // auto=Smart+, manual=custom, saved=existing audience
   saved_audience_id: string | null;
   saved_audience_name: string | null;
