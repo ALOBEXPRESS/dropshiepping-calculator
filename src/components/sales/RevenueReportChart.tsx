@@ -2529,12 +2529,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               const v = parseFloat(manualCoupon.replace(',', '.')) || 0;
               if (v <= 0) return 0;
               return manualCouponType === 'percent'
-                ? (precoVendaLiquidoFinal * v) / 100
+                ? (precoVendaPagoCliente * v) / 100  // % sobre preço pago pelo cliente
                 : v;
             })();
             const realProfit = isFreeSample
               ? -totalProductCost
-              : (precoVendaLiquidoFinal - totalProductCost + acrescimoManual - manualCouponVal);
+              : (precoVendaLiquidoFinal - totalProductCost + acrescimoManual);
             const marginBase = Math.abs(precoVendaLiquidoFinal) > 0 ? Math.abs(precoVendaLiquidoFinal) : selectedOrder.total_amount;
             const margin = marginBase > 0
               ? ((realProfit / marginBase) * 100).toFixed(1) : '0.0';
@@ -3290,12 +3290,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             const v = parseFloat(manualCoupon.replace(',', '.')) || 0;
                             if (v <= 0) return null;
                             const couponAmt = manualCouponType === 'percent'
-                              ? (precoVendaLiquidoFinal * v) / 100
+                              ? (precoVendaPagoCliente * v) / 100
                               : v;
                             return (
                               <p className="text-[11px] text-yellow-500/70">
                                 -{formatCurrency(couponAmt)} descontado do lucro
-                                {manualCouponType === 'percent' ? ` (${v}% sobre R$ ${formatCurrency(precoVendaLiquidoFinal)})` : ''}
+                                {manualCouponType === 'percent' ? ` (${v}% sobre R$ ${formatCurrency(precoVendaPagoCliente)})` : ''}
                               </p>
                             );
                           })()}
