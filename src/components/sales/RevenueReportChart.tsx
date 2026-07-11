@@ -1937,6 +1937,16 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     }, 0);
   }, [yearlyData, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig]);
 
+  // Marketing cost totals
+  const currentPeriodMarketingCost = currentPeriodItem
+    ? Number((currentPeriodItem as { total_marketing_cost?: number }).total_marketing_cost ?? 0)
+    : 0;
+
+  const allDataTotalMarketingCost = useMemo(() => {
+    return recalculatedData.reduce((sum, item) =>
+      sum + Number((item as { total_marketing_cost?: number }).total_marketing_cost ?? 0), 0);
+  }, [recalculatedData]);
+
   // Label dinâmico para "Custo {período atual}"
   const costLabel = (() => {
     const now = new Date();
@@ -2524,7 +2534,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             })();
             const realProfit = isFreeSample
               ? -totalProductCost
-              : (precoVendaLiquidoFinal - totalProductCost + acrescimoManual - manualMarketingCostVal - manualCouponVal);
+              : (precoVendaLiquidoFinal - totalProductCost + acrescimoManual - manualCouponVal);
             const marginBase = Math.abs(precoVendaLiquidoFinal) > 0 ? Math.abs(precoVendaLiquidoFinal) : selectedOrder.total_amount;
             const margin = marginBase > 0
               ? ((realProfit / marginBase) * 100).toFixed(1) : '0.0';
@@ -3642,14 +3652,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               <p className="text-xl font-bold text-green-600">{formatCurrency(totalRevenue)}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{costLabel}</p>
-              <p className="text-xl font-bold text-red-600">{formatCurrency(currentPeriodCost)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Custo Total</p>
-              <p className="text-xl font-bold text-red-600">{formatCurrency(allDataTotalCost)}</p>
-            </div>
-            <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">{periodLabel}</p>
               <p className={`text-xl font-bold ${currentPeriodProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(currentPeriodProfit)}</p>
             </div>
@@ -3705,6 +3707,30 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           )}
           <div ref={chartRef}>
           <Chart key={`${JSON.stringify(visibleData.map(d => d.period_label + '_' + d.total_profit))}_${windowOffset}`} options={chartOptions} series={chartSeries} type="area" height={300} />
+          </div>
+
+          {/* Second row: costs + marketing costs below chart */}
+          <div className="flex items-center gap-6 mt-4 pt-4 border-t border-gray-100 dark:border-zinc-800/60 flex-wrap">
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{costLabel}</p>
+              <p className="text-xl font-bold text-red-600">{formatCurrency(currentPeriodCost)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Custo Total</p>
+              <p className="text-xl font-bold text-red-600">{formatCurrency(allDataTotalCost)}</p>
+            </div>
+            {currentPeriodMarketingCost > 0 && (
+              <div>
+                <p className="text-xs text-orange-500/80">{`Custo Marketing ${periodLabel.replace('Lucro ', '')}`}</p>
+                <p className="text-xl font-bold text-orange-500">{formatCurrency(currentPeriodMarketingCost)}</p>
+              </div>
+            )}
+            {allDataTotalMarketingCost > 0 && (
+              <div>
+                <p className="text-xs text-orange-500/80">Custo Marketing Total</p>
+                <p className="text-xl font-bold text-orange-500">{formatCurrency(allDataTotalMarketingCost)}</p>
+              </div>
+            )}
           </div>
         </div>
       ) : (
