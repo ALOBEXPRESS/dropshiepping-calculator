@@ -79,20 +79,30 @@ export const CampaignSettingsStep: React.FC<CampaignSettingsStepProps> = ({ data
           <Label htmlFor="budget-amount" className="text-zinc-300 text-sm">
             Valor do Orçamento (R$) <span className="text-red-400">*</span>
           </Label>
-          <Input
-            id="budget-amount"
-            type="number"
-            min={0}
-            step={0.01}
-            placeholder="0,00"
-            value={data.budget_amount ?? ''}
-            onChange={(e) => onChange('budget_amount', e.target.value === '' ? null : parseFloat(e.target.value))}
-            className={`bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-orange-500 ${
-              errors.budget_amount ? 'border-red-500' : ''
-            }`}
-            aria-required="true"
-            aria-invalid={!!errors.budget_amount}
-          />
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm pointer-events-none">R$</span>
+            <Input
+              id="budget-amount"
+              type="text"
+              inputMode="numeric"
+              placeholder="1.000,00"
+              value={
+                data.budget_amount != null
+                  ? new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(data.budget_amount)
+                  : ''
+              }
+              onChange={(e) => {
+                const raw = e.target.value.replace(/\./g, '').replace(',', '.');
+                const num = parseFloat(raw);
+                onChange('budget_amount', isNaN(num) ? null : num);
+              }}
+              className={`pl-9 bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-orange-500 ${
+                errors.budget_amount ? 'border-red-500' : ''
+              }`}
+              aria-required="true"
+              aria-invalid={!!errors.budget_amount}
+            />
+          </div>
           {errors.budget_amount && <p className="text-xs text-red-400">{errors.budget_amount}</p>}
         </div>
       </div>

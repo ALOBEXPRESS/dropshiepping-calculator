@@ -37,10 +37,13 @@ export interface CampaignAdSet {
   conversion_type: string | null;
   start_date: string | null;  // 'YYYY-MM-DD'
   end_date: string | null;    // 'YYYY-MM-DD'
+  audience_mode: 'auto' | 'manual' | 'saved'; // auto=Smart+, manual=custom, saved=existing audience
+  saved_audience_id: string | null;
+  saved_audience_name: string | null;
   audience_location: string | null;
   audience_age: string | null;
   audience_gender: AudienceGender;
-  audience_interests: string | null;
+  audience_interests: string | null; // comma-separated list
   audience_behavior: string | null;
   placement: string | null;
   created_at: string;
