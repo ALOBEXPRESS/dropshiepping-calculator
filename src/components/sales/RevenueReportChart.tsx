@@ -1199,44 +1199,20 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     };
   }, [data, organizationId]);
 
-  // Fetch marketing costs from campaign_products for all products in current data
+  // Fetch marketing costs from campaign_order_costs by order_id
   useEffect(() => {
     const fetchMarketingCosts = async () => {
-      const allProductIds = new Set<string>();
-      for (const period of data) {
-        for (const order of period.orders_data ?? []) {
-          const products = (order as { products?: Array<{ sku?: string }> }).products ?? [];
-          const enrichment = orderEnrichmentByIdRef.current[(order as { order_id?: string }).order_id ?? ''];
-          const enrichProducts = enrichment?.products ?? [];
-          const allP = products.length > 0 ? products : enrichProducts;
-          for (const p of allP) {
-            const sku = (p as { sku?: string }).sku;
-            if (sku) allProductIds.add(sku);
-          }
-        }
-      }
-      if (allProductIds.size === 0) return;
-      // Resolve product ids from skus
-      const { data: productRows } = await supabase
-        .from('products')
-        .select('id, sku')
-        .eq('organization_id', organizationId)
-        .in('sku', Array.from(allProductIds));
-      const productIdBySku: Record<string, string> = {};
-      for (const row of (productRows ?? []) as Array<{ id: string; sku: string }>) {
-        productIdBySku[row.sku] = row.id;
-      }
-      const allIds = Object.values(productIdBySku);
-      if (allIds.length === 0) return;
-      const { data: cpRows } = await supabase
-        .from('campaign_products')
-        .select('product_id, marketing_cost_override')
-        .in('product_id', allIds);
+      const allOrderIds = data.flatMap((period) =>
+        (period.orders_data ?? []).map((o) => (o as { order_id?: string }).order_id).filter(Boolean) as string[]
+      );
+      if (allOrderIds.length === 0) return;
+      const { data: costRows } = await supabase
+        .from('campaign_order_costs')
+        .select('order_id, marketing_cost')
+        .in('order_id', allOrderIds);
       const costMap: Record<string, number> = {};
-      for (const cp of (cpRows ?? []) as Array<{ product_id: string; marketing_cost_override: number | null }>) {
-        if (cp.marketing_cost_override != null) {
-          costMap[cp.product_id] = cp.marketing_cost_override;
-        }
+      for (const row of (costRows ?? []) as Array<{ order_id: string; marketing_cost: number }>) {
+        costMap[`order:${row.order_id}`] = row.marketing_cost;
       }
       setMarketingCostByProductId(costMap);
     };
@@ -1834,23 +1810,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         totalCost += realCost;
         totalProfit += realProfit;
 
-        // Marketing cost: sum across products linked to a campaign
-        const products = (mergedOrder as { products?: Array<{ sku?: string }> }).products ?? [];
-        for (const p of products) {
-          const sku = (p as { sku?: string }).sku;
-          if (!sku) continue;
-          // Find product_id by sku in marketingCostByProductId keys (already resolved)
-          // marketingCostByProductId is keyed by product_id; use enrichment to find it
-          const productId = Object.keys(marketingCostByProductId).find((_id) => {
-            const enrichProd = Object.values(orderEnrichmentById).find((e) =>
-              (e as { products?: Array<{ sku?: string }> }).products?.some((pp) => (pp as { sku?: string }).sku === sku)
-            );
-            return !!enrichProd;
-          });
-          if (productId && marketingCostByProductId[productId] != null) {
-            totalMarketingCost += marketingCostByProductId[productId];
-          }
-        }
+        // Marketing cost: look up saved cost from campaign_order_costs via order_id
+        // marketingCostByProductId is a secondary fallback keyed by product_id
+        // Primary: use order_id directly mapped to cost (populated by fetchMarketingCosts below)
+        const orderMarketingCost = (marketingCostByProductId as unknown as Record<string, number>)[`order:${o.order_id}`] ?? 0;
+        totalMarketingCost += orderMarketingCost;
       });
 
       return {
