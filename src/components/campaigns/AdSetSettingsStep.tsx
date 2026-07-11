@@ -2,6 +2,8 @@ import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import woocommerceImg from '@/imgs/free-woocommerce-icon-svg-download-png-226060.webp';
+import tiktokShopImg from '@/imgs/tiktok-shop-seller-cent-icon-filled-256.png';
 import type { CampaignFormPayload, CampaignObjective } from '@/types/campaigns';
 
 const CONSIDERATION_OBJECTIVES: CampaignObjective[] = ['traffic', 'video_views', 'community_interaction'];
@@ -144,14 +146,41 @@ export const AdSetSettingsStep: React.FC<AdSetSettingsStepProps> = ({
       )}
 
       <SectionLabel>POSICIONAMENTO</SectionLabel>
-      <div className="space-y-1.5">
-        <Label className="text-zinc-300 text-sm">Local</Label>
-        <Input
-          placeholder="Ex: Feed do TikTok, TopView"
-          value={data.placement ?? ''}
-          onChange={handle('placement')}
-          className="bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500"
-        />
+      <div className="space-y-2">
+        <Label className="text-zinc-300 text-sm">Local de Exibição</Label>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { value: 'site', label: 'Site', img: woocommerceImg },
+            { value: 'app', label: 'App', img: null },
+            { value: 'tiktok_shop', label: 'Loja TikTok', img: tiktokShopImg },
+          ].map((opt) => {
+            const currentPlacement = data.placement;
+            const isSelected = currentPlacement === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => onChange('placement', isSelected ? null : opt.value)}
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
+                  isSelected
+                    ? 'border-orange-500 bg-orange-500/10 ring-1 ring-orange-500/50'
+                    : 'border-zinc-700 bg-zinc-900/30 hover:border-zinc-500'
+                }`}
+              >
+                <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-white p-1">
+                  {opt.img ? (
+                    <img src={opt.img} alt={opt.label} className="w-full h-full object-contain" />
+                  ) : (
+                    <span className="text-2xl">📱</span>
+                  )}
+                </div>
+                <span className={`text-xs font-medium ${isSelected ? 'text-orange-300' : 'text-zinc-300'}`}>
+                  {opt.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,6 +12,23 @@ interface CampaignSettingsStepProps {
 }
 
 export const CampaignSettingsStep: React.FC<CampaignSettingsStepProps> = ({ data, onChange, errors }) => {
+  // Raw string state for budget — avoids cursor-jump on every keystroke from format-on-change
+  const [rawBudget, setRawBudget] = useState<string>(() =>
+    data.budget_amount != null ? String(data.budget_amount).replace('.', ',') : ''
+  );
+
+  // Sync when dialog resets (budget_amount → null)
+  useEffect(() => {
+    if (data.budget_amount == null) setRawBudget('');
+  }, [data.budget_amount]);
+
+  const commitBudget = (raw: string) => {
+    // Accept both "1000,50" and "1.000,50" — strip dots, replace comma with dot
+    const cleaned = raw.replace(/\./g, '').replace(',', '.');
+    const num = parseFloat(cleaned);
+    onChange('budget_amount', isNaN(num) || cleaned === '' ? null : num);
+  };
+
   return (
     <div className="space-y-5">
       <div>
@@ -19,7 +36,7 @@ export const CampaignSettingsStep: React.FC<CampaignSettingsStepProps> = ({ data
         <p className="text-sm text-zinc-400">Defina o objetivo e orçamento da sua campanha TikTok.</p>
       </div>
 
-      {/* Grid: Name + Status */}
+      {/* Name + Status */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label htmlFor="campaign-name" className="text-zinc-300 text-sm">
@@ -55,7 +72,7 @@ export const CampaignSettingsStep: React.FC<CampaignSettingsStepProps> = ({ data
         </div>
       </div>
 
-      {/* Grid: Budget type + Amount */}
+      {/* Budget type + Amount */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label htmlFor="budget-type" className="text-zinc-300 text-sm">Tipo de Orçamento</Label>
@@ -80,21 +97,29 @@ export const CampaignSettingsStep: React.FC<CampaignSettingsStepProps> = ({ data
             Valor do Orçamento (R$) <span className="text-red-400">*</span>
           </Label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm pointer-events-none">R$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm pointer-events-none select-none">
+              R$
+            </span>
             <Input
               id="budget-amount"
               type="text"
-              inputMode="numeric"
+              inputMode="decimal"
               placeholder="1.000,00"
-              value={
-                data.budget_amount != null
-                  ? new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(data.budget_amount)
-                  : ''
-              }
+              value={rawBudget}
               onChange={(e) => {
-                const raw = e.target.value.replace(/\./g, '').replace(',', '.');
-                const num = parseFloat(raw);
-                onChange('budget_amount', isNaN(num) ? null : num);
+                // Allow digits, comma, dot only
+                const v = e.target.value.replace(/[^0-9,.]/g, '');
+                setRawBudget(v);
+              }}
+              onBlur={() => {
+                commitBudget(rawBudget);
+                // Re-format display on blur if valid
+                if (data.budget_amount != null) {
+                  setRawBudget(
+                    new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                      .format(data.budget_amount)
+                  );
+                }
               }}
               className={`pl-9 bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-orange-500 ${
                 errors.budget_amount ? 'border-red-500' : ''
