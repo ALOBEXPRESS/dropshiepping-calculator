@@ -362,6 +362,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [manualMarketingCost, setManualMarketingCost] = useState<string>('');
   const [openMarketingCost, setOpenMarketingCost] = useState(false);
   const [marketingCostByProductId, setMarketingCostByProductId] = useState<Record<string, number>>({});
+  const [savingMarketingCost, setSavingMarketingCost] = useState(false);
+  const [linkedCampaignId, setLinkedCampaignId] = useState<string | null>(null);
+  const [availableCampaigns, setAvailableCampaigns] = useState<Array<{ id: string; name: string; marketing_cost: number | null }>>([]);
   const [savingCosts, setSavingCosts] = useState(false);
   const [costsSaved, setCostsSaved] = useState(false);
   const [savingReembolso, setSavingReembolso] = useState(false);
@@ -1584,6 +1587,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             setManualMarketingCost('');
             setManualCoupon('');
             setManualCouponType('fixed');
+            setLinkedCampaignId(null);
+            setAvailableCampaigns([]);
             setDetailDialogOpen(true);
           } catch (err) {
             console.error('Error parsing order data:', err);
@@ -1725,6 +1730,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       setManualMarketingCost('');
       setManualCoupon('');
       setManualCouponType('fixed');
+      setLinkedCampaignId(null);
+      setAvailableCampaigns([]);
       const tooltipEl = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
       if (tooltipEl) {
         tooltipEl.style.opacity = '0';
@@ -3345,6 +3352,68 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         <p className="text-[11px] text-zinc-500">
                           Custo investido em tráfego pago para este pedido. Será subtraído do lucro.
                         </p>
+
+                        {/* Vincular Campanha */}
+                        <div className="space-y-1.5">
+                          <label className="text-zinc-400 text-xs">Vincular Campanha</label>
+                          <select
+                            value={linkedCampaignId ?? ''}
+                            onChange={async (e) => {
+                              const cid = e.target.value || null;
+                              setLinkedCampaignId(cid);
+                              if (cid) {
+                                // Auto-fill cost from campaign_products for this order's product
+                                const productId = selectedOrder?.products?.[0]
+                                  ? undefined // will try by campaign
+                                  : undefined;
+                                const { data: cpRows } = await supabase
+                                  .from('campaign_products')
+                                  .select('marketing_cost_override')
+                                  .eq('campaign_id', cid)
+                                  .limit(1);
+                                const cost = (cpRows as Array<{ marketing_cost_override: number | null }>)?.[0]?.marketing_cost_override;
+                                if (cost != null) {
+                                  setManualMarketingCost(
+                                    new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(cost)
+                                  );
+                                }
+                                void productId;
+                              }
+                            }}
+                            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-purple-500"
+                          >
+                            <option value="">— Nenhuma campanha —</option>
+                            {availableCampaigns.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.name}{c.marketing_cost != null ? ` (R$ ${new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(c.marketing_cost)})` : ''}
+                              </option>
+                            ))}
+                          </select>
+                          {availableCampaigns.length === 0 && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const { data: campRows } = await supabase
+                                  .from('campaigns')
+                                  .select('id, name, campaign_products(marketing_cost_override)')
+                                  .eq('organization_id', organizationId)
+                                  .order('created_at', { ascending: false });
+                                setAvailableCampaigns(
+                                  (campRows ?? []).map((c: Record<string, unknown>) => ({
+                                    id: c.id as string,
+                                    name: c.name as string,
+                                    marketing_cost: ((c.campaign_products as Array<{ marketing_cost_override: number | null }>)?.[0]?.marketing_cost_override ?? null),
+                                  }))
+                                );
+                              }}
+                              className="text-[11px] text-purple-400 hover:text-purple-300 transition-colors"
+                            >
+                              Carregar campanhas
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Valor manual */}
                         <div className="flex items-center gap-3">
                           <label className="text-zinc-400 text-sm whitespace-nowrap">Valor (R$)</label>
                           <input
@@ -3356,17 +3425,55 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-purple-500 tabular-nums"
                           />
                           {manualMarketingCost && (
-                            <button onClick={() => setManualMarketingCost('')} className="text-zinc-500 hover:text-zinc-300 transition-colors">
+                            <button onClick={() => { setManualMarketingCost(''); setLinkedCampaignId(null); }} className="text-zinc-500 hover:text-zinc-300 transition-colors">
                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                               </svg>
                             </button>
                           )}
                         </div>
+
                         {manualMarketingCost && (
                           <p className="text-[11px] text-purple-400/70">
                             -{formatCurrency(parseFloat(manualMarketingCost.replace(',', '.')) || 0)} será subtraído do lucro real.
                           </p>
+                        )}
+
+                        {/* Salvar */}
+                        {selectedOrder?.order_id && manualMarketingCost && (
+                          <button
+                            disabled={savingMarketingCost}
+                            onClick={async () => {
+                              if (!selectedOrder?.order_id) return;
+                              const cost = parseFloat(manualMarketingCost.replace(',', '.')) || 0;
+                              setSavingMarketingCost(true);
+                              try {
+                                await supabase
+                                  .from('campaign_order_costs')
+                                  .upsert({
+                                    order_id: selectedOrder.order_id,
+                                    campaign_id: linkedCampaignId,
+                                    product_id: selectedOrder.products?.[0]
+                                      ? undefined
+                                      : undefined,
+                                    marketing_cost: cost,
+                                    organization_id: organizationId,
+                                  }, { onConflict: 'campaign_id,order_id' });
+                                refetch();
+                                refetchYearly();
+                              } finally {
+                                setSavingMarketingCost(false);
+                              }
+                            }}
+                            className="flex items-center gap-1.5 bg-purple-700/80 hover:bg-purple-600 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors w-full justify-center"
+                          >
+                            {savingMarketingCost ? (
+                              <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                            ) : (
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                            )}
+                            Salvar Custo de Marketing
+                          </button>
                         )}
                       </div>
                     )}
