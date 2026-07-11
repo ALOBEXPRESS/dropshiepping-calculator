@@ -345,6 +345,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [blingDiscountEnabled, setBlingDiscountEnabled] = useState(true);
   // desconto manual (quando checkbox desmarcado)
   const [manualDesconto, setManualDesconto] = useState<string>('');
+  // cupom de desconto manual (% ou R$)
+  const [manualCoupon, setManualCoupon] = useState<string>('');
+  const [manualCouponType, setManualCouponType] = useState<'percent' | 'fixed'>('fixed');
   // acréscimo manual (valor em R$)
   const [manualAcrescimo, setManualAcrescimo] = useState<string>('');
   // reembolso TikTok = valor do desconto, somado ao lucro
@@ -356,6 +359,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [manualGatewayFee, setManualGatewayFee] = useState<string>('');
   const [manualCostOverrides, setManualCostOverrides] = useState<Record<number, string>>({});
   const [manualShipping, setManualShipping] = useState<string>('');
+  const [manualMarketingCost, setManualMarketingCost] = useState<string>('');
+  const [openMarketingCost, setOpenMarketingCost] = useState(false);
+  const [marketingCostByProductId, setMarketingCostByProductId] = useState<Record<string, number>>({});
   const [savingCosts, setSavingCosts] = useState(false);
   const [costsSaved, setCostsSaved] = useState(false);
   const [savingReembolso, setSavingReembolso] = useState(false);
@@ -1189,6 +1195,50 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     };
   }, [data, organizationId]);
 
+  // Fetch marketing costs from campaign_products for all products in current data
+  useEffect(() => {
+    const fetchMarketingCosts = async () => {
+      const allProductIds = new Set<string>();
+      for (const period of data) {
+        for (const order of period.orders_data ?? []) {
+          const products = (order as { products?: Array<{ sku?: string }> }).products ?? [];
+          const enrichment = orderEnrichmentByIdRef.current[(order as { order_id?: string }).order_id ?? ''];
+          const enrichProducts = enrichment?.products ?? [];
+          const allP = products.length > 0 ? products : enrichProducts;
+          for (const p of allP) {
+            const sku = (p as { sku?: string }).sku;
+            if (sku) allProductIds.add(sku);
+          }
+        }
+      }
+      if (allProductIds.size === 0) return;
+      // Resolve product ids from skus
+      const { data: productRows } = await supabase
+        .from('products')
+        .select('id, sku')
+        .eq('organization_id', organizationId)
+        .in('sku', Array.from(allProductIds));
+      const productIdBySku: Record<string, string> = {};
+      for (const row of (productRows ?? []) as Array<{ id: string; sku: string }>) {
+        productIdBySku[row.sku] = row.id;
+      }
+      const allIds = Object.values(productIdBySku);
+      if (allIds.length === 0) return;
+      const { data: cpRows } = await supabase
+        .from('campaign_products')
+        .select('product_id, marketing_cost_override')
+        .in('product_id', allIds);
+      const costMap: Record<string, number> = {};
+      for (const cp of (cpRows ?? []) as Array<{ product_id: string; marketing_cost_override: number | null }>) {
+        if (cp.marketing_cost_override != null) {
+          costMap[cp.product_id] = cp.marketing_cost_override;
+        }
+      }
+      setMarketingCostByProductId(costMap);
+    };
+    fetchMarketingCosts().catch(() => {});
+  }, [data, organizationId]);
+
   useEffect(() => {
     let cancelled = false;
     ReferenceService.getMarketplaces(organizationId)
@@ -1531,6 +1581,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               (merged.tiktok_retorno_liquido != null ? String(merged.tiktok_retorno_liquido).replace('.', ',') : '')
             );
             setManualOrderDate(merged.order_date ?? '');
+            setManualMarketingCost('');
+            setManualCoupon('');
+            setManualCouponType('fixed');
             setDetailDialogOpen(true);
           } catch (err) {
             console.error('Error parsing order data:', err);
@@ -1669,6 +1722,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       setManualShipping('');
       setManualRetornoLiquido('');
       setManualOrderDate('');
+      setManualMarketingCost('');
+      setManualCoupon('');
+      setManualCouponType('fixed');
       const tooltipEl = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
       if (tooltipEl) {
         tooltipEl.style.opacity = '0';
@@ -1703,6 +1759,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       let totalRevenue = 0;
       let totalCost = 0;
       let totalProfit = 0;
+      let totalMarketingCost = 0;
 
       orders.forEach((order: unknown) => {
         const o = order as OrderDetail;
@@ -1717,16 +1774,35 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         totalRevenue += liquidoFinal;
         totalCost += realCost;
         totalProfit += realProfit;
+
+        // Marketing cost: sum across products linked to a campaign
+        const products = (mergedOrder as { products?: Array<{ sku?: string }> }).products ?? [];
+        for (const p of products) {
+          const sku = (p as { sku?: string }).sku;
+          if (!sku) continue;
+          // Find product_id by sku in marketingCostByProductId keys (already resolved)
+          // marketingCostByProductId is keyed by product_id; use enrichment to find it
+          const productId = Object.keys(marketingCostByProductId).find((id) => {
+            const enrichProd = Object.values(orderEnrichmentById).find((e) =>
+              (e as { products?: Array<{ sku?: string }> }).products?.some((pp) => (pp as { sku?: string }).sku === sku)
+            );
+            return !!enrichProd;
+          });
+          if (productId && marketingCostByProductId[productId] != null) {
+            totalMarketingCost += marketingCostByProductId[productId];
+          }
+        }
       });
 
       return {
         ...item,
         total_revenue: totalRevenue,
         total_cost: totalCost,
-        total_profit: totalProfit
+        total_profit: totalProfit,
+        total_marketing_cost: totalMarketingCost,
       };
     });
-  }, [data, orderEnrichmentById, affiliateByOrderId, computeOrderRealProfit]);
+  }, [data, orderEnrichmentById, affiliateByOrderId, computeOrderRealProfit, marketingCostByProductId]);
 
   // Window size per period — mensal: todos os meses (sem janela), semanal/diário: parcial com setas
   const windowSize = period === 'daily' ? 14 : period === 'weekly' ? 12 : period === 'monthly' ? Math.max(recalculatedData.length, 1) : 5;
@@ -1861,15 +1937,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     dataLabels: { enabled: false },
     stroke: {
       curve: 'smooth',
-      width: 2,
+      width: [2, 2],
       colors: (() => {
-        // Line color: green if last visible value >= 0, red if < 0
         const vals = visibleData.map((_, idx) => useAccumulated
           ? (cumulativeProfits[windowOffset + idx] ?? 0)
           : Number(visibleData[idx]?.total_profit ?? 0)
         );
         const lastVal = vals[vals.length - 1] ?? 0;
-        return [lastVal >= 0 ? '#22c55e' : '#ef4444'];
+        return [lastVal >= 0 ? '#22c55e' : '#ef4444', '#f97316']; // lucro + custo marketing (orange)
       })(),
     },
     markers: {
@@ -1921,7 +1996,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       const nonAccumVals = visibleData.map(item => Number(item.total_profit ?? 0));
       const plotVals = useAccumulated ? vals : nonAccumVals;
       const lastVal = plotVals[plotVals.length - 1] ?? 0;
-      return [lastVal >= 0 ? '#22c55e' : '#ef4444'];
+      return [lastVal >= 0 ? '#22c55e' : '#ef4444', '#f97316']; // lucro + marketing cost
     })(),
     xaxis: {
       categories: visibleData.map((item) => item.period_label),
@@ -2194,6 +2269,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         return Number(item.total_profit ?? 0);
       }),
     },
+    {
+      name: 'Custo de Marketing',
+      data: visibleData.map((item) => {
+        return Number((item as { total_marketing_cost?: number }).total_marketing_cost ?? 0);
+      }),
+    },
   ];
 
   if (loading) {
@@ -2374,9 +2455,17 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
             // ── Lucro = Preço Líquido - Custo Produto ────────────────────────────
             // taxas marketplace já descontadas no precoVendaLiquidoFinal
+            const manualMarketingCostVal = parseFloat(manualMarketingCost.replace(',', '.')) || 0;
+            const manualCouponVal = (() => {
+              const v = parseFloat(manualCoupon.replace(',', '.')) || 0;
+              if (v <= 0) return 0;
+              return manualCouponType === 'percent'
+                ? (precoVendaLiquidoFinal * v) / 100
+                : v;
+            })();
             const realProfit = isFreeSample
               ? -totalProductCost
-              : (precoVendaLiquidoFinal - totalProductCost + acrescimoManual);
+              : (precoVendaLiquidoFinal - totalProductCost + acrescimoManual - manualMarketingCostVal - manualCouponVal);
             const marginBase = Math.abs(precoVendaLiquidoFinal) > 0 ? Math.abs(precoVendaLiquidoFinal) : selectedOrder.total_amount;
             const margin = marginBase > 0
               ? ((realProfit / marginBase) * 100).toFixed(1) : '0.0';
@@ -3098,6 +3187,50 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             </div>
                           </div>
                         )}
+                        {/* Cupom de desconto */}
+                        <div className="pt-3 border-t border-yellow-950/30 space-y-2">
+                          <p className="text-xs font-semibold text-yellow-500/80 uppercase tracking-wide">Cupom de desconto</p>
+                          <div className="flex items-center gap-2">
+                            <div className="flex rounded-md overflow-hidden border border-zinc-700 flex-shrink-0">
+                              <button type="button" onClick={() => setManualCouponType('fixed')}
+                                className={`px-2 py-1 text-xs font-medium transition-colors ${manualCouponType === 'fixed' ? 'bg-yellow-600 text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}>
+                                R$
+                              </button>
+                              <button type="button" onClick={() => setManualCouponType('percent')}
+                                className={`px-2 py-1 text-xs font-medium transition-colors ${manualCouponType === 'percent' ? 'bg-yellow-600 text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}>
+                                %
+                              </button>
+                            </div>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              placeholder={manualCouponType === 'percent' ? '10' : '0,00'}
+                              value={manualCoupon}
+                              onChange={(e) => setManualCoupon(e.target.value.replace(/[^0-9,.]/g, ''))}
+                              className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-yellow-500 tabular-nums"
+                            />
+                            {manualCoupon && (
+                              <button onClick={() => setManualCoupon('')} className="text-zinc-500 hover:text-zinc-300 transition-colors flex-shrink-0">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
+                          {(() => {
+                            const v = parseFloat(manualCoupon.replace(',', '.')) || 0;
+                            if (v <= 0) return null;
+                            const couponAmt = manualCouponType === 'percent'
+                              ? (precoVendaLiquidoFinal * v) / 100
+                              : v;
+                            return (
+                              <p className="text-[11px] text-yellow-500/70">
+                                -{formatCurrency(couponAmt)} descontado do lucro
+                                {manualCouponType === 'percent' ? ` (${v}% sobre R$ ${formatCurrency(precoVendaLiquidoFinal)})` : ''}
+                              </p>
+                            );
+                          })()}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -3174,6 +3307,65 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         {acrescimoValue > 0 && (
                           <p className="text-[11px] text-blue-400/70">
                             +{formatCurrency(acrescimoValue)} será somado ao lucro
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Custo de Marketing */}
+                  <div className="rounded-xl overflow-hidden bg-purple-950/15">
+                    <button
+                      onClick={() => setOpenMarketingCost(v => !v)}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-950/60 to-zinc-900/60 hover:from-purple-950/80 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <svg className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                        </svg>
+                        <span className="text-purple-400 font-semibold text-xs uppercase tracking-wide">Custo de Marketing</span>
+                        {(() => {
+                          const mCost = manualMarketingCost !== ''
+                            ? (parseFloat(manualMarketingCost.replace(',', '.')) || 0)
+                            : 0;
+                          return mCost > 0 ? (
+                            <span className="text-[10px] text-purple-400/80 font-mono bg-purple-950/40 px-1.5 py-0.5 rounded">
+                              -{formatCurrency(mCost)}
+                            </span>
+                          ) : null;
+                        })()}
+                      </div>
+                      <svg className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${openMarketingCost ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {openMarketingCost && (
+                      <div className="px-4 py-3 space-y-3 bg-zinc-900/40 border-t border-purple-950/20">
+                        <p className="text-[11px] text-zinc-500">
+                          Custo investido em tráfego pago para este pedido. Será subtraído do lucro.
+                        </p>
+                        <div className="flex items-center gap-3">
+                          <label className="text-zinc-400 text-sm whitespace-nowrap">Valor (R$)</label>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="0,00"
+                            value={manualMarketingCost}
+                            onChange={(e) => setManualMarketingCost(e.target.value.replace(/[^0-9,.]/g, ''))}
+                            className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-purple-500 tabular-nums"
+                          />
+                          {manualMarketingCost && (
+                            <button onClick={() => setManualMarketingCost('')} className="text-zinc-500 hover:text-zinc-300 transition-colors">
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                        {manualMarketingCost && (
+                          <p className="text-[11px] text-purple-400/70">
+                            -{formatCurrency(parseFloat(manualMarketingCost.replace(',', '.')) || 0)} será subtraído do lucro real.
                           </p>
                         )}
                       </div>
