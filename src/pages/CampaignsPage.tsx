@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Megaphone, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Megaphone, Plus, Pencil, Trash2, Loader2, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -20,6 +20,18 @@ import { MarketplacePickerModal } from '@/components/campaigns/MarketplacePicker
 import { getObjectiveLabel } from '@/types/campaigns';
 import type { CampaignWithRelations, CampaignStatus, CampaignMarketplace } from '@/types/campaigns';
 
+import tiktokImg from '@/imgs/tiktok-shop-seller-cent-icon-filled-256.png';
+import mercadolivreImg from '@/imgs/mercadolivre.svg';
+import amazonImg from '@/imgs/amazon.jpg';
+import sheinImg from '@/imgs/shein.svg';
+
+const MARKETPLACE_LOGOS: Record<string, string> = {
+  tiktok: tiktokImg,
+  mercadolivre: mercadolivreImg,
+  amazon: amazonImg,
+  shein: sheinImg,
+};
+
 const statusConfig: Record<CampaignStatus, { label: string; className: string }> = {
   active:  { label: 'Ativo',     className: 'bg-green-500/15 text-green-400 border-green-500/30' },
   paused:  { label: 'Pausado',   className: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30' },
@@ -33,6 +45,185 @@ const SkeletonCard = () => (
     <div className="h-3 bg-zinc-800 rounded w-1/3" />
   </div>
 );
+
+interface CampaignCardProps {
+  campaign: CampaignWithRelations;
+  sc: { label: string; className: string };
+  logo: string | undefined;
+  adSets: CampaignWithRelations['campaign_ad_sets'];
+  onEdit: () => void;
+  onDelete: () => void;
+}
+
+const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSets, onEdit, onDelete }) => {
+  const [expanded, setExpanded] = useState(false);
+
+  const marketplaceLabel: Record<string, string> = {
+    tiktok: 'TikTok Shop',
+    mercadolivre: 'Mercado Livre',
+    amazon: 'Amazon',
+    shein: 'Shein',
+  };
+
+  const audienceModeLabel: Record<string, string> = {
+    auto: 'Automático (Smart+)',
+    manual: 'Manual',
+    saved: 'Audiência Salva',
+  };
+
+  return (
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 overflow-hidden">
+      {/* Card header */}
+      <div className="p-5">
+        <div className="flex items-start gap-4">
+          {/* Marketplace logo */}
+          <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center flex-shrink-0 overflow-hidden p-1 shadow-sm">
+            {logo ? (
+              <img src={logo} alt={c.marketplace} className="w-full h-full object-contain" />
+            ) : (
+              <Megaphone className="w-6 h-6 text-zinc-400" />
+            )}
+          </div>
+
+          {/* Info */}
+          <div className="flex-1 min-w-0 space-y-1.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-sm font-semibold text-white truncate">{c.name}</h3>
+              <Badge className="bg-pink-500/15 text-pink-400 border-pink-500/30 text-[10px]">
+                {marketplaceLabel[c.marketplace] ?? c.marketplace}
+              </Badge>
+              <Badge className={`text-[10px] border ${sc.className}`}>
+                {sc.label}
+              </Badge>
+            </div>
+            <p className="text-xs text-zinc-400">
+              Objetivo: <span className="text-zinc-200">{getObjectiveLabel(c.objective)}</span>
+              {' · '}
+              Orçamento: <span className="text-zinc-200">
+                {c.budget_type === 'daily' ? 'Diário' : 'Vitalício'}
+                {c.budget_amount != null
+                  ? ` · R$ ${new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(Number(c.budget_amount))}`
+                  : ''}
+              </span>
+            </p>
+            {c.campaign_products.length > 0 && (
+              <p className="text-xs text-zinc-500">
+                {c.campaign_products.length} produto(s) vinculado(s)
+              </p>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-2 flex-shrink-0 items-center">
+            <Button size="sm" variant="ghost" onClick={onEdit}
+              className="text-zinc-400 hover:text-white hover:bg-zinc-800 h-8 w-8 p-0">
+              <Pencil className="w-3.5 h-3.5" />
+            </Button>
+            <Button size="sm" variant="ghost" onClick={onDelete}
+              className="text-zinc-400 hover:text-red-400 hover:bg-zinc-800 h-8 w-8 p-0">
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Accordion trigger: Grupos de Anúncios */}
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full flex items-center justify-between px-5 py-3 border-t border-zinc-800 bg-zinc-900/30 hover:bg-zinc-800/50 transition-colors text-left"
+      >
+        <span className="text-xs font-medium text-zinc-400">
+          Grupos de Anúncios
+          {adSets.length > 0 && (
+            <span className="ml-1.5 bg-zinc-700 text-zinc-300 text-[10px] px-1.5 py-0.5 rounded-full">
+              {adSets.length}
+            </span>
+          )}
+        </span>
+        <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+      </button>
+
+      {/* Accordion body */}
+      {expanded && (
+        <div className="border-t border-zinc-800 divide-y divide-zinc-800/60">
+          {adSets.length === 0 ? (
+            <div className="px-5 py-4 text-xs text-zinc-500 italic">
+              Nenhum grupo de anúncios configurado.
+            </div>
+          ) : (
+            adSets.map((adSet, i) => {
+              const ext = adSet as typeof adSet & {
+                traffic_destination?: string | null;
+                optimization_goal?: string | null;
+                target_cost_per_result?: number | null;
+              };
+              const destinationLabel: Record<string, string> = {
+                site: 'Site', app: 'Aplicativo', tiktok_shop: 'Loja TikTok',
+              };
+              const goalLabel: Record<string, string> = {
+                click: 'Clique', landing_page_view: 'Visualização pg inicial', engagement_session: 'Sessão de Engajamento',
+              };
+              return (
+                <div key={adSet.id ?? i} className="px-5 py-4 space-y-2 bg-zinc-950/30">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-zinc-300">
+                      {adSet.name ?? `Grupo ${i + 1}`}
+                    </span>
+                    {adSet.audience_mode && (
+                      <span className="text-[10px] bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded">
+                        {audienceModeLabel[adSet.audience_mode] ?? adSet.audience_mode}
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                    {adSet.start_date && (
+                      <p className="text-[11px] text-zinc-500">
+                        Início: <span className="text-zinc-300">{adSet.start_date}</span>
+                      </p>
+                    )}
+                    {adSet.end_date && (
+                      <p className="text-[11px] text-zinc-500">
+                        Fim: <span className="text-zinc-300">{adSet.end_date}</span>
+                      </p>
+                    )}
+                    {ext.traffic_destination && (
+                      <p className="text-[11px] text-zinc-500">
+                        Destino: <span className="text-zinc-300">{destinationLabel[ext.traffic_destination] ?? ext.traffic_destination}</span>
+                      </p>
+                    )}
+                    {ext.optimization_goal && (
+                      <p className="text-[11px] text-zinc-500">
+                        Objetivo: <span className="text-zinc-300">{goalLabel[ext.optimization_goal] ?? ext.optimization_goal}</span>
+                      </p>
+                    )}
+                    {adSet.audience_location && (
+                      <p className="text-[11px] text-zinc-500">
+                        Localização: <span className="text-zinc-300">{adSet.audience_location}</span>
+                      </p>
+                    )}
+                    {adSet.audience_interests && (
+                      <p className="text-[11px] text-zinc-500">
+                        Interesses: <span className="text-zinc-300">{adSet.audience_interests}</span>
+                      </p>
+                    )}
+                    {ext.target_cost_per_result != null && (
+                      <p className="text-[11px] text-zinc-500">
+                        CPA Alvo: <span className="text-zinc-300">
+                          R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(ext.target_cost_per_result)}
+                        </span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const CampaignsPage: React.FC = () => {
   const { organizationId } = useSettings();
@@ -115,56 +306,18 @@ const CampaignsPage: React.FC = () => {
         <div className="grid gap-3">
           {campaigns.map((c) => {
             const sc = statusConfig[c.status] ?? statusConfig.active;
+            const logo = MARKETPLACE_LOGOS[c.marketplace];
+            const adSets = c.campaign_ad_sets ?? [];
             return (
-              <div
+              <CampaignCard
                 key={c.id}
-                className="rounded-xl border border-zinc-800 bg-zinc-900/40 hover:bg-zinc-900/70 transition-colors p-5"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0 space-y-1.5">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-sm font-semibold text-white truncate">{c.name}</h3>
-                      <Badge className="bg-pink-500/15 text-pink-400 border-pink-500/30 text-[10px]">
-                        TikTok
-                      </Badge>
-                      <Badge className={`text-[10px] border ${sc.className}`}>
-                        {sc.label}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-zinc-400">
-                      Objetivo: <span className="text-zinc-200">{getObjectiveLabel(c.objective)}</span>
-                      {' · '}
-                      Orçamento: <span className="text-zinc-200">
-                        {c.budget_type === 'daily' ? 'Diário' : 'Vitalício'}
-                        {c.budget_amount != null ? ` · R$ ${Number(c.budget_amount).toFixed(2).replace('.', ',')}` : ''}
-                      </span>
-                    </p>
-                    {c.campaign_products.length > 0 && (
-                      <p className="text-xs text-zinc-500">
-                        {c.campaign_products.length} produto(s) vinculado(s)
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex gap-2 flex-shrink-0">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleEdit(c)}
-                      className="text-zinc-400 hover:text-white hover:bg-zinc-800 h-8 w-8 p-0"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setDeleteId(c.id)}
-                      className="text-zinc-400 hover:text-red-400 hover:bg-zinc-800 h-8 w-8 p-0"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
+                campaign={c}
+                sc={sc}
+                logo={logo}
+                adSets={adSets}
+                onEdit={() => handleEdit(c)}
+                onDelete={() => setDeleteId(c.id)}
+              />
             );
           })}
         </div>
