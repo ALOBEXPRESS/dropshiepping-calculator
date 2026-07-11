@@ -1782,7 +1782,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           if (!sku) continue;
           // Find product_id by sku in marketingCostByProductId keys (already resolved)
           // marketingCostByProductId is keyed by product_id; use enrichment to find it
-          const productId = Object.keys(marketingCostByProductId).find((id) => {
+          const productId = Object.keys(marketingCostByProductId).find((_id) => {
             const enrichProd = Object.values(orderEnrichmentById).find((e) =>
               (e as { products?: Array<{ sku?: string }> }).products?.some((pp) => (pp as { sku?: string }).sku === sku)
             );
