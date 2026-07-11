@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import woocommerceImg from '@/imgs/free-woocommerce-icon-svg-download-png-226060.webp';
 import tiktokShopImg from '@/imgs/tiktok-shop-seller-cent-icon-filled-256.png';
+import androidImg from '@/imgs/android.png';
 import type { CampaignFormPayload, CampaignObjective } from '@/types/campaigns';
 
 const CONSIDERATION_OBJECTIVES: CampaignObjective[] = ['traffic', 'video_views', 'community_interaction'];
@@ -151,7 +152,7 @@ export const AdSetSettingsStep: React.FC<AdSetSettingsStepProps> = ({
         <div className="grid grid-cols-3 gap-3">
           {[
             { value: 'site', label: 'Site', img: woocommerceImg },
-            { value: 'app', label: 'App', img: null },
+            { value: 'app', label: 'App', img: androidImg },
             { value: 'tiktok_shop', label: 'Loja TikTok', img: tiktokShopImg },
           ].map((opt) => {
             const currentPlacement = data.placement;
@@ -172,8 +173,7 @@ export const AdSetSettingsStep: React.FC<AdSetSettingsStepProps> = ({
                     <img src={opt.img} alt={opt.label} className="w-full h-full object-contain" />
                   ) : (
                     <span className="text-2xl">📱</span>
-                  )}
-                </div>
+                  )}                </div>
                 <span className={`text-xs font-medium ${isSelected ? 'text-orange-300' : 'text-zinc-300'}`}>
                   {opt.label}
                 </span>
