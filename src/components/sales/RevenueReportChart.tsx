@@ -348,6 +348,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   // cupom de desconto manual (% ou R$)
   const [manualCoupon, setManualCoupon] = useState<string>('');
   const [manualCouponType, setManualCouponType] = useState<'percent' | 'fixed'>('fixed');
+  const [savingCoupon, setSavingCoupon] = useState(false);
   // acréscimo manual (valor em R$)
   const [manualAcrescimo, setManualAcrescimo] = useState<string>('');
   // reembolso TikTok = valor do desconto, somado ao lucro
@@ -1587,6 +1588,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             setManualMarketingCost('');
             setManualCoupon('');
             setManualCouponType('fixed');
+            setSavingCoupon(false);
             setLinkedCampaignId(null);
             setAvailableCampaigns([]);
             // Auto-load campaigns and pre-fill marketing cost
@@ -1621,6 +1623,21 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                     new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(camps[0].marketing_cost)
                   );
                   setLinkedCampaignId(camps[0].id);
+                }
+                // Auto-fill coupon from orders.coupon_value
+                const { data: orderRow } = await supabase
+                  .from('orders')
+                  .select('coupon_value, coupon_type')
+                  .eq('id', merged.order_id)
+                  .maybeSingle();
+                if (orderRow) {
+                  const or = orderRow as { coupon_value: number | null; coupon_type: string | null };
+                  if (or.coupon_value != null) {
+                    setManualCoupon(
+                      new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(or.coupon_value)
+                    );
+                    setManualCouponType((or.coupon_type ?? 'fixed') as 'percent' | 'fixed');
+                  }
                 }
               } catch { /* graceful */ }
             })();
@@ -3272,6 +3289,35 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                               </p>
                             );
                           })()}
+                          {/* Save coupon button */}
+                          {selectedOrder?.order_id && manualCoupon && (
+                            <button
+                              disabled={savingCoupon}
+                              onClick={async () => {
+                                if (!selectedOrder?.order_id) return;
+                                const v = parseFloat(manualCoupon.replace(',', '.')) || 0;
+                                setSavingCoupon(true);
+                                try {
+                                  await supabase
+                                    .from('orders')
+                                    .update({ coupon_value: v > 0 ? v : null, coupon_type: manualCouponType })
+                                    .eq('id', selectedOrder.order_id);
+                                  refetch();
+                                  refetchYearly();
+                                } finally {
+                                  setSavingCoupon(false);
+                                }
+                              }}
+                              className="flex items-center gap-1.5 bg-yellow-700/80 hover:bg-yellow-600 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors w-full justify-center"
+                            >
+                              {savingCoupon ? (
+                                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                              ) : (
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                              )}
+                              Salvar Cupom
+                            </button>
+                          )}
                         </div>
                       </div>
                     )}
@@ -3495,13 +3541,52 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         </p>
                       </div>
                     </div>
-                    <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                    {/* Breakdown: profit components */}
+                    {(manualMarketingCostVal > 0 || manualCouponVal > 0) && (
+                      <div className="border-t border-zinc-700/40 pt-3 mt-2 space-y-1.5">
+                        {manualMarketingCostVal > 0 && (
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-zinc-500">Custo de Marketing</span>
+                            <span className="text-purple-400 font-semibold tabular-nums">
+                              -{formatCurrency(manualMarketingCostVal)}
+                            </span>
+                          </div>
+                        )}
+                        {manualCouponVal > 0 && (
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-zinc-500">Cupom de Desconto</span>
+                            <span className="text-yellow-400 font-semibold tabular-nums">
+                              -{formatCurrency(manualCouponVal)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden mt-3">
                       <div
                         className={`h-full rounded-full ${profitPositive ? 'bg-emerald-500' : 'bg-red-500'}`}
                         style={{ width: `${Math.min(Math.abs(Number(margin)), 100)}%`, transition: 'width 0.6s ease' }}
                       />
                     </div>
                   </div>
+
+                  {/* Custo Total Marketing */}
+                  {manualMarketingCostVal > 0 && (
+                    <div className="rounded-xl px-4 py-3 border border-purple-800/30 bg-purple-950/15 flex items-center justify-between">
+                      <div>
+                        <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-medium mb-0.5">Custo Total Marketing</p>
+                        <p className="text-lg font-bold text-purple-400 tabular-nums">
+                          -{formatCurrency(manualMarketingCostVal)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-medium mb-0.5">Lucro s/ Marketing</p>
+                        <p className={`text-lg font-bold tabular-nums ${(realProfit + manualMarketingCostVal) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {formatCurrency(realProfit + manualMarketingCostVal)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                 </div>
               </div>
