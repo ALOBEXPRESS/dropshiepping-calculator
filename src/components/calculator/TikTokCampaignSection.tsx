@@ -22,7 +22,7 @@ interface TikTokFormFields {
 
 interface TikTokCampaignSectionProps {
   formData: TikTokFormFields & Record<string, unknown>;
-  handleChange: <K extends string>(field: K, value: unknown) => void;
+  handleChange: (field: string, value: unknown) => void;
   handleCurrencyChange: typeof hcc;
   organizationId: string | null | undefined;
 }

@@ -2099,7 +2099,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                   {formData.marketplace === 'tiktok' && (
                     <TikTokCampaignSection
                       formData={formData}
-                      handleChange={handleChange}
+                      handleChange={handleChange as (field: string, value: unknown) => void}
                       handleCurrencyChange={handleCurrencyChange}
                       organizationId={organizationId}
                     />
