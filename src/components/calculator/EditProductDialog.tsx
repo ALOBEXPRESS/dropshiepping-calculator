@@ -25,6 +25,7 @@ import { AlertCircle, TrendingUp, X, Instagram, Music, Twitter } from "lucide-re
 import { useInfluencers } from '@/hooks/useInfluencers';
 import { useAffiliates } from '@/hooks/useAffiliates';
 import { ProductVariationsSection } from './ProductVariationsSection';
+import { TikTokCampaignSection } from './TikTokCampaignSection';
 import { supabase } from '@/lib/supabase';
 
 interface EditProductDialogProps {
@@ -117,6 +118,15 @@ type EditProductFormData = {
   tiktokAudience: string;
   tiktokCampaignObjective: ProductItem['tiktokCampaignObjective'] | '';
   tiktokDailyBudget: string;
+  tiktokCampaignId: string;
+  roiTarget: string;
+  tiktokPromoProductValue: string;
+  tiktokPromoProductType: 'fixed' | 'percent';
+  tiktokPromoProductUntil: string;
+  tiktokPromoNewCustomerValue: string;
+  tiktokPromoNewCustomerType: 'fixed' | 'percent';
+  tiktokPromoShippingValue: string;
+  tiktokPromoShippingType: 'fixed' | 'percent';
   tiktokCPA: string;
   tiktokAdsSalesQuantity: string;
   tiktokCPM: string;
@@ -324,6 +334,15 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     tiktokAudience: source?.tiktokAudience || '',
     tiktokCampaignObjective: source?.tiktokCampaignObjective || 'conversions',
     tiktokDailyBudget: source?.tiktokDailyBudget !== undefined && source?.tiktokDailyBudget !== null ? String(source.tiktokDailyBudget) : '',
+    tiktokCampaignId: (source as { tiktokCampaignId?: string })?.tiktokCampaignId || '',
+    roiTarget: (source as { roiTarget?: number | string })?.roiTarget != null ? String((source as { roiTarget?: number | string }).roiTarget) : '',
+    tiktokPromoProductValue: (source as { tiktokPromoProductValue?: string })?.tiktokPromoProductValue || '',
+    tiktokPromoProductType: ((source as { tiktokPromoProductType?: string })?.tiktokPromoProductType as 'fixed' | 'percent') || 'fixed',
+    tiktokPromoProductUntil: (source as { tiktokPromoProductUntil?: string })?.tiktokPromoProductUntil || '',
+    tiktokPromoNewCustomerValue: (source as { tiktokPromoNewCustomerValue?: string })?.tiktokPromoNewCustomerValue || '',
+    tiktokPromoNewCustomerType: ((source as { tiktokPromoNewCustomerType?: string })?.tiktokPromoNewCustomerType as 'fixed' | 'percent') || 'fixed',
+    tiktokPromoShippingValue: (source as { tiktokPromoShippingValue?: string })?.tiktokPromoShippingValue || '',
+    tiktokPromoShippingType: ((source as { tiktokPromoShippingType?: string })?.tiktokPromoShippingType as 'fixed' | 'percent') || 'fixed',
     tiktokCPA: source?.tiktokCPA !== undefined && source?.tiktokCPA !== null ? String(source.tiktokCPA) : '',
     tiktokAdsSalesQuantity: source?.tiktokAdsSalesQuantity !== undefined && source?.tiktokAdsSalesQuantity !== null ? String(source.tiktokAdsSalesQuantity) : '',
     tiktokCPM: source?.tiktokCPM !== undefined && source?.tiktokCPM !== null ? String(source.tiktokCPM) : '',
@@ -2078,120 +2097,12 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                     </div>
                   )}
                   {formData.marketplace === 'tiktok' && (
-                    <div className="grid gap-4">
-                      <div className="text-sm font-semibold text-gray-800 dark:text-white">
-                        TikTok Shop Ads
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label className="text-right dark:text-white">Calcular Tiktokshop Ads</Label>
-                        <div className="col-span-3 flex items-center gap-3">
-                          <Checkbox
-                            checked={formData.tiktokAdsEnabled}
-                            onCheckedChange={(checked) => handleChange('tiktokAdsEnabled', checked as boolean)}
-                          />
-                          <span className="text-xs text-muted-foreground">Ativar cálculo de anúncios</span>
-                        </div>
-                      </div>
-                      {formData.tiktokAdsEnabled && (
-                        <>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label className="text-right dark:text-white">Formato</Label>
-                            <Select value={formData.tiktokAdFormat} onValueChange={(val) => handleChange('tiktokAdFormat', val as EditProductFormData['tiktokAdFormat'])}>
-                              <SelectTrigger className="col-span-3">
-                                <SelectValue placeholder="Selecione o formato" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="in_feed">In-Feed Ads</SelectItem>
-                                <SelectItem value="top_view">TopView</SelectItem>
-                                <SelectItem value="spark_ads">Spark Ads</SelectItem>
-                                <SelectItem value="hashtag_challenge">Hashtag Challenge</SelectItem>
-                                <SelectItem value="shopping_ads">Video Shopping Ads</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label className="text-right dark:text-white">Objetivo</Label>
-                            <Select value={formData.tiktokCampaignObjective} onValueChange={(val) => handleChange('tiktokCampaignObjective', val as EditProductFormData['tiktokCampaignObjective'])}>
-                              <SelectTrigger className="col-span-3">
-                                <SelectValue placeholder="Selecione o objetivo" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="conversions">Conversões (Vendas)</SelectItem>
-                                <SelectItem value="video_shopping">Video Shopping</SelectItem>
-                                <SelectItem value="traffic">Tráfego</SelectItem>
-                                <SelectItem value="reach">Alcance</SelectItem>
-                                <SelectItem value="app_install">Instalação de App</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          {(formData.tiktokAdFormat === 'shopping_ads' || formData.tiktokCampaignObjective === 'video_shopping') && (
-                             <div className="grid grid-cols-4 items-center gap-4">
-                               <Label className="text-right dark:text-white">ID Catálogo</Label>
-                               <Input
-                                 value={formData.tiktokCatalogId}
-                                 onChange={(e) => handleChange('tiktokCatalogId', e.target.value)}
-                                 className="col-span-3"
-                                 placeholder="ID do Catálogo"
-                               />
-                             </div>
-                          )}
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label className="text-right dark:text-white">Público-alvo</Label>
-                            <Input
-                              value={formData.tiktokAudience}
-                              onChange={(e) => handleChange('tiktokAudience', e.target.value)}
-                              className="col-span-3"
-                              placeholder="Segmentação..."
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label className="text-right dark:text-white">CPA (R$)</Label>
-                            <Input
-                              type="text"
-                              inputMode="decimal"
-                              value={formData.tiktokCPA}
-                              onChange={(e) => handleCurrencyChange(e, (val) => handleChange('tiktokCPA', val))}
-                              className="col-span-3"
-                              placeholder="0,00"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label className="text-right dark:text-white">Vendas Est.</Label>
-                            <Input
-                              type="text"
-                              inputMode="numeric"
-                              value={formData.tiktokAdsSalesQuantity}
-                              onChange={(e) => handleChange('tiktokAdsSalesQuantity', e.target.value.replace(/\D/g, ''))}
-                              className="col-span-3"
-                              placeholder="0"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                             <Label className="text-right dark:text-white">Métricas (Opc)</Label>
-                             <div className="col-span-3 grid grid-cols-3 gap-2">
-                               <Input
-                                 value={formData.tiktokCPM}
-                                 onChange={(e) => handleCurrencyChange(e, (val) => handleChange('tiktokCPM', val))}
-                                 placeholder="CPM"
-                                 className="text-xs"
-                               />
-                               <Input
-                                 value={formData.tiktokCTR}
-                                 onChange={(e) => handleCurrencyChange(e, (val) => handleChange('tiktokCTR', val))}
-                                 placeholder="CTR"
-                                 className="text-xs"
-                               />
-                               <Input
-                                 value={formData.tiktokCVR}
-                                 onChange={(e) => handleCurrencyChange(e, (val) => handleChange('tiktokCVR', val))}
-                                 placeholder="CVR"
-                                 className="text-xs"
-                               />
-                             </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
+                    <TikTokCampaignSection
+                      formData={formData}
+                      handleChange={handleChange}
+                      handleCurrencyChange={handleCurrencyChange}
+                      organizationId={organizationId}
+                    />
                   )}
                 </>
               )}

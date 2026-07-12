@@ -182,6 +182,15 @@ export interface ProductItem {
   tiktokAudience?: string;
   tiktokCampaignObjective?: 'reach' | 'traffic' | 'conversions' | 'app_install' | 'video_shopping';
   tiktokDailyBudget?: string | number;
+  tiktokCampaignId?: string;
+  roiTarget?: string | number;
+  tiktokPromoProductValue?: string;
+  tiktokPromoProductType?: 'fixed' | 'percent';
+  tiktokPromoProductUntil?: string;
+  tiktokPromoNewCustomerValue?: string;
+  tiktokPromoNewCustomerType?: 'fixed' | 'percent';
+  tiktokPromoShippingValue?: string;
+  tiktokPromoShippingType?: 'fixed' | 'percent';
   tiktokCPA?: string | number;
   tiktokAdsSalesQuantity?: string | number;
   tiktokCPM?: string | number;
