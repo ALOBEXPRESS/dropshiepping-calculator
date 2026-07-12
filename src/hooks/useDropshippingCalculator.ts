@@ -388,6 +388,15 @@ export const useDropshippingCalculator = () => {
   const [tiktokCatalogId, setTiktokCatalogId] = useState(() => typeof draft.tiktokCatalogId === 'string' ? draft.tiktokCatalogId : '');
   const [tiktokSfpEnabled, setTiktokSfpEnabled] = useState(() => typeof draft.tiktokSfpEnabled === 'boolean' ? draft.tiktokSfpEnabled : false);
 
+  // TikTok Promotions
+  const [tiktokPromoProductValue, setTiktokPromoProductValue] = useState<string>('');
+  const [tiktokPromoProductType, setTiktokPromoProductType] = useState<'fixed' | 'percent'>('fixed');
+  const [tiktokPromoProductUntil, setTiktokPromoProductUntil] = useState<string>('');
+  const [tiktokPromoNewCustomerValue, setTiktokPromoNewCustomerValue] = useState<string>('');
+  const [tiktokPromoNewCustomerType, setTiktokPromoNewCustomerType] = useState<'fixed' | 'percent'>('fixed');
+  const [tiktokPromoShippingValue, setTiktokPromoShippingValue] = useState<string>('');
+  const [tiktokPromoShippingType, setTiktokPromoShippingType] = useState<'fixed' | 'percent'>('fixed');
+
   // Paid Traffic Metrics
   const [paidConversionRate, setPaidConversionRate] = useState('1,5');
   const [paidCtr, setPaidCtr] = useState('1,0');
@@ -1323,6 +1332,13 @@ export const useDropshippingCalculator = () => {
     tiktokCVR, setTiktokCVR,
     tiktokCatalogId, setTiktokCatalogId,
     tiktokSfpEnabled, setTiktokSfpEnabled,
+    tiktokPromoProductValue, setTiktokPromoProductValue,
+    tiktokPromoProductType, setTiktokPromoProductType,
+    tiktokPromoProductUntil, setTiktokPromoProductUntil,
+    tiktokPromoNewCustomerValue, setTiktokPromoNewCustomerValue,
+    tiktokPromoNewCustomerType, setTiktokPromoNewCustomerType,
+    tiktokPromoShippingValue, setTiktokPromoShippingValue,
+    tiktokPromoShippingType, setTiktokPromoShippingType,
     handleFloatInput,
     handleOperationModeChange,
     handleDeliveryModeChange,

@@ -41,6 +41,7 @@ import { ResultsPanel } from './calculator/ResultsPanel';
 import { ShopeeConfig } from './calculator/ShopeeConfig';
 import { MercadoLivreConfig } from './calculator/MercadoLivreConfig';
 import { TikTokConfig } from './calculator/TikTokConfig';
+import { TikTokPromotions } from './calculator/TikTokPromotions';
 import { EnjoeiConfig } from './calculator/EnjoeiConfig';
 import { AmazonConfig } from './calculator/AmazonConfig';
 import { MarketplaceConfig } from './calculator/MarketplaceConfig';
@@ -261,6 +262,13 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
     tiktokCVR, setTiktokCVR,
     tiktokCatalogId, setTiktokCatalogId,
     tiktokSfpEnabled, setTiktokSfpEnabled,
+    tiktokPromoProductValue, setTiktokPromoProductValue,
+    tiktokPromoProductType, setTiktokPromoProductType,
+    tiktokPromoProductUntil, setTiktokPromoProductUntil,
+    tiktokPromoNewCustomerValue, setTiktokPromoNewCustomerValue,
+    tiktokPromoNewCustomerType, setTiktokPromoNewCustomerType,
+    tiktokPromoShippingValue, setTiktokPromoShippingValue,
+    tiktokPromoShippingType, setTiktokPromoShippingType,
     handleFloatInput,
     handleOperationModeChange,
     handleDeliveryModeChange,
@@ -3183,6 +3191,24 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 setTiktokCatalogId={setTiktokCatalogId}
                 tiktokSfpEnabled={tiktokSfpEnabled}
                 setTiktokSfpEnabled={setTiktokSfpEnabled}
+              />
+
+              <TikTokPromotions
+                marketplace={marketplace}
+                tiktokPromoProductValue={tiktokPromoProductValue}
+                setTiktokPromoProductValue={setTiktokPromoProductValue}
+                tiktokPromoProductType={tiktokPromoProductType}
+                setTiktokPromoProductType={setTiktokPromoProductType}
+                tiktokPromoProductUntil={tiktokPromoProductUntil}
+                setTiktokPromoProductUntil={setTiktokPromoProductUntil}
+                tiktokPromoNewCustomerValue={tiktokPromoNewCustomerValue}
+                setTiktokPromoNewCustomerValue={setTiktokPromoNewCustomerValue}
+                tiktokPromoNewCustomerType={tiktokPromoNewCustomerType}
+                setTiktokPromoNewCustomerType={setTiktokPromoNewCustomerType}
+                tiktokPromoShippingValue={tiktokPromoShippingValue}
+                setTiktokPromoShippingValue={setTiktokPromoShippingValue}
+                tiktokPromoShippingType={tiktokPromoShippingType}
+                setTiktokPromoShippingType={setTiktokPromoShippingType}
               />
 
               <EnjoeiConfig
