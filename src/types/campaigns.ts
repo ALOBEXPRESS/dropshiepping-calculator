@@ -59,6 +59,7 @@ export interface CampaignProduct {
   campaign_id: string;
   product_id: string;
   marketing_cost_override: number | null;
+  linked_order_id: string | null;
 }
 
 export interface CampaignWithRelations extends Campaign {
@@ -73,6 +74,7 @@ export interface CampaignFormPayload {
   products: Array<{
     product_id: string;
     marketing_cost_override: number | null;
+    linked_order_id?: string | null;
   }>;
 }
 

@@ -28,6 +28,7 @@ import type { PeriodFilter } from '@/types/sales';
 import { toast } from 'sonner';
 import { ReferenceService, type Marketplace } from '@/services/referenceService';
 import { AffiliateAccordion } from './AffiliateAccordion';
+import { calcOrderProfit } from '@/utils/calcOrderProfit';
 
 interface RevenueReportChartProps {
   organizationId: string;
@@ -211,129 +212,17 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   ) => {
     const o = order as {
       order_id?: string;
-      total_amount?: number;
-      total_products?: number;
-      base_value?: number;
-      discount_value?: number;
-      shipping_cost?: number;
-      other_expenses?: number;
-      marketplace_commission?: number;
-      commission_rate?: number;
-      marketplace_fixed_fee?: number;
-      products?: {
-        quantity?: number;
-        unit_cost?: number;
-        supplier_fee_value?: string;
-        supplier_fee_type?: string;
-        supplier_gateway_fee_value?: string;
-        supplier_gateway_fee_type?: string;
-      }[];
       tiktok_sfp_enabled?: boolean | string;
-      is_free_sample?: boolean | string;
-      marketplace?: string;
       tiktok_reembolso_disabled?: boolean;
       tiktok_retorno_liquido?: number | null;
     };
-
-    const totalAmount = Number(o.total_amount ?? 0);
-    const isFreeSample = o.is_free_sample === true || String(o.is_free_sample ?? '') === 'true';
-    const products = o.products ?? [];
-    const isTikTok = (o.marketplace ?? '').toLowerCase().includes('tiktok');
-
-    const totalBaseCost = products.reduce((sum, p) => {
-      const qty = Number(p.quantity ?? 1);
-      const unitCost = Number(p.unit_cost ?? 0);
-      return sum + unitCost * qty;
-    }, 0);
-
-    const supFeeProduct = products.reduce((best, p) => {
-      const v = Number(p.supplier_fee_value ?? 0);
-      return v > Number(best?.supplier_fee_value ?? 0) ? p : best;
-    }, products[0]);
-
-    const supFeeVal = Number(supFeeProduct?.supplier_fee_value ?? 0);
-    const supFeeType = supFeeProduct?.supplier_fee_type ?? 'percent';
-    const productGatewayFee = Number(supFeeProduct?.supplier_gateway_fee_value ?? 2);
-
-    // Dogama: TikTok always, or product has supplier_fee_value
-    const isDogama = isTikTok || supFeeVal > 0;
-    const DEFAULT_SUPPLIER_FEE_PERCENT = 6;
-    const effectiveSupFeePercent = isDogama
-      ? (supFeeType === 'percent' && supFeeVal > 0 ? supFeeVal : DEFAULT_SUPPLIER_FEE_PERCENT)
-      : 0;
-    const orderSupplierFee = isDogama ? (totalBaseCost * effectiveSupFeePercent) / 100 : 0;
-    const orderGatewayFee = isDogama ? productGatewayFee : 0;
-
-    const totalProductCost = totalBaseCost + orderSupplierFee + orderGatewayFee;
-
-    // Preços de venda — mirror modal logic
-    const totalProductsValue = Number(o.total_products ?? totalAmount);
-    const baseValue = Number(o.base_value ?? 0);
-    const activeDiscount = Number(o.discount_value ?? 0);
-
-    const precoVendaBruto = isTikTok
-      ? (totalProductsValue > 0 ? totalProductsValue : totalAmount)
-      : totalAmount;
-    const precoVendaPagoCliente = isTikTok
-      ? precoVendaBruto - activeDiscount
-      : (baseValue > 0 ? baseValue : totalAmount);
-
-    const fixedFee = Number(marketplaceConfig?.fixed_fee ?? o.marketplace_fixed_fee ?? 0);
-    const commissionRate = Number(marketplaceConfig?.commission_rate ?? o.commission_rate ?? 0);
-    const affiliateRate = Number(marketplaceConfig?.affiliate_commission_rate ?? 0);
-
-    const commissionBase = precoVendaBruto;
-    const cameFromAffiliate = cameFromAffiliateOverride ?? Boolean(o.order_id && affiliateByOrderIdRef.current?.[o.order_id]);
-    const affiliateCommission = isFreeSample
-      ? 0
-      : (cameFromAffiliate && affiliateRate > 0 ? (commissionBase * affiliateRate) / 100 : 0);
-
-    const sfpEnabled = !isFreeSample && (o.tiktok_sfp_enabled === true || String(o.tiktok_sfp_enabled ?? '') === 'true' || isTikTok);
-    const sfpFee = sfpEnabled ? precoVendaBruto * 0.06 : 0;
-
-    const commissionPercent = isFreeSample
-      ? 0
-      : (commissionRate > 0
-        ? (commissionBase * commissionRate) / 100
-        : Math.max(0, Number(o.marketplace_commission ?? 0) - fixedFee));
-
-    // TikTok+SFP: frete incluso na taxa SFP → não cobrar shipping separado
-    const rawShipping = Number(o.shipping_cost ?? 0);
-    const shipping = sfpEnabled ? 0 : rawShipping;
-    const other = Number(o.other_expenses ?? 0);
-    const subtotalMarketplace = isFreeSample
-      ? 0
-      : (commissionPercent + fixedFee + sfpFee + shipping + other + affiliateCommission);
-
-    // TikTok reembolso = desconto (default enabled, unless tiktok_reembolso_disabled=true on the order)
-    const reembolsoDisabled = (order as { tiktok_reembolso_disabled?: boolean }).tiktok_reembolso_disabled === true;
-    const tiktokReembolso = (isTikTok && !reembolsoDisabled) ? activeDiscount : 0;
-
-    // Retorno Líquido TikTok: when set, skip all marketplace fees → use it directly as net received
-    const retornoLiquido = Number(o.tiktok_retorno_liquido ?? 0);
-    const hasRetornoLiquido = isTikTok && retornoLiquido > 0;
-
-    const precoVendaLiquidoFinal = hasRetornoLiquido
-      ? retornoLiquido
-      : (isTikTok
-        ? precoVendaPagoCliente + tiktokReembolso - subtotalMarketplace
-        : precoVendaPagoCliente - subtotalMarketplace - activeDiscount);
-
-    const realProfitRaw = isFreeSample
-      ? -totalProductCost
-      : (precoVendaLiquidoFinal - totalProductCost);
-    // Round to 2 decimal places to avoid floating point accumulation errors
-    const realProfit = Math.round(realProfitRaw * 100) / 100;
-    const totalProductCostRounded = Math.round(totalProductCost * 100) / 100;
-    const precoVendaLiquidoFinalRounded = Math.round(precoVendaLiquidoFinal * 100) / 100;
-
-    return {
-      realProfit,
-      isFreeSample,
-      totalProductCost: totalProductCostRounded,
-      precoVendaLiquidoFinal: precoVendaLiquidoFinalRounded,
-      subtotalMarketplace: Math.round(subtotalMarketplace * 100) / 100,
-    };
+    const cameFromAffiliate =
+      cameFromAffiliateOverride ?? Boolean(o.order_id && affiliateByOrderIdRef.current?.[o.order_id]);
+    return calcOrderProfit(
+      order as Parameters<typeof calcOrderProfit>[0],
+      marketplaceConfig,
+      cameFromAffiliate
+    );
   }, []);
 
   const [openProduto, setOpenProduto] = useState(false);

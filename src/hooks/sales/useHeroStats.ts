@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { calcOrderProfit } from '@/utils/calcOrderProfit';
 
 interface HeroStats {
   totalRevenue: number;
@@ -12,91 +13,6 @@ interface HeroStats {
   productsChange?: number;
 }
 
-interface OrderWithProducts {
-  order_id: string;
-  customer_id: string;
-  total_amount: number;
-  total_products: number;
-  discount_value: number;
-  marketplace: string;
-  shipping_cost: number;
-  other_expenses: number;
-  marketplace_commission: number;
-  commission_rate: number;
-  fixed_fee: number;
-  is_free_sample: boolean;
-  order_date: string;
-  products: {
-    quantity: number;
-    unit_cost: number;
-    supplier_fee_value: string;
-    supplier_fee_type: string;
-    supplier_gateway_fee_value: string;
-    supplier_gateway_fee_type: string;
-  }[];
-}
-
-// Função removida — taxas Shopee agora vêm do marketplace join
-
-// Função para calcular o lucro real de um pedido — espelha computeOrderRealProfit do chart
-const calculateOrderProfit = (order: OrderWithProducts): number => {
-  const totalAmount = Number(order.total_amount ?? 0);
-  const isFreeSample = order.is_free_sample === true;
-  const isTikTok = (order.marketplace ?? '').toLowerCase().includes('tiktok');
-
-  const totalBaseCost = order.products.reduce((sum, p) => {
-    return sum + Number(p.unit_cost ?? 0) * Number(p.quantity ?? 1);
-  }, 0);
-
-  const supFeeProduct = order.products.reduce((best, p) => {
-    const v = Number(p.supplier_fee_value ?? 0);
-    return v > Number(best?.supplier_fee_value ?? 0) ? p : best;
-  }, order.products[0]);
-
-  const supFeeVal = Number(supFeeProduct?.supplier_fee_value ?? 0);
-  const supFeeType = supFeeProduct?.supplier_fee_type ?? 'percent';
-  const productGatewayFee = Number(supFeeProduct?.supplier_gateway_fee_value ?? 2);
-
-  const isDogama = isTikTok || supFeeVal > 0;
-  const DEFAULT_SUPPLIER_FEE_PERCENT = 6;
-  const effectiveSupFeePercent = isDogama
-    ? (supFeeType === 'percent' && supFeeVal > 0 ? supFeeVal : DEFAULT_SUPPLIER_FEE_PERCENT)
-    : 0;
-  const orderSupplierFee = isDogama ? (totalBaseCost * effectiveSupFeePercent) / 100 : 0;
-  const orderGatewayFee = isDogama ? productGatewayFee : 0;
-  const totalProductCost = Math.round((totalBaseCost + orderSupplierFee + orderGatewayFee) * 100) / 100;
-
-  // Preços de venda — TikTok usa total_products como bruto
-  const totalProductsValue = Number(order.total_products ?? totalAmount);
-  const activeDiscount = Number(order.discount_value ?? 0);
-  const precoVendaBruto = isTikTok ? (totalProductsValue > 0 ? totalProductsValue : totalAmount) : totalAmount;
-  const precoVendaPagoCliente = isTikTok ? precoVendaBruto - activeDiscount : totalAmount;
-
-  // Marketplace fees
-  const commissionRate = Number(order.commission_rate ?? 0);
-  const fixedFee = Number(order.fixed_fee ?? 0);
-  const commissionBase = precoVendaBruto;
-  const commissionPercent = isFreeSample ? 0 : (commissionRate > 0
-    ? (commissionBase * commissionRate) / 100
-    : Math.max(0, Number(order.marketplace_commission ?? 0) - fixedFee));
-
-  const sfpEnabled = !isFreeSample && isTikTok;
-  const sfpFee = sfpEnabled ? precoVendaBruto * 0.06 : 0;
-  const rawShipping = Number(order.shipping_cost ?? 0);
-  const shipping = sfpEnabled ? 0 : rawShipping;
-  const other = Number(order.other_expenses ?? 0);
-
-  const subtotalMarketplace = isFreeSample ? 0 : (commissionPercent + fixedFee + sfpFee + shipping + other);
-
-  const tiktokReembolso = isTikTok ? activeDiscount : 0;
-  const precoVendaLiquidoFinal = isTikTok
-    ? precoVendaPagoCliente + tiktokReembolso - subtotalMarketplace
-    : precoVendaPagoCliente - subtotalMarketplace - activeDiscount;
-
-  const realProfit = isFreeSample ? -totalProductCost : (precoVendaLiquidoFinal - totalProductCost);
-  return Math.round(realProfit * 100) / 100;
-};
-
 // Função para obter range de datas baseado no período
 const getDateRange = (period: 'daily' | 'weekly' | 'monthly' | 'yearly') => {
   const now = new Date();
@@ -104,13 +20,11 @@ const getDateRange = (period: 'daily' | 'weekly' | 'monthly' | 'yearly') => {
   const currentEnd = new Date(now);
   const previousStart = new Date(now);
   const previousEnd = new Date(now);
-  
+
   switch (period) {
     case 'daily': {
-      // Hoje
       currentStart.setHours(0, 0, 0, 0);
       currentEnd.setHours(23, 59, 59, 999);
-      // Ontem
       previousStart.setDate(previousStart.getDate() - 1);
       previousStart.setHours(0, 0, 0, 0);
       previousEnd.setDate(previousEnd.getDate() - 1);
@@ -118,12 +32,10 @@ const getDateRange = (period: 'daily' | 'weekly' | 'monthly' | 'yearly') => {
       break;
     }
     case 'weekly': {
-      // Esta semana (domingo a sábado)
       const dayOfWeek = now.getDay();
       currentStart.setDate(now.getDate() - dayOfWeek);
       currentStart.setHours(0, 0, 0, 0);
       currentEnd.setHours(23, 59, 59, 999);
-      // Semana passada
       previousStart.setDate(currentStart.getDate() - 7);
       previousStart.setHours(0, 0, 0, 0);
       previousEnd.setDate(currentStart.getDate() - 1);
@@ -131,25 +43,21 @@ const getDateRange = (period: 'daily' | 'weekly' | 'monthly' | 'yearly') => {
       break;
     }
     case 'monthly': {
-      // Este mês
       currentStart.setDate(1);
       currentStart.setHours(0, 0, 0, 0);
       currentEnd.setMonth(currentEnd.getMonth() + 1, 0);
       currentEnd.setHours(23, 59, 59, 999);
-      // Mês passado
       previousStart.setMonth(previousStart.getMonth() - 1, 1);
       previousStart.setHours(0, 0, 0, 0);
-      previousEnd.setDate(0); // Último dia do mês anterior
+      previousEnd.setDate(0);
       previousEnd.setHours(23, 59, 59, 999);
       break;
     }
     case 'yearly': {
-      // Este ano
       currentStart.setMonth(0, 1);
       currentStart.setHours(0, 0, 0, 0);
       currentEnd.setMonth(11, 31);
       currentEnd.setHours(23, 59, 59, 999);
-      // Ano passado
       previousStart.setFullYear(previousStart.getFullYear() - 1, 0, 1);
       previousStart.setHours(0, 0, 0, 0);
       previousEnd.setFullYear(previousEnd.getFullYear() - 1, 11, 31);
@@ -157,14 +65,39 @@ const getDateRange = (period: 'daily' | 'weekly' | 'monthly' | 'yearly') => {
       break;
     }
   }
-  
+
   return {
     current: { start: currentStart.toISOString(), end: currentEnd.toISOString() },
-    previous: { start: previousStart.toISOString(), end: previousEnd.toISOString() }
+    previous: { start: previousStart.toISOString(), end: previousEnd.toISOString() },
   };
 };
 
-export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'monthly', refreshTrigger?: number) => {
+// Build product items map grouped by order_id from order_items rows
+function buildItemsByOrder(
+  orderItems: Record<string, unknown>[]
+): Record<string, unknown[]> {
+  return orderItems.reduce((acc: Record<string, unknown[]>, item: Record<string, unknown>) => {
+    const orderId = item.order_id as string;
+    if (!acc[orderId]) acc[orderId] = [];
+    acc[orderId].push({
+      quantity: item.quantity,
+      unit_cost: item.unit_cost,
+      supplier_fee_value: (item.products as Record<string, unknown>)?.supplier_fee_value || '0',
+      supplier_fee_type: (item.products as Record<string, unknown>)?.supplier_fee_type || 'percent',
+      supplier_gateway_fee_value:
+        (item.products as Record<string, unknown>)?.supplier_gateway_fee_value || '0',
+      supplier_gateway_fee_type:
+        (item.products as Record<string, unknown>)?.supplier_gateway_fee_type || 'fixed',
+    });
+    return acc;
+  }, {});
+}
+
+export const useHeroStats = (
+  organizationId: string,
+  period: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'monthly',
+  refreshTrigger?: number
+) => {
   const [stats, setStats] = useState<HeroStats>({
     totalRevenue: 0,
     totalOrders: 0,
@@ -176,15 +109,18 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
 
   useEffect(() => {
     const fetchStats = async () => {
-      if (!organizationId) { setLoading(false); return; }
+      if (!organizationId) {
+        setLoading(false);
+        return;
+      }
 
       setLoading(true);
       setError(null);
 
       try {
         const dateRange = getDateRange(period);
-        
-        // Buscar pedidos do período atual
+
+        // ── Current period orders ─────────────────────────────────────────
         const { data: currentOrders, error: currentOrdersError } = await supabase
           .from('orders')
           .select(`
@@ -199,6 +135,8 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
             other_expenses,
             marketplace_commission,
             is_free_sample,
+            tiktok_reembolso_disabled,
+            tiktok_retorno_liquido,
             order_date
           `)
           .eq('organization_id', organizationId)
@@ -208,41 +146,67 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
 
         if (currentOrdersError) throw currentOrdersError;
 
-        // Buscar total_products dos bling_orders correspondentes
-        const blingOrderIds = (currentOrders || []).map(o => (o as unknown as { bling_order_id?: string }).bling_order_id).filter(Boolean) as string[];
-        const blingOrdersTotalProducts: Record<string, number> = {};
+        const currentOrders_ = currentOrders ?? [];
+        const orderIds = currentOrders_.map((o) => o.id);
+
+        // ── bling_orders → total_products ─────────────────────────────────
+        const blingOrderIds = currentOrders_
+          .map((o) => (o as unknown as { bling_order_id?: string }).bling_order_id)
+          .filter(Boolean) as string[];
+        const blingTotalProducts: Record<string, number> = {};
         if (blingOrderIds.length > 0) {
-          const { data: blingOrdersData } = await supabase
+          const { data: blingRows } = await supabase
             .from('bling_orders')
             .select('id, total_products')
             .in('id', blingOrderIds);
-          (blingOrdersData || []).forEach((bo: { id: string; total_products?: number }) => {
-            blingOrdersTotalProducts[bo.id] = Number(bo.total_products ?? 0);
+          (blingRows ?? []).forEach((bo: { id: string; total_products?: number }) => {
+            blingTotalProducts[bo.id] = Number(bo.total_products ?? 0);
           });
         }
 
-        // Buscar marketplaces para os pedidos (incluindo marketplaces de sistema)
-        const marketplaceIds = [...new Set((currentOrders || []).map(o => o.marketplace_id).filter(Boolean))];
+        // ── Marketplaces (with affiliate_commission_rate) ─────────────────
+        const marketplaceIds = [
+          ...new Set(currentOrders_.map((o) => o.marketplace_id).filter(Boolean)),
+        ];
         const { data: marketplaces, error: marketplacesError } = await supabase
           .from('marketplaces')
-          .select('id, name, commission_rate, fixed_fee')
+          .select('id, name, commission_rate, fixed_fee, affiliate_commission_rate')
           .in('id', marketplaceIds);
 
         if (marketplacesError) throw marketplacesError;
 
-        // Criar maps de marketplace_id -> name/rates
-        const marketplaceMap = (marketplaces || []).reduce((acc: Record<string, string>, m: { id: string; name: string }) => {
-          acc[m.id] = m.name;
-          return acc;
-        }, {});
-        const marketplaceRatesMap = (marketplaces || []).reduce((acc: Record<string, { commission_rate: number; fixed_fee: number }>, m: { id: string; commission_rate: number; fixed_fee: number }) => {
-          acc[m.id] = { commission_rate: Number(m.commission_rate ?? 0), fixed_fee: Number(m.fixed_fee ?? 0) };
-          return acc;
-        }, {});
+        const marketplaceMap = (marketplaces ?? []).reduce(
+          (acc: Record<string, string>, m: { id: string; name: string }) => {
+            acc[m.id] = m.name;
+            return acc;
+          },
+          {}
+        );
+        const marketplaceConfigMap = (marketplaces ?? []).reduce(
+          (
+            acc: Record<
+              string,
+              { commission_rate: number; fixed_fee: number; affiliate_commission_rate: number }
+            >,
+            m: {
+              id: string;
+              commission_rate: number;
+              fixed_fee: number;
+              affiliate_commission_rate?: number;
+            }
+          ) => {
+            acc[m.id] = {
+              commission_rate: Number(m.commission_rate ?? 0),
+              fixed_fee: Number(m.fixed_fee ?? 0),
+              affiliate_commission_rate: Number(m.affiliate_commission_rate ?? 0),
+            };
+            return acc;
+          },
+          {}
+        );
 
-        // Buscar itens dos pedidos com informações dos produtos
-        const orderIds = (currentOrders || []).map(o => o.id);
-        const { data: orderItems, error: itemsError } = await supabase
+        // ── Order items ───────────────────────────────────────────────────
+        const { data: orderItemsRaw, error: itemsError } = await supabase
           .from('order_items')
           .select(`
             order_id,
@@ -259,48 +223,70 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
 
         if (itemsError) throw itemsError;
 
-        // Agrupar itens por pedido
-        const itemsByOrder = (orderItems || []).reduce((acc: Record<string, unknown[]>, item: Record<string, unknown>) => {
-          const orderId = item.order_id as string;
-          if (!acc[orderId]) acc[orderId] = [];
-          acc[orderId].push({
-            quantity: item.quantity,
-            unit_cost: item.unit_cost,
-            supplier_fee_value: (item.products as Record<string, unknown>)?.supplier_fee_value || '0',
-            supplier_fee_type: (item.products as Record<string, unknown>)?.supplier_fee_type || 'percent',
-            supplier_gateway_fee_value: (item.products as Record<string, unknown>)?.supplier_gateway_fee_value || '0',
-            supplier_gateway_fee_type: (item.products as Record<string, unknown>)?.supplier_gateway_fee_type || 'fixed'
+        const itemsByOrder = buildItemsByOrder(
+          (orderItemsRaw ?? []) as Record<string, unknown>[]
+        );
+
+        // ── Affiliates map for current period orders ───────────────────────
+        // Determine which orders came via affiliate link using order_affiliates table (if exists)
+        // Gracefully skip if table absent
+        const affiliateByOrderId: Record<string, boolean> = {};
+        if (orderIds.length > 0) {
+          const { data: affiliateRows } = await supabase
+            .from('order_affiliates')
+            .select('order_id')
+            .in('order_id', orderIds);
+          (affiliateRows ?? []).forEach((r: { order_id: string }) => {
+            affiliateByOrderId[r.order_id] = true;
           });
-          return acc;
-        }, {});
+        }
 
-        // Processar pedidos atuais
-        const processedCurrentOrders = (currentOrders || [])
-          .filter(order => itemsByOrder[order.id]?.length > 0)
-          .map(order => {
-            const marketplaceName = order.marketplace_id ? marketplaceMap[order.marketplace_id] || '' : '';
-            const rates = order.marketplace_id ? marketplaceRatesMap[order.marketplace_id] ?? { commission_rate: 0, fixed_fee: 0 } : { commission_rate: 0, fixed_fee: 0 };
-            const blingOrderId = (order as unknown as { bling_order_id?: string }).bling_order_id;
-            const totalProducts = blingOrderId ? (blingOrdersTotalProducts[blingOrderId] ?? Number(order.total_amount ?? 0)) : Number(order.total_amount ?? 0);
-            return {
-              ...order,
-              order_id: order.id,
-              marketplace: marketplaceName,
-              commission_rate: rates.commission_rate,
-              fixed_fee: rates.fixed_fee,
+        // ── Compute current profit ────────────────────────────────────────
+        const totalProfit = currentOrders_
+          .filter((o) => itemsByOrder[o.id]?.length > 0)
+          .reduce((sum, o) => {
+            const marketplaceName = o.marketplace_id
+              ? (marketplaceMap[o.marketplace_id] ?? '')
+              : '';
+            const mpConfig = o.marketplace_id
+              ? marketplaceConfigMap[o.marketplace_id]
+              : undefined;
+            const blingOrderId = (o as unknown as { bling_order_id?: string }).bling_order_id;
+            const totalProducts = blingOrderId
+              ? (blingTotalProducts[blingOrderId] ?? Number(o.total_amount ?? 0))
+              : Number(o.total_amount ?? 0);
+
+            const input = {
+              order_id: o.id,
+              total_amount: Number(o.total_amount ?? 0),
               total_products: totalProducts,
-              discount_value: Number((order as unknown as { discount_value?: number }).discount_value ?? 0),
-              products: itemsByOrder[order.id] || []
+              discount_value: Number(o.discount_value ?? 0),
+              shipping_cost: Number(o.shipping_cost ?? 0),
+              other_expenses: Number(o.other_expenses ?? 0),
+              marketplace_commission: Number(o.marketplace_commission ?? 0),
+              is_free_sample: o.is_free_sample,
+              tiktok_reembolso_disabled: (
+                o as unknown as { tiktok_reembolso_disabled?: boolean }
+              ).tiktok_reembolso_disabled,
+              tiktok_retorno_liquido: (
+                o as unknown as { tiktok_retorno_liquido?: number | null }
+              ).tiktok_retorno_liquido,
+              marketplace: marketplaceName,
+              products: itemsByOrder[o.id] as {
+                quantity: number;
+                unit_cost: number;
+                supplier_fee_value: string;
+                supplier_fee_type: string;
+                supplier_gateway_fee_value: string;
+                supplier_gateway_fee_type: string;
+              }[],
             };
-          }) as OrderWithProducts[];
 
-        // Calcular lucro total
-        const totalProfit = processedCurrentOrders.reduce((sum, order) => {
-          const profit = calculateOrderProfit(order);
-          return sum + profit;
-        }, 0);
+            const { realProfit } = calcOrderProfit(input, mpConfig, affiliateByOrderId[o.id]);
+            return sum + realProfit;
+          }, 0);
 
-        // Buscar pedidos do período anterior para calcular lucro anterior
+        // ── Previous period orders ────────────────────────────────────────
         const { data: previousOrdersData, error: previousOrdersError } = await supabase
           .from('orders')
           .select(`
@@ -308,11 +294,14 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
             customer_id,
             lead_id,
             total_amount,
+            discount_value,
             marketplace_id,
             shipping_cost,
             other_expenses,
             marketplace_commission,
             is_free_sample,
+            tiktok_reembolso_disabled,
+            tiktok_retorno_liquido,
             order_date
           `)
           .eq('organization_id', organizationId)
@@ -322,12 +311,12 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
 
         if (previousOrdersError) throw previousOrdersError;
 
-        // Buscar itens dos pedidos anteriores
-        const previousOrderIds = (previousOrdersData || []).map(o => o.id);
+        const previousOrders_ = previousOrdersData ?? [];
+        const previousOrderIds = previousOrders_.map((o) => o.id);
         let previousTotalProfit = 0;
-        
+
         if (previousOrderIds.length > 0) {
-          const { data: previousOrderItems, error: previousItemsError } = await supabase
+          const { data: prevItemsRaw } = await supabase
             .from('order_items')
             .select(`
               order_id,
@@ -342,49 +331,65 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
             `)
             .in('order_id', previousOrderIds);
 
-          if (!previousItemsError) {
-            // Agrupar itens por pedido anterior
-            const previousItemsByOrder = (previousOrderItems || []).reduce((acc: Record<string, unknown[]>, item: Record<string, unknown>) => {
-              const orderId = item.order_id as string;
-              if (!acc[orderId]) acc[orderId] = [];
-              acc[orderId].push({
-                quantity: item.quantity,
-                unit_cost: item.unit_cost,
-                supplier_fee_value: (item.products as Record<string, unknown>)?.supplier_fee_value || '0',
-                supplier_fee_type: (item.products as Record<string, unknown>)?.supplier_fee_type || 'percent',
-                supplier_gateway_fee_value: (item.products as Record<string, unknown>)?.supplier_gateway_fee_value || '0',
-                supplier_gateway_fee_type: (item.products as Record<string, unknown>)?.supplier_gateway_fee_type || 'fixed'
-              });
-              return acc;
-            }, {});
+          const prevItemsByOrder = buildItemsByOrder(
+            (prevItemsRaw ?? []) as Record<string, unknown>[]
+          );
 
-            // Processar pedidos anteriores
-            const processedPreviousOrders = (previousOrdersData || [])
-              .filter(order => previousItemsByOrder[order.id]?.length > 0)
-              .map(order => {
-                const marketplaceName = order.marketplace_id ? marketplaceMap[order.marketplace_id] || '' : '';
-                const rates = order.marketplace_id ? marketplaceRatesMap[order.marketplace_id] ?? { commission_rate: 0, fixed_fee: 0 } : { commission_rate: 0, fixed_fee: 0 };
-                return {
-                  ...order,
-                  order_id: order.id,
-                  marketplace: marketplaceName,
-                  commission_rate: rates.commission_rate,
-                  fixed_fee: rates.fixed_fee,
-                  total_products: Number(order.total_amount ?? 0),
-                  discount_value: Number((order as unknown as { discount_value?: number }).discount_value ?? 0),
-                  products: previousItemsByOrder[order.id] || []
-                };
-              }) as OrderWithProducts[];
+          const prevAffiliateByOrderId: Record<string, boolean> = {};
+          const { data: prevAffRows } = await supabase
+            .from('order_affiliates')
+            .select('order_id')
+            .in('order_id', previousOrderIds);
+          (prevAffRows ?? []).forEach((r: { order_id: string }) => {
+            prevAffiliateByOrderId[r.order_id] = true;
+          });
 
-            // Calcular lucro total do período anterior
-            previousTotalProfit = processedPreviousOrders.reduce((sum, order) => {
-              const profit = calculateOrderProfit(order);
-              return sum + profit;
+          previousTotalProfit = previousOrders_
+            .filter((o) => prevItemsByOrder[o.id]?.length > 0)
+            .reduce((sum, o) => {
+              const marketplaceName = o.marketplace_id
+                ? (marketplaceMap[o.marketplace_id] ?? '')
+                : '';
+              const mpConfig = o.marketplace_id
+                ? marketplaceConfigMap[o.marketplace_id]
+                : undefined;
+
+              const input = {
+                order_id: o.id,
+                total_amount: Number(o.total_amount ?? 0),
+                total_products: Number(o.total_amount ?? 0),
+                discount_value: Number(o.discount_value ?? 0),
+                shipping_cost: Number(o.shipping_cost ?? 0),
+                other_expenses: Number(o.other_expenses ?? 0),
+                marketplace_commission: Number(o.marketplace_commission ?? 0),
+                is_free_sample: o.is_free_sample,
+                tiktok_reembolso_disabled: (
+                  o as unknown as { tiktok_reembolso_disabled?: boolean }
+                ).tiktok_reembolso_disabled,
+                tiktok_retorno_liquido: (
+                  o as unknown as { tiktok_retorno_liquido?: number | null }
+                ).tiktok_retorno_liquido,
+                marketplace: marketplaceName,
+                products: prevItemsByOrder[o.id] as {
+                  quantity: number;
+                  unit_cost: number;
+                  supplier_fee_value: string;
+                  supplier_fee_type: string;
+                  supplier_gateway_fee_value: string;
+                  supplier_gateway_fee_type: string;
+                }[],
+              };
+
+              const { realProfit } = calcOrderProfit(
+                input,
+                mpConfig,
+                prevAffiliateByOrderId[o.id]
+              );
+              return sum + realProfit;
             }, 0);
-          }
         }
 
-        // Buscar total de produtos do período atual
+        // ── Products count ────────────────────────────────────────────────
         const { count: productsCount, error: productsError } = await supabase
           .from('products')
           .select('*', { count: 'exact', head: true })
@@ -394,7 +399,6 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
 
         if (productsError) throw productsError;
 
-        // Buscar total de produtos do período anterior
         const { count: previousProductsCount, error: previousProductsError } = await supabase
           .from('products')
           .select('*', { count: 'exact', head: true })
@@ -404,39 +408,64 @@ export const useHeroStats = (organizationId: string, period: 'daily' | 'weekly' 
 
         if (previousProductsError) throw previousProductsError;
 
-        // Calcular clientes únicos — usa lead_id se customer_id for null
+        // ── Unique customers ──────────────────────────────────────────────
+        const processedCurrentOrders = currentOrders_.filter(
+          (o) => itemsByOrder[o.id]?.length > 0
+        );
         const currentUniqueCustomers = new Set(
           processedCurrentOrders
-            .map(order => (order as unknown as { lead_id?: string }).lead_id || order.customer_id)
+            .map(
+              (o) =>
+                (o as unknown as { lead_id?: string }).lead_id ||
+                (o as unknown as { customer_id?: string }).customer_id
+            )
             .filter(Boolean)
         );
         const previousUniqueCustomers = new Set(
-          (previousOrdersData || [])
-            .map(order => (order as unknown as { lead_id?: string }).lead_id || order.customer_id)
+          previousOrders_
+            .map(
+              (o) =>
+                (o as unknown as { lead_id?: string }).lead_id ||
+                (o as unknown as { customer_id?: string }).customer_id
+            )
             .filter(Boolean)
         );
 
         const totalOrders = processedCurrentOrders.length;
-        const previousTotalOrders = (previousOrdersData || []).length;
+        const previousTotalOrders = previousOrders_.length;
         const totalCustomers = currentUniqueCustomers.size;
         const previousTotalCustomers = previousUniqueCustomers.size;
 
-        // Calcular mudanças percentuais
-        const revenueChange = previousTotalProfit !== 0
-          ? ((totalProfit - previousTotalProfit) / Math.abs(previousTotalProfit)) * 100
-          : (totalProfit !== 0 ? 100 : 0);
-        
-        const ordersChange = previousTotalOrders > 0 
-          ? ((totalOrders - previousTotalOrders) / previousTotalOrders) * 100 
-          : (totalOrders > 0 ? 100 : 0);
-        
-        const customersChange = previousTotalCustomers > 0 
-          ? ((totalCustomers - previousTotalCustomers) / previousTotalCustomers) * 100 
-          : (totalCustomers > 0 ? 100 : 0);
-        
-        const productsChange = (previousProductsCount || 0) > 0
-          ? (((productsCount || 0) - (previousProductsCount || 0)) / (previousProductsCount || 0)) * 100
-          : ((productsCount || 0) > 0 ? 100 : 0);
+        // ── % changes ─────────────────────────────────────────────────────
+        const revenueChange =
+          previousTotalProfit !== 0
+            ? ((totalProfit - previousTotalProfit) / Math.abs(previousTotalProfit)) * 100
+            : totalProfit !== 0
+            ? 100
+            : 0;
+
+        const ordersChange =
+          previousTotalOrders > 0
+            ? ((totalOrders - previousTotalOrders) / previousTotalOrders) * 100
+            : totalOrders > 0
+            ? 100
+            : 0;
+
+        const customersChange =
+          previousTotalCustomers > 0
+            ? ((totalCustomers - previousTotalCustomers) / previousTotalCustomers) * 100
+            : totalCustomers > 0
+            ? 100
+            : 0;
+
+        const productsChange =
+          (previousProductsCount || 0) > 0
+            ? (((productsCount || 0) - (previousProductsCount || 0)) /
+                (previousProductsCount || 0)) *
+              100
+            : (productsCount || 0) > 0
+            ? 100
+            : 0;
 
         setStats({
           totalRevenue: totalProfit,

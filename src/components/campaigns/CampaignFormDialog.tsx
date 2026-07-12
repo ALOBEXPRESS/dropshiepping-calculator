@@ -107,6 +107,7 @@ const fromExisting = (c: CampaignWithRelations): CampaignFormPayload => {
     products: c.campaign_products.map((cp) => ({
       product_id: cp.product_id,
       marketing_cost_override: cp.marketing_cost_override,
+      linked_order_id: cp.linked_order_id ?? null,
     })),
   };
 };

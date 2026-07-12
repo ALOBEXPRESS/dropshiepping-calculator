@@ -70,6 +70,7 @@ export function useCampaigns(organizationId: string): UseCampaignsReturn {
             campaign_id: campaignId,
             product_id: p.product_id,
             marketing_cost_override: p.marketing_cost_override,
+            linked_order_id: p.linked_order_id ?? null,
           }))
         );
       if (productsError) throw new Error(productsError.message);
@@ -118,6 +119,7 @@ export function useCampaigns(organizationId: string): UseCampaignsReturn {
             campaign_id: id,
             product_id: p.product_id,
             marketing_cost_override: p.marketing_cost_override,
+            linked_order_id: p.linked_order_id ?? null,
           }))
         );
       if (productsError) throw new Error(productsError.message);
