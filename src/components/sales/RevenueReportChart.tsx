@@ -1963,8 +1963,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       events: {
         legendClick: (_chartCtx, seriesIndex) => {
           setActiveSeriesFilter((prev) => {
-            // Toggle: if already filtering this series → show both; else filter to this
-            return prev === seriesIndex ? null : seriesIndex;
+            return prev === seriesIndex ? null : (seriesIndex ?? null);
           });
         },
       },
