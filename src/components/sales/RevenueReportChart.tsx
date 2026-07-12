@@ -372,8 +372,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [savingRetornoLiquido, setSavingRetornoLiquido] = useState(false);
   const [manualOrderDate, setManualOrderDate] = useState<string>('');
   const [savingOrderDate, setSavingOrderDate] = useState(false);
-  // null = both series visible; 0 = only lucro; 1 = only marketing
-  const [activeSeriesFilter, setActiveSeriesFilter] = useState<number | null>(null);
   const chartRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef(data);
   dataRef.current = data;
@@ -1903,15 +1901,38 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     }, 0);
   }, [yearlyData, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig]);
 
-  // Marketing cost totals
-  const currentPeriodMarketingCost = currentPeriodItem
-    ? Number((currentPeriodItem as { total_marketing_cost?: number }).total_marketing_cost ?? 0)
-    : 0;
+  const totalMarketingCost = visibleData.reduce((sum, periodData) => {
+    const periodMarketingCost = (periodData.orders_data ?? []).reduce((orderSum, order) => {
+      const orderId = (order as { order_id?: string }).order_id;
+      if (!orderId) return orderSum;
 
-  const allDataTotalMarketingCost = useMemo(() => {
-    return recalculatedData.reduce((sum, item) =>
-      sum + Number((item as { total_marketing_cost?: number }).total_marketing_cost ?? 0), 0);
-  }, [recalculatedData]);
+      return orderSum + Number(marketingCostByProductId[`order:${orderId}`] ?? 0);
+    }, 0);
+
+    return sum + periodMarketingCost;
+  }, 0);
+
+  const totalMarketingCostAllTime = yearlyData.reduce((sum, periodData) => {
+    const periodMarketingCost = (periodData.orders_data ?? []).reduce((orderSum, order) => {
+      const orderId = (order as { order_id?: string }).order_id;
+      if (!orderId) return orderSum;
+
+      return orderSum + Number(marketingCostByProductId[`order:${orderId}`] ?? 0);
+    }, 0);
+
+    return sum + periodMarketingCost;
+  }, 0);
+
+  const marketingCostSeriesData = visibleData.map((periodData) => {
+    const periodMarketingCost = (periodData.orders_data ?? []).reduce((sum, order) => {
+      const orderId = (order as { order_id?: string }).order_id;
+      if (!orderId) return sum;
+
+      return sum + Number(marketingCostByProductId[`order:${orderId}`] ?? 0);
+    }, 0);
+
+    return -Math.abs(periodMarketingCost);
+  });
 
   // Label dinâmico para "Custo {período atual}"
   const costLabel = (() => {
@@ -1960,13 +1981,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       toolbar: { show: false },
       zoom: { enabled: false },
       fontFamily: 'inherit',
-      events: {
-        legendClick: (_chartCtx, seriesIndex) => {
-          setActiveSeriesFilter((prev) => {
-            return prev === seriesIndex ? null : (seriesIndex ?? null);
-          });
-        },
-      },
       animations: {
         enabled: (period === 'monthly' || period === 'yearly') && (typeof window === 'undefined'
           ? true
@@ -1980,72 +1994,27 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     stroke: {
       curve: 'smooth',
       width: [2, 2],
-      colors: (() => {
-        const vals = visibleData.map((_, idx) => useAccumulated
-          ? (cumulativeProfits[windowOffset + idx] ?? 0)
-          : Number(visibleData[idx]?.total_profit ?? 0)
-        );
-        const lastVal = vals[vals.length - 1] ?? 0;
-        const lucroColor = lastVal >= 0 ? '#22c55e' : '#ef4444';
-        if (activeSeriesFilter === 0) return [lucroColor];
-        if (activeSeriesFilter === 1) return ['#f97316'];
-        return [lucroColor, '#f97316']; // lucro + marketing cost (orange)
-      })(),
     },
-    markers: {
-      size: 6,
-      strokeColors: '#fff',
-      strokeWidth: 1,
-      hover: { size: 8 },
-      discrete: (() => {
-        const vals = visibleData.map((_, idx) => useAccumulated
-          ? (cumulativeProfits[windowOffset + idx] ?? 0)
-          : Number(visibleData[idx]?.total_profit ?? 0)
-        );
-        return vals.map((v, i) => ({
-          seriesIndex: 0,
-          dataPointIndex: i,
-          fillColor: v >= 0 ? '#22c55e' : '#ef4444',
-          strokeColor: '#fff',
-          size: 6,
-        }));
-      })(),
-    },
+    colors: ['#22c55e', '#ef4444'],
     fill: {
       type: 'gradient',
       gradient: {
-        shadeIntensity: 0,
-        opacityFrom: 0.5,
+        shadeIntensity: 0.4,
+        opacityFrom: 0.45,
         opacityTo: 0.05,
-        colorStops: (() => {
-          const vals = visibleData.map((_, idx) => cumulativeProfits[windowOffset + idx] ?? 0);
-          const nonAccumVals = visibleData.map(item => Number(item.total_profit ?? 0));
-          const plotVals = useAccumulated ? vals : nonAccumVals;
-          const minVal = Math.min(...plotVals, 0);
-          const maxVal = Math.max(...plotVals, 0);
-          const range = maxVal - minVal;
-          // Zero position as percentage from top (maxVal at 0%, minVal at 100%)
-          const zeroOffset = range > 0 ? Math.round(((maxVal - 0) / range) * 100) : 50;
-          const clampedZero = Math.max(0, Math.min(100, zeroOffset));
-          return [
-            { offset: 0, color: '#22c55e', opacity: 0.5 },           // top = green
-            { offset: clampedZero, color: '#22c55e', opacity: 0.1 },  // zero line
-            { offset: clampedZero, color: '#ef4444', opacity: 0.1 },  // zero line (red starts)
-            { offset: 100, color: '#ef4444', opacity: 0.05 },         // bottom = red
-          ];
-        })(),
+        stops: [0, 90, 100],
+      },
+      colors: ['#22c55e', '#ef4444'],
+    },
+    markers: {
+      size: 4,
+      strokeWidth: 2,
+      colors: ['#22c55e', '#ef4444'],
+      strokeColors: ['#86efac', '#fca5a5'],
+      hover: {
+        size: 6,
       },
     },
-    colors: (() => {
-      const vals = visibleData.map((_, idx) => cumulativeProfits[windowOffset + idx] ?? 0);
-      const nonAccumVals = visibleData.map(item => Number(item.total_profit ?? 0));
-      const plotVals = useAccumulated ? vals : nonAccumVals;
-      const lastVal = plotVals[plotVals.length - 1] ?? 0;
-      const lucroColor = lastVal >= 0 ? '#22c55e' : '#ef4444';
-      if (activeSeriesFilter === 0) return [lucroColor];
-      if (activeSeriesFilter === 1) return ['#f97316'];
-      return [lucroColor, '#f97316']; // lucro + marketing cost
-    })(),
     xaxis: {
       categories: visibleData.map((item) => item.period_label),
       labels: {
@@ -2057,15 +2026,56 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       axisBorder: { show: false },
       axisTicks: { show: false },
     },
-    yaxis: {
-      labels: {
-        style: {
-          colors: '#6b7280',
-          fontSize: '12px',
+    yaxis: (() => {
+      const AXIS_STEP = 10;
+
+      const profitValues = visibleData.map((periodData, index) => {
+        if (useAccumulated) {
+          return cumulativeProfits[windowOffset + index] ?? 0;
+        }
+
+        return Number(periodData.total_profit ?? 0);
+      });
+
+      const marketingValues = marketingCostSeriesData;
+      const allValues = [0, ...profitValues, ...marketingValues];
+
+      const rawMin = Math.min(...allValues);
+      const rawMax = Math.max(...allValues);
+
+      const minPadding = Math.max(Math.abs(rawMin) * 0.25, AXIS_STEP);
+      const maxPadding = Math.max(Math.abs(rawMax) * 0.2, AXIS_STEP);
+
+      const paddedMin = rawMin - minPadding;
+      const paddedMax = rawMax + maxPadding;
+
+      // Escolhe um passo múltiplo de 10 (10, 20, 30...) para que o eixo Y
+      // avance sempre em incrementos de 10, tanto para valores positivos
+      // quanto negativos, limitando a quantidade de marcações exibidas.
+      const MAX_TICKS = 15;
+      let step = AXIS_STEP;
+      while ((paddedMax - paddedMin) / step > MAX_TICKS) {
+        step += AXIS_STEP;
+      }
+
+      const axisMin = Math.floor(paddedMin / step) * step;
+      const axisMax = Math.ceil(paddedMax / step) * step;
+      const tickAmount = Math.max(1, Math.round((axisMax - axisMin) / step));
+
+      return {
+        labels: {
+          style: {
+            colors: '#71717a',
+            fontSize: '11px',
+          },
+          formatter: (value: number) => formatCurrency(Number(value)),
         },
-        formatter: (value) => formatCurrency(value),
-      },
-    },
+        min: axisMin,
+        max: axisMax,
+        tickAmount,
+        forceNiceScale: false,
+      };
+    })(),
     grid: {
       borderColor: '#e5e7eb',
       strokeDashArray: 4,
@@ -2302,36 +2312,30 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         colors: '#6b7280',
       },
       markers: {
-        fillColors: ['#22c55e', '#f97316'],
+        fillColors: ['#22c55e', '#ef4444'],
       },
       onItemClick: {
-        toggleDataSeries: false, // disable default toggle — we handle it via legendClick event
+        toggleDataSeries: true,
       },
     },
   };
 
-  const allChartSeries = [
+  const chartSeries = [
     {
       name: useAccumulated ? 'Lucro Acumulado' : 'Lucro',
-      data: visibleData.map((item, idx) => {
+      data: visibleData.map((periodData, index) => {
         if (useAccumulated) {
-          return cumulativeProfits[windowOffset + idx] ?? 0;
+          return cumulativeProfits[windowOffset + index] ?? 0;
         }
-        return Number(item.total_profit ?? 0);
+
+        return Number(periodData.total_profit ?? 0);
       }),
     },
     {
       name: 'Custo de Marketing',
-      data: visibleData.map((item) => {
-        return Number((item as { total_marketing_cost?: number }).total_marketing_cost ?? 0);
-      }),
+      data: marketingCostSeriesData,
     },
   ];
-
-  // Filter series based on legend click: null=both, 0=lucro only, 1=marketing only
-  const chartSeries = activeSeriesFilter === null
-    ? allChartSeries
-    : [allChartSeries[activeSeriesFilter]];
 
   if (loading) {
     return (
@@ -3654,16 +3658,16 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               <p className="text-xs text-gray-500 dark:text-gray-400">Custo Total</p>
               <p className="text-xl font-bold text-red-600">{formatCurrency(allDataTotalCost)}</p>
             </div>
-            {currentPeriodMarketingCost > 0 && (
+            {totalMarketingCost > 0 && (
               <div>
-                <p className="text-xs text-orange-500/80">{`Custo Marketing ${periodLabel.replace('Lucro ', '')}`}</p>
-                <p className="text-xl font-bold text-orange-500">{formatCurrency(currentPeriodMarketingCost)}</p>
+                <p className="text-xs text-white">{`Marketing ${periodLabel.replace('Lucro ', '')}`}</p>
+                <p className="text-xl font-bold text-orange-500">{formatCurrency(totalMarketingCost)}</p>
               </div>
             )}
-            {allDataTotalMarketingCost > 0 && (
+            {totalMarketingCostAllTime > 0 && (
               <div>
-                <p className="text-xs text-orange-500/80">Custo Marketing Total</p>
-                <p className="text-xl font-bold text-orange-500">{formatCurrency(allDataTotalMarketingCost)}</p>
+                <p className="text-xs text-white">Marketing Total</p>
+                <p className="text-xl font-bold text-orange-500">{formatCurrency(totalMarketingCostAllTime)}</p>
               </div>
             )}
           </div>

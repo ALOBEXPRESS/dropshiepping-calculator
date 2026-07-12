@@ -543,3 +543,159 @@ npx vitest run
 ---
 **Desenvolvido por:** Jonatan Renan
 **Alob Express © todos os direitos reservados**
+
+```javascript
+// ... existing code ...
+
+  const totalMarketingCost = visibleData.reduce((sum, periodData) => {
+    const periodMarketingCost = (periodData.orders_data ?? []).reduce((orderSum, order) => {
+      const orderId = (order as { order_id?: string }).order_id;
+      if (!orderId) return orderSum;
+
+      return orderSum + Number(marketingCostByProductId[`order:${orderId}`] ?? 0);
+    }, 0);
+
+    return sum + periodMarketingCost;
+  }, 0);
+
+  const totalMarketingCostAllTime = yearlyData.reduce((sum, periodData) => {
+    const periodMarketingCost = (periodData.orders_data ?? []).reduce((orderSum, order) => {
+      const orderId = (order as { order_id?: string }).order_id;
+      if (!orderId) return orderSum;
+
+      return orderSum + Number(marketingCostByProductId[`order:${orderId}`] ?? 0);
+    }, 0);
+
+    return sum + periodMarketingCost;
+  }, 0);
+
+  const marketingCostSeriesData = visibleData.map((periodData) => {
+    const periodMarketingCost = (periodData.orders_data ?? []).reduce((sum, order) => {
+      const orderId = (order as { order_id?: string }).order_id;
+      if (!orderId) return sum;
+
+      return sum + Number(marketingCostByProductId[`order:${orderId}`] ?? 0);
+    }, 0);
+
+    return -Math.abs(periodMarketingCost);
+  });
+
+// ... existing code ...
+
+  const chartOptions: ApexOptions = {
+    chart: {
+      type: 'area',
+      toolbar: { show: false },
+      zoom: { enabled: false },
+      fontFamily: 'inherit',
+
+// ... existing code ...
+
+    },
+    stroke: {
+      curve: 'smooth',
+      width: [2, 2],
+    },
+    colors: ['#22c55e', '#ef4444'],
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 0.4,
+        opacityFrom: 0.45,
+        opacityTo: 0.05,
+        stops: [0, 90, 100],
+      },
+      colors: ['#22c55e', '#ef4444'],
+    },
+    markers: {
+      size: 4,
+      strokeWidth: 2,
+      colors: ['#22c55e', '#ef4444'],
+      strokeColors: ['#86efac', '#fca5a5'],
+      hover: {
+        size: 6,
+      },
+    },
+
+// ... existing code ...
+
+    yaxis: {
+      labels: {
+        style: {
+          colors: '#71717a',
+          fontSize: '11px',
+        },
+        formatter: (value) => formatCurrency(Number(value)),
+      },
+      min: (() => {
+        const profitValues = visibleData.map((periodData, index) => {
+          if (useAccumulated) {
+            return cumulativeProfits[windowOffset + index] ?? 0;
+          }
+
+          return Number(periodData.total_profit ?? 0);
+        });
+
+        const marketingValues = marketingCostSeriesData;
+        const minValue = Math.min(0, ...profitValues, ...marketingValues);
+        const padding = Math.max(Math.abs(minValue) * 0.25, 10);
+
+        return minValue - padding;
+      })(),
+      max: (() => {
+        const profitValues = visibleData.map((periodData, index) => {
+          if (useAccumulated) {
+            return cumulativeProfits[windowOffset + index] ?? 0;
+          }
+
+          return Number(periodData.total_profit ?? 0);
+        });
+
+        const maxValue = Math.max(0, ...profitValues);
+        const padding = Math.max(Math.abs(maxValue) * 0.2, 10);
+
+        return maxValue + padding;
+      })(),
+    },
+
+// ... existing code ...
+
+  const chartSeries = activeSeriesFilter === null
+    ? [
+      {
+        name: useAccumulated ? 'Lucro Acumulado' : 'Lucro',
+        data: visibleData.map((periodData, index) => {
+          if (useAccumulated) {
+            return cumulativeProfits[windowOffset + index] ?? 0;
+          }
+
+          return Number(periodData.total_profit ?? 0);
+        }),
+      },
+      {
+        name: 'Custo de Marketing',
+        data: marketingCostSeriesData,
+      },
+    ]
+    : activeSeriesFilter === 0
+      ? [
+        {
+          name: useAccumulated ? 'Lucro Acumulado' : 'Lucro',
+          data: visibleData.map((periodData, index) => {
+            if (useAccumulated) {
+              return cumulativeProfits[windowOffset + index] ?? 0;
+            }
+
+            return Number(periodData.total_profit ?? 0);
+          }),
+        },
+      ]
+      : [
+        {
+          name: 'Custo de Marketing',
+          data: marketingCostSeriesData,
+        },
+      ];
+
+// ... existing code ...
+```

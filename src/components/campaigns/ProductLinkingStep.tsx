@@ -197,17 +197,28 @@ export const ProductLinkingStep: React.FC<ProductLinkingStepProps> = ({
     if (organizationId) fetch();
   }, [organizationId]);
 
-  const filtered = useMemo(() => {
-    if (!search.trim()) return products;
-    const q = search.toLowerCase();
-    return products.filter(
-      (p) => p.name.toLowerCase().includes(q) || (p.sku ?? '').toLowerCase().includes(q)
-    );
-  }, [products, search]);
-
-  const selectedMap = new Map(
-    selectedProducts.map((p) => [p.product_id, p as ProductLinkEntry])
+  const selectedMap = useMemo(
+    () => new Map(selectedProducts.map((p) => [p.product_id, p as ProductLinkEntry])),
+    [selectedProducts]
   );
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const base = q
+      ? products.filter(
+          (p) => p.name.toLowerCase().includes(q) || (p.sku ?? '').toLowerCase().includes(q)
+        )
+      : products;
+
+    // Mantém os produtos já vinculados à campanha no topo da lista,
+    // para que o usuário os veja imediatamente ao abrir a etapa de edição.
+    return [...base].sort((a, b) => {
+      const aSelected = selectedMap.has(a.id);
+      const bSelected = selectedMap.has(b.id);
+      if (aSelected === bSelected) return 0;
+      return aSelected ? -1 : 1;
+    });
+  }, [products, search, selectedMap]);
 
   const toggle = (productId: string, checked: boolean) => {
     if (checked) {

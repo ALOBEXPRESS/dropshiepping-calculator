@@ -167,6 +167,13 @@ export const CampaignFormDialog: React.FC<CampaignFormDialogProps> = ({
 
   const handleBack = () => setStep((s) => Math.max(s - 1, 1));
 
+  const handleStepClick = (n: number) => {
+    if (n === step) return;
+    // Ao avançar a partir da etapa 1, valida os campos obrigatórios antes de permitir o salto.
+    if (n > step && step === 1 && !validateStep1()) return;
+    setStep(n);
+  };
+
   const handleSave = async () => {
     if (!validateStep1()) { setStep(1); return; }
     setSaving(true);
@@ -205,7 +212,11 @@ export const CampaignFormDialog: React.FC<CampaignFormDialogProps> = ({
               const done = step > n;
               return (
                 <React.Fragment key={n}>
-                  <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleStepClick(n)}
+                    className="flex items-center gap-1.5 cursor-pointer"
+                  >
                     <span
                       className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center flex-shrink-0 ${
                         active
@@ -220,7 +231,7 @@ export const CampaignFormDialog: React.FC<CampaignFormDialogProps> = ({
                     <span className={`text-xs hidden sm:block ${active ? 'text-white font-medium' : 'text-zinc-500'}`}>
                       {label}
                     </span>
-                  </div>
+                  </button>
                   {i < STEPS.length - 1 && (
                     <div className={`flex-1 h-px ${done ? 'bg-green-600' : 'bg-zinc-700'}`} />
                   )}

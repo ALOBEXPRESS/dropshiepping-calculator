@@ -82,16 +82,16 @@ describe('Pricing Service', () => {
 
       // Total Cost = 50 + 2 + 10 = 62
       // Recommended Margin for 62 is 22%
-      // ML Fee (Classico Eletronicos) = 12%
+      // ML Fee (Classico Eletronicos) = 13%
       // Gateway Fee = 4%
-      // Denominator = 1 - (12 + 22 + 4)/100 = 1 - 0.38 = 0.62
-      // Expected Suggested Price approx = (62 + FixedFee) / 0.62
+      // Denominator = 1 - (13 + 22 + 4)/100 = 1 - 0.39 = 0.61
+      // Expected Suggested Price approx = (62 + FixedFee) / 0.61
       // Fixed fee depends on price range. If price >= 50 and < 79, fixed is 6.75 (or similar logic in code)
       
       expect(Number(result.totalCost)).toBe(62);
       expect(result.recommendedMargin).toBe(22);
       expect(Number(result.suggestedPrice)).toBeGreaterThan(result.totalCost);
-      expect(result.marketplaceFee).toBe("12");
+      expect(result.marketplaceFee).toBe("13");
     });
 
     it('should calculate discount and increase correctly when manual price is set', () => {

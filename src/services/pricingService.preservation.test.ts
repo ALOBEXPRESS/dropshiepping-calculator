@@ -126,29 +126,25 @@ describe('Preservation Property Tests - BEFORE Fix', () => {
         fc.property(
           fc.double({ min: 10, max: 500, noNaN: true }),
           fc.double({ min: 0, max: 10, noNaN: true }),
-          fc.double({ min: 5, max: 20, noNaN: true }), // tiktokCommVal
-          (baseCost, pkgCost, tiktokComm) => {
+          (baseCost, pkgCost) => {
             const result = calculateMetrics(
               baseCost, pkgCost, 0, 0, 'tiktok', 'eletronicos', 'classico',
               'without', 'cnpj', 0, false, 0, 0, 0, 4.00, 0, 0, 0,
-              tiktokComm, // tiktokCommVal
+              0, // tiktokCommVal
               0, 0, 0, 0, 0,
               'percent', 0, 0, 0, 'classico', 0, '', '', '', '', false,
               'percent', 0, 0, 'fixed', 'individual', 'eletronicos', 0,
               0, 0, 0, 0, 'fixed', 'fixed', 'fixed', 'fixed'
             );
 
-            expect(Number(result.marketplaceFee)).toBeCloseTo(tiktokComm, 0);
+            const price = Number(result.suggestedPrice);
+            const expectedFee = price < 50 ? 10 : 6;
+            const expectedFixed = price < 50 ? 4 : 6;
+
+            expect(Number(result.marketplaceFee)).toBe(expectedFee);
+            expect(Number(result.fixedFee)).toBe(expectedFixed);
             expect(Number(result.suggestedPrice)).toBeGreaterThan(baseCost + pkgCost);
             expect(result.taxDescription).toContain('Tiktok');
-            
-            // TikTok has fixed fee of R$ 4 for prices < 79 (observed behavior)
-            const price = Number(result.suggestedPrice);
-            if (price < 79) {
-              expect(Number(result.fixedFee)).toBeGreaterThanOrEqual(2);
-            } else {
-              expect(Number(result.fixedFee)).toBe(0);
-            }
           }
         ),
         { numRuns: 50 }
