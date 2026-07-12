@@ -372,6 +372,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [savingRetornoLiquido, setSavingRetornoLiquido] = useState(false);
   const [manualOrderDate, setManualOrderDate] = useState<string>('');
   const [savingOrderDate, setSavingOrderDate] = useState(false);
+  // null = both series visible; 0 = only lucro; 1 = only marketing
+  const [activeSeriesFilter, setActiveSeriesFilter] = useState<number | null>(null);
   const chartRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef(data);
   dataRef.current = data;
@@ -1958,6 +1960,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       toolbar: { show: false },
       zoom: { enabled: false },
       fontFamily: 'inherit',
+      events: {
+        legendClick: (_chartCtx, seriesIndex) => {
+          setActiveSeriesFilter((prev) => {
+            // Toggle: if already filtering this series → show both; else filter to this
+            return prev === seriesIndex ? null : seriesIndex;
+          });
+        },
+      },
       animations: {
         enabled: (period === 'monthly' || period === 'yearly') && (typeof window === 'undefined'
           ? true
@@ -1977,7 +1987,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           : Number(visibleData[idx]?.total_profit ?? 0)
         );
         const lastVal = vals[vals.length - 1] ?? 0;
-        return [lastVal >= 0 ? '#22c55e' : '#ef4444', '#f97316']; // lucro + custo marketing (orange)
+        const lucroColor = lastVal >= 0 ? '#22c55e' : '#ef4444';
+        if (activeSeriesFilter === 0) return [lucroColor];
+        if (activeSeriesFilter === 1) return ['#f97316'];
+        return [lucroColor, '#f97316']; // lucro + marketing cost (orange)
       })(),
     },
     markers: {
@@ -2029,7 +2042,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       const nonAccumVals = visibleData.map(item => Number(item.total_profit ?? 0));
       const plotVals = useAccumulated ? vals : nonAccumVals;
       const lastVal = plotVals[plotVals.length - 1] ?? 0;
-      return [lastVal >= 0 ? '#22c55e' : '#ef4444', '#f97316']; // lucro + marketing cost
+      const lucroColor = lastVal >= 0 ? '#22c55e' : '#ef4444';
+      if (activeSeriesFilter === 0) return [lucroColor];
+      if (activeSeriesFilter === 1) return ['#f97316'];
+      return [lucroColor, '#f97316']; // lucro + marketing cost
     })(),
     xaxis: {
       categories: visibleData.map((item) => item.period_label),
@@ -2287,12 +2303,15 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         colors: '#6b7280',
       },
       markers: {
-        fillColors: ['#8b5cf6'],
+        fillColors: ['#22c55e', '#f97316'],
+      },
+      onItemClick: {
+        toggleDataSeries: false, // disable default toggle — we handle it via legendClick event
       },
     },
   };
 
-  const chartSeries = [
+  const allChartSeries = [
     {
       name: useAccumulated ? 'Lucro Acumulado' : 'Lucro',
       data: visibleData.map((item, idx) => {
@@ -2309,6 +2328,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       }),
     },
   ];
+
+  // Filter series based on legend click: null=both, 0=lucro only, 1=marketing only
+  const chartSeries = activeSeriesFilter === null
+    ? allChartSeries
+    : [allChartSeries[activeSeriesFilter]];
 
   if (loading) {
     return (
