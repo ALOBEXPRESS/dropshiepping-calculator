@@ -3251,9 +3251,39 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                 {hasRetornoLiquido && <span className="text-[10px] text-teal-600 ml-1 no-underline">(retorno líquido ativo)</span>}
                               </label>
                             </div>
-                            <span className={`text-sm font-semibold tabular-nums ${hasRetornoLiquido ? 'text-zinc-600 line-through' : tiktokReembolsoEnabled ? 'text-emerald-400' : 'text-zinc-600 line-through'}`}>
-                              +{formatCurrency(tiktokReembolsoValue)}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-sm font-semibold tabular-nums ${hasRetornoLiquido ? 'text-zinc-600 line-through' : tiktokReembolsoEnabled ? 'text-emerald-400' : 'text-zinc-600 line-through'}`}>
+                                +{formatCurrency(tiktokReembolsoValue)}
+                              </span>
+                              {!hasRetornoLiquido && tiktokReembolsoEnabled !== !(selectedOrder?.tiktok_reembolso_disabled === true) && (
+                                <button
+                                  disabled={savingReembolso}
+                                  onClick={async () => {
+                                    if (!selectedOrder?.bling_order_id) return;
+                                    setSavingReembolso(true);
+                                    try {
+                                      await supabase
+                                        .from('bling_orders')
+                                        .update({ tiktok_reembolso_disabled: !tiktokReembolsoEnabled })
+                                        .eq('id', selectedOrder.bling_order_id);
+                                      setSelectedOrder({ ...selectedOrder, tiktok_reembolso_disabled: !tiktokReembolsoEnabled });
+                                      refetch();
+                                      refetchYearly();
+                                    } finally {
+                                      setSavingReembolso(false);
+                                    }
+                                  }}
+                                  className="flex items-center gap-1 bg-emerald-700/80 hover:bg-emerald-600 disabled:opacity-50 text-white text-[10px] font-semibold px-2 py-0.5 rounded transition-colors"
+                                >
+                                  {savingReembolso ? (
+                                    <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                                  ) : (
+                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                                  )}
+                                  Salvar
+                                </button>
+                              )}
+                            </div>
                           </div>
                         )}
                         {/* Acréscimo manual */}
