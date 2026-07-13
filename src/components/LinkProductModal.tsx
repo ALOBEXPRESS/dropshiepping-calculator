@@ -194,8 +194,8 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
             price: productPrice > 0 ? productPrice : unitValue,
             cost_price: productCostPrice,
             image_url: productImage,
-            marketplace: 'TikTok',
-            marketplace_id: 'c736e8ae-b765-44b6-b23f-468639bd8c13',
+            marketplace: order.marketplace_name ?? 'TikTok',
+            marketplace_id: order.marketplace_id ?? 'f01bc7f2-3c6e-4044-b09a-b600476a308a',
             sales_channel_id: '18cc394e-edd5-4a88-b412-f7170acfe9ad',
           })
           .select('id')
@@ -211,6 +211,13 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
           .update({ product_id: productId })
           .eq('order_id', blingOrder.id)
           .is('product_id', null); // only update items where product_id was cleared
+      }
+
+      // 5. Rematch order items to populate order_items with correct unit_cost
+      if (organizationId) {
+        await supabase.rpc('rematch_bling_order_items_products', {
+          p_organization_id: organizationId,
+        });
       }
 
       toast.success(`Produto "${productName}" vinculado ao Pedido #${order.order_number}`);
