@@ -68,6 +68,8 @@ type ProductRow = {
   supplier_fee_value?: number | null;
   supplier_gateway_fee_type?: string | null;
   supplier_gateway_fee_value?: number | null;
+  supplier_gateway_fee_percent?: number | null;
+  supplier_gateway_fee_fixed?: number | null;
   video_generation_llm?: string | null;
   is_new_product?: string | null;
   defective_product?: string | null;
@@ -277,6 +279,8 @@ type ProductPayload = {
   supplier_fee_value?: number | null;
   supplier_gateway_fee_type?: string | null;
   supplier_gateway_fee_value?: number | null;
+  supplier_gateway_fee_percent?: number | null;
+  supplier_gateway_fee_fixed?: number | null;
   video_generation_llm?: string | null;
   is_new_product?: string | null;
   defective_product?: string | null;
@@ -1499,6 +1503,7 @@ export const ProductService = {
   },
 
   async create(product: Omit<ProductItem, 'id'>): Promise<ProductItem> {
+    const _sgfv = (product.supplierGatewayFeeValue !== undefined && product.supplierGatewayFeeValue !== null && product.supplierGatewayFeeValue !== "") ? Number(product.supplierGatewayFeeValue) : 0;
     const insertPayload: ProductPayload = {
       organization_id: product.organizationId,
       name: product.name,
@@ -1554,6 +1559,8 @@ export const ProductService = {
       supplier_fee_value: (product.supplierFeeValue !== undefined && product.supplierFeeValue !== null && product.supplierFeeValue !== "") ? Number(product.supplierFeeValue) : null,
       supplier_gateway_fee_type: product.supplierGatewayFeeType ?? null,
       supplier_gateway_fee_value: (product.supplierGatewayFeeValue !== undefined && product.supplierGatewayFeeValue !== null && product.supplierGatewayFeeValue !== "") ? Number(product.supplierGatewayFeeValue) : null,
+      supplier_gateway_fee_percent: product.supplierGatewayFeeType === 'percent' ? _sgfv : 0,
+      supplier_gateway_fee_fixed: product.supplierGatewayFeeType === 'fixed' ? _sgfv : 0,
       video_generation_llm: product.videoGenerationLlm,
       organic_channels: product.organicChannels ?? null,
       organic_channel_links: product.organicChannelLinks ?? null,
@@ -1751,6 +1758,7 @@ export const ProductService = {
   },
 
   async update(product: ProductItem): Promise<ProductItem> {
+    const _sgfv = (product.supplierGatewayFeeValue !== undefined && product.supplierGatewayFeeValue !== null && product.supplierGatewayFeeValue !== "") ? Number(product.supplierGatewayFeeValue) : 0;
     const updatePayload: ProductPayload = {
       name: product.name,
       sku: product.sku,
@@ -1804,6 +1812,8 @@ export const ProductService = {
       supplier_fee_value: (product.supplierFeeValue !== undefined && product.supplierFeeValue !== null && product.supplierFeeValue !== "") ? Number(product.supplierFeeValue) : null,
       supplier_gateway_fee_type: product.supplierGatewayFeeType ?? null,
       supplier_gateway_fee_value: (product.supplierGatewayFeeValue !== undefined && product.supplierGatewayFeeValue !== null && product.supplierGatewayFeeValue !== "") ? Number(product.supplierGatewayFeeValue) : null,
+      supplier_gateway_fee_percent: product.supplierGatewayFeeType === 'percent' ? _sgfv : 0,
+      supplier_gateway_fee_fixed: product.supplierGatewayFeeType === 'fixed' ? _sgfv : 0,
       video_generation_llm: product.videoGenerationLlm,
       organic_channels: product.organicChannels ?? null,
       organic_channel_links: product.organicChannelLinks ?? null,
