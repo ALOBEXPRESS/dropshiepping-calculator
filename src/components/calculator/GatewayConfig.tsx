@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { handleCurrencyChange } from "../../utils/currency";
+import pagbankIcon from '@/imgs/pagbank-logo.svg';
 
 interface GatewayConfigProps {
   gatewayBank: string;
@@ -40,7 +41,8 @@ export const GatewayConfig: React.FC<GatewayConfigProps> = ({
     picpay: { src: 'https://cdn.simpleicons.org/picpay/11C76F', alt: 'PicPay' },
     paypal: { src: 'https://cdn.simpleicons.org/paypal/003087', alt: 'PayPal' },
     stripe: { src: 'https://cdn.simpleicons.org/stripe/635BFF', alt: 'Stripe' },
-    bradesco: { src: 'https://commons.wikimedia.org/wiki/Special:FilePath/Banco_Bradesco_logo.svg', alt: 'Bradesco' }
+    bradesco: { src: 'https://commons.wikimedia.org/wiki/Special:FilePath/Banco_Bradesco_logo.svg', alt: 'Bradesco' },
+    pagbank: { src: pagbankIcon, alt: 'PagBank', crop: true }
   };
   const bankButtons = [
     { key: 'mercadopago', label: 'Mercado Pago', active: 'bg-black hover:bg-black ring-2 ring-black ring-offset-2' },
@@ -48,7 +50,8 @@ export const GatewayConfig: React.FC<GatewayConfigProps> = ({
     { key: 'picpay', label: 'PicPay', active: 'bg-black hover:bg-black ring-2 ring-black ring-offset-2', testId: 'gateway-bank-picpay' },
     { key: 'paypal', label: 'PayPal', active: 'bg-black hover:bg-black ring-2 ring-black ring-offset-2' },
     { key: 'stripe', label: 'Stripe', active: 'bg-black hover:bg-black ring-2 ring-black ring-offset-2' },
-    { key: 'bradesco', label: 'Bradesco', active: 'bg-black hover:bg-black ring-2 ring-black ring-offset-2' }
+    { key: 'bradesco', label: 'Bradesco', active: 'bg-black hover:bg-black ring-2 ring-black ring-offset-2' },
+    { key: 'pagbank', label: 'PagBank', active: 'bg-white hover:bg-white ring-2 ring-[#dde05b] ring-offset-2' }
   ];
   const handleFeeTypeChange = (type: 'percent' | 'fixed') => {
     setGatewayFeeType(type);
@@ -88,7 +91,13 @@ export const GatewayConfig: React.FC<GatewayConfigProps> = ({
                   data-testid={bank.testId}
                   aria-label={bank.label}
                 >
-                  <img src={logo.src} alt={logo.alt} className={logoClassName} />
+                  {bank.key === 'pagbank' ? (
+                    <div className="overflow-hidden h-8 w-8 flex items-center justify-center">
+                      <img src={logo.src} alt={logo.alt} style={{ height: '32px', width: 'auto', maxWidth: 'none', objectFit: 'none', objectPosition: 'left center' }} />
+                    </div>
+                  ) : (
+                    <img src={logo.src} alt={logo.alt} className={logoClassName} />
+                  )}
                   <span className="sr-only">{bank.label}</span>
                 </Button>
               );
@@ -216,8 +225,44 @@ export const GatewayConfig: React.FC<GatewayConfigProps> = ({
                   </Button>
                </>
             )}
-            {/* Installments for Nubank, Bradesco, PicPay AND PayPal */}
-            {((gatewayMethod === 'credit' && ['nubank', 'bradesco', 'picpay'].includes(gatewayBank)) || gatewayBank === 'paypal') && (
+            {gatewayBank === 'pagbank' && (
+               <>
+                  <Button
+                     variant={gatewayMethod === 'pix' ? "secondary" : "ghost"}
+                     className={`text-xs justify-start h-auto whitespace-normal break-words py-2 ${gatewayMethod === 'pix' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' : ''}`}
+                     onClick={() => handleGatewayMethodChange('pix')}
+                  >
+                     💠 PIX (0%)
+                  </Button>
+                  <Button
+                     variant={gatewayMethod === 'credit' ? "secondary" : "ghost"}
+                     className={`text-xs justify-start h-auto whitespace-normal break-words py-2 ${gatewayMethod === 'credit' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' : ''}`}
+                     onClick={() => handleGatewayMethodChange('credit')}
+                  >
+                     Crédito (3.99% a 21.58%)
+                  </Button>
+                  <Button
+                     variant={gatewayMethod === 'debit' ? "secondary" : "ghost"}
+                     className={`text-xs justify-start h-auto whitespace-normal break-words py-2 ${gatewayMethod === 'debit' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' : ''}`}
+                     onClick={() => handleGatewayMethodChange('debit')}
+                  >
+                     💳 Débito (1.99%)
+                  </Button>
+                  {gatewayMethod === 'credit' && (
+                    <div className="col-span-2 text-[10px] text-gray-600 p-2 bg-yellow-50 rounded border border-yellow-100 space-y-1">
+                        <p className="font-semibold">ℹ️ Taxa por parcelas (PagBank)</p>
+                        <ul className="list-disc pl-3 space-y-0.5">
+                            <li>1x: 3,99% | 2x: 6,58% | 3x: 8,08%</li>
+                            <li>4x: 9,58% | 5x: 11,08% | 6x: 12,58%</li>
+                            <li>7x: 14,08% | 8x: 15,58% | 9x: 17,08%</li>
+                            <li>10x: 18,58% | 11x: 20,08% | 12x: 21,58%</li>
+                        </ul>
+                    </div>
+                  )}
+               </>
+            )}
+            {/* Installments for Nubank, Bradesco, PicPay, PagBank AND PayPal */}
+            {((gatewayMethod === 'credit' && ['nubank', 'bradesco', 'picpay', 'pagbank'].includes(gatewayBank)) || gatewayBank === 'paypal') && (
               <div className="mt-2 animate-fadeIn col-span-2">
                 <Label className="text-xs">Parcelas (1-12)</Label>
                 <Input 

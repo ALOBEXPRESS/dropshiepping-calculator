@@ -720,6 +720,23 @@ export const useDropshippingCalculator = () => {
         // 3.99% + R$ 0.39
         fee = 3.99;
         fixed = 0.39;
+    } else if (bank === 'pagbank') {
+        // PagBank: Pix 0%, crédito à vista 3.99%, parcelado crescente
+        if (method === 'pix') {
+            fee = 0;
+            fixed = 0;
+        } else if (method === 'credit' || method === 'credit_sight' || method === 'credit_parc') {
+            const pagbankRates: Record<number, number> = {
+                1: 3.99, 2: 6.58, 3: 8.08, 4: 9.58, 5: 11.08,
+                6: 12.58, 7: 14.08, 8: 15.58, 9: 17.08, 10: 18.58,
+                11: 20.08, 12: 21.58
+            };
+            fee = pagbankRates[Math.min(installments, 12)] ?? 3.99;
+            fixed = 0;
+        } else if (method === 'debit') {
+            fee = 1.99;
+            fixed = 0;
+        }
     }
     return { fee, fixed };
   };
@@ -747,7 +764,7 @@ export const useDropshippingCalculator = () => {
     // If switching to PicPay/Nubank/Bradesco, default to Credit
     const defaultMethod = bank === 'picpay'
       ? 'pix'
-      : ['nubank', 'bradesco', 'paypal', 'stripe'].includes(bank)
+      : ['nubank', 'bradesco', 'paypal', 'stripe', 'pagbank'].includes(bank)
         ? 'credit'
         : 'pix';
     setGatewayMethod(defaultMethod);

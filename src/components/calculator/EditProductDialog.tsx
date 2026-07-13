@@ -3114,6 +3114,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                         <SelectItem value="mercadopago">Mercado Pago</SelectItem>
                         <SelectItem value="stripe">Stripe</SelectItem>
                         <SelectItem value="bradesco">Bradesco</SelectItem>
+                        <SelectItem value="pagbank">PagBank</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
