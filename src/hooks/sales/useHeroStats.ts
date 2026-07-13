@@ -135,8 +135,6 @@ export const useHeroStats = (
             other_expenses,
             marketplace_commission,
             is_free_sample,
-            tiktok_reembolso_disabled,
-            tiktok_retorno_liquido,
             order_date
           `)
           .eq('organization_id', organizationId)
@@ -168,12 +166,15 @@ export const useHeroStats = (
         const marketplaceIds = [
           ...new Set(currentOrders_.map((o) => o.marketplace_id).filter(Boolean)),
         ];
-        const { data: marketplaces, error: marketplacesError } = await supabase
-          .from('marketplaces')
-          .select('id, name, commission_rate, fixed_fee, affiliate_commission_rate')
-          .in('id', marketplaceIds);
-
-        if (marketplacesError) throw marketplacesError;
+        let marketplaces: { id: string; name: string; commission_rate: number; fixed_fee: number; affiliate_commission_rate?: number }[] = [];
+        if (marketplaceIds.length > 0) {
+          const { data: mpData, error: marketplacesError } = await supabase
+            .from('marketplaces')
+            .select('id, name, commission_rate, fixed_fee, affiliate_commission_rate')
+            .in('id', marketplaceIds);
+          if (marketplacesError) throw marketplacesError;
+          marketplaces = mpData ?? [];
+        }
 
         const marketplaceMap = (marketplaces ?? []).reduce(
           (acc: Record<string, string>, m: { id: string; name: string }) => {
@@ -206,39 +207,44 @@ export const useHeroStats = (
         );
 
         // ── Order items ───────────────────────────────────────────────────
-        const { data: orderItemsRaw, error: itemsError } = await supabase
-          .from('order_items')
-          .select(`
-            order_id,
-            quantity,
-            unit_cost,
-            products!inner(
-              supplier_fee_value,
-              supplier_fee_type,
-              supplier_gateway_fee_value,
-              supplier_gateway_fee_type
-            )
-          `)
-          .in('order_id', orderIds);
-
-        if (itemsError) throw itemsError;
+        let orderItemsRaw: unknown[] = [];
+        if (orderIds.length > 0) {
+          const { data: rawItems, error: itemsError } = await supabase
+            .from('order_items')
+            .select(`
+              order_id,
+              quantity,
+              unit_cost,
+              products!inner(
+                supplier_fee_value,
+                supplier_fee_type,
+                supplier_gateway_fee_value,
+                supplier_gateway_fee_type
+              )
+            `)
+            .in('order_id', orderIds);
+          if (itemsError) throw itemsError;
+          orderItemsRaw = rawItems ?? [];
+        }
 
         const itemsByOrder = buildItemsByOrder(
           (orderItemsRaw ?? []) as Record<string, unknown>[]
         );
 
-        // ── Affiliates map for current period orders ───────────────────────
-        // Determine which orders came via affiliate link using order_affiliates table (if exists)
-        // Gracefully skip if table absent
+        // ── Affiliates map — skip gracefully if table absent ──────────────
         const affiliateByOrderId: Record<string, boolean> = {};
         if (orderIds.length > 0) {
-          const { data: affiliateRows } = await supabase
-            .from('order_affiliates')
-            .select('order_id')
-            .in('order_id', orderIds);
-          (affiliateRows ?? []).forEach((r: { order_id: string }) => {
-            affiliateByOrderId[r.order_id] = true;
-          });
+          try {
+            const { data: affiliateRows } = await supabase
+              .from('order_affiliates')
+              .select('order_id')
+              .in('order_id', orderIds);
+            (affiliateRows ?? []).forEach((r: { order_id: string }) => {
+              affiliateByOrderId[r.order_id] = true;
+            });
+          } catch {
+            // table may not exist — affiliate commission will be 0
+          }
         }
 
         // ── Compute current profit ────────────────────────────────────────
@@ -265,12 +271,8 @@ export const useHeroStats = (
               other_expenses: Number(o.other_expenses ?? 0),
               marketplace_commission: Number(o.marketplace_commission ?? 0),
               is_free_sample: o.is_free_sample,
-              tiktok_reembolso_disabled: (
-                o as unknown as { tiktok_reembolso_disabled?: boolean }
-              ).tiktok_reembolso_disabled,
-              tiktok_retorno_liquido: (
-                o as unknown as { tiktok_retorno_liquido?: number | null }
-              ).tiktok_retorno_liquido,
+              tiktok_reembolso_disabled: undefined,
+              tiktok_retorno_liquido: undefined,
               marketplace: marketplaceName,
               products: itemsByOrder[o.id] as {
                 quantity: number;
@@ -300,8 +302,6 @@ export const useHeroStats = (
             other_expenses,
             marketplace_commission,
             is_free_sample,
-            tiktok_reembolso_disabled,
-            tiktok_retorno_liquido,
             order_date
           `)
           .eq('organization_id', organizationId)
@@ -336,13 +336,17 @@ export const useHeroStats = (
           );
 
           const prevAffiliateByOrderId: Record<string, boolean> = {};
-          const { data: prevAffRows } = await supabase
-            .from('order_affiliates')
-            .select('order_id')
-            .in('order_id', previousOrderIds);
-          (prevAffRows ?? []).forEach((r: { order_id: string }) => {
-            prevAffiliateByOrderId[r.order_id] = true;
-          });
+          try {
+            const { data: prevAffRows } = await supabase
+              .from('order_affiliates')
+              .select('order_id')
+              .in('order_id', previousOrderIds);
+            (prevAffRows ?? []).forEach((r: { order_id: string }) => {
+              prevAffiliateByOrderId[r.order_id] = true;
+            });
+          } catch {
+            // table may not exist
+          }
 
           previousTotalProfit = previousOrders_
             .filter((o) => prevItemsByOrder[o.id]?.length > 0)
@@ -363,12 +367,8 @@ export const useHeroStats = (
                 other_expenses: Number(o.other_expenses ?? 0),
                 marketplace_commission: Number(o.marketplace_commission ?? 0),
                 is_free_sample: o.is_free_sample,
-                tiktok_reembolso_disabled: (
-                  o as unknown as { tiktok_reembolso_disabled?: boolean }
-                ).tiktok_reembolso_disabled,
-                tiktok_retorno_liquido: (
-                  o as unknown as { tiktok_retorno_liquido?: number | null }
-                ).tiktok_retorno_liquido,
+                tiktok_reembolso_disabled: undefined,
+                tiktok_retorno_liquido: undefined,
                 marketplace: marketplaceName,
                 products: prevItemsByOrder[o.id] as {
                   quantity: number;
