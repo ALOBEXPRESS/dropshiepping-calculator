@@ -809,7 +809,15 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       setSellingPriceWarning('O preço de venda precisa ser maior que R$8,00');
       return;
     }
-    const shouldPreserveMetrics = sameMarketplace && nextSelling === originalSelling && nextCost === originalCost && nextShipping === originalShipping && sameAdType && sameEnjoeiAdType;
+    const originalSupplierFeeValue = parseCurrency(product.supplierFeeValue ?? 0);
+    const originalSupplierGatewayFeeValue = parseCurrency(product.supplierGatewayFeeValue ?? 0);
+    const nextSupplierFeeValue = parseCurrency(formData.supplierFeeValue ?? 0);
+    const nextSupplierGatewayFeeValue = parseCurrency(formData.supplierGatewayFeeValue ?? 0);
+    const sameSupplierFees = nextSupplierFeeValue === originalSupplierFeeValue 
+      && nextSupplierGatewayFeeValue === originalSupplierGatewayFeeValue
+      && formData.supplierFeeType === (product.supplierFeeType || 'percent')
+      && formData.supplierGatewayFeeType === (product.supplierGatewayFeeType || 'fixed');
+    const shouldPreserveMetrics = sameMarketplace && nextSelling === originalSelling && nextCost === originalCost && nextShipping === originalShipping && sameAdType && sameEnjoeiAdType && sameSupplierFees;
     const metrics = shouldPreserveMetrics ? null : getUpdatedMetrics();
     const savedNetRevenue = shouldPreserveMetrics
       ? product.netRevenue
@@ -938,6 +946,15 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     console.log('promoVideoChannels:', updated.promoVideoChannels);
     console.log('promoVideoChannelLinks:', updated.promoVideoChannelLinks);
     console.log('promoVideoChannelNames:', updated.promoVideoChannelNames);
+    console.log('=== SUPPLIER FEE DEBUG ===');
+    console.log('formData.supplierFeeType:', formData.supplierFeeType);
+    console.log('formData.supplierFeeValue:', formData.supplierFeeValue);
+    console.log('formData.supplierGatewayFeeType:', formData.supplierGatewayFeeType);
+    console.log('formData.supplierGatewayFeeValue:', formData.supplierGatewayFeeValue);
+    console.log('updated.supplierFeeType:', updated.supplierFeeType);
+    console.log('updated.supplierFeeValue:', updated.supplierFeeValue);
+    console.log('updated.supplierGatewayFeeType:', updated.supplierGatewayFeeType);
+    console.log('updated.supplierGatewayFeeValue:', updated.supplierGatewayFeeValue);
     
     onSave(updated);
     

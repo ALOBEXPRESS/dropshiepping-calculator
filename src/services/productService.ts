@@ -1034,6 +1034,12 @@ const legacyProductSelectColumns = [
   'gateway_method',
   'gateway_bank',
   'video_generation_llm',
+  'supplier_fee_type',
+  'supplier_fee_value',
+  'supplier_gateway_fee_type',
+  'supplier_gateway_fee_value',
+  'supplier_gateway_fee_percent',
+  'supplier_gateway_fee_fixed',
 ].join(',');
 
 const dimensionColumnList = ['peso', 'largura', 'altura', 'profundidade', 'unidade_medida'];
@@ -1966,6 +1972,7 @@ export const ProductService = {
       .select(columns)
       .single();
     
+    console.log('[ProductService.update] supplier_fee_value:', initialPayload.supplier_fee_value, '| supplier_gateway_fee_value:', initialPayload.supplier_gateway_fee_value, '| supplier_gateway_fee_fixed:', initialPayload.supplier_gateway_fee_fixed);
     console.log('[ProductService] Update Payload:', JSON.stringify(initialPayload));
 
     const { data, removedColumns, columns: usedColumns } = await applyMissingColumnFallback(
