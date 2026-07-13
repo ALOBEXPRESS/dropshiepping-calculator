@@ -316,19 +316,35 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
 
   if (visibleOrders.length === 0 && pendingOrders.length === 0) {
     return (
-      <Card className="p-6 border-green-200 dark:border-green-900/50 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-zinc-900 dark:to-zinc-800">
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
-            <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
+      <>
+        <NFeUploadModal
+          open={nfeModalOpen}
+          onClose={() => setNfeModalOpen(false)}
+          onSuccess={() => loadPendingOrders(false)}
+        />
+        <Card className="p-6 border-green-200 dark:border-green-900/50 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-zinc-900 dark:to-zinc-800">
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
+              <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              Tudo processado!
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 max-w-md">
+              Não há vendas pendentes no momento. Todas as vendas do Bling foram processadas com sucesso.
+            </p>
+            <Button
+              onClick={() => setNfeModalOpen(true)}
+              variant="outline"
+              size="sm"
+              className="mt-4 border-emerald-600 text-emerald-400 hover:bg-emerald-950/40 hover:border-emerald-400"
+            >
+              <FileText className="w-3.5 h-3.5 mr-1.5" />
+              Carregar NF
+            </Button>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            Tudo processado!
-          </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 max-w-md">
-            Não há vendas pendentes no momento. Todas as vendas do Bling foram processadas com sucesso.
-          </p>
-        </div>
-      </Card>
+        </Card>
+      </>
     );
   }
 
