@@ -94,6 +94,7 @@ function parseNFe(xml: string): ParsedNFe {
 const INTERMEDIADOR_MAP: Record<string, string> = {
   '27415911000136': 'TikTok Shop',
   '20956256000178': 'Shopee',
+  '35635824000112': 'Shopee', // Shopee do Brasil Tecnologia e Inovação Ltda
   '03007331000104': 'Mercado Livre',
 };
 
@@ -105,6 +106,10 @@ const CNPJ_TO_CHANNEL_INFO: Record<string, { salesChannelId: string; marketplace
   },
   '20956256000178': {
     salesChannelId: '35bad7f8-3237-440d-ad73-11b4d1353495', // Shopee
+    marketplaceId: '91cbf5ca-edd3-469a-b723-d8bb240d641a',  // Shopee marketplace
+  },
+  '35635824000112': {
+    salesChannelId: '35bad7f8-3237-440d-ad73-11b4d1353495', // Shopee (CNPJ alternativo)
     marketplaceId: '91cbf5ca-edd3-469a-b723-d8bb240d641a',  // Shopee marketplace
   },
   '03007331000104': {
