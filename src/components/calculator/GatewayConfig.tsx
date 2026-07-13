@@ -42,7 +42,7 @@ export const GatewayConfig: React.FC<GatewayConfigProps> = ({
     paypal: { src: 'https://cdn.simpleicons.org/paypal/003087', alt: 'PayPal' },
     stripe: { src: 'https://cdn.simpleicons.org/stripe/635BFF', alt: 'Stripe' },
     bradesco: { src: 'https://commons.wikimedia.org/wiki/Special:FilePath/Banco_Bradesco_logo.svg', alt: 'Bradesco' },
-    pagbank: { src: pagbankIcon, alt: 'PagBank', crop: true }
+    pagbank: { src: pagbankIcon, alt: 'PagBank' }
   };
   const bankButtons = [
     { key: 'mercadopago', label: 'Mercado Pago', active: 'bg-black hover:bg-black ring-2 ring-black ring-offset-2' },
