@@ -1088,21 +1088,58 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     };
   }, [data, organizationId]);
 
-  // Fetch marketing costs from campaign_order_costs by order_id
+  // Fetch marketing costs from campaign_products (one cost per campaign, not per order)
   useEffect(() => {
     const fetchMarketingCosts = async () => {
       const allOrderIds = data.flatMap((period) =>
         (period.orders_data ?? []).map((o) => (o as { order_id?: string }).order_id).filter(Boolean) as string[]
       );
       if (allOrderIds.length === 0) return;
-      const { data: costRows } = await supabase
-        .from('campaign_order_costs')
-        .select('order_id, marketing_cost')
-        .in('order_id', allOrderIds);
+
+      // Fetch campaign_products where linked_order_id is in allOrderIds
+      // Each campaign has one marketing_cost_override — don't double-count campaigns
+      const { data: cpRows } = await supabase
+        .from('campaign_products')
+        .select('campaign_id, linked_order_id, marketing_cost_override')
+        .in('linked_order_id', allOrderIds)
+        .not('marketing_cost_override', 'is', null);
+
       const costMap: Record<string, number> = {};
-      for (const row of (costRows ?? []) as Array<{ order_id: string; marketing_cost: number }>) {
-        costMap[`order:${row.order_id}`] = row.marketing_cost;
+      // Track which campaigns we've already accounted for to avoid double-counting
+      const seenCampaigns = new Map<string, number>(); // campaign_id -> cost
+
+      for (const row of (cpRows ?? []) as Array<{ campaign_id: string | null; linked_order_id: string; marketing_cost_override: number }>) {
+        if (!row.linked_order_id) continue;
+        const cost = Number(row.marketing_cost_override ?? 0);
+        // Each campaign counted once — assign cost to first order found, 0 to rest
+        if (row.campaign_id) {
+          if (!seenCampaigns.has(row.campaign_id)) {
+            seenCampaigns.set(row.campaign_id, cost);
+            costMap[`order:${row.linked_order_id}`] = cost;
+          } else {
+            // Same campaign already counted — this order gets 0 marketing cost
+            costMap[`order:${row.linked_order_id}`] = 0;
+          }
+        } else {
+          costMap[`order:${row.linked_order_id}`] = cost;
+        }
       }
+
+      // Also fetch legacy campaign_order_costs for orders not covered by campaign_products
+      const coveredOrderIds = new Set(Object.keys(costMap).map(k => k.replace('order:', '')));
+      const uncoveredIds = allOrderIds.filter(id => !coveredOrderIds.has(id));
+      if (uncoveredIds.length > 0) {
+        const { data: costRows } = await supabase
+          .from('campaign_order_costs')
+          .select('order_id, marketing_cost, campaign_id')
+          .in('order_id', uncoveredIds);
+        for (const row of (costRows ?? []) as Array<{ order_id: string; marketing_cost: number; campaign_id: string | null }>) {
+          if (row.campaign_id && seenCampaigns.has(row.campaign_id)) continue; // skip duplicate campaigns
+          if (row.campaign_id) seenCampaigns.set(row.campaign_id, Number(row.marketing_cost));
+          costMap[`order:${row.order_id}`] = Number(row.marketing_cost ?? 0);
+        }
+      }
+
       setMarketingCostByProductId(costMap);
     };
     fetchMarketingCosts().catch(() => {});
