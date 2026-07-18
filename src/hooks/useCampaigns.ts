@@ -120,6 +120,15 @@ export function useCampaigns(organizationId: string): UseCampaignsReturn {
     if (adSetError) throw new Error(adSetError.message);
 
     // 3. Replace product links (delete + insert)
+    // First fetch existing linked orders to cascade-delete campaign_order_costs on unlink
+    const { data: existingProducts } = await supabase
+      .from('campaign_products')
+      .select('linked_order_id')
+      .eq('campaign_id', id)
+      .not('linked_order_id', 'is', null);
+    const prevOrderIds = ((existingProducts ?? []) as Array<{ linked_order_id: string | null }>)
+      .map(p => p.linked_order_id).filter(Boolean) as string[];
+
     const { error: deleteError } = await supabase
       .from('campaign_products')
       .delete()
@@ -154,6 +163,25 @@ export function useCampaigns(organizationId: string): UseCampaignsReturn {
             })),
             { onConflict: 'order_id' }
           );
+      }
+
+      // Delete campaign_order_costs for orders no longer linked to this campaign
+      const newOrderIds = new Set(linkedProducts.map(p => p.linked_order_id!));
+      const removedOrderIds = prevOrderIds.filter(oid => !newOrderIds.has(oid));
+      if (removedOrderIds.length > 0) {
+        await supabase
+          .from('campaign_order_costs')
+          .delete()
+          .eq('campaign_id', id)
+          .in('order_id', removedOrderIds);
+      }
+    } else {
+      // No products linked — delete all campaign_order_costs for this campaign
+      if (prevOrderIds.length > 0) {
+        await supabase
+          .from('campaign_order_costs')
+          .delete()
+          .eq('campaign_id', id);
       }
     }
 
