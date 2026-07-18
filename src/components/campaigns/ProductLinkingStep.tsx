@@ -87,28 +87,58 @@ const OrderPicker: React.FC<{
     if (!open) return;
     const fetchOrders = async () => {
       setLoading(true);
-      // Fetch orders that have this product via order_items
-      const { data } = await supabase
-        .from('orders')
-        .select(`
-          id,
-          order_number,
-          total_amount,
-          order_date,
-          order_items!inner(product_id)
-        `)
-        .eq('organization_id', organizationId)
-        .eq('order_items.product_id', productId)
-        .order('order_date', { ascending: false })
-        .limit(20);
-      setOrders(
-        (data ?? []).map((o: Record<string, unknown>) => ({
+      // Fetch from processed orders table — query order_items first, then get orders
+      const { data: itemsData } = await supabase
+        .from('order_items')
+        .select('order_id')
+        .eq('product_id', productId);
+
+      const orderIds = (itemsData ?? []).map((i: Record<string, unknown>) => i.order_id as string).filter(Boolean);
+
+      let processed: OrderRow[] = [];
+      if (orderIds.length > 0) {
+        const { data: processedData } = await supabase
+          .from('orders')
+          .select('id, order_number, total_amount, order_date')
+          .eq('organization_id', organizationId)
+          .in('id', orderIds)
+          .order('order_date', { ascending: false })
+          .limit(20);
+        processed = (processedData ?? []).map((o: Record<string, unknown>) => ({
           id: o.id as string,
           order_number: o.order_number as string | number,
           total_amount: o.total_amount as string | null,
           order_date: o.order_date as string | null,
-        }))
-      );
+        }));
+      }
+
+      // Also fetch pending bling_orders (not yet processed to orders)
+      const { data: blingItemsData } = await supabase
+        .from('bling_order_items')
+        .select('order_id')
+        .eq('product_id', productId);
+
+      const blingOrderIds = (blingItemsData ?? []).map((i: Record<string, unknown>) => i.order_id as string).filter(Boolean);
+
+      let pending: OrderRow[] = [];
+      if (blingOrderIds.length > 0) {
+        const { data: blingData } = await supabase
+          .from('bling_orders')
+          .select('id, order_number, total_amount, order_date')
+          .eq('organization_id', organizationId)
+          .eq('processed_to_orders', false)
+          .in('id', blingOrderIds)
+          .order('order_date', { ascending: false })
+          .limit(20);
+        pending = (blingData ?? []).map((o: Record<string, unknown>) => ({
+          id: o.id as string,
+          order_number: `#${o.order_number} (pendente)` as string,
+          total_amount: o.total_amount as string | null,
+          order_date: o.order_date as string | null,
+        }));
+      }
+
+      setOrders([...processed, ...pending]);
       setLoading(false);
     };
     fetchOrders();
