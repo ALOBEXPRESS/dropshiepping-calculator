@@ -1519,12 +1519,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   setManualMarketingCost(
                     new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(ec.marketing_cost)
                   );
-                } else if (camps.length > 0 && camps[0].marketing_cost != null) {
-                  // Pre-fill from first campaign's cost
-                  setManualMarketingCost(
-                    new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(camps[0].marketing_cost)
-                  );
-                  setLinkedCampaignId(camps[0].id);
                 }
                 // Auto-fill coupon from orders.coupon_value
                 const { data: orderRow } = await supabase
