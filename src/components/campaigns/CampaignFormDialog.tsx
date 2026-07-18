@@ -295,20 +295,20 @@ export const CampaignFormDialog: React.FC<CampaignFormDialogProps> = ({
                 Voltar
               </Button>
             )}
-            {step < STEPS.length ? (
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              variant="outline"
+              className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10 min-w-[80px]"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar'}
+            </Button>
+            {step < STEPS.length && (
               <Button
                 onClick={handleNext}
                 className="bg-orange-500 hover:bg-orange-600 text-white"
               >
                 Próximo
-              </Button>
-            ) : (
-              <Button
-                onClick={handleSave}
-                disabled={saving}
-                className="bg-orange-500 hover:bg-orange-600 text-white min-w-[80px]"
-              >
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar'}
               </Button>
             )}
           </div>
