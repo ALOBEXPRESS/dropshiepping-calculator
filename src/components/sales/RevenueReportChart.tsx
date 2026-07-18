@@ -3448,22 +3448,30 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         )}
 
                         {/* Salvar */}
-                        {selectedOrder?.order_id && manualMarketingCost && (
+                        {selectedOrder?.order_id && (
                           <button
                             disabled={savingMarketingCost}
                             onClick={async () => {
                               if (!selectedOrder?.order_id) return;
-                              const cost = parseFloat(manualMarketingCost.replace(',', '.')) || 0;
+                              const cost = parseFloat((manualMarketingCost || '0').replace(',', '.')) || 0;
                               setSavingMarketingCost(true);
                               try {
-                                await supabase
-                                  .from('campaign_order_costs')
-                                  .upsert({
-                                    order_id: selectedOrder.order_id,
-                                    campaign_id: linkedCampaignId ?? null,
-                                    marketing_cost: cost,
-                                    organization_id: organizationId,
-                                  }, { onConflict: 'order_id' });
+                                if (cost === 0 && !linkedCampaignId) {
+                                  // Remove custo de marketing
+                                  await supabase
+                                    .from('campaign_order_costs')
+                                    .delete()
+                                    .eq('order_id', selectedOrder.order_id);
+                                } else {
+                                  await supabase
+                                    .from('campaign_order_costs')
+                                    .upsert({
+                                      order_id: selectedOrder.order_id,
+                                      campaign_id: linkedCampaignId ?? null,
+                                      marketing_cost: cost,
+                                      organization_id: organizationId,
+                                    }, { onConflict: 'order_id' });
+                                }
                                 refetch();
                                 refetchYearly();
                               } finally {
