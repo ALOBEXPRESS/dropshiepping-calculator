@@ -88,12 +88,10 @@ const OrderPicker: React.FC<{
     const fetchOrders = async () => {
       setLoading(true);
       // Fetch from processed orders table — query order_items first, then get orders
-      const { data: itemsData, error: itemsError } = await supabase
+      const { data: itemsData } = await supabase
         .from('order_items')
         .select('order_id')
         .eq('product_id', productId);
-
-      console.log('[OrderPicker] productId:', productId, 'itemsData:', itemsData, 'itemsError:', itemsError);
 
       const orderIds = (itemsData ?? []).map((i: Record<string, unknown>) => i.order_id as string).filter(Boolean);
 
