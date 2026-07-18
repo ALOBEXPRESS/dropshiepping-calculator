@@ -3369,6 +3369,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                     new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(found.marketing_cost)
                                   );
                                 }
+                              } else {
+                                setManualMarketingCost('');
                               }
                             }}
                             className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-purple-500"
