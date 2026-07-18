@@ -3390,8 +3390,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             inputMode="decimal"
                             placeholder="0,00"
                             value={manualMarketingCost}
-                            onChange={(e) => setManualMarketingCost(e.target.value.replace(/[^0-9,.]/g, ''))}
-                            className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-purple-500 tabular-nums"
+                            readOnly
+                            className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-400 placeholder-zinc-600 cursor-not-allowed tabular-nums"
                           />
                           {manualMarketingCost && (
                             <button onClick={() => { setManualMarketingCost(''); setLinkedCampaignId(null); }} className="text-zinc-500 hover:text-zinc-300 transition-colors">

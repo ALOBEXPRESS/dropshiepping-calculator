@@ -87,11 +87,33 @@ const OrderPicker: React.FC<{
     if (!open) return;
     const fetchOrders = async () => {
       setLoading(true);
+      // Fetch the product name for fuzzy matching (handles variants with different IDs)
+      const { data: productData } = await supabase
+        .from('products')
+        .select('name, sku')
+        .eq('id', productId)
+        .single();
+
+      // Find all product IDs with same base name (handles variants)
+      let allProductIds = [productId];
+      if (productData?.name) {
+        // Extract base name (before " — " variant separator)
+        const baseName = productData.name.split(' — ')[0].trim();
+        const { data: relatedProducts } = await supabase
+          .from('products')
+          .select('id')
+          .ilike('name', `${baseName}%`)
+          .eq('organization_id', organizationId);
+        if (relatedProducts && relatedProducts.length > 0) {
+          allProductIds = [...new Set([productId, ...(relatedProducts as { id: string }[]).map(p => p.id)])];
+        }
+      }
+
       // Fetch from processed orders table — query order_items first, then get orders
       const { data: itemsData } = await supabase
         .from('order_items')
         .select('order_id')
-        .eq('product_id', productId);
+        .in('product_id', allProductIds);
 
       const orderIds = (itemsData ?? []).map((i: Record<string, unknown>) => i.order_id as string).filter(Boolean);
 
@@ -116,7 +138,7 @@ const OrderPicker: React.FC<{
       const { data: blingItemsData } = await supabase
         .from('bling_order_items')
         .select('order_id')
-        .eq('product_id', productId);
+        .in('product_id', allProductIds);
 
       const blingOrderIds = (blingItemsData ?? []).map((i: Record<string, unknown>) => i.order_id as string).filter(Boolean);
 
