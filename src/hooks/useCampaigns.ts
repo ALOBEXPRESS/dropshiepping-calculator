@@ -74,6 +74,22 @@ export function useCampaigns(organizationId: string): UseCampaignsReturn {
           }))
         );
       if (productsError) throw new Error(productsError.message);
+
+      // Sync marketing cost to campaign_order_costs for linked orders
+      const linkedProducts = payload.products.filter(p => p.linked_order_id && p.marketing_cost_override != null);
+      if (linkedProducts.length > 0) {
+        await supabase
+          .from('campaign_order_costs')
+          .upsert(
+            linkedProducts.map((p) => ({
+              order_id: p.linked_order_id!,
+              campaign_id: campaignId,
+              marketing_cost: p.marketing_cost_override!,
+              organization_id: organizationId,
+            })),
+            { onConflict: 'order_id' }
+          );
+      }
     }
 
     invalidate();
@@ -123,6 +139,22 @@ export function useCampaigns(organizationId: string): UseCampaignsReturn {
           }))
         );
       if (productsError) throw new Error(productsError.message);
+
+      // Sync marketing cost to campaign_order_costs for linked orders
+      const linkedProducts = payload.products.filter(p => p.linked_order_id && p.marketing_cost_override != null);
+      if (linkedProducts.length > 0) {
+        await supabase
+          .from('campaign_order_costs')
+          .upsert(
+            linkedProducts.map((p) => ({
+              order_id: p.linked_order_id!,
+              campaign_id: id,
+              marketing_cost: p.marketing_cost_override!,
+              organization_id: organizationId,
+            })),
+            { onConflict: 'order_id' }
+          );
+      }
     }
 
     invalidate();

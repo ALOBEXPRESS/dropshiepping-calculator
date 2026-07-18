@@ -179,12 +179,17 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSe
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                     {adSet.start_date && (
                       <p className="text-[11px] text-zinc-500">
-                        Início: <span className="text-zinc-300">{adSet.start_date}</span>
+                        Início: <span className="text-zinc-300">{new Intl.DateTimeFormat('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }).format(new Date(adSet.start_date))}</span>
                       </p>
                     )}
                     {adSet.end_date && (
                       <p className="text-[11px] text-zinc-500">
-                        Fim: <span className="text-zinc-300">{adSet.end_date}</span>
+                        Fim: <span className="text-zinc-300">{new Intl.DateTimeFormat('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }).format(new Date(adSet.end_date))}</span>
+                      </p>
+                    )}
+                    {c.budget_amount != null && (
+                      <p className="text-[11px] text-zinc-500">
+                        Orçamento: <span className="text-zinc-300">R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(Number(c.budget_amount))}</span>
                       </p>
                     )}
                     {ext.traffic_destination && (

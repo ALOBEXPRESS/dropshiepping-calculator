@@ -67,11 +67,11 @@ export const AdSetSettingsStep: React.FC<AdSetSettingsStepProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label className="text-zinc-300 text-sm">Data de Início</Label>
-          <Input type="date" value={data.start_date ?? ''} onChange={handle('start_date')} className="bg-zinc-900 border-zinc-700 text-white" />
+          <Input type="datetime-local" value={data.start_date ? data.start_date.slice(0, 16) : ''} onChange={handle('start_date')} className="bg-zinc-900 border-zinc-700 text-white" />
         </div>
         <div className="space-y-1.5">
           <Label className="text-zinc-300 text-sm">Data de Fim</Label>
-          <Input type="date" value={data.end_date ?? ''} onChange={handle('end_date')} className="bg-zinc-900 border-zinc-700 text-white" />
+          <Input type="datetime-local" value={data.end_date ? data.end_date.slice(0, 16) : ''} onChange={handle('end_date')} className="bg-zinc-900 border-zinc-700 text-white" />
         </div>
       </div>
 
