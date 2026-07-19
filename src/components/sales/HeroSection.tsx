@@ -101,6 +101,7 @@ interface HeroSectionProps {
     ordersChange?: number;
     customersChange?: number;
     productsChange?: number;
+    previousRevenue?: number;
   };
   period?: 'daily' | 'weekly' | 'monthly' | 'yearly';
   hasPendingOrders?: boolean;
@@ -219,7 +220,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           label={`Lucro ${currentPeriodLabel.charAt(0).toUpperCase() + currentPeriodLabel.slice(1)}`}
           value={formatCurrency(stats.totalRevenue)}
           trend={stats.revenueChange}
-          trendLabel={previousPeriodLabel}
+          trendLabel={stats.previousRevenue !== undefined ? `vs. ${formatCurrency(stats.previousRevenue)} ${previousPeriodLabel}` : previousPeriodLabel}
           icon={<DollarSign className="w-6 h-6 text-white" />}
           iconColor="from-green-500 to-green-600"
         />

@@ -11,6 +11,7 @@ interface HeroStats {
   ordersChange?: number;
   customersChange?: number;
   productsChange?: number;
+  previousRevenue?: number;
 }
 
 // Função para obter range de datas baseado no período
@@ -135,9 +136,7 @@ export const useHeroStats = (
             other_expenses,
             marketplace_commission,
             is_free_sample,
-            order_date,
-            tiktok_retorno_liquido,
-            tiktok_reembolso_disabled
+            order_date
           `)
           .eq('organization_id', organizationId)
           .gte('order_date', dateRange.current.start)
@@ -273,8 +272,8 @@ export const useHeroStats = (
               other_expenses: Number(o.other_expenses ?? 0),
               marketplace_commission: Number(o.marketplace_commission ?? 0),
               is_free_sample: o.is_free_sample,
-              tiktok_reembolso_disabled: (o as unknown as { tiktok_reembolso_disabled?: boolean }).tiktok_reembolso_disabled,
-              tiktok_retorno_liquido: (o as unknown as { tiktok_retorno_liquido?: number | null }).tiktok_retorno_liquido ?? undefined,
+              tiktok_reembolso_disabled: undefined,
+              tiktok_retorno_liquido: undefined,
               marketplace: marketplaceName,
               products: itemsByOrder[o.id] as {
                 quantity: number;
@@ -478,6 +477,7 @@ export const useHeroStats = (
           ordersChange: Math.round(ordersChange),
           customersChange: Math.round(customersChange),
           productsChange: Math.round(productsChange),
+          previousRevenue: previousTotalProfit,
         });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erro ao carregar estatísticas');
