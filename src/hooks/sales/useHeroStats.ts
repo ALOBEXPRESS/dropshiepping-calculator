@@ -17,7 +17,6 @@ interface HeroStats {
 // Maps period to current/previous period labels returned by get_revenue_report
 const getPeriodLabels = (period: 'daily' | 'weekly' | 'monthly' | 'yearly') => {
   const now = new Date();
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const ptMonths = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
   if (period === 'monthly') {
@@ -60,7 +59,7 @@ function computeProfitFromOrders(orders: Record<string, unknown>[]): number {
       marketplace_commission: Number(o.marketplace_commission ?? 0),
       marketplace_fixed_fee: Number(o.marketplace_fixed_fee ?? 0),
       is_free_sample: o.is_free_sample,
-      tiktok_sfp_enabled: o.tiktok_sfp_enabled,
+      tiktok_sfp_enabled: o.tiktok_sfp_enabled as boolean | string | null | undefined,
       tiktok_reembolso_disabled: Boolean(o.tiktok_reembolso_disabled),
       tiktok_retorno_liquido: o.tiktok_retorno_liquido != null ? Number(o.tiktok_retorno_liquido) : null,
       marketplace: marketplaceName,
