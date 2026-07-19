@@ -58,7 +58,7 @@ function computeProfitFromOrders(orders: Record<string, unknown>[]): number {
       other_expenses: Number(o.other_expenses ?? 0),
       marketplace_commission: Number(o.marketplace_commission ?? 0),
       marketplace_fixed_fee: Number(o.marketplace_fixed_fee ?? 0),
-      is_free_sample: o.is_free_sample,
+      is_free_sample: o.is_free_sample as boolean | string | undefined,
       tiktok_sfp_enabled: o.tiktok_sfp_enabled as boolean | string | null | undefined,
       tiktok_reembolso_disabled: Boolean(o.tiktok_reembolso_disabled),
       tiktok_retorno_liquido: o.tiktok_retorno_liquido != null ? Number(o.tiktok_retorno_liquido) : null,
