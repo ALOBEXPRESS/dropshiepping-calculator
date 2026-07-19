@@ -66,9 +66,9 @@ function computeProfitFromOrders(orders: Record<string, unknown>[]): number {
       products: products.map((p) => ({
         quantity: Number(p.quantity ?? 1),
         unit_cost: Number(p.unit_cost ?? 0),
-        supplier_fee_value: p.supplier_fee_value,
+        supplier_fee_value: p.supplier_fee_value as string | number | undefined,
         supplier_fee_type: String(p.supplier_fee_type ?? 'percent'),
-        supplier_gateway_fee_value: p.supplier_gateway_fee_value,
+        supplier_gateway_fee_value: p.supplier_gateway_fee_value as string | number | undefined,
         supplier_gateway_fee_type: String(p.supplier_gateway_fee_type ?? 'fixed'),
       })),
     };
