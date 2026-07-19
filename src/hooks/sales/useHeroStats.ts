@@ -85,8 +85,7 @@ function buildItemsByOrder(
       unit_cost: item.unit_cost,
       supplier_fee_value: (item.products as Record<string, unknown>)?.supplier_fee_value || '0',
       supplier_fee_type: (item.products as Record<string, unknown>)?.supplier_fee_type || 'percent',
-      supplier_gateway_fee_value:
-        (item.products as Record<string, unknown>)?.supplier_gateway_fee_value || '0',
+      supplier_gateway_fee_value: (item.products as Record<string, unknown>)?.supplier_gateway_fee_value ?? null,
       supplier_gateway_fee_type:
         (item.products as Record<string, unknown>)?.supplier_gateway_fee_type || 'fixed',
     });
