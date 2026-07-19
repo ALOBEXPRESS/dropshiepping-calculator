@@ -146,18 +146,6 @@ export const useHeroStats = (
           return sum + products.reduce((s, p) => s + Number(p.quantity ?? 1), 0);
         }, 0);
 
-        // Products count via DB (products don't come from RPC)
-        const now = new Date();
-        const currentStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-        const currentEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
-        const prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
-        const prevEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59).toISOString();
-
-        const [{ count: productsCount }, { count: previousProductsCount }] = await Promise.all([
-          supabase.from('products').select('*', { count: 'exact', head: true }).eq('organization_id', organizationId).gte('created_at', currentStart).lte('created_at', currentEnd),
-          supabase.from('products').select('*', { count: 'exact', head: true }).eq('organization_id', organizationId).gte('created_at', prevStart).lte('created_at', prevEnd),
-        ]);
-
         const totalCustomers = currentUniqueCustomers.size;
         const previousTotalCustomers = previousUniqueCustomers.size;
 
