@@ -1915,7 +1915,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       curve: 'smooth',
       width: [2, 2],
     },
-    colors: ['#22c55e', '#ef4444'],
+    colors: ['#22c55e', '#f97316'],
     fill: {
       type: 'gradient',
       gradient: {
@@ -1929,7 +1929,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     markers: {
       size: 4,
       strokeWidth: 2,
-      colors: ['#22c55e', '#ef4444'],
+      colors: ['#22c55e', '#f97316'],
       strokeColors: ['#86efac', '#fca5a5'],
       hover: {
         size: 6,
@@ -1999,6 +1999,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     grid: {
       borderColor: '#e5e7eb',
       strokeDashArray: 4,
+      padding: { top: 16 },
     },
     tooltip: {
       enabled: true,
@@ -2232,7 +2233,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         colors: '#6b7280',
       },
       markers: {
-        fillColors: ['#22c55e', '#ef4444'],
+        fillColors: ['#22c55e', '#f97316'],
       },
       onItemClick: {
         toggleDataSeries: true,
@@ -3618,19 +3619,23 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               <p className="text-xs text-gray-500 dark:text-gray-400">Custo Total</p>
               <p className="text-xl font-bold text-red-600">{formatCurrency(allDataTotalCost)}</p>
             </div>
-            {totalMarketingCost > 0 && (
-              <div>
-                <p className="text-xs text-white">{`Marketing ${periodLabel.replace('Lucro ', '')}`}</p>
-                <p className="text-xl font-bold text-orange-500">{formatCurrency(totalMarketingCost)}</p>
-              </div>
-            )}
-            {totalMarketingCostAllTime > 0 && (
-              <div>
-                <p className="text-xs text-white">Marketing Total</p>
-                <p className="text-xl font-bold text-orange-500">{formatCurrency(totalMarketingCostAllTime)}</p>
-              </div>
-            )}
           </div>
+          {(totalMarketingCost > 0 || totalMarketingCostAllTime > 0) && (
+            <div className="flex items-center gap-6 mt-2">
+              {totalMarketingCost > 0 && (
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{`Marketing ${periodLabel.replace('Lucro ', '')}`}</p>
+                  <p className="text-xl font-bold text-orange-500">{formatCurrency(totalMarketingCost)}</p>
+                </div>
+              )}
+              {totalMarketingCostAllTime > 0 && (
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Marketing Total</p>
+                  <p className="text-xl font-bold text-orange-500">{formatCurrency(totalMarketingCostAllTime)}</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Select value={period} onValueChange={(value) => handlePeriodChange(value as PeriodFilter)}>
