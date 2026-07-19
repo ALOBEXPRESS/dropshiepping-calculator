@@ -148,18 +148,23 @@ export const useHeroStats = (
         const currentOrders_ = currentOrders ?? [];
         const orderIds = currentOrders_.map((o) => o.id);
 
-        // ── bling_orders → total_products ─────────────────────────────────
+        // ── bling_orders → total_products + tiktok fields ────────────────
         const blingOrderIds = currentOrders_
           .map((o) => (o as unknown as { bling_order_id?: string }).bling_order_id)
           .filter(Boolean) as string[];
         const blingTotalProducts: Record<string, number> = {};
+        const blingTiktokData: Record<string, { tiktok_retorno_liquido: number | null; tiktok_reembolso_disabled: boolean }> = {};
         if (blingOrderIds.length > 0) {
           const { data: blingRows } = await supabase
             .from('bling_orders')
-            .select('id, total_products')
+            .select('id, total_products, tiktok_retorno_liquido, tiktok_reembolso_disabled')
             .in('id', blingOrderIds);
-          (blingRows ?? []).forEach((bo: { id: string; total_products?: number }) => {
+          (blingRows ?? []).forEach((bo: { id: string; total_products?: number; tiktok_retorno_liquido?: number | null; tiktok_reembolso_disabled?: boolean }) => {
             blingTotalProducts[bo.id] = Number(bo.total_products ?? 0);
+            blingTiktokData[bo.id] = {
+              tiktok_retorno_liquido: bo.tiktok_retorno_liquido ?? null,
+              tiktok_reembolso_disabled: bo.tiktok_reembolso_disabled ?? false,
+            };
           });
         }
 
@@ -272,8 +277,8 @@ export const useHeroStats = (
               other_expenses: Number(o.other_expenses ?? 0),
               marketplace_commission: Number(o.marketplace_commission ?? 0),
               is_free_sample: o.is_free_sample,
-              tiktok_reembolso_disabled: undefined,
-              tiktok_retorno_liquido: undefined,
+              tiktok_reembolso_disabled: blingOrderId ? (blingTiktokData[blingOrderId]?.tiktok_reembolso_disabled ?? undefined) : undefined,
+              tiktok_retorno_liquido: blingOrderId ? (blingTiktokData[blingOrderId]?.tiktok_retorno_liquido ?? undefined) : undefined,
               marketplace: marketplaceName,
               products: itemsByOrder[o.id] as {
                 quantity: number;
