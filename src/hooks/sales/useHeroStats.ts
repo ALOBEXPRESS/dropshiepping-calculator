@@ -126,11 +126,25 @@ export const useHeroStats = (
         const previousTotalOrders = previousOrders.length;
 
         const currentUniqueCustomers = new Set(
-          (currentOrders as Record<string, unknown>[]).map((o) => o.customer_name ?? o.lead_id ?? o.customer_id).filter(Boolean)
+          (currentOrders as Record<string, unknown>[]).map((o) => 
+            (o.customer_name as string | null) || (o.lead_id as string | null) || (o.order_id as string)
+          ).filter(Boolean)
         );
         const previousUniqueCustomers = new Set(
-          (previousOrders as Record<string, unknown>[]).map((o) => o.customer_name ?? o.lead_id ?? o.customer_id).filter(Boolean)
+          (previousOrders as Record<string, unknown>[]).map((o) =>
+            (o.customer_name as string | null) || (o.lead_id as string | null) || (o.order_id as string)
+          ).filter(Boolean)
         );
+
+        // Products sold = total quantity of items across all orders this period
+        const currentProductsSold = (currentOrders as Record<string, unknown>[]).reduce((sum, o) => {
+          const products = (o.products as Record<string, unknown>[] | null) ?? [];
+          return sum + products.reduce((s, p) => s + Number(p.quantity ?? 1), 0);
+        }, 0);
+        const previousProductsSold = (previousOrders as Record<string, unknown>[]).reduce((sum, o) => {
+          const products = (o.products as Record<string, unknown>[] | null) ?? [];
+          return sum + products.reduce((s, p) => s + Number(p.quantity ?? 1), 0);
+        }, 0);
 
         // Products count via DB (products don't come from RPC)
         const now = new Date();
@@ -154,11 +168,11 @@ export const useHeroStats = (
           totalRevenue: totalProfit,
           totalOrders,
           totalCustomers,
-          totalProducts: productsCount || 0,
+          totalProducts: currentProductsSold,
           revenueChange: Math.round(pct(totalProfit, previousTotalProfit)),
           ordersChange: Math.round(pct(totalOrders, previousTotalOrders)),
           customersChange: Math.round(pct(totalCustomers, previousTotalCustomers)),
-          productsChange: Math.round(pct(productsCount || 0, previousProductsCount || 0)),
+          productsChange: Math.round(pct(currentProductsSold, previousProductsSold)),
           previousRevenue: previousTotalProfit,
         });
       } catch (err) {

@@ -1747,8 +1747,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     });
   }, [data, orderEnrichmentById, affiliateByOrderId, computeOrderRealProfit, marketingCostByProductId]);
 
-  // Window size per period — mensal: todos os meses (sem janela), semanal/diário: parcial com setas
-  const windowSize = period === 'daily' ? 14 : period === 'weekly' ? 12 : period === 'monthly' ? Math.max(recalculatedData.length, 1) : 5;
+  // Window size per period — mensal: 3 meses visíveis com scroll, semanal/diário: parcial com setas
+  const windowSize = period === 'daily' ? 14 : period === 'weekly' ? 12 : period === 'monthly' ? 3 : 5;
   const maxOffset = Math.max(0, recalculatedData.length - windowSize);
   const visibleData = recalculatedData.slice(windowOffset, windowOffset + windowSize);
 
