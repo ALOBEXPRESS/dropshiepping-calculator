@@ -250,6 +250,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [manualCostOverrides, setManualCostOverrides] = useState<Record<number, string>>({});
   const [manualShipping, setManualShipping] = useState<string>('');
   const [manualMarketingCost, setManualMarketingCost] = useState<string>('');
+  const [manualCostEnabled, setManualCostEnabled] = useState(false);
   const [openMarketingCost, setOpenMarketingCost] = useState(false);
   const [marketingCostByProductId, setMarketingCostByProductId] = useState<Record<string, number>>({});
   const [savingMarketingCost, setSavingMarketingCost] = useState(false);
@@ -1488,6 +1489,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             );
             setManualOrderDate(merged.order_date ?? '');
             setManualMarketingCost('');
+            setManualCostEnabled(false);
             setManualCoupon('');
             setManualCouponType('fixed');
             setSavingCoupon(false);
@@ -1519,6 +1521,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   setManualMarketingCost(
                     new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(ec.marketing_cost)
                   );
+                  // If no campaign linked, it's a manual cost
+                  if (!ec.campaign_id) setManualCostEnabled(true);
                 }
                 // Auto-fill coupon from orders.coupon_value
                 const { data: orderRow } = await supabase
@@ -1676,6 +1680,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       setManualRetornoLiquido('');
       setManualOrderDate('');
       setManualMarketingCost('');
+      setManualCostEnabled(false);
       setManualCoupon('');
       setManualCouponType('fixed');
       setLinkedCampaignId(null);
@@ -3386,7 +3391,28 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           Custo investido em tráfego pago para este pedido. Será subtraído do lucro.
                         </p>
 
-                        {/* Vincular Campanha */}
+                        {/* Custo Manual */}
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id="manual-cost-check"
+                            checked={manualCostEnabled}
+                            onChange={(e) => {
+                              setManualCostEnabled(e.target.checked);
+                              if (!e.target.checked) {
+                                setManualMarketingCost('');
+                                setLinkedCampaignId(null);
+                              }
+                            }}
+                            className="w-4 h-4 accent-purple-500 cursor-pointer"
+                          />
+                          <label htmlFor="manual-cost-check" className="text-zinc-400 text-xs cursor-pointer select-none">
+                            Custo manual (independente de campanha)
+                          </label>
+                        </div>
+
+                        {/* Vincular Campanha — só quando não manual */}
+                        {!manualCostEnabled && (
                         <div className="space-y-1.5">
                           <label className="text-zinc-400 text-xs">Vincular Campanha</label>
                           <select
@@ -3415,6 +3441,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             ))}
                           </select>
                         </div>
+                        )}
 
                         {/* Valor manual */}
                         <div className="flex items-center gap-3">
@@ -3424,8 +3451,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             inputMode="decimal"
                             placeholder="0,00"
                             value={manualMarketingCost}
-                            readOnly
-                            className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-400 placeholder-zinc-600 cursor-not-allowed tabular-nums"
+                            readOnly={!manualCostEnabled}
+                            onChange={manualCostEnabled ? (e) => setManualMarketingCost(e.target.value.replace(/[^0-9,.]/g, '')) : undefined}
+                            className={`flex-1 border rounded-lg px-3 py-1.5 text-sm placeholder-zinc-600 tabular-nums ${manualCostEnabled ? 'bg-zinc-800 border-zinc-600 text-white focus:outline-none focus:border-purple-500 cursor-text' : 'bg-zinc-900 border-zinc-700 text-zinc-400 cursor-not-allowed'}`}
                           />
                           {manualMarketingCost && (
                             <button onClick={() => { setManualMarketingCost(''); setLinkedCampaignId(null); }} className="text-zinc-500 hover:text-zinc-300 transition-colors">
