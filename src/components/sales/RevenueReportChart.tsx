@@ -2451,7 +2451,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             })();
             const realProfit = isFreeSample
               ? -totalProductCost
-              : (precoVendaLiquidoFinal - totalProductCost + acrescimoManual);
+              : (precoVendaLiquidoFinal - totalProductCost + acrescimoManual - manualMarketingCostVal);
             const marginBase = Math.abs(precoVendaLiquidoFinal) > 0 ? Math.abs(precoVendaLiquidoFinal) : selectedOrder.total_amount;
             const margin = marginBase > 0
               ? ((realProfit / marginBase) * 100).toFixed(1) : '0.0';
@@ -3401,7 +3401,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                               setManualCostEnabled(e.target.checked);
                               if (!e.target.checked) {
                                 setManualMarketingCost('');
-                                setLinkedCampaignId(null);
+                                // Keep linkedCampaignId — campaign still shown
                               }
                             }}
                             className="w-4 h-4 accent-purple-500 cursor-pointer"
