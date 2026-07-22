@@ -1040,6 +1040,8 @@ const legacyProductSelectColumns = [
   'supplier_gateway_fee_value',
   'supplier_gateway_fee_percent',
   'supplier_gateway_fee_fixed',
+  'affiliates',
+  'influencers',
 ].join(',');
 
 const dimensionColumnList = ['peso', 'largura', 'altura', 'profundidade', 'unidade_medida'];
