@@ -313,7 +313,9 @@ export const calculateMetrics = (
     currentConversionRate: number = 0,
     influencers: Influencer[] = [],
     affiliates: Affiliate[] = [],
-    tiktokSfpEnabled: boolean = false
+    tiktokSfpEnabled: boolean = false,
+    tiktokPromoProductValue: number = 0,
+    tiktokPromoProductType: 'fixed' | 'percent' = 'fixed'
 ): CalculationResult => {
   // Calculate supplier fee (if fixed, add to cost. If percent, it depends on selling price - handled later)
   const supplierFeeCostFixed = supplierFeeType === 'fixed' ? supplierFeeVal : 0;
@@ -1013,8 +1015,15 @@ export const calculateMetrics = (
   const tiktokSfpFee = (currentMarketplace === 'tiktok' && tiktokSfpEnabled) 
     ? effectiveSellingPrice * 0.06 
     : 0;
-  
-  const netRevenue = effectiveSellingPrice - marketplaceCost - finalFixedFee - gatewayCost - totalCost - supplierFeeCost - adsCostPerSale - paidTrafficCost - paidTrafficGatewayCost - shopeeCouponTotal - influencerCost - affiliateCost - tiktokSfpFee;
+
+  // TikTok product discount cost (reduces seller revenue)
+  const tiktokProductDiscountCost = currentMarketplace === 'tiktok' && tiktokPromoProductValue > 0
+    ? (tiktokPromoProductType === 'percent'
+        ? effectiveSellingPrice * (tiktokPromoProductValue / 100)
+        : tiktokPromoProductValue)
+    : 0;
+
+  const netRevenue = effectiveSellingPrice - marketplaceCost - finalFixedFee - gatewayCost - totalCost - supplierFeeCost - adsCostPerSale - paidTrafficCost - paidTrafficGatewayCost - shopeeCouponTotal - influencerCost - affiliateCost - tiktokSfpFee - tiktokProductDiscountCost;
   const actualMargin = (netRevenue / effectiveSellingPrice) * 100;
   
   const breakevenCPA = netRevenue + totalCPA; 

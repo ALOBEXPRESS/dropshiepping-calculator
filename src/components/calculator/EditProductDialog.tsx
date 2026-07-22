@@ -748,7 +748,9 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       formData.shopeeFollowerCouponType || product?.shopeeFollowerCouponType || 'fixed',
       formData.shopeeSellerVoucherType || product?.shopeeSellerVoucherType || 'fixed',
       conversionRate
-    , [], formData.affiliates
+    , [], formData.affiliates,
+    parseCurrency(formData.tiktokPromoProductValue ?? 0),
+    formData.tiktokPromoProductType || 'fixed'
     );
   };
 
