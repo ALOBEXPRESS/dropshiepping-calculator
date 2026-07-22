@@ -749,6 +749,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       formData.shopeeSellerVoucherType || product?.shopeeSellerVoucherType || 'fixed',
       conversionRate
     , [], formData.affiliates,
+    !!(formData as { tiktokSfpEnabled?: boolean }).tiktokSfpEnabled,
     parseCurrency(formData.tiktokPromoProductValue ?? 0),
     formData.tiktokPromoProductType || 'fixed'
     );
