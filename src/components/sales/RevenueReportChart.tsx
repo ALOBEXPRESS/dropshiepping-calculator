@@ -3471,7 +3471,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                     .from('campaign_order_costs')
                                     .upsert({
                                       order_id: selectedOrder.order_id,
-                                      campaign_id: linkedCampaignId ?? null,
+                                      campaign_id: manualCostEnabled ? null : (linkedCampaignId ?? null),
                                       marketing_cost: cost,
                                       organization_id: organizationId,
                                     }, { onConflict: 'order_id' });
