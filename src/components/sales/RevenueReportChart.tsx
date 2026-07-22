@@ -3411,36 +3411,17 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           </label>
                         </div>
 
-                        {/* Vincular Campanha — só quando não manual */}
-                        {!manualCostEnabled && (
-                        <div className="space-y-1.5">
-                          <label className="text-zinc-400 text-xs">Vincular Campanha</label>
-                          <select
-                            value={linkedCampaignId ?? ''}
-                            onChange={async (e) => {
-                              const cid = e.target.value || null;
-                              setLinkedCampaignId(cid);
-                              if (cid) {
-                                const found = availableCampaigns.find((c) => c.id === cid);
-                                if (found?.marketing_cost != null) {
-                                  setManualMarketingCost(
-                                    new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(found.marketing_cost)
-                                  );
-                                }
-                              } else {
-                                setManualMarketingCost('');
-                              }
-                            }}
-                            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-purple-500"
-                          >
-                            <option value="">— Nenhuma campanha —</option>
-                            {availableCampaigns.map((c) => (
-                              <option key={c.id} value={c.id}>
-                                {c.name}{c.marketing_cost != null ? ` · R$ ${new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(c.marketing_cost)}` : ''}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
+                        {/* Campanha vinculada — sempre read-only, sempre visível se existir */}
+                        {linkedCampaignId && (
+                          <div className="space-y-1.5">
+                            <label className="text-zinc-400 text-xs">Campanha Vinculada</label>
+                            <div className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-300 cursor-not-allowed">
+                              {availableCampaigns.find(c => c.id === linkedCampaignId)?.name ?? '—'}
+                              {availableCampaigns.find(c => c.id === linkedCampaignId)?.marketing_cost != null && (
+                                <span className="text-zinc-500 ml-1">· R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(availableCampaigns.find(c => c.id === linkedCampaignId)!.marketing_cost!)}</span>
+                              )}
+                            </div>
+                          </div>
                         )}
 
                         {/* Valor manual */}
