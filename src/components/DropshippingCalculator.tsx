@@ -3426,7 +3426,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                     return discount > 0 ? (
                       <div className={`flex justify-between items-center py-2 border-b ${['low','excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'}`}>
                         <span className={['low','excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>Desconto Produto ({tiktokPromoProductType === 'percent' ? `${tiktokPromoProductValue}%` : `R$ ${tiktokPromoProductValue}`})</span>
-                        <span className={`font-semibold ${['low','excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'}`}>- R$ {formatMoney(String(discount))}</span>
+                        <span className={`font-semibold ${['low','excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'}`}>- R$ {formatMoney(discount)}</span>
                       </div>
                     ) : null;
                   })()}
@@ -3439,7 +3439,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                     return discount > 0 ? (
                       <div className={`flex justify-between items-center py-2 border-b ${['low','excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'}`}>
                         <span className={['low','excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>Cupom Novos Clientes ({tiktokPromoNewCustomerType === 'percent' ? `${tiktokPromoNewCustomerValue}%` : `R$ ${tiktokPromoNewCustomerValue}`})</span>
-                        <span className={`font-semibold ${['low','excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'}`}>- R$ {formatMoney(String(discount))}</span>
+                        <span className={`font-semibold ${['low','excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'}`}>- R$ {formatMoney(discount)}</span>
                       </div>
                     ) : null;
                   })()}
@@ -3449,7 +3449,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                     return discount > 0 ? (
                       <div className={`flex justify-between items-center py-2 border-b ${['low','excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'}`}>
                         <span className={['low','excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>Desconto Frete</span>
-                        <span className={`font-semibold ${['low','excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'}`}>- R$ {formatMoney(String(discount))}</span>
+                        <span className={`font-semibold ${['low','excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'}`}>- R$ {formatMoney(discount)}</span>
                       </div>
                     ) : null;
                   })()}
