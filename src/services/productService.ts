@@ -144,13 +144,13 @@ type ProductRow = {
   tiktok_daily_budget?: number | null;
   tiktok_campaign_id?: string | null;
   roi_target?: number | null;
-  tiktok_promo_product_value?: number | null;
-  tiktok_promo_product_type?: string | null;
-  tiktok_promo_product_until?: string | null;
-  tiktok_promo_new_customer_value?: number | null;
-  tiktok_promo_new_customer_type?: string | null;
-  tiktok_promo_shipping_value?: number | null;
-  tiktok_promo_shipping_type?: string | null;
+  tiktok_product_discount_value?: number | null;
+  tiktok_product_discount_type?: string | null;
+  tiktok_product_discount_until?: string | null;
+  tiktok_new_customer_coupon_value?: number | null;
+  tiktok_new_customer_coupon_type?: string | null;
+  tiktok_shipping_discount_value?: number | null;
+  tiktok_shipping_discount_type?: string | null;
   tiktok_cpa?: number | null;
   tiktok_ads_sales_quantity?: number | null;
   tiktok_cpm?: number | null;
@@ -355,13 +355,13 @@ type ProductPayload = {
   tiktok_daily_budget?: number | null;
   tiktok_campaign_id?: string | null;
   roi_target?: number | null;
-  tiktok_promo_product_value?: number | null;
-  tiktok_promo_product_type?: string | null;
-  tiktok_promo_product_until?: string | null;
-  tiktok_promo_new_customer_value?: number | null;
-  tiktok_promo_new_customer_type?: string | null;
-  tiktok_promo_shipping_value?: number | null;
-  tiktok_promo_shipping_type?: string | null;
+  tiktok_product_discount_value?: number | null;
+  tiktok_product_discount_type?: string | null;
+  tiktok_product_discount_until?: string | null;
+  tiktok_new_customer_coupon_value?: number | null;
+  tiktok_new_customer_coupon_type?: string | null;
+  tiktok_shipping_discount_value?: number | null;
+  tiktok_shipping_discount_type?: string | null;
   tiktok_cpa?: number | null;
   tiktok_ads_sales_quantity?: number | null;
   tiktok_cpm?: number | null;
@@ -935,13 +935,13 @@ const mapProductRow = (item: ProductRow): ProductItem => ({
   tiktokDailyBudget: item.tiktok_daily_budget != null ? String(item.tiktok_daily_budget) : '',
   tiktokCampaignId: item.tiktok_campaign_id ?? undefined,
   roiTarget: item.roi_target != null ? String(item.roi_target) : '',
-  tiktokPromoProductValue: item.tiktok_promo_product_value != null ? String(item.tiktok_promo_product_value) : '',
-  tiktokPromoProductType: (item.tiktok_promo_product_type ?? 'fixed') as 'fixed' | 'percent',
-  tiktokPromoProductUntil: item.tiktok_promo_product_until ?? '',
-  tiktokPromoNewCustomerValue: item.tiktok_promo_new_customer_value != null ? String(item.tiktok_promo_new_customer_value) : '',
-  tiktokPromoNewCustomerType: (item.tiktok_promo_new_customer_type ?? 'fixed') as 'fixed' | 'percent',
-  tiktokPromoShippingValue: item.tiktok_promo_shipping_value != null ? String(item.tiktok_promo_shipping_value) : '',
-  tiktokPromoShippingType: (item.tiktok_promo_shipping_type ?? 'fixed') as 'fixed' | 'percent',
+  tiktokPromoProductValue: item.tiktok_product_discount_value != null ? String(item.tiktok_product_discount_value) : '',
+  tiktokPromoProductType: (item.tiktok_product_discount_type ?? 'fixed') as 'fixed' | 'percent',
+  tiktokPromoProductUntil: item.tiktok_product_discount_until ?? '',
+  tiktokPromoNewCustomerValue: item.tiktok_new_customer_coupon_value != null ? String(item.tiktok_new_customer_coupon_value) : '',
+  tiktokPromoNewCustomerType: (item.tiktok_new_customer_coupon_type ?? 'fixed') as 'fixed' | 'percent',
+  tiktokPromoShippingValue: item.tiktok_shipping_discount_value != null ? String(item.tiktok_shipping_discount_value) : '',
+  tiktokPromoShippingType: (item.tiktok_shipping_discount_type ?? 'fixed') as 'fixed' | 'percent',
   tiktokCPA: item.tiktok_cpa != null ? String(item.tiktok_cpa) : '',
   tiktokAdsSalesQuantity: item.tiktok_ads_sales_quantity != null ? String(item.tiktok_ads_sales_quantity) : '',
   tiktokCPM: item.tiktok_cpm != null ? String(item.tiktok_cpm) : '',
@@ -1175,13 +1175,13 @@ const productSelectColumnList = [
   'tiktok_daily_budget',
   'tiktok_campaign_id',
   'roi_target',
-  'tiktok_promo_product_value',
-  'tiktok_promo_product_type',
-  'tiktok_promo_product_until',
-  'tiktok_promo_new_customer_value',
-  'tiktok_promo_new_customer_type',
-  'tiktok_promo_shipping_value',
-  'tiktok_promo_shipping_type',
+  'tiktok_product_discount_value',
+  'tiktok_product_discount_type',
+  'tiktok_product_discount_until',
+  'tiktok_new_customer_coupon_value',
+  'tiktok_new_customer_coupon_type',
+  'tiktok_shipping_discount_value',
+  'tiktok_shipping_discount_type',
   'tiktok_cpa',
   'tiktok_ads_sales_quantity',
   'tiktok_cpm',
@@ -1630,13 +1630,13 @@ export const ProductService = {
         : null,
       tiktok_campaign_id: (product as {tiktokCampaignId?: string}).tiktokCampaignId || null,
       roi_target: (product as {roiTarget?: string}).roiTarget ? parseFloat(String((product as {roiTarget?: string}).roiTarget).replace(',', '.')) || null : null,
-      tiktok_promo_product_value: (product as {tiktokPromoProductValue?: string}).tiktokPromoProductValue ? parseFloat(String((product as {tiktokPromoProductValue?: string}).tiktokPromoProductValue).replace(',', '.')) || null : null,
-      tiktok_promo_product_type: (product as {tiktokPromoProductType?: string}).tiktokPromoProductType || null,
-      tiktok_promo_product_until: (product as {tiktokPromoProductUntil?: string}).tiktokPromoProductUntil || null,
-      tiktok_promo_new_customer_value: (product as {tiktokPromoNewCustomerValue?: string}).tiktokPromoNewCustomerValue ? parseFloat(String((product as {tiktokPromoNewCustomerValue?: string}).tiktokPromoNewCustomerValue).replace(',', '.')) || null : null,
-      tiktok_promo_new_customer_type: (product as {tiktokPromoNewCustomerType?: string}).tiktokPromoNewCustomerType || null,
-      tiktok_promo_shipping_value: (product as {tiktokPromoShippingValue?: string}).tiktokPromoShippingValue ? parseFloat(String((product as {tiktokPromoShippingValue?: string}).tiktokPromoShippingValue).replace(',', '.')) || null : null,
-      tiktok_promo_shipping_type: (product as {tiktokPromoShippingType?: string}).tiktokPromoShippingType || null,
+      tiktok_product_discount_value: (product as {tiktokPromoProductValue?: string}).tiktokPromoProductValue ? parseFloat(String((product as {tiktokPromoProductValue?: string}).tiktokPromoProductValue).replace(',', '.')) || null : null,
+      tiktok_product_discount_type: (product as {tiktokPromoProductType?: string}).tiktokPromoProductType || null,
+      tiktok_product_discount_until: (product as {tiktokPromoProductUntil?: string}).tiktokPromoProductUntil || null,
+      tiktok_new_customer_coupon_value: (product as {tiktokPromoNewCustomerValue?: string}).tiktokPromoNewCustomerValue ? parseFloat(String((product as {tiktokPromoNewCustomerValue?: string}).tiktokPromoNewCustomerValue).replace(',', '.')) || null : null,
+      tiktok_new_customer_coupon_type: (product as {tiktokPromoNewCustomerType?: string}).tiktokPromoNewCustomerType || null,
+      tiktok_shipping_discount_value: (product as {tiktokPromoShippingValue?: string}).tiktokPromoShippingValue ? parseFloat(String((product as {tiktokPromoShippingValue?: string}).tiktokPromoShippingValue).replace(',', '.')) || null : null,
+      tiktok_shipping_discount_type: (product as {tiktokPromoShippingType?: string}).tiktokPromoShippingType || null,
       tiktok_cpa: product.tiktokCPA !== undefined && product.tiktokCPA !== null && product.tiktokCPA !== ''
         ? parseCurrency(product.tiktokCPA)
         : null,
@@ -1883,13 +1883,13 @@ export const ProductService = {
         : null,
       tiktok_campaign_id: (product as {tiktokCampaignId?: string}).tiktokCampaignId || null,
       roi_target: (product as {roiTarget?: string}).roiTarget ? parseFloat(String((product as {roiTarget?: string}).roiTarget).replace(',', '.')) || null : null,
-      tiktok_promo_product_value: (product as {tiktokPromoProductValue?: string}).tiktokPromoProductValue ? parseFloat(String((product as {tiktokPromoProductValue?: string}).tiktokPromoProductValue).replace(',', '.')) || null : null,
-      tiktok_promo_product_type: (product as {tiktokPromoProductType?: string}).tiktokPromoProductType || null,
-      tiktok_promo_product_until: (product as {tiktokPromoProductUntil?: string}).tiktokPromoProductUntil || null,
-      tiktok_promo_new_customer_value: (product as {tiktokPromoNewCustomerValue?: string}).tiktokPromoNewCustomerValue ? parseFloat(String((product as {tiktokPromoNewCustomerValue?: string}).tiktokPromoNewCustomerValue).replace(',', '.')) || null : null,
-      tiktok_promo_new_customer_type: (product as {tiktokPromoNewCustomerType?: string}).tiktokPromoNewCustomerType || null,
-      tiktok_promo_shipping_value: (product as {tiktokPromoShippingValue?: string}).tiktokPromoShippingValue ? parseFloat(String((product as {tiktokPromoShippingValue?: string}).tiktokPromoShippingValue).replace(',', '.')) || null : null,
-      tiktok_promo_shipping_type: (product as {tiktokPromoShippingType?: string}).tiktokPromoShippingType || null,
+      tiktok_product_discount_value: (product as {tiktokPromoProductValue?: string}).tiktokPromoProductValue ? parseFloat(String((product as {tiktokPromoProductValue?: string}).tiktokPromoProductValue).replace(',', '.')) || null : null,
+      tiktok_product_discount_type: (product as {tiktokPromoProductType?: string}).tiktokPromoProductType || null,
+      tiktok_product_discount_until: (product as {tiktokPromoProductUntil?: string}).tiktokPromoProductUntil || null,
+      tiktok_new_customer_coupon_value: (product as {tiktokPromoNewCustomerValue?: string}).tiktokPromoNewCustomerValue ? parseFloat(String((product as {tiktokPromoNewCustomerValue?: string}).tiktokPromoNewCustomerValue).replace(',', '.')) || null : null,
+      tiktok_new_customer_coupon_type: (product as {tiktokPromoNewCustomerType?: string}).tiktokPromoNewCustomerType || null,
+      tiktok_shipping_discount_value: (product as {tiktokPromoShippingValue?: string}).tiktokPromoShippingValue ? parseFloat(String((product as {tiktokPromoShippingValue?: string}).tiktokPromoShippingValue).replace(',', '.')) || null : null,
+      tiktok_shipping_discount_type: (product as {tiktokPromoShippingType?: string}).tiktokPromoShippingType || null,
       tiktok_cpa: product.tiktokCPA !== undefined && product.tiktokCPA !== null && product.tiktokCPA !== ''
         ? parseCurrency(product.tiktokCPA)
         : null,
