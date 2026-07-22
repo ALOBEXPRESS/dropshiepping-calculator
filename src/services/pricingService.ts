@@ -1075,7 +1075,7 @@ export const calculateMetrics = (
       paidTrafficGatewayCost: paidTrafficGatewayCost.toFixed(2),
       adsCostPerSale: adsCostPerSale.toFixed(2),
       totalCPA: totalCPA.toFixed(2),
-    totalFees: (marketplaceCost + finalFixedFee + gatewayCost + paidTrafficCost + adsCostPerSale + pkgCost + supplierFeeCost + supplierGatewayCost + marketplaceShippingCost + paidTrafficGatewayCost + shopeeCouponTotal + influencerCost + affiliateCost + tiktokSfpFee).toFixed(2),
+    totalFees: (marketplaceCost + finalFixedFee + gatewayCost + paidTrafficCost + adsCostPerSale + pkgCost + supplierFeeCost + supplierGatewayCost + marketplaceShippingCost + paidTrafficGatewayCost + shopeeCouponTotal + influencerCost + affiliateCost + tiktokSfpFee + tiktokProductDiscountCost).toFixed(2),
     shopeeStoreCoupon: shopeeStoreCouponValue.toFixed(2),
     shopeeProductCoupon: shopeeProductCouponValue.toFixed(2),
     shopeeFollowerCoupon: shopeeFollowerCouponValue.toFixed(2),
