@@ -4184,7 +4184,8 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                       <Select
                         value={/^gte_\d+$/.test(productFilters.promoFilter || '') ? 'custom' : (productFilters.promoFilter || 'all')}
                         onValueChange={(value) => {
-                          if (value !== 'custom') handleProductFilterChange('promoFilter', value);
+                          if (value === 'custom') handleProductFilterChange('promoFilter', 'gte_');
+                          else handleProductFilterChange('promoFilter', value);
                         }}
                       >
                         <SelectTrigger className="border-dashed border-orange-300 dark:border-orange-700 flex-1 min-w-0">
@@ -4197,6 +4198,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                           <SelectItem value="custom">≥ X% (manual)</SelectItem>
                         </SelectContent>
                       </Select>
+                      {/^gte_\d*$/.test(productFilters.promoFilter || '') && (
                       <div className="relative w-20 shrink-0">
                         <input
                           type="number"
@@ -4209,13 +4211,15 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                           })()}
                           onChange={(e) => {
                             const v = e.target.value.replace(/[^\d]/g, '');
-                            handleProductFilterChange('promoFilter', v ? `gte_${v}` : 'all');
+                            handleProductFilterChange('promoFilter', v ? `gte_${v}` : 'gte_');
                           }}
                           placeholder="%"
                           className="h-10 w-full rounded-md border border-orange-300 bg-background px-2 text-sm text-center placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-orange-400 dark:border-orange-700 dark:bg-zinc-900 dark:text-zinc-100"
+                          autoFocus
                         />
                         <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-orange-400">%</span>
                       </div>
+                      )}
                     </div>
 
                     {/* Linha 4: Preço mínimo | Preço máximo | Lucro mínimo | Lucro máximo */}
