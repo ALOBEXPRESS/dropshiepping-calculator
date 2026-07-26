@@ -11,7 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import type { ProductItem } from '@/types/calculator';
 import { parseCurrency } from '@/utils/currency';
-import { Tag, Percent, DollarSign, ChevronDown, ChevronUp, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 interface BulkEditModalProps {
   open: boolean;
