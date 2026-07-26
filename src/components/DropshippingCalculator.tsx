@@ -4154,21 +4154,44 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                         ))}
                       </SelectContent>
                     </Select>
-                    <Select value={productFilters.promoFilter || "all"} onValueChange={(value) => handleProductFilterChange('promoFilter', value)}>
-                      <SelectTrigger className="border-dashed border-orange-300 dark:border-orange-700">
-                        <SelectValue placeholder="Promoção TikTok" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todas (promoção)</SelectItem>
-                        <SelectItem value="with">🏷️ Com desconto</SelectItem>
-                        <SelectItem value="without">○ Sem desconto</SelectItem>
-                        <SelectItem value="gte_5">≥ 5% desconto</SelectItem>
-                        <SelectItem value="gte_10">≥ 10% desconto</SelectItem>
-                        <SelectItem value="gte_15">≥ 15% desconto</SelectItem>
-                        <SelectItem value="gte_20">≥ 20% desconto</SelectItem>
-                        <SelectItem value="gte_30">≥ 30% desconto</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    {/* Promoção TikTok: Select preset + input manual */}
+                    <div className="flex gap-1">
+                      <Select
+                        value={/^gte_\d+$/.test(productFilters.promoFilter || '') ? 'custom' : (productFilters.promoFilter || 'all')}
+                        onValueChange={(value) => {
+                          if (value !== 'custom') handleProductFilterChange('promoFilter', value);
+                        }}
+                      >
+                        <SelectTrigger className="border-dashed border-orange-300 dark:border-orange-700 flex-1 min-w-0">
+                          <SelectValue placeholder="Promoção TikTok" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todas (promoção)</SelectItem>
+                          <SelectItem value="with">🏷️ Com desconto</SelectItem>
+                          <SelectItem value="without">○ Sem desconto</SelectItem>
+                          <SelectItem value="custom">≥ X% (manual)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="relative w-20 shrink-0">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="1"
+                          value={(() => {
+                            const m = (productFilters.promoFilter || '').match(/^gte_(\d+)$/);
+                            return m ? m[1] : '';
+                          })()}
+                          onChange={(e) => {
+                            const v = e.target.value.replace(/[^\d]/g, '');
+                            handleProductFilterChange('promoFilter', v ? `gte_${v}` : 'all');
+                          }}
+                          placeholder="%"
+                          className="h-10 w-full rounded-md border border-orange-300 bg-background px-2 text-sm text-center placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-orange-400 dark:border-orange-700 dark:bg-zinc-900 dark:text-zinc-100"
+                        />
+                        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-orange-400">%</span>
+                      </div>
+                    </div>
 
                     {/* Linha 4: Preço mínimo | Preço máximo | Lucro mínimo | Lucro máximo */}
                     <div className="relative">
