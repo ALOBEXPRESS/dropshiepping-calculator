@@ -50,6 +50,14 @@ import shopeeAdsMoney from '../../imgs/3d-render-realistic-currency-money-brazil
 import dollarImage from '../../imgs/dólar.png';
 import commissionIcon from '../../imgs/comission.png';
 import olxLogo from '../../imgs/olx.png';
+import tiktokOff5 from '../../imgs/5OFF.png';
+import tiktokOff10 from '../../imgs/10OFF.png';
+import tiktokOff15 from '../../imgs/15OFF.png';
+import tiktokOff20 from '../../imgs/20OFF.png';
+import tiktokOff25 from '../../imgs/25OFF.png';
+import tiktokOff30 from '../../imgs/30OFF.png';
+import tiktokOff35 from '../../imgs/35OFF.png';
+import tiktokOff40 from '../../imgs/40OFF.png';
 import { parseCurrency } from '../../utils/currency';
 import { calculateMetrics } from '../../services/pricingService';
 import { useTiktokCommission } from '../../hooks/useTiktokCommission';
@@ -1052,6 +1060,37 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                       />
                     </div>
                   )}
+                  {/* TikTok discount badge */}
+                  {product.marketplace === 'tiktok' && (() => {
+                    const promoVal = parseCurrency(product.tiktokPromoProductValue ?? 0);
+                    if (promoVal <= 0) return null;
+                    // Resolve effective percent
+                    const sp = parseCurrency(product.sellingPrice ?? 0);
+                    const effectivePct = product.tiktokPromoProductType === 'percent'
+                      ? promoVal
+                      : sp > 0 ? Math.round((promoVal / sp) * 100) : 0;
+                    // Map to nearest badge (5,10,15,20,25,30,35,40)
+                    const offBadges: Record<number, string> = {
+                      5: tiktokOff5, 10: tiktokOff10, 15: tiktokOff15, 20: tiktokOff20,
+                      25: tiktokOff25, 30: tiktokOff30, 35: tiktokOff35, 40: tiktokOff40,
+                    };
+                    const steps = [5, 10, 15, 20, 25, 30, 35, 40];
+                    const nearest = steps.reduce((prev, cur) =>
+                      Math.abs(cur - effectivePct) < Math.abs(prev - effectivePct) ? cur : prev
+                    );
+                    const badgeSrc = effectivePct >= 5 ? offBadges[nearest] : null;
+                    if (!badgeSrc) return null;
+                    return (
+                      <div className="absolute -left-2 top-3 z-20 pointer-events-none">
+                        <img
+                          src={badgeSrc}
+                          alt={`${nearest}% OFF`}
+                          className="h-14 w-auto object-contain drop-shadow-lg"
+                          loading="lazy"
+                        />
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
               <div className="h-6 flex items-center gap-2">
