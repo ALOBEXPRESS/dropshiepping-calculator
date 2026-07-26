@@ -1414,7 +1414,10 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       // Filtro de promoção TikTok (tiktokPromoProductValue)
       const promoVal = parseCurrency(product.tiktokPromoProductValue ?? 0);
       const hasPromo = promoVal > 0;
-      const matchesPromo = !productFilters.promoFilter || productFilters.promoFilter === 'all'
+      const promoType = product.tiktokPromoProductType || 'fixed';
+      const matchesPromoType = !productFilters.promoTypeFilter || productFilters.promoTypeFilter === 'all'
+        || promoType === productFilters.promoTypeFilter;
+      const matchesPromo = (!productFilters.promoFilter || productFilters.promoFilter === 'all'
         || (productFilters.promoFilter === 'with' && hasPromo)
         || (productFilters.promoFilter === 'without' && !hasPromo)
         || (() => {
@@ -1426,7 +1429,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
             ? promoVal
             : productSellingPrice > 0 ? (promoVal / productSellingPrice) * 100 : 0;
           return effectivePct >= threshold;
-        })();
+        })()) && matchesPromoType;
 
       const matchesSearch = !normalizedGlobalSearch
         || normalizeText(productNameValue).includes(normalizedGlobalSearch)
@@ -4179,8 +4182,23 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                         ))}
                       </SelectContent>
                     </Select>
-                    {/* Promoção TikTok: Select preset + input manual */}
-                    <div className="flex gap-1">
+                    {/* Promoção TikTok: tipo cupom + valor/porcentagem */}
+                    <div className="flex gap-1 col-span-1">
+                      {/* Tipo de cupom */}
+                      <Select
+                        value={productFilters.promoTypeFilter || 'all'}
+                        onValueChange={(value) => handleProductFilterChange('promoTypeFilter', value)}
+                      >
+                        <SelectTrigger className="border-dashed border-orange-300 dark:border-orange-700 w-28 shrink-0">
+                          <SelectValue placeholder="Tipo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos tipos</SelectItem>
+                          <SelectItem value="percent">% Porcentagem</SelectItem>
+                          <SelectItem value="fixed">R$ Valor fixo</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {/* Presença / limiar */}
                       <Select
                         value={/^gte_\d+$/.test(productFilters.promoFilter || '') ? 'custom' : (productFilters.promoFilter || 'all')}
                         onValueChange={(value) => {
@@ -4189,7 +4207,12 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                         }}
                       >
                         <SelectTrigger className="border-dashed border-orange-300 dark:border-orange-700 flex-1 min-w-0">
-                          <SelectValue placeholder="Promoção TikTok" />
+                          {/* Label dinâmico: mostra valor definido quando manual */}
+                          {(() => {
+                            const m = (productFilters.promoFilter || '').match(/^gte_(\d+)$/);
+                            if (m) return <span className="text-orange-400 font-semibold">≥ {m[1]}%</span>;
+                            return <SelectValue placeholder="Promoção" />;
+                          })()}
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">Todas (promoção)</SelectItem>
@@ -4198,27 +4221,28 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                           <SelectItem value="custom">≥ X% (manual)</SelectItem>
                         </SelectContent>
                       </Select>
+                      {/* Input manual: step 5, só aparece no modo custom */}
                       {/^gte_\d*$/.test(productFilters.promoFilter || '') && (
-                      <div className="relative w-20 shrink-0">
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="1"
-                          value={(() => {
-                            const m = (productFilters.promoFilter || '').match(/^gte_(\d+)$/);
-                            return m ? m[1] : '';
-                          })()}
-                          onChange={(e) => {
-                            const v = e.target.value.replace(/[^\d]/g, '');
-                            handleProductFilterChange('promoFilter', v ? `gte_${v}` : 'gte_');
-                          }}
-                          placeholder="%"
-                          className="h-10 w-full rounded-md border border-orange-300 bg-background px-2 text-sm text-center placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-orange-400 dark:border-orange-700 dark:bg-zinc-900 dark:text-zinc-100"
-                          autoFocus
-                        />
-                        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-orange-400">%</span>
-                      </div>
+                        <div className="relative w-20 shrink-0">
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="5"
+                            value={(() => {
+                              const m = (productFilters.promoFilter || '').match(/^gte_(\d+)$/);
+                              return m ? m[1] : '';
+                            })()}
+                            onChange={(e) => {
+                              const v = e.target.value.replace(/[^\d]/g, '');
+                              handleProductFilterChange('promoFilter', v ? `gte_${v}` : 'gte_');
+                            }}
+                            placeholder="%"
+                            className="h-10 w-full rounded-md border border-orange-300 bg-background px-2 text-sm text-center placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-orange-400 dark:border-orange-700 dark:bg-zinc-900 dark:text-zinc-100"
+                            autoFocus
+                          />
+                          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-orange-400">%</span>
+                        </div>
                       )}
                     </div>
 
