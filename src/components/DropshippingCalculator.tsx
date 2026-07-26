@@ -2,7 +2,7 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import type { MouseEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Calculator, TrendingUp, Package, DollarSign, AlertCircle, Plus, Trash2, ChevronLeft, ChevronRight, Loader2, Store, Search, RefreshCcw } from 'lucide-react';
+import { Calculator, TrendingUp, Package, DollarSign, AlertCircle, Plus, Trash2, ChevronLeft, ChevronRight, Loader2, Store, Search, RefreshCcw, Pencil } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -49,6 +49,7 @@ import { ProductInfo } from './calculator/ProductInfo';
 import { ProductCard } from './calculator/ProductCard';
 import { ProductsLoaded } from './ProductsLoaded';
 import { EditProductDialog } from './calculator/EditProductDialog';
+import { BulkEditModal, type BulkUpdate } from './calculator/BulkEditModal';
 import { useDropshippingCalculator } from '../hooks/useDropshippingCalculator';
 import { ProfitProjection } from './calculator/ProfitProjection';
 import { ProductService } from '../services/productService';
@@ -551,6 +552,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
   const [showBulkUpdateModal, setShowBulkUpdateModal] = useState(false);
   const [bulkUpdateProgress, setBulkUpdateProgress] = useState<{ done: number; total: number } | null>(null);
   const bulkUpdateAbortRef = { current: false };
+  const [showBulkEditModal, setShowBulkEditModal] = useState(false);
 
   const paidTrafficInvestment = Number(calculations?.paidTrafficCost || 0);
   const shopeeTotalBudgetValue = useShopeeAds ? parseCurrency(shopeeTotalBudget || 0) : 0;
@@ -607,6 +609,17 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       setIsProductsLoading(false);
     }
   }, [organizationId, handleProductsResponse]);
+
+  const handleBulkSave = async (updates: BulkUpdate[]) => {
+    for (const u of updates) {
+      const product = products.find((p) => p.id === u.productId);
+      if (!product) continue;
+      const updated = { ...product, ...u.changes };
+      await handleUpsertProduct(updated);
+    }
+    const list = await ProductService.getAll(organizationId ?? undefined);
+    handleProductsResponse(list);
+  };
 
   const handleEditProductClick = (product: ProductItem) => {
       setEditingProduct(product);
@@ -3982,16 +3995,28 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                       <CardTitle className="tracking-tight text-2xl font-bold text-gray-800 dark:text-white font-iceland">Produtos adicionados</CardTitle>
                     </div>
                     {filteredProducts.length > 0 && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-8 border-blue-300 bg-blue-50 text-xs font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-200 dark:hover:bg-blue-900"
-                        onClick={(e) => { e.stopPropagation(); setShowBulkUpdateModal(true); }}
-                      >
-                        <RefreshCcw className="mr-1.5 h-3.5 w-3.5" />
-                        Atualizar todos ({filteredProducts.length})
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 border-orange-300 bg-orange-50 text-xs font-semibold text-orange-700 hover:bg-orange-100 dark:border-orange-700 dark:bg-orange-950 dark:text-orange-200 dark:hover:bg-orange-900"
+                          onClick={(e) => { e.stopPropagation(); setShowBulkEditModal(true); }}
+                        >
+                          <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                          Editar em massa
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 border-blue-300 bg-blue-50 text-xs font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-200 dark:hover:bg-blue-900"
+                          onClick={(e) => { e.stopPropagation(); setShowBulkUpdateModal(true); }}
+                        >
+                          <RefreshCcw className="mr-1.5 h-3.5 w-3.5" />
+                          Atualizar todos ({filteredProducts.length})
+                        </Button>
+                      </div>
                     )}
                   </CardHeader>
 
@@ -4446,6 +4471,12 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
           </footer>
         </div>
       </div>
+      <BulkEditModal
+        open={showBulkEditModal}
+        onClose={() => setShowBulkEditModal(false)}
+        products={products}
+        onSave={handleBulkSave}
+      />
       <EditProductDialog
         key={editSessionId}
         product={editingProduct}
