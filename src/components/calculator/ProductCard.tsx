@@ -408,7 +408,10 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
         product.meliPlus ?? false, supplierFeeType, supplierGatewayFeePercent, supplierGatewayFixedFee,
         supplierGatewayFeeType, amazonPlan, category, 0,
         0, 0, 0, 0, 'fixed', 'fixed', 'fixed', 'fixed', 0,
-        product.influencers || [], product.affiliates || []
+        product.influencers || [], product.affiliates || [],
+        product.tiktokSfpEnabled ?? false,
+        parseCurrency(product.tiktokPromoProductValue ?? 0),
+        product.tiktokPromoProductType || 'fixed'
       );
       return parseFloat(String(metrics.netRevenue ?? '0'));
     } catch {

@@ -1398,6 +1398,23 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       const maxPriceVal = productFilters.maxPrice ? parseCurrency(productFilters.maxPrice) : null;
       const matchesMaxPrice = maxPriceVal === null || productSellingPrice <= maxPriceVal;
 
+      // Filtro de promoção TikTok (tiktokPromoProductValue)
+      const promoVal = parseCurrency(product.tiktokPromoProductValue ?? 0);
+      const hasPromo = promoVal > 0;
+      const matchesPromo = !productFilters.promoFilter || productFilters.promoFilter === 'all'
+        || (productFilters.promoFilter === 'with' && hasPromo)
+        || (productFilters.promoFilter === 'without' && !hasPromo)
+        || (() => {
+          // e.g. "gte_10" → promoVal >= 10% or R$
+          const m = productFilters.promoFilter.match(/^gte_(\d+)$/);
+          if (!m) return true;
+          const threshold = Number(m[1]);
+          const effectivePct = product.tiktokPromoProductType === 'percent'
+            ? promoVal
+            : productSellingPrice > 0 ? (promoVal / productSellingPrice) * 100 : 0;
+          return effectivePct >= threshold;
+        })();
+
       const matchesSearch = !normalizedGlobalSearch
         || normalizeText(productNameValue).includes(normalizedGlobalSearch)
         || normalizeText(skuValue).includes(normalizedGlobalSearch)
@@ -1409,7 +1426,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         || normalizeText(skuValue).includes(normalizedProductSearch)
         || normalizeText(supplierValue).includes(normalizedProductSearch)
         || normalizeText(holderValue).includes(normalizedProductSearch);
-      return matchesMarketplace && matchesSupplier && matchesHolder && matchesAccountType && matchesCnpj && matchesVideoModel && matchesStock && matchesAffiliate && matchesCategory && matchesMinProfit && matchesMaxProfit && matchesMinPrice && matchesMaxPrice && matchesSearch && matchesLocalSearch;
+      return matchesMarketplace && matchesSupplier && matchesHolder && matchesAccountType && matchesCnpj && matchesVideoModel && matchesStock && matchesAffiliate && matchesCategory && matchesMinProfit && matchesMaxProfit && matchesMinPrice && matchesMaxPrice && matchesPromo && matchesSearch && matchesLocalSearch;
     }).sort((a, b) => {
         if (productFilters.priceSort === 'all') return 0;
         
@@ -4135,6 +4152,21 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                         {Object.entries(mercadoLivreTaxes.classico).map(([key, tax]) => (
                           <SelectItem key={key} value={key}>{tax.name}</SelectItem>
                         ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={productFilters.promoFilter || "all"} onValueChange={(value) => handleProductFilterChange('promoFilter', value)}>
+                      <SelectTrigger className="border-dashed border-orange-300 dark:border-orange-700">
+                        <SelectValue placeholder="Promoção TikTok" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todas (promoção)</SelectItem>
+                        <SelectItem value="with">🏷️ Com desconto</SelectItem>
+                        <SelectItem value="without">○ Sem desconto</SelectItem>
+                        <SelectItem value="gte_5">≥ 5% desconto</SelectItem>
+                        <SelectItem value="gte_10">≥ 10% desconto</SelectItem>
+                        <SelectItem value="gte_15">≥ 15% desconto</SelectItem>
+                        <SelectItem value="gte_20">≥ 20% desconto</SelectItem>
+                        <SelectItem value="gte_30">≥ 30% desconto</SelectItem>
                       </SelectContent>
                     </Select>
 
