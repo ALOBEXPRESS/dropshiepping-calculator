@@ -1343,7 +1343,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 const mainProductName = mergedOrder.product_name || productNamesFromItems[0] || 'Produto não vinculado';
                 const productCount = productNamesFromItems.length;
                 const productSku = mergedOrder.product_sku || (productsForDisplay[0]?.sku ?? null);
-                const { realProfit, isFreeSample } = computeOrderRealProfit(mergedOrder, resolvedMarketplaceConfig);
+                const { realProfit: rawRealProfit, isFreeSample } = computeOrderRealProfit(mergedOrder, resolvedMarketplaceConfig);
+                const manualMktDeduct1 = manualMarketingCostByOrderId[order.order_id] ?? 0;
+                const realProfit = rawRealProfit - manualMktDeduct1;
                 const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true;
                 const profitLabel = realProfit >= 0 ? 'Lucro:' : 'Prejuízo:';
                 const profitValue = realProfit >= 0
@@ -1809,16 +1811,19 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     return yearlyData.reduce((sum, item) => {
       const orders = item.orders_data ?? [];
       return sum + orders.reduce((s, o) => {
+        const orderId = (o as { order_id?: string }).order_id ?? '';
         const mergedOrder = mergeOrderForTooltip(o);
         const cfg = resolveMarketplaceConfig(
           (o as { marketplace?: string }).marketplace,
           Number((o as { commission_rate?: number }).commission_rate ?? 0),
           Number((o as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0)
         );
-        return s + computeOrderRealProfit(mergedOrder, cfg).realProfit;
+        const profit = computeOrderRealProfit(mergedOrder, cfg).realProfit;
+        const manualDeduct = manualMarketingCostByOrderId[orderId] ?? 0;
+        return s + profit - manualDeduct;
       }, 0);
     }, 0);
-  }, [yearlyData, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig]);
+  }, [yearlyData, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig, manualMarketingCostByOrderId]);
 
   // Custo total = receita - lucro (inclui produto + marketplace + frete + supplier)
   const allDataTotalCost = useMemo(() => {
@@ -2073,7 +2078,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const customerName = mergedOrder.customer_name || 'Cliente não identificado';
           const orderNumber = order.order_number || 'S/N';
 
-          const { realProfit, isFreeSample } = computeOrderRealProfit(mergedOrder, resolvedMarketplaceConfig);
+          const { realProfit: rawRealProfit2, isFreeSample } = computeOrderRealProfit(mergedOrder, resolvedMarketplaceConfig);
+          const manualMktDeduct2 = manualMarketingCostByOrderId[order.order_id] ?? 0;
+          const realProfit = rawRealProfit2 - manualMktDeduct2;
           const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true;
           const profitColor = isPersonalPurchase ? '#fed7aa' : isFreeSample ? '#e9d5ff' : (realProfit >= 0 ? '#16a34a' : '#dc2626');
           const profitLabel = realProfit >= 0 ? 'Lucro:' : 'Prejuízo:';
