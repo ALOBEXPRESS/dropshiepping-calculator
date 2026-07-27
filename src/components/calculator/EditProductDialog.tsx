@@ -449,8 +449,8 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       setEnrichedVariations([]);
       return;
     }
-    // Already have images — no need to fetch
-    const alreadyHasImages = variations.some((v) => v.imageUrl || (v.imageUrls && v.imageUrls.length > 0));
+    // Already have images — skip fetch only if ALL variations have images
+    const alreadyHasImages = variations.every((v) => v.imageUrl || (v.imageUrls && v.imageUrls && (v.imageUrls as string[]).length > 0));
     if (alreadyHasImages) {
       setEnrichedVariations(variations);
       return;
@@ -482,7 +482,25 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
           if (!imgs) return v;
           return { ...v, imageUrl: imgs[0], imageUrls: imgs };
         });
-        setEnrichedVariations(enriched);
+        // Second pass: color-based fallback for still-missing images
+        const colorImgMap = new Map<string, string>();
+        enriched.forEach((v) => {
+          if (!v.imageUrl) return;
+          const name = (v.name || '').toLowerCase();
+          // Extract color from "size - color" pattern
+          const parts = name.split('-').map((s: string) => s.trim());
+          const colorPart = parts.length > 1 ? parts[parts.length - 1] : '';
+          if (colorPart && !colorImgMap.has(colorPart)) colorImgMap.set(colorPart, v.imageUrl);
+        });
+        const enrichedWithFallback = enriched.map((v) => {
+          if (v.imageUrl) return v;
+          const name = (v.name || '').toLowerCase();
+          const parts = name.split('-').map((s: string) => s.trim());
+          const colorPart = parts.length > 1 ? parts[parts.length - 1] : '';
+          const fallbackImg = (colorPart ? colorImgMap.get(colorPart) : undefined) || product?.imageUrl || '';
+          return fallbackImg ? { ...v, imageUrl: fallbackImg } : v;
+        });
+        setEnrichedVariations(enrichedWithFallback);
       });
   }, [product?.variations, isOpen]);
   const videoModelLabels: Record<NonNullable<ProductItem['videoGenerationLlm']>, string> = {

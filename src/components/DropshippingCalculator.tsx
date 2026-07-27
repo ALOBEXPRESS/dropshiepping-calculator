@@ -1184,17 +1184,33 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       const variationTypeValue = hasSize ? 'size' : (hasColor ? 'color' : 'size');
       setVariationType(variationTypeValue);
       setHasVariations(true);
+      // Pre-build image map: for each color, use first available image of that color
+      const colorImageMap = new Map<string, string>();
+      productVariations.forEach((variation) => {
+        if (!variation.imageUrl) return;
+        const info = parseVariationInfo(variation.variationName || variation.name || '');
+        const colorKey = (info.color || '').toLowerCase().trim();
+        if (colorKey && !colorImageMap.has(colorKey)) {
+          colorImageMap.set(colorKey, variation.imageUrl);
+        }
+      });
       setVariations(productVariations.map((variation) => {
         const info = parseVariationInfo(variation.variationName || variation.name || '');
         const variationLabel = info.size && info.color
           ? `${info.size} - ${info.color}`
           : (info.size || info.color || variation.variationName || variation.name || '');
+        // Resolve imageUrl: own → same-color sibling → parent product image
+        const colorKey = (info.color || '').toLowerCase().trim();
+        const resolvedImageUrl = variation.imageUrl
+          || (colorKey ? colorImageMap.get(colorKey) : undefined)
+          || product.imageUrl
+          || '';
         return {
           id: `${variation.id}-${Date.now()}`,
           variationType: variationTypeValue,
           name: variationLabel,
           sku: variation.sku || '',
-          imageUrl: variation.imageUrl || '',
+          imageUrl: resolvedImageUrl,
           stockQuantity: variation.stockQuantity !== null && variation.stockQuantity !== undefined
             ? String(variation.stockQuantity)
             : '',
@@ -1277,6 +1293,21 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       if (blingVariations.length > 0) {
         const existingVars = existingProduct.variations || [];
 
+        // Pre-build color→image map from blingVariations
+        const colorImgMap = new Map<string, string>();
+        blingVariations.forEach((bv) => {
+          if (!bv.imageUrl) return;
+          const info = parseVariationInfo(bv.variationName || bv.name || '');
+          const ck = (info.color || '').toLowerCase().trim();
+          if (ck && !colorImgMap.has(ck)) colorImgMap.set(ck, bv.imageUrl);
+        });
+        const resolveVarImage = (bv: BlingProductItem, fallback?: string) => {
+          if (bv.imageUrl) return bv.imageUrl;
+          const info = parseVariationInfo(bv.variationName || bv.name || '');
+          const ck = (info.color || '').toLowerCase().trim();
+          return (ck ? colorImgMap.get(ck) : undefined) || blingProduct.imageUrl || fallback || '';
+        };
+
         // Merge: para cada variação do Bling, atualizar existente (por SKU) ou adicionar nova
         const mergedVariations: ProductVariationRecord[] = blingVariations.map((bv) => {
           const existingVar = existingVars.find(ev => ev.sku?.toString().trim() === bv.sku?.trim());
@@ -1287,7 +1318,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
               name: bv.variationName || bv.name || existingVar.name,
               stockQuantity: bv.stockQuantity ?? existingVar.stockQuantity,
               cost: bv.costPrice ?? existingVar.cost,
-              imageUrl: bv.imageUrl || existingVar.imageUrl,
+              imageUrl: resolveVarImage(bv, existingVar.imageUrl as string | undefined),
               weight: bv.weight ?? existingVar.weight,
               width: bv.width ?? existingVar.width,
               height: bv.height ?? existingVar.height,
@@ -1301,7 +1332,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
             sku: bv.sku || '',
             stockQuantity: bv.stockQuantity ?? 0,
             cost: bv.costPrice ?? 0,
-            imageUrl: bv.imageUrl || '',
+            imageUrl: resolveVarImage(bv),
             weight: bv.weight,
             width: bv.width,
             height: bv.height,
