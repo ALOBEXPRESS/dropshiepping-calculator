@@ -254,6 +254,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [openMarketingCost, setOpenMarketingCost] = useState(false);
   const [marketingCostByProductId, setMarketingCostByProductId] = useState<Record<string, number>>({});
   const [manualMarketingCostByOrderId, setManualMarketingCostByOrderId] = useState<Record<string, number>>({});
+  const manualMarketingCostByOrderIdRef = useRef<Record<string, number>>({});
+  manualMarketingCostByOrderIdRef.current = manualMarketingCostByOrderId;
   const [savingMarketingCost, setSavingMarketingCost] = useState(false);
   const [linkedCampaignId, setLinkedCampaignId] = useState<string | null>(null);
   const [availableCampaigns, setAvailableCampaigns] = useState<Array<{ id: string; name: string; marketing_cost: number | null }>>([]);
@@ -1344,7 +1346,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 const productCount = productNamesFromItems.length;
                 const productSku = mergedOrder.product_sku || (productsForDisplay[0]?.sku ?? null);
                 const { realProfit: rawRealProfit, isFreeSample } = computeOrderRealProfit(mergedOrder, resolvedMarketplaceConfig);
-                const manualMktDeduct1 = manualMarketingCostByOrderId[order.order_id] ?? 0;
+                const manualMktDeduct1 = manualMarketingCostByOrderIdRef.current[(order as { order_id?: string }).order_id ?? ''] ?? 0;
                 const realProfit = rawRealProfit - manualMktDeduct1;
                 const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true;
                 const profitLabel = realProfit >= 0 ? 'Lucro:' : 'Prejuízo:';
@@ -2079,7 +2081,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const orderNumber = order.order_number || 'S/N';
 
           const { realProfit: rawRealProfit2, isFreeSample } = computeOrderRealProfit(mergedOrder, resolvedMarketplaceConfig);
-          const manualMktDeduct2 = manualMarketingCostByOrderId[order.order_id] ?? 0;
+          const manualMktDeduct2 = manualMarketingCostByOrderIdRef.current[order.order_id] ?? 0;
           const realProfit = rawRealProfit2 - manualMktDeduct2;
           const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true;
           const profitColor = isPersonalPurchase ? '#fed7aa' : isFreeSample ? '#e9d5ff' : (realProfit >= 0 ? '#16a34a' : '#dc2626');
