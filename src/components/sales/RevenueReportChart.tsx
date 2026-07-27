@@ -2441,7 +2441,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
             // ── Lucro = Preço Líquido - Custo Produto ────────────────────────────
             // taxas marketplace já descontadas no precoVendaLiquidoFinal
-            const manualMarketingCostVal = parseFloat(manualMarketingCost.replace(',', '.')) || 0;
+            const manualMarketingCostVal = manualCostEnabled ? (parseFloat(manualMarketingCost.replace(',', '.')) || 0) : 0;
             const manualCouponVal = (() => {
               const v = parseFloat(manualCoupon.replace(',', '.')) || 0;
               if (v <= 0) return 0;
@@ -3371,7 +3371,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         </svg>
                         <span className="text-purple-400 font-semibold text-xs uppercase tracking-wide">Custo de Marketing</span>
                         {(() => {
-                          const mCost = manualMarketingCost !== ''
+                          const mCost = manualCostEnabled && manualMarketingCost !== ''
                             ? (parseFloat(manualMarketingCost.replace(',', '.')) || 0)
                             : 0;
                           return mCost > 0 ? (
@@ -3399,10 +3399,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             checked={manualCostEnabled}
                             onChange={(e) => {
                               setManualCostEnabled(e.target.checked);
-                              if (!e.target.checked) {
-                                setManualMarketingCost('');
-                                // Keep linkedCampaignId — campaign still shown
-                              }
+                              // Do NOT clear manualMarketingCost on uncheck — preserve for recheck
                             }}
                             className="w-4 h-4 accent-purple-500 cursor-pointer"
                           />
@@ -3445,7 +3442,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           )}
                         </div>
 
-                        {manualMarketingCost && (
+                        {manualCostEnabled && manualMarketingCost && (
                           <p className="text-[11px] text-purple-400/70">
                             -{formatCurrency(parseFloat(manualMarketingCost.replace(',', '.')) || 0)} será subtraído do lucro real.
                           </p>
