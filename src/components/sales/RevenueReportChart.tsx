@@ -253,6 +253,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [manualCostEnabled, setManualCostEnabled] = useState(false);
   const [openMarketingCost, setOpenMarketingCost] = useState(false);
   const [marketingCostByProductId, setMarketingCostByProductId] = useState<Record<string, number>>({});
+  const [manualMarketingCostByOrderId, setManualMarketingCostByOrderId] = useState<Record<string, number>>({});
   const [savingMarketingCost, setSavingMarketingCost] = useState(false);
   const [linkedCampaignId, setLinkedCampaignId] = useState<string | null>(null);
   const [availableCampaigns, setAvailableCampaigns] = useState<Array<{ id: string; name: string; marketing_cost: number | null }>>([]);
@@ -1106,6 +1107,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         .not('marketing_cost_override', 'is', null);
 
       const costMap: Record<string, number> = {};
+      const manualCostMap: Record<string, number> = {};
       // Track which campaigns we've already accounted for to avoid double-counting
       const seenCampaigns = new Map<string, number>(); // campaign_id -> cost
 
@@ -1117,12 +1119,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           if (!seenCampaigns.has(row.campaign_id)) {
             seenCampaigns.set(row.campaign_id, cost);
             costMap[`order:${row.linked_order_id}`] = cost;
+            // campaign cost — NOT manual
           } else {
             // Same campaign already counted — this order gets 0 marketing cost
             costMap[`order:${row.linked_order_id}`] = 0;
           }
         } else {
           costMap[`order:${row.linked_order_id}`] = cost;
+          manualCostMap[row.linked_order_id] = cost; // manual (no campaign)
         }
       }
 
@@ -1138,10 +1142,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           if (row.campaign_id && seenCampaigns.has(row.campaign_id)) continue; // skip duplicate campaigns
           if (row.campaign_id) seenCampaigns.set(row.campaign_id, Number(row.marketing_cost));
           costMap[`order:${row.order_id}`] = Number(row.marketing_cost ?? 0);
+          if (!row.campaign_id) {
+            manualCostMap[row.order_id] = Number(row.marketing_cost ?? 0); // manual
+          }
         }
       }
 
       setMarketingCostByProductId(costMap);
+      setManualMarketingCostByOrderId(manualCostMap);
     };
     fetchMarketingCosts().catch(() => {});
   }, [data, organizationId]);
@@ -1740,6 +1748,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         // Primary: use order_id directly mapped to cost (populated by fetchMarketingCosts below)
         const orderMarketingCost = (marketingCostByProductId as unknown as Record<string, number>)[`order:${o.order_id}`] ?? 0;
         totalMarketingCost += orderMarketingCost;
+
+        // Manual marketing cost (no campaign) deducts from profit
+        const manualMktCost = manualMarketingCostByOrderId[o.order_id] ?? 0;
+        if (manualMktCost > 0) totalProfit -= manualMktCost;
       });
 
       return {
@@ -1750,7 +1762,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         total_marketing_cost: totalMarketingCost,
       };
     });
-  }, [data, orderEnrichmentById, affiliateByOrderId, computeOrderRealProfit, marketingCostByProductId]);
+  }, [data, orderEnrichmentById, affiliateByOrderId, computeOrderRealProfit, marketingCostByProductId, manualMarketingCostByOrderId]);
 
   // Window size per period — mensal: 3 meses visíveis com scroll, semanal/diário: parcial com setas
   const windowSize = period === 'daily' ? 14 : period === 'weekly' ? 12 : period === 'monthly' ? 3 : 5;
