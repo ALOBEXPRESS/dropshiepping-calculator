@@ -1283,7 +1283,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const globalIdx = windowOffsetCurrent + visualIdx;
           const currentUnsafe = tooltipPagesRef.current[globalIdx] ?? 0;
           const current = Number.isFinite(max) ? Math.min(currentUnsafe, max) : currentUnsafe;
-          const next = dir === 'next' ? Math.min(current + 1, max) : Math.max(current - 1, 0);
+          const next = dir === 'next'
+            ? Math.min(current + 1, max)
+            : current === 0 ? max : current - 1;
 
           // Lock tooltip visible before DOM update
           const tooltipLock = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
@@ -1539,16 +1541,22 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 // Auto-fill coupon from orders.coupon_value
                 const { data: orderRow } = await supabase
                   .from('orders')
-                  .select('coupon_value, coupon_type')
+                  .select('coupon_value, coupon_type, manual_acrescimo')
                   .eq('id', merged.order_id)
                   .maybeSingle();
                 if (orderRow) {
-                  const or = orderRow as { coupon_value: number | null; coupon_type: string | null };
+                  const or = orderRow as { coupon_value: number | null; coupon_type: string | null; manual_acrescimo: number | null };
                   if (or.coupon_value != null) {
                     setManualCoupon(
                       new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(or.coupon_value)
                     );
                     setManualCouponType((or.coupon_type ?? 'fixed') as 'percent' | 'fixed');
+                  }
+                  // Load saved acrescimo if not in memory
+                  if (!saved?.manualAcrescimo && or.manual_acrescimo != null && or.manual_acrescimo > 0) {
+                    setManualAcrescimo(
+                      new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(or.manual_acrescimo)
+                    );
                   }
                 }
               } catch { /* graceful */ }
@@ -2151,8 +2159,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 data-nav-dir="prev"
                 data-nav-key="${stateKey}"
                 data-nav-max="${ordersCount - 1}"
-                style="background:${currentPage === 0 ? navBtnDisabledBg : navBtnBg};color:${currentPage === 0 ? navBtnDisabledColor : navBtnColor};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:${currentPage === 0 ? 'default' : 'pointer'};font-weight:600;line-height:1;"
-                ${currentPage === 0 ? 'disabled' : ''}
+                style="background:${navBtnBg};color:${navBtnColor};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;font-weight:600;line-height:1;"
               >‹</button>
               <span style="font-size:11px;color:${textSecondary};font-weight:500">${currentPage + 1} / ${ordersCount} pedido${ordersCount > 1 ? 's' : ''}</span>
               <button
@@ -3374,6 +3381,27 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           <p className="text-[11px] text-blue-400/70">
                             +{formatCurrency(acrescimoValue)} será somado ao lucro
                           </p>
+                        )}
+                        {/* Salvar acréscimo */}
+                        {selectedOrder?.order_id && (
+                          <button
+                            onClick={async () => {
+                              if (!selectedOrder?.order_id) return;
+                              const val = parseFloat((manualAcrescimo || '0').replace(',', '.')) || 0;
+                              await supabase
+                                .from('orders')
+                                .update({ manual_acrescimo: val > 0 ? val : null })
+                                .eq('id', selectedOrder.order_id);
+                              refetch();
+                              refetchYearly();
+                            }}
+                            className="w-full py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors flex items-center justify-center gap-2"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                            </svg>
+                            Salvar Acréscimo
+                          </button>
                         )}
                       </div>
                     )}
