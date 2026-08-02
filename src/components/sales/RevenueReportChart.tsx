@@ -3502,8 +3502,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                               const cost = parseFloat((manualMarketingCost || '0').replace(',', '.')) || 0;
                               setSavingMarketingCost(true);
                               try {
-                                if (cost === 0 && !linkedCampaignId) {
-                                  // Remove custo de marketing
+                                if ((cost === 0 && !linkedCampaignId) || (!manualCostEnabled && !linkedCampaignId)) {
+                                  // Remove custo de marketing — sem campanha e sem flag manual
                                   await supabase
                                     .from('campaign_order_costs')
                                     .delete()
