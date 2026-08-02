@@ -264,6 +264,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [savingReembolso, setSavingReembolso] = useState(false);
   const [savingRetornoLiquido, setSavingRetornoLiquido] = useState(false);
   const [manualOrderDate, setManualOrderDate] = useState<string>('');
+  // Reembolso de pedido — substitui todo cálculo de lucro pelo valor inserido
+  const [reembolsoValue, setReembolsoValue] = useState<string>('');
+  const [reembolsoMotivo, setReembolsoMotivo] = useState<string>('');
+  const [openReembolso, setOpenReembolso] = useState(false);
+  const [savingReembolsoPedido, setSavingReembolsoPedido] = useState(false);
   const [savingOrderDate, setSavingOrderDate] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef(data);
@@ -1505,6 +1510,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             setSavingCoupon(false);
             setLinkedCampaignId(null);
             setAvailableCampaigns([]);
+            setReembolsoValue('');
+            setReembolsoMotivo('');
+            setOpenReembolso(false);
             // Auto-load campaigns and pre-fill marketing cost
             (async () => {
               try {
@@ -1537,11 +1545,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 // Auto-fill coupon from orders.coupon_value
                 const { data: orderRow } = await supabase
                   .from('orders')
-                  .select('coupon_value, coupon_type, manual_acrescimo')
+                  .select('coupon_value, coupon_type, manual_acrescimo, reembolso_value, reembolso_motivo')
                   .eq('id', merged.order_id)
                   .maybeSingle();
                 if (orderRow) {
-                  const or = orderRow as { coupon_value: number | null; coupon_type: string | null; manual_acrescimo: number | null };
+                  const or = orderRow as { coupon_value: number | null; coupon_type: string | null; manual_acrescimo: number | null; reembolso_value: number | null; reembolso_motivo: string | null };
                   if (or.coupon_value != null) {
                     setManualCoupon(
                       new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(or.coupon_value)
@@ -1553,6 +1561,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                     setManualAcrescimo(
                       new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(or.manual_acrescimo)
                     );
+                  }
+                  // Load reembolso
+                  if (or.reembolso_value != null && or.reembolso_value > 0) {
+                    setReembolsoValue(
+                      new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(or.reembolso_value)
+                    );
+                    setReembolsoMotivo(or.reembolso_motivo ?? '');
                   }
                 }
               } catch { /* graceful */ }
@@ -1699,6 +1714,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       setManualCostEnabled(false);
       setManualCoupon('');
       setManualCouponType('fixed');
+      setReembolsoValue('');
+      setReembolsoMotivo('');
+      setOpenReembolso(false);
       setLinkedCampaignId(null);
       setAvailableCampaigns([]);
       const tooltipEl = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
@@ -2476,10 +2494,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const realProfit = isFreeSample
               ? -totalProductCost
               : (precoVendaLiquidoFinal - totalProductCost + acrescimoManual - manualMarketingCostVal);
+            // Reembolso override: substitui todo cálculo pelo valor inserido
+            const reembolsoVal = parseFloat(reembolsoValue.replace(',', '.')) || 0;
+            const finalRealProfit = reembolsoVal > 0 ? reembolsoVal : realProfit;
             const marginBase = Math.abs(precoVendaLiquidoFinal) > 0 ? Math.abs(precoVendaLiquidoFinal) : selectedOrder.total_amount;
             const margin = marginBase > 0
-              ? ((realProfit / marginBase) * 100).toFixed(1) : '0.0';
-            const profitPositive = realProfit >= 0;
+              ? ((finalRealProfit / marginBase) * 100).toFixed(1) : '0.0';
+            const profitPositive = finalRealProfit >= 0;
 
             // Imagem: product_image_url do pedido → image_url do primeiro produto enriquecido
             let heroImage = selectedOrder.product_image_url
@@ -3403,6 +3424,100 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                     )}
                   </div>
 
+                  {/* Reembolso de Pedido */}
+                  <div className="rounded-xl overflow-hidden bg-rose-950/15">
+                    <button
+                      onClick={() => setOpenReembolso(v => !v)}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-rose-950/50 to-zinc-900/60 hover:from-rose-950/70 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <svg className="w-3.5 h-3.5 text-rose-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                        </svg>
+                        <span className="text-rose-400 font-semibold text-xs uppercase tracking-wide">Reembolso</span>
+                        {reembolsoVal > 0 && (
+                          <span className="text-[10px] text-rose-400/80 font-mono bg-rose-950/40 px-1.5 py-0.5 rounded">
+                            R$ {formatCurrency(reembolsoVal)}
+                          </span>
+                        )}
+                      </div>
+                      <svg className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${openReembolso ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {openReembolso && (
+                      <div className="px-4 py-3 space-y-3 bg-zinc-900/40 border-t border-rose-950/20">
+                        <p className="text-[11px] text-zinc-500">
+                          Quando preenchido, o valor de reembolso <strong className="text-rose-400">substitui</strong> o cálculo completo de lucro. Custos de marketplace, produto, afiliados, descontos e acréscimos são ignorados.
+                        </p>
+                        <div className="flex items-center gap-3">
+                          <label className="text-zinc-400 text-sm whitespace-nowrap">Valor (R$)</label>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="0,00"
+                            value={reembolsoValue}
+                            onChange={(e) => setReembolsoValue(e.target.value.replace(/[^0-9,.]/g, ''))}
+                            className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-rose-500 tabular-nums"
+                          />
+                          {reembolsoValue && (
+                            <button onClick={() => setReembolsoValue('')} className="text-zinc-500 hover:text-zinc-300 transition-colors">
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                        <div>
+                          <label className="text-zinc-400 text-sm block mb-1">Motivo</label>
+                          <textarea
+                            placeholder="Ex: Produto devolvido pelo cliente..."
+                            value={reembolsoMotivo}
+                            onChange={(e) => setReembolsoMotivo(e.target.value)}
+                            rows={2}
+                            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-rose-500 resize-none"
+                          />
+                        </div>
+                        {reembolsoVal > 0 && (
+                          <p className="text-[11px] text-rose-400/70">
+                            Lucro real = R$ {formatCurrency(reembolsoVal)} (reembolso override)
+                          </p>
+                        )}
+                        {selectedOrder?.order_id && (
+                          <button
+                            disabled={savingReembolsoPedido}
+                            onClick={async () => {
+                              if (!selectedOrder?.order_id) return;
+                              setSavingReembolsoPedido(true);
+                              try {
+                                const val = parseFloat((reembolsoValue || '0').replace(',', '.')) || 0;
+                                await supabase
+                                  .from('orders')
+                                  .update({
+                                    reembolso_value: val > 0 ? val : null,
+                                    reembolso_motivo: val > 0 ? (reembolsoMotivo || null) : null,
+                                  })
+                                  .eq('id', selectedOrder.order_id);
+                                await refetch();
+                                await refetchYearly();
+                              } finally {
+                                setSavingReembolsoPedido(false);
+                              }
+                            }}
+                            className="w-full py-2 rounded-lg bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs font-semibold transition-colors flex items-center justify-center gap-2"
+                          >
+                            {savingReembolsoPedido ? (
+                              <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                            ) : (
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                            )}
+                            Salvar Reembolso
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   {/* Custo de Marketing */}
                   <div className="rounded-xl overflow-hidden bg-purple-950/15">
                     <button
@@ -3560,7 +3675,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       <div>
                         <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-medium mb-0.5">Lucro Real</p>
                         <p className={`text-2xl font-bold tabular-nums ${profitPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {formatCurrency(realProfit)}
+                          {formatCurrency(finalRealProfit)}
                         </p>
                       </div>
                       <div className="text-right">
@@ -3610,8 +3725,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       </div>
                       <div className="text-right">
                         <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-medium mb-0.5">Lucro Real</p>
-                        <p className={`text-lg font-bold tabular-nums ${realProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {formatCurrency(realProfit)}
+                        <p className={`text-lg font-bold tabular-nums ${finalRealProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {formatCurrency(finalRealProfit)}
                         </p>
                       </div>
                     </div>
