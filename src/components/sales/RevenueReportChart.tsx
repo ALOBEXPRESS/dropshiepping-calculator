@@ -3453,7 +3453,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             className="w-4 h-4 accent-purple-500 cursor-pointer"
                           />
                           <label htmlFor="manual-cost-check" className="text-zinc-400 text-xs cursor-pointer select-none">
-                            Custo manual (independente de campanha)
+                            Custo GVM PLAY
                           </label>
                         </div>
 
@@ -3521,6 +3521,22 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                       marketing_cost: cost,
                                       organization_id: organizationId,
                                     }, { onConflict: 'order_id' });
+                                }
+                                // Immediately update manualMarketingCostByOrderId for instant UI refresh
+                                if (manualCostEnabled) {
+                                  const oid = selectedOrder.order_id;
+                                  setManualMarketingCostByOrderId(prev => {
+                                    const next = { ...prev };
+                                    if (cost > 0) next[oid] = cost;
+                                    else delete next[oid];
+                                    return next;
+                                  });
+                                } else {
+                                  setManualMarketingCostByOrderId(prev => {
+                                    const next = { ...prev };
+                                    delete next[selectedOrder.order_id];
+                                    return next;
+                                  });
                                 }
                                 refetch();
                                 refetchYearly();
