@@ -3534,8 +3534,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                     return next;
                                   });
                                 }
-                                refetch();
-                                refetchYearly();
+                                await refetch();
+                                await refetchYearly();
                               } finally {
                                 setSavingMarketingCost(false);
                               }
