@@ -256,6 +256,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [manualMarketingCostByOrderId, setManualMarketingCostByOrderId] = useState<Record<string, number>>({});
   const manualMarketingCostByOrderIdRef = useRef<Record<string, number>>({});
   manualMarketingCostByOrderIdRef.current = manualMarketingCostByOrderId;
+  const [reembolsoByOrderId, setReembolsoByOrderId] = useState<Record<string, number>>({});
+  const reembolsoByOrderIdRef = useRef<Record<string, number>>({});
+  reembolsoByOrderIdRef.current = reembolsoByOrderId;
   const [savingMarketingCost, setSavingMarketingCost] = useState(false);
   const [linkedCampaignId, setLinkedCampaignId] = useState<string | null>(null);
   const [availableCampaigns, setAvailableCampaigns] = useState<Array<{ id: string; name: string; marketing_cost: number | null }>>([]);
@@ -1153,6 +1156,21 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
       setMarketingCostByProductId(costMap);
       setManualMarketingCostByOrderId(manualCostMap);
+
+      // Fetch reembolso values for all orders
+      if (allOrderIds.length > 0) {
+        const { data: reembolsoRows } = await supabase
+          .from('orders')
+          .select('id, reembolso_value')
+          .in('id', allOrderIds)
+          .not('reembolso_value', 'is', null);
+        const newReembolsoMap: Record<string, number> = {};
+        for (const row of (reembolsoRows ?? []) as Array<{ id: string; reembolso_value: number }>) {
+          if (row.reembolso_value > 0) newReembolsoMap[row.id] = Number(row.reembolso_value);
+        }
+        setReembolsoByOrderId(newReembolsoMap);
+        reembolsoByOrderIdRef.current = newReembolsoMap;
+      }
     };
     fetchMarketingCosts().catch(() => {});
   }, [data, organizationId]);
@@ -1350,7 +1368,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 const productSku = mergedOrder.product_sku || (productsForDisplay[0]?.sku ?? null);
                 const { realProfit: rawRealProfit, isFreeSample } = computeOrderRealProfit(mergedOrder, resolvedMarketplaceConfig);
                 const manualMktDeduct1 = manualMarketingCostByOrderIdRef.current[(order as { order_id?: string }).order_id ?? ''] ?? 0;
-                const realProfit = rawRealProfit - manualMktDeduct1;
+                const reembolsoOv1 = reembolsoByOrderIdRef.current[(order as { order_id?: string }).order_id ?? ''] ?? 0;
+                const realProfit = reembolsoOv1 > 0 ? reembolsoOv1 : (rawRealProfit - manualMktDeduct1);
                 const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true;
                 const profitLabel = realProfit >= 0 ? 'Lucro:' : 'Prejuízo:';
                 const profitValue = realProfit >= 0
@@ -1765,9 +1784,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const liquidoFinal = typeof result === 'number' ? Number(o.total_amount ?? 0) : result.precoVendaLiquidoFinal;
         const realCost = liquidoFinal - realProfit;
 
+        // Reembolso override: substitui todo cálculo de lucro
+        const reembolsoOverride = reembolsoByOrderId[o.order_id] ?? 0;
+        const effectiveProfit = reembolsoOverride > 0 ? reembolsoOverride : realProfit;
+
         totalRevenue += liquidoFinal;
         totalCost += realCost;
-        totalProfit += realProfit;
+        totalProfit += effectiveProfit;
 
         // Marketing cost: look up saved cost from campaign_order_costs via order_id
         // marketingCostByProductId is a secondary fallback keyed by product_id
@@ -1777,7 +1800,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
         // Manual marketing cost (no campaign) deducts from profit
         const manualMktCost = manualMarketingCostByOrderId[o.order_id] ?? 0;
-        if (manualMktCost > 0) totalProfit -= manualMktCost;
+        if (manualMktCost > 0 && reembolsoOverride === 0) totalProfit -= manualMktCost;
       });
 
       return {
@@ -1788,7 +1811,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         total_marketing_cost: totalMarketingCost,
       };
     });
-  }, [data, orderEnrichmentById, affiliateByOrderId, computeOrderRealProfit, marketingCostByProductId, manualMarketingCostByOrderId]);
+  }, [data, orderEnrichmentById, affiliateByOrderId, computeOrderRealProfit, marketingCostByProductId, manualMarketingCostByOrderId, reembolsoByOrderId]);
 
   // Window size per period — mensal: 3 meses visíveis com scroll, semanal/diário: parcial com setas
   const windowSize = period === 'daily' ? 14 : period === 'weekly' ? 12 : period === 'monthly' ? 3 : 5;
@@ -1844,10 +1867,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         );
         const profit = computeOrderRealProfit(mergedOrder, cfg).realProfit;
         const manualDeduct = manualMarketingCostByOrderId[orderId] ?? 0;
-        return s + profit - manualDeduct;
+        const reembolsoOv = reembolsoByOrderId[orderId] ?? 0;
+        const effectiveProfit = reembolsoOv > 0 ? reembolsoOv : (profit - manualDeduct);
+        return s + effectiveProfit;
       }, 0);
     }, 0);
-  }, [yearlyData, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig, manualMarketingCostByOrderId]);
+  }, [yearlyData, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig, manualMarketingCostByOrderId, reembolsoByOrderId]);
 
   // Custo total = receita - lucro (inclui produto + marketplace + frete + supplier)
   const allDataTotalCost = useMemo(() => {
@@ -2104,7 +2129,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
           const { realProfit: rawRealProfit2, isFreeSample } = computeOrderRealProfit(mergedOrder, resolvedMarketplaceConfig);
           const manualMktDeduct2 = manualMarketingCostByOrderIdRef.current[order.order_id] ?? 0;
-          const realProfit = rawRealProfit2 - manualMktDeduct2;
+          const reembolsoOv2 = reembolsoByOrderIdRef.current[order.order_id] ?? 0;
+          const realProfit = reembolsoOv2 > 0 ? reembolsoOv2 : (rawRealProfit2 - manualMktDeduct2);
           const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true;
           const profitColor = isPersonalPurchase ? '#fed7aa' : isFreeSample ? '#e9d5ff' : (realProfit >= 0 ? '#16a34a' : '#dc2626');
           const profitLabel = realProfit >= 0 ? 'Lucro:' : 'Prejuízo:';
@@ -3498,6 +3524,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                     reembolso_motivo: val > 0 ? (reembolsoMotivo || null) : null,
                                   })
                                   .eq('id', selectedOrder.order_id);
+                                // Immediately update reembolsoByOrderId for instant chart refresh
+                                const oid = selectedOrder.order_id;
+                                setReembolsoByOrderId(prev => {
+                                  const next = { ...prev };
+                                  if (val > 0) next[oid] = val;
+                                  else delete next[oid];
+                                  return next;
+                                });
                                 await refetch();
                                 await refetchYearly();
                               } finally {
