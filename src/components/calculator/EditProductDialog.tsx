@@ -1890,13 +1890,15 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                         <Label className="text-right dark:text-white">Cupons</Label>
                         <div className="col-span-3 space-y-3">
                           <div className="space-y-2">
-                            <div className="flex items-center justify-between">
+                            <label className="flex items-center justify-between cursor-pointer">
                               <span className="text-xs text-muted-foreground">Cupom da Loja</span>
                               <Checkbox
+                                id="shopee-store-coupon"
+                                className="border-2 border-orange-400 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
                                 checked={formData.shopeeStoreCouponEnabled}
                                 onCheckedChange={(checked) => handleChange('shopeeStoreCouponEnabled', checked as boolean)}
                               />
-                            </div>
+                            </label>
                             {formData.shopeeStoreCouponEnabled && (
                               <div className="grid grid-cols-3 gap-2">
                                 <Select
@@ -1928,13 +1930,15 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                             )}
                           </div>
                           <div className="space-y-2">
-                            <div className="flex items-center justify-between">
+                            <label className="flex items-center justify-between cursor-pointer">
                               <span className="text-xs text-muted-foreground">Cupom do Produto</span>
                               <Checkbox
+                                id="shopee-product-coupon"
+                                className="border-2 border-orange-400 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
                                 checked={formData.shopeeProductCouponEnabled}
                                 onCheckedChange={(checked) => handleChange('shopeeProductCouponEnabled', checked as boolean)}
                               />
-                            </div>
+                            </label>
                             {formData.shopeeProductCouponEnabled && (
                               <div className="grid grid-cols-3 gap-2">
                                 <Select
@@ -1966,13 +1970,15 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                             )}
                           </div>
                           <div className="space-y-2">
-                            <div className="flex items-center justify-between">
+                            <label className="flex items-center justify-between cursor-pointer">
                               <span className="text-xs text-muted-foreground">Cupom de Seguidor</span>
                               <Checkbox
+                                id="shopee-follower-coupon"
+                                className="border-2 border-orange-400 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
                                 checked={formData.shopeeFollowerCouponEnabled}
                                 onCheckedChange={(checked) => handleChange('shopeeFollowerCouponEnabled', checked as boolean)}
                               />
-                            </div>
+                            </label>
                             {formData.shopeeFollowerCouponEnabled && (
                               <div className="grid grid-cols-3 gap-2">
                                 <Select
@@ -2004,13 +2010,15 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                             )}
                           </div>
                           <div className="space-y-2">
-                            <div className="flex items-center justify-between">
+                            <label className="flex items-center justify-between cursor-pointer">
                               <span className="text-xs text-muted-foreground">Voucher do Vendedor</span>
                               <Checkbox
+                                id="shopee-seller-voucher"
+                                className="border-2 border-orange-400 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
                                 checked={formData.shopeeSellerVoucherEnabled}
                                 onCheckedChange={(checked) => handleChange('shopeeSellerVoucherEnabled', checked as boolean)}
                               />
-                            </div>
+                            </label>
                             {formData.shopeeSellerVoucherEnabled && (
                               <div className="grid grid-cols-3 gap-2">
                                 <Select
