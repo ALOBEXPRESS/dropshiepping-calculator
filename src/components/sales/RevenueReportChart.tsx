@@ -323,6 +323,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       products: mergedProducts,
       total_cost: mergedTotalCost,
       product_cost_price: mergedProductCostPrice,
+      // RPC values take precedence over enrichment for these critical fields
+      tiktok_retorno_liquido: (o as { tiktok_retorno_liquido?: number | null }).tiktok_retorno_liquido
+        ?? enrichment.tiktok_retorno_liquido,
+      tiktok_reembolso_disabled: (o as { tiktok_reembolso_disabled?: boolean }).tiktok_reembolso_disabled
+        ?? enrichment.tiktok_reembolso_disabled,
     };
   }, []);
 
