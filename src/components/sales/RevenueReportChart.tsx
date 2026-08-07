@@ -1849,8 +1849,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   // Para período mensal/semanal/diário: mostra só o último item (mês/semana/dia atual)
   // Para anual: soma simples dos visíveis (já é por ano)
   const currentPeriodItem = visibleData[visibleData.length - 1];
-  const currentPeriodCost = currentPeriodItem ? Number(currentPeriodItem.total_cost ?? 0) : 0;
-  const currentPeriodProfit = currentPeriodItem ? Number(currentPeriodItem.total_profit ?? 0) : 0;
+  // When at latest window: show just last period. When scrolled back: sum all visible periods.
+  const isLatestWindowForProfit = windowOffset >= maxOffset;
+  const currentPeriodCost = isLatestWindowForProfit
+    ? (currentPeriodItem ? Number(currentPeriodItem.total_cost ?? 0) : 0)
+    : visibleData.reduce((sum, item) => sum + Number(item.total_cost ?? 0), 0);
+  const currentPeriodProfit = isLatestWindowForProfit
+    ? (currentPeriodItem ? Number(currentPeriodItem.total_profit ?? 0) : 0)
+    : visibleData.reduce((sum, item) => sum + Number(item.total_profit ?? 0), 0);
 
   // Lucro total de TODOS os dados — calculado sobre yearlyData (todos os meses do ano)
   // independente do filtro de período selecionado
