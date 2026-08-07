@@ -1944,8 +1944,23 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     return `Custo ${now.getFullYear()}`;
   })();
 
-  // Label dinâmico para "Lucro {período atual}"
+  // Label dinâmico para "Lucro {período atual}" — baseado na janela visível, não em new Date()
+  const EN_PT_MONTHS: Record<string, string> = {
+    Jan: 'Jan', Feb: 'Fev', Mar: 'Mar', Apr: 'Abr', May: 'Mai',
+    Jun: 'Jun', Jul: 'Jul', Aug: 'Ago', Sep: 'Set', Oct: 'Out', Nov: 'Nov', Dec: 'Dez'
+  };
   const periodLabel = (() => {
+    // For monthly: use visible window range (first to last visible month)
+    if (period === 'monthly' && visibleData.length > 0) {
+      const lastItem = visibleData[visibleData.length - 1];
+      const lastLabel = EN_PT_MONTHS[lastItem.period_label ?? ''] ?? lastItem.period_label ?? '';
+      // If at latest window (windowOffset at max), show just the last month as current period
+      const isLatestWindow = windowOffset >= maxOffset;
+      if (isLatestWindow && visibleData.length > 0) return `Lucro ${lastLabel}`;
+      const firstLabel = EN_PT_MONTHS[visibleData[0].period_label ?? ''] ?? visibleData[0].period_label ?? '';
+      if (visibleData.length === 1) return `Lucro ${lastLabel}`;
+      return `Lucro ${firstLabel} a ${lastLabel}`;
+    }
     const now = new Date();
     if (period === 'daily') {
       return `Lucro ${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}`;
@@ -2007,7 +2022,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       },
     },
     xaxis: {
-      categories: visibleData.map((item) => item.period_label),
+      categories: visibleData.map((item) => {
+        const EN_PT: Record<string, string> = {
+          Jan: 'Jan', Feb: 'Fev', Mar: 'Mar', Apr: 'Abr', May: 'Mai',
+          Jun: 'Jun', Jul: 'Jul', Aug: 'Ago', Sep: 'Set', Oct: 'Out', Nov: 'Nov', Dec: 'Dez'
+        };
+        const label = item.period_label ?? '';
+        return EN_PT[label] ?? label;
+      }),
       labels: {
         style: {
           colors: '#6b7280',
