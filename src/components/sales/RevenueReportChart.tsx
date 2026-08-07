@@ -1931,21 +1931,33 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     return -Math.abs(periodMarketingCost);
   });
 
-  // Label dinâmico para "Custo {período atual}"
+  // Label dinâmico para "Custo {período atual}" — baseado na janela visível (mesmo padrão do periodLabel)
   const costLabel = (() => {
     const now = new Date();
     if (period === 'daily') {
       return `Custo ${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}`;
     }
     if (period === 'weekly') {
-      // Calcular número da semana do mês
       const weekNum = Math.ceil(now.getDate() / 7);
       const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
       return `Custo Sem. ${weekNum} ${months[now.getMonth()]}`;
     }
     if (period === 'monthly') {
+      // Delegate to periodLabel logic — just replace "Lucro" with "Custo"
+      // periodLabel is computed below but we need same logic here
+      const EN_PT: Record<string, string> = {
+        Jan: 'Jan', Feb: 'Fev', Mar: 'Mar', Apr: 'Abr', May: 'Mai',
+        Jun: 'Jun', Jul: 'Jul', Aug: 'Ago', Sep: 'Set', Oct: 'Out', Nov: 'Nov', Dec: 'Dez'
+      };
+      if (visibleData.length > 0) {
+        const lastLabel = EN_PT[visibleData[visibleData.length - 1].period_label ?? ''] ?? visibleData[visibleData.length - 1].period_label ?? '';
+        const isLatest = windowOffset >= maxOffset;
+        if (isLatest) return `Custo ${lastLabel}`;
+        const firstLabel = EN_PT[visibleData[0].period_label ?? ''] ?? visibleData[0].period_label ?? '';
+        return visibleData.length === 1 ? `Custo ${lastLabel}` : `Custo ${firstLabel} a ${lastLabel}`;
+      }
       const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-      return `Custo ${months[now.getMonth()]}`;
+      return `Custo ${months[new Date().getMonth()]}`;
     }
     return `Custo ${now.getFullYear()}`;
   })();
