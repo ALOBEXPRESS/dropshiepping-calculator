@@ -133,23 +133,23 @@ export const AdSetSettingsStep: React.FC<AdSetSettingsStepProps> = ({
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-zinc-300 text-sm">ROI Alvo (%)</Label>
+            <Label className="text-zinc-300 text-sm">ROI Alvo</Label>
             <div className="relative">
               <Input
-                type="number"
-                inputMode="numeric"
-                min="0"
-                step="1"
-                placeholder="Ex: 150"
-                value={data.audience_behavior != null && /^\d+(\.\d+)?$/.test(data.audience_behavior) ? data.audience_behavior : ''}
+                type="text"
+                inputMode="decimal"
+                placeholder="Ex: 2,0"
+                value={data.audience_behavior != null ? data.audience_behavior : ''}
                 onChange={(e) => {
-                  const v = e.target.value.replace(/[^0-9]/g, '');
+                  // Allow digits, comma, dot — for values like 1,8 or 2.5
+                  const v = e.target.value.replace(/[^0-9,.]/g, '');
                   onChange('audience_behavior', v || null);
                 }}
-                className="pr-8 bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="pr-8 bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-orange-500"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm pointer-events-none">%</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm pointer-events-none">×</span>
             </div>
+            <p className="text-[11px] text-zinc-500">Ex: 1,8 = ROI de 180%</p>
           </div>
         </div>
       )}
