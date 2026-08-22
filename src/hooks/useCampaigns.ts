@@ -54,10 +54,14 @@ export function useCampaigns(organizationId: string): UseCampaignsReturn {
 
     const campaignId = campaign.id as string;
 
-    // 2. Insert ad set
+    // 2. Insert ad sets (all in adSets array)
+    const adSetsToInsert = (payload.adSets ?? [payload.adSet]).map(a => ({
+      ...a,
+      campaign_id: campaignId,
+    }));
     const { error: adSetError } = await supabase
       .from('campaign_ad_sets')
-      .insert({ ...payload.adSet, campaign_id: campaignId });
+      .insert(adSetsToInsert);
 
     if (adSetError) throw new Error(adSetError.message);
 
@@ -111,11 +115,20 @@ export function useCampaigns(organizationId: string): UseCampaignsReturn {
 
     if (campaignError) throw new Error(campaignError.message);
 
-    // 2. Update ad set (upsert by campaign_id)
+    // 2. Replace ad sets (delete + insert all)
+    const { error: adSetDeleteError } = await supabase
+      .from('campaign_ad_sets')
+      .delete()
+      .eq('campaign_id', id);
+    if (adSetDeleteError) throw new Error(adSetDeleteError.message);
+
+    const adSetsToInsert = (payload.adSets ?? [payload.adSet]).map(a => ({
+      ...a,
+      campaign_id: id,
+    }));
     const { error: adSetError } = await supabase
       .from('campaign_ad_sets')
-      .update({ ...payload.adSet })
-      .eq('campaign_id', id);
+      .insert(adSetsToInsert);
 
     if (adSetError) throw new Error(adSetError.message);
 

@@ -71,6 +71,7 @@ export interface CampaignWithRelations extends Campaign {
 export interface CampaignFormPayload {
   campaign: Omit<Campaign, 'id' | 'created_at' | 'updated_at'>;
   adSet: Omit<CampaignAdSet, 'id' | 'campaign_id' | 'created_at'>;
+  adSets: Array<Omit<CampaignAdSet, 'id' | 'campaign_id' | 'created_at'>>;
   products: Array<{
     product_id: string;
     marketing_cost_override: number | null;

@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCampaigns } from '@/hooks/useCampaigns';
 import { CampaignSettingsStep } from './CampaignSettingsStep';
@@ -36,17 +36,8 @@ const STEPS = [
   'Vincular Produtos',
 ];
 
-const buildDefault = (organizationId: string, marketplace: CampaignMarketplace = 'tiktok'): CampaignFormPayload => ({
-  campaign: {
-    organization_id: organizationId,
-    marketplace,
-    name: '',
-    objective: 'sales' as CampaignObjective,
-    budget_type: 'daily',
-    budget_amount: null,
-    status: 'active',
-  },
-  adSet: {
+const buildDefault = (organizationId: string, marketplace: CampaignMarketplace = 'tiktok'): CampaignFormPayload => {
+  const defaultAdSet: CampaignFormPayload['adSet'] = {
     name: null,
     conversion_type: null,
     start_date: null,
@@ -63,17 +54,53 @@ const buildDefault = (organizationId: string, marketplace: CampaignMarketplace =
     audience_interests: null,
     audience_behavior: null,
     placement: null,
-  } as CampaignFormPayload['adSet'],
-  products: [],
-});
+  } as CampaignFormPayload['adSet'];
+  return {
+    campaign: {
+      organization_id: organizationId,
+      marketplace,
+      name: '',
+      objective: 'sales' as CampaignObjective,
+      budget_type: 'daily',
+      budget_amount: null,
+      status: 'active',
+    },
+    adSet: defaultAdSet,
+    adSets: [defaultAdSet],
+    products: [],
+  };
+};
 
 const fromExisting = (c: CampaignWithRelations): CampaignFormPayload => {
   const adSet0 = c.campaign_ad_sets[0];
-  const ext = adSet0 as typeof adSet0 & {
-    traffic_destination?: string | null;
-    optimization_goal?: string | null;
-    target_cost_per_result?: number | null;
+  const mapAdSet = (a: typeof adSet0) => {
+    const ext = a as typeof a & {
+      traffic_destination?: string | null;
+      optimization_goal?: string | null;
+      target_cost_per_result?: number | null;
+    };
+    return {
+      name: a.name,
+      conversion_type: a.conversion_type,
+      start_date: a.start_date,
+      end_date: a.end_date,
+      traffic_destination: ext.traffic_destination ?? null,
+      optimization_goal: ext.optimization_goal ?? null,
+      target_cost_per_result: ext.target_cost_per_result ?? null,
+      audience_mode: (a.audience_mode ?? 'auto') as 'auto' | 'manual' | 'saved',
+      saved_audience_id: a.saved_audience_id,
+      saved_audience_name: a.saved_audience_name,
+      audience_location: a.audience_location,
+      audience_age: a.audience_age,
+      audience_gender: a.audience_gender,
+      audience_interests: a.audience_interests,
+      audience_behavior: a.audience_behavior,
+      placement: a.placement,
+    } as CampaignFormPayload['adSet'];
   };
+  const def = buildDefault(c.organization_id).adSet;
+  const mapped = adSet0 ? mapAdSet(adSet0) : def;
+  const allMapped = c.campaign_ad_sets.length > 0 ? c.campaign_ad_sets.map(mapAdSet) : [def];
   return {
     campaign: {
       organization_id: c.organization_id,
@@ -84,26 +111,8 @@ const fromExisting = (c: CampaignWithRelations): CampaignFormPayload => {
       budget_amount: c.budget_amount,
       status: c.status,
     },
-    adSet: adSet0
-      ? {
-          name: adSet0.name,
-          conversion_type: adSet0.conversion_type,
-          start_date: adSet0.start_date,
-          end_date: adSet0.end_date,
-          traffic_destination: ext.traffic_destination ?? null,
-          optimization_goal: ext.optimization_goal ?? null,
-          target_cost_per_result: ext.target_cost_per_result ?? null,
-          audience_mode: (adSet0.audience_mode ?? 'auto') as 'auto' | 'manual' | 'saved',
-          saved_audience_id: adSet0.saved_audience_id,
-          saved_audience_name: adSet0.saved_audience_name,
-          audience_location: adSet0.audience_location,
-          audience_age: adSet0.audience_age,
-          audience_gender: adSet0.audience_gender,
-          audience_interests: adSet0.audience_interests,
-          audience_behavior: adSet0.audience_behavior,
-          placement: adSet0.placement,
-        } as CampaignFormPayload['adSet']
-      : buildDefault(c.organization_id).adSet,
+    adSet: mapped,
+    adSets: allMapped,
     products: c.campaign_products.map((cp) => ({
       product_id: cp.product_id,
       marketing_cost_override: cp.marketing_cost_override,
@@ -125,6 +134,7 @@ export const CampaignFormDialog: React.FC<CampaignFormDialogProps> = ({
   const [payload, setPayload] = useState<CampaignFormPayload>(() =>
     campaign ? fromExisting(campaign) : buildDefault(organizationId, marketplace)
   );
+  const [selectedAdSetIndex, setSelectedAdSetIndex] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
@@ -132,6 +142,7 @@ export const CampaignFormDialog: React.FC<CampaignFormDialogProps> = ({
     if (open) {
       setStep(1);
       setErrors({});
+      setSelectedAdSetIndex(0);
       setPayload(campaign ? fromExisting(campaign) : buildDefault(organizationId, marketplace));
     }
   }, [open, campaign, organizationId, marketplace]);
@@ -144,11 +155,49 @@ export const CampaignFormDialog: React.FC<CampaignFormDialogProps> = ({
     setErrors((e) => ({ ...e, [field]: '' }));
   };
 
+  // Edit a specific adSet by index — also syncs payload.adSet to selected
   const setAdSetField = (
     field: keyof CampaignFormPayload['adSet'],
-    value: string | number | null
+    value: string | number | null,
+    index?: number
   ) => {
-    setPayload((p) => ({ ...p, adSet: { ...p.adSet, [field]: value } }));
+    const idx = index ?? selectedAdSetIndex;
+    setPayload((p) => {
+      const newAdSets = p.adSets.map((a, i) =>
+        i === idx ? { ...a, [field]: value } : a
+      );
+      return {
+        ...p,
+        adSet: newAdSets[selectedAdSetIndex] ?? p.adSet,
+        adSets: newAdSets,
+      };
+    });
+  };
+
+  // Keep payload.adSet in sync when switching selected tab
+  const selectAdSet = (idx: number) => {
+    setSelectedAdSetIndex(idx);
+    setPayload((p) => ({ ...p, adSet: p.adSets[idx] ?? p.adSet }));
+  };
+
+  const addAdSet = () => {
+    setPayload((p) => {
+      const newAdSet = { ...buildDefault(organizationId).adSet, name: `Grupo ${p.adSets.length + 1}` };
+      const newAdSets = [...p.adSets, newAdSet];
+      const newIdx = newAdSets.length - 1;
+      setSelectedAdSetIndex(newIdx);
+      return { ...p, adSet: newAdSet, adSets: newAdSets };
+    });
+  };
+
+  const removeAdSet = (idx: number) => {
+    setPayload((p) => {
+      if (p.adSets.length <= 1) return p;
+      const newAdSets = p.adSets.filter((_, i) => i !== idx);
+      const newIdx = Math.min(selectedAdSetIndex, newAdSets.length - 1);
+      setSelectedAdSetIndex(newIdx);
+      return { ...p, adSet: newAdSets[newIdx], adSets: newAdSets };
+    });
   };
 
   const validateStep1 = () => {
@@ -253,11 +302,49 @@ export const CampaignFormDialog: React.FC<CampaignFormDialogProps> = ({
             />
           )}
           {step === 2 && (
-            <AdSetSettingsStep
-              data={payload.adSet}
-              campaignObjective={payload.campaign.objective as CampaignObjective}
-              onChange={setAdSetField}
-            />
+            <div className="space-y-4">
+              {/* AdSet tabs */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {payload.adSets.map((a, i) => (
+                  <div key={i} className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => selectAdSet(i)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                        selectedAdSetIndex === i
+                          ? 'bg-orange-500 text-white'
+                          : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                      }`}
+                    >
+                      {a.name || `Grupo ${i + 1}`}
+                    </button>
+                    {payload.adSets.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeAdSet(i)}
+                        className="text-zinc-500 hover:text-red-400 transition-colors"
+                        title="Remover grupo"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addAdSet}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors border border-dashed border-zinc-600"
+                >
+                  <Plus className="w-3 h-3" />
+                  Novo Grupo
+                </button>
+              </div>
+              <AdSetSettingsStep
+                data={payload.adSets[selectedAdSetIndex] ?? payload.adSet}
+                campaignObjective={payload.campaign.objective as CampaignObjective}
+                onChange={(field, value) => setAdSetField(field, value)}
+              />
+            </div>
           )}
           {step === 3 && (
             <DirectioningStep
