@@ -706,15 +706,54 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
               <div className="flex gap-2">
               <Button
                 onClick={async () => {
+                  // Re-match first to pick up manually registered products
+                  try {
+                    await supabase.rpc('rematch_bling_order_items_products', { p_organization_id: organizationId });
+                  } catch { /* ignore rematch errors */ }
+                  // After rematch, try to find linked product via order items
+                  let linkedProductId = order.first_product_id;
+                  let linkedCost = order.total_cost;
+                  if (!linkedProductId) {
+                    // Fetch product SKU from bling_order_items → products_bling → products
+                    const { data: items } = await supabase
+                      .from('bling_order_items')
+                      .select('product_bling_id, product_id')
+                      .eq('bling_order_id', order.bling_order_id)
+                      .limit(1);
+                    const item = (items ?? [])[0] as { product_bling_id?: string | null; product_id?: string | null } | undefined;
+                    if (item?.product_id) {
+                      linkedProductId = item.product_id;
+                    } else if (item?.product_bling_id) {
+                      // Find products table entry via bling SKU match
+                      const { data: pb } = await supabase
+                        .from('products_bling')
+                        .select('sku')
+                        .eq('id', item.product_bling_id)
+                        .maybeSingle();
+                      const bsku = (pb as { sku?: string | null } | null)?.sku;
+                      if (bsku) {
+                        const { data: p } = await supabase
+                          .from('products')
+                          .select('id, cost_price, supplier_id')
+                          .eq('sku', bsku)
+                          .eq('organization_id', organizationId)
+                          .maybeSingle();
+                        if (p) {
+                          linkedProductId = (p as { id: string }).id;
+                          linkedCost = Number((p as { cost_price?: number | null }).cost_price ?? 0);
+                        }
+                      }
+                    }
+                  }
                   // Check if product needs registration (cost_price=0 or no supplier)
-                  const needsRegister = !order.first_product_id || order.total_cost === 0;
+                  const needsRegister = !linkedProductId || linkedCost === 0;
                   if (needsRegister) {
                     // Check product cost_price in DB
-                    if (order.first_product_id) {
+                    if (linkedProductId) {
                       const { data: prod } = await supabase
                         .from('products')
                         .select('cost_price, supplier_id')
-                        .eq('id', order.first_product_id)
+                        .eq('id', linkedProductId)
                         .single();
                       const cp = Number((prod as { cost_price?: number | null } | null)?.cost_price ?? 0);
                       const sid = (prod as { supplier_id?: string | null } | null)?.supplier_id;
