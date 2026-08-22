@@ -389,9 +389,9 @@ const CampaignsPage: React.FC = () => {
 
         // Group sortedCampaigns by status
         const groups: { status: 'active' | 'paused' | 'ended'; label: string; color: string; campaigns: typeof sortedCampaigns }[] = [
-          { status: 'active',  label: 'Ativas',     color: 'text-green-400',  campaigns: sortedCampaigns.filter(c => c.status === 'active') },
-          { status: 'paused',  label: 'Pausadas',   color: 'text-yellow-400', campaigns: sortedCampaigns.filter(c => c.status === 'paused') },
-          { status: 'ended',   label: 'Encerradas', color: 'text-zinc-400',   campaigns: sortedCampaigns.filter(c => c.status === 'ended') },
+          { status: 'active' as const,  label: 'Ativas',     color: 'text-green-400',  campaigns: sortedCampaigns.filter(c => c.status === 'active') },
+          { status: 'paused' as const,  label: 'Pausadas',   color: 'text-yellow-400', campaigns: sortedCampaigns.filter(c => c.status === 'paused') },
+          { status: 'ended' as const,   label: 'Encerradas', color: 'text-zinc-400',   campaigns: sortedCampaigns.filter(c => c.status === 'ended') },
         ].filter(g => g.campaigns.length > 0);
 
         return (
