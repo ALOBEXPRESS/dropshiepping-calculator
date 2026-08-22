@@ -71,6 +71,27 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSe
     saved: 'Audiência Salva',
   };
 
+  // Period from first adSet with dates
+  const firstAdSetWithDates = adSets.find(a => a.start_date || a.end_date);
+  const formatDate = (d: string | null | undefined) =>
+    d ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' }).format(new Date(d)) : null;
+  const periodStart = formatDate(firstAdSetWithDates?.start_date);
+  const periodEnd = formatDate(firstAdSetWithDates?.end_date);
+  const periodStr = periodStart && periodEnd
+    ? `${periodStart} – ${periodEnd}`
+    : periodStart
+    ? `A partir de ${periodStart}`
+    : periodEnd
+    ? `Até ${periodEnd}`
+    : null;
+
+  // Total custo = sum marketing_cost_override across linked products
+  const totalCusto = c.campaign_products.reduce(
+    (sum, p) => sum + (p.marketing_cost_override != null ? Number(p.marketing_cost_override) : 0),
+    0
+  );
+  const formatBRL = (v: number) => new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(v);
+
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 overflow-hidden">
       {/* Card header */}
@@ -102,10 +123,24 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSe
               Orçamento: <span className="text-zinc-200">
                 {c.budget_type === 'daily' ? 'Diário' : 'Vitalício'}
                 {c.budget_amount != null
-                  ? ` · R$ ${new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(Number(c.budget_amount))}`
+                  ? ` · R$ ${formatBRL(Number(c.budget_amount))}`
                   : ''}
               </span>
+              {totalCusto > 0 && (
+                <>
+                  {' · '}
+                  Custo: <span className="text-orange-400 font-medium">R$ {formatBRL(totalCusto)}</span>
+                </>
+              )}
             </p>
+            {periodStr && (
+              <p className="text-xs text-zinc-500 flex items-center gap-1.5">
+                <svg className="w-3 h-3 text-zinc-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>{periodStr}</span>
+              </p>
+            )}
             {c.campaign_products.length > 0 && (
               <p className="text-xs text-zinc-500">
                 {c.campaign_products.length} produto(s) vinculado(s)
@@ -189,7 +224,7 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSe
                     )}
                     {c.budget_amount != null && (
                       <p className="text-[11px] text-zinc-500">
-                        Orçamento: <span className="text-zinc-300">R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(Number(c.budget_amount))}</span>
+                        Orçamento: <span className="text-zinc-300">R$ {formatBRL(Number(c.budget_amount))}</span>
                       </p>
                     )}
                     {ext.traffic_destination && (
