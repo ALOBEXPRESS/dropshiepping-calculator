@@ -380,26 +380,87 @@ const CampaignsPage: React.FC = () => {
       )}
 
       {/* List */}
-      {!isLoading && campaigns.length > 0 && (
-        <div className="grid gap-3">
-          {sortedCampaigns.map((c) => {
-            const sc = statusConfig[c.status] ?? statusConfig.active;
-            const logo = MARKETPLACE_LOGOS[c.marketplace];
-            const adSets = c.campaign_ad_sets ?? [];
-            return (
-              <CampaignCard
-                key={c.id}
-                campaign={c}
-                sc={sc}
-                logo={logo}
-                adSets={adSets}
-                onEdit={() => handleEdit(c)}
-                onDelete={() => setDeleteId(c.id)}
-              />
-            );
-          })}
-        </div>
-      )}
+      {!isLoading && campaigns.length > 0 && (() => {
+        // Total cost across all campaigns
+        const totalCusto = campaigns.reduce((sum, c) =>
+          sum + c.campaign_products.reduce((s, p) => s + (p.marketing_cost_override != null ? Number(p.marketing_cost_override) : 0), 0)
+        , 0);
+        const formatBRL = (v: number) => new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(v);
+
+        // Group sortedCampaigns by status
+        const groups: { status: 'active' | 'paused' | 'ended'; label: string; color: string; campaigns: typeof sortedCampaigns }[] = [
+          { status: 'active',  label: 'Ativas',     color: 'text-green-400',  campaigns: sortedCampaigns.filter(c => c.status === 'active') },
+          { status: 'paused',  label: 'Pausadas',   color: 'text-yellow-400', campaigns: sortedCampaigns.filter(c => c.status === 'paused') },
+          { status: 'ended',   label: 'Encerradas', color: 'text-zinc-400',   campaigns: sortedCampaigns.filter(c => c.status === 'ended') },
+        ].filter(g => g.campaigns.length > 0);
+
+        return (
+          <div className="space-y-6">
+            {/* Total cost summary */}
+            <div className="flex items-center gap-4 px-4 py-3 rounded-xl bg-zinc-900/60 border border-zinc-800">
+              <div className="flex-1 flex items-center gap-6 flex-wrap">
+                <div>
+                  <p className="text-[11px] text-zinc-500 uppercase tracking-wide">Total de Campanhas</p>
+                  <p className="text-sm font-semibold text-white">{campaigns.length}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-zinc-500 uppercase tracking-wide">Custo Total</p>
+                  <p className="text-sm font-semibold text-orange-400">R$ {formatBRL(totalCusto)}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-zinc-500 uppercase tracking-wide">Orçamento Total</p>
+                  <p className="text-sm font-semibold text-zinc-200">
+                    R$ {formatBRL(campaigns.reduce((s, c) => s + Number(c.budget_amount ?? 0), 0))}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Grouped sections */}
+            {groups.map(group => {
+              const groupCusto = group.campaigns.reduce((sum, c) =>
+                sum + c.campaign_products.reduce((s, p) => s + (p.marketing_cost_override != null ? Number(p.marketing_cost_override) : 0), 0)
+              , 0);
+              return (
+                <div key={group.status} className="space-y-2">
+                  {/* Group header */}
+                  <div className="flex items-center gap-3 px-1">
+                    <span className={`text-xs font-semibold uppercase tracking-widest ${group.color}`}>
+                      {group.label}
+                    </span>
+                    <span className="text-[10px] bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded-full">
+                      {group.campaigns.length}
+                    </span>
+                    {groupCusto > 0 && (
+                      <span className="text-[10px] text-orange-400/70 ml-auto">
+                        Custo: R$ {formatBRL(groupCusto)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid gap-3">
+                    {group.campaigns.map((c) => {
+                      const sc = statusConfig[c.status] ?? statusConfig.active;
+                      const logo = MARKETPLACE_LOGOS[c.marketplace];
+                      const adSets = c.campaign_ad_sets ?? [];
+                      return (
+                        <CampaignCard
+                          key={c.id}
+                          campaign={c}
+                          sc={sc}
+                          logo={logo}
+                          adSets={adSets}
+                          onEdit={() => handleEdit(c)}
+                          onDelete={() => setDeleteId(c.id)}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* Marketplace picker */}
       <MarketplacePickerModal
