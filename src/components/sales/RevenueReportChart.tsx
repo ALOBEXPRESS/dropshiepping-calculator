@@ -259,6 +259,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [reembolsoByOrderId, setReembolsoByOrderId] = useState<Record<string, number>>({});
   const reembolsoByOrderIdRef = useRef<Record<string, number>>({});
   reembolsoByOrderIdRef.current = reembolsoByOrderId;
+  // Campaign products total cost (from campaign_products.marketing_cost_override — all linked products)
+  const [campaignProductsTotalCost, setCampaignProductsTotalCost] = useState<number>(0);
+  const [campaignProductsCurrentPeriodCost, setCampaignProductsCurrentPeriodCost] = useState<number>(0);
   const [savingMarketingCost, setSavingMarketingCost] = useState(false);
   const [linkedCampaignId, setLinkedCampaignId] = useState<string | null>(null);
   const [availableCampaigns, setAvailableCampaigns] = useState<Array<{ id: string; name: string; marketing_cost: number | null }>>([]);
@@ -1179,6 +1182,41 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     };
     fetchMarketingCosts().catch(() => {});
   }, [data, organizationId]);
+
+  // Fetch total campaign products cost directly from campaign_products table
+  useEffect(() => {
+    if (!organizationId) return;
+    const fetchCampaignCosts = async () => {
+      const { data: cpRows } = await supabase
+        .from('campaign_products')
+        .select('marketing_cost_override, campaign_id')
+        .not('marketing_cost_override', 'is', null);
+      const rows = (cpRows ?? []) as Array<{ marketing_cost_override: number; campaign_id: string }>;
+      const total = rows.reduce((s, r) => s + Number(r.marketing_cost_override ?? 0), 0);
+      setCampaignProductsTotalCost(total);
+
+      // Current period: filter by campaigns whose adSets are in current month
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+      const campaignIds = [...new Set(rows.map(r => r.campaign_id))];
+      if (campaignIds.length > 0) {
+        const { data: adSetRows } = await supabase
+          .from('campaign_ad_sets')
+          .select('campaign_id')
+          .in('campaign_id', campaignIds)
+          .or(`start_date.gte.${monthStart},end_date.lte.${monthEnd},start_date.is.null`);
+        const activeCampaignIds = new Set((adSetRows ?? []).map((a: { campaign_id: string }) => a.campaign_id));
+        const periodTotal = rows
+          .filter(r => activeCampaignIds.has(r.campaign_id))
+          .reduce((s, r) => s + Number(r.marketing_cost_override ?? 0), 0);
+        setCampaignProductsCurrentPeriodCost(periodTotal);
+      } else {
+        setCampaignProductsCurrentPeriodCost(0);
+      }
+    };
+    fetchCampaignCosts().catch(() => {});
+  }, [organizationId, data]);
 
   useEffect(() => {
     let cancelled = false;
@@ -3881,18 +3919,20 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               <p className="text-xl font-bold text-red-600">{formatCurrency(allDataTotalCost)}</p>
             </div>
           </div>
-          {(totalMarketingCost > 0 || totalMarketingCostAllTime > 0) && (
+          {(totalMarketingCost > 0 || totalMarketingCostAllTime > 0 || campaignProductsTotalCost > 0) && (
             <div className="flex items-center gap-6 mt-2">
-              {totalMarketingCost > 0 && (
+              {(campaignProductsCurrentPeriodCost > 0 || totalMarketingCost > 0) && (
                 <div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">{`Marketing ${periodLabel.replace('Lucro ', '')}`}</p>
-                  <p className="text-xl font-bold text-orange-500">{formatCurrency(totalMarketingCost)}</p>
+                  <p className="text-xl font-bold text-orange-500">
+                    {formatCurrency(campaignProductsCurrentPeriodCost > 0 ? campaignProductsCurrentPeriodCost : totalMarketingCost)}
+                  </p>
                 </div>
               )}
-              {totalMarketingCostAllTime > 0 && (
+              {campaignProductsTotalCost > 0 && (
                 <div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Marketing Total</p>
-                  <p className="text-xl font-bold text-orange-500">{formatCurrency(totalMarketingCostAllTime)}</p>
+                  <p className="text-xl font-bold text-orange-500">{formatCurrency(campaignProductsTotalCost)}</p>
                 </div>
               )}
             </div>
