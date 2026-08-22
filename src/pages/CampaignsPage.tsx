@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Megaphone, Plus, Pencil, Trash2, Loader2, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -296,18 +297,55 @@ const CampaignsPage: React.FC = () => {
     }
   };
 
+  type SortKey = 'date_desc' | 'date_asc' | 'name_asc' | 'name_desc' | 'budget_desc' | 'budget_asc' | 'status';
+  const [sortKey, setSortKey] = useState<SortKey>('date_desc');
+
+  const sortedCampaigns = useMemo(() => {
+    return [...campaigns].sort((a, b) => {
+      switch (sortKey) {
+        case 'date_desc': return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'date_asc':  return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'name_asc':  return (a.name ?? '').localeCompare(b.name ?? '');
+        case 'name_desc': return (b.name ?? '').localeCompare(a.name ?? '');
+        case 'budget_desc': return (Number(b.budget_amount ?? 0)) - (Number(a.budget_amount ?? 0));
+        case 'budget_asc':  return (Number(a.budget_amount ?? 0)) - (Number(b.budget_amount ?? 0));
+        case 'status': {
+          const order: Record<string, number> = { active: 0, paused: 1, ended: 2 };
+          return (order[a.status] ?? 9) - (order[b.status] ?? 9);
+        }
+        default: return 0;
+      }
+    });
+  }, [campaigns, sortKey]);
+
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-white">Campanhas</h1>
           <p className="text-sm text-zinc-400 mt-0.5">Gerencie suas campanhas de tráfego pago</p>
         </div>
-        <Button onClick={handleNew} className="bg-orange-500 hover:bg-orange-600 text-white gap-2">
-          <Plus className="w-4 h-4" />
-          Nova Campanha
-        </Button>
+        <div className="flex items-center gap-2">
+          <Select value={sortKey} onValueChange={(v) => setSortKey(v as typeof sortKey)}>
+            <SelectTrigger className="w-48 bg-zinc-900 border-zinc-700 text-zinc-300 text-xs h-9">
+              <SelectValue placeholder="Ordenar por" />
+            </SelectTrigger>
+            <SelectContent className="bg-zinc-900 border-zinc-700 text-zinc-200">
+              <SelectItem value="date_desc">Data ↓ (mais recente)</SelectItem>
+              <SelectItem value="date_asc">Data ↑ (mais antigo)</SelectItem>
+              <SelectItem value="name_asc">Nome A → Z</SelectItem>
+              <SelectItem value="name_desc">Nome Z → A</SelectItem>
+              <SelectItem value="budget_desc">Orçamento ↓</SelectItem>
+              <SelectItem value="budget_asc">Orçamento ↑</SelectItem>
+              <SelectItem value="status">Status (ativo → encerrado)</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={handleNew} className="bg-orange-500 hover:bg-orange-600 text-white gap-2 h-9">
+            <Plus className="w-4 h-4" />
+            Nova Campanha
+          </Button>
+        </div>
       </div>
 
       {/* Loading */}
@@ -344,7 +382,7 @@ const CampaignsPage: React.FC = () => {
       {/* List */}
       {!isLoading && campaigns.length > 0 && (
         <div className="grid gap-3">
-          {campaigns.map((c) => {
+          {sortedCampaigns.map((c) => {
             const sc = statusConfig[c.status] ?? statusConfig.active;
             const logo = MARKETPLACE_LOGOS[c.marketplace];
             const adSets = c.campaign_ad_sets ?? [];
