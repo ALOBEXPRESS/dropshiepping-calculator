@@ -33,19 +33,16 @@ export const AdSetSettingsStep: React.FC<AdSetSettingsStepProps> = ({
     target_cost_per_result?: number | null;
   };
 
-  // Raw local state for cost input to avoid BRL re-format during typing
+  // Raw local state for cost input — reset when adSet changes (track by identity)
+  const costKey = adSetData.target_cost_per_result;
   const [rawCost, setRawCost] = React.useState<string>(
-    adSetData.target_cost_per_result != null
-      ? String(adSetData.target_cost_per_result).replace('.', ',')
-      : ''
+    costKey != null ? String(costKey).replace('.', ',') : ''
   );
-  // Sync rawCost when external data changes (e.g. switching adSet tab)
   React.useEffect(() => {
     setRawCost(adSetData.target_cost_per_result != null
       ? new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(adSetData.target_cost_per_result)
       : '');
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adSetData.target_cost_per_result === null ? null : 'defined']);
+  }, [adSetData.target_cost_per_result]);
 
   const handle = (field: keyof CampaignFormPayload['adSet']) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -144,10 +141,10 @@ export const AdSetSettingsStep: React.FC<AdSetSettingsStepProps> = ({
                 min="0"
                 step="1"
                 placeholder="Ex: 150"
-                value={data.conversion_type != null && data.conversion_type !== '' ? data.conversion_type : ''}
+                value={data.audience_behavior != null && /^\d+(\.\d+)?$/.test(data.audience_behavior) ? data.audience_behavior : ''}
                 onChange={(e) => {
                   const v = e.target.value.replace(/[^0-9]/g, '');
-                  onChange('conversion_type', v || null);
+                  onChange('audience_behavior', v || null);
                 }}
                 className="pr-8 bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
