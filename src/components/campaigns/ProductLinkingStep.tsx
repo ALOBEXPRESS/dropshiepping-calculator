@@ -30,6 +30,7 @@ interface ProductLinkingStepProps {
   organizationId: string;
   selectedProducts: CampaignFormPayload['products'];
   onChange: (products: CampaignFormPayload['products']) => void;
+  preSelectName?: string | null; // auto-select product matching this name
 }
 
 // Raw-string cost input to avoid cursor-jump on BRL formatting
@@ -229,10 +230,12 @@ export const ProductLinkingStep: React.FC<ProductLinkingStepProps> = ({
   organizationId,
   selectedProducts,
   onChange,
+  preSelectName,
 }) => {
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [autoSelected, setAutoSelected] = useState(false);
 
   useEffect(() => {
     const fetch = async () => {
@@ -243,11 +246,26 @@ export const ProductLinkingStep: React.FC<ProductLinkingStepProps> = ({
         .eq('organization_id', organizationId)
         .eq('marketplace', 'tiktok')
         .order('name');
-      setProducts((data as ProductRow[]) ?? []);
+      const loaded = (data as ProductRow[]) ?? [];
+      setProducts(loaded);
       setLoading(false);
+
+      // Auto-select product matching preSelectName (only if no products already selected)
+      if (preSelectName && !autoSelected && loaded.length > 0 && selectedProducts.length === 0) {
+        const nameLower = preSelectName.toLowerCase().trim();
+        const match = loaded.find(p =>
+          p.name.toLowerCase().includes(nameLower) ||
+          nameLower.includes(p.name.toLowerCase().split(' — ')[0].toLowerCase())
+        );
+        if (match) {
+          onChange([{ product_id: match.id, marketing_cost_override: null }]);
+          setAutoSelected(true);
+        }
+      }
     };
     if (organizationId) fetch();
-  }, [organizationId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [organizationId, preSelectName]);
 
   const selectedMap = useMemo(
     () => new Map(selectedProducts.map((p) => [p.product_id, p as ProductLinkEntry])),

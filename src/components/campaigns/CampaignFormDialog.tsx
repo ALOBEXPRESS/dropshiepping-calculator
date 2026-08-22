@@ -357,6 +357,7 @@ export const CampaignFormDialog: React.FC<CampaignFormDialogProps> = ({
               organizationId={organizationId}
               selectedProducts={payload.products}
               onChange={(products) => setPayload((p) => ({ ...p, products }))}
+              preSelectName={payload.adSets[selectedAdSetIndex]?.name ?? payload.adSet.name}
             />
           )}
         </div>

@@ -8,6 +8,7 @@ import androidImg from '@/imgs/android.png';
 import type { CampaignFormPayload, CampaignObjective } from '@/types/campaigns';
 
 const CONSIDERATION_OBJECTIVES: CampaignObjective[] = ['traffic', 'video_views', 'community_interaction'];
+const CONVERSION_OBJECTIVES: CampaignObjective[] = ['sales', 'app_promotion', 'lead_generation'];
 
 interface AdSetSettingsStepProps {
   data: CampaignFormPayload['adSet'];
@@ -25,6 +26,7 @@ export const AdSetSettingsStep: React.FC<AdSetSettingsStepProps> = ({
   onChange,
 }) => {
   const isConsideration = CONSIDERATION_OBJECTIVES.includes(campaignObjective);
+  const isConversion = CONVERSION_OBJECTIVES.includes(campaignObjective);
   const adSetData = data as typeof data & {
     traffic_destination?: string | null;
     optimization_goal?: string | null;
@@ -45,24 +47,90 @@ export const AdSetSettingsStep: React.FC<AdSetSettingsStepProps> = ({
       <SectionLabel>CAMPANHA</SectionLabel>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label className="text-zinc-300 text-sm">Nome do Grupo</Label>
+          {/* Conversão: "Nome do Produto (Permitir Anexar)" | Outros: "Nome do Grupo" */}
+          <Label className="text-zinc-300 text-sm">
+            {isConversion ? 'Nome do Produto' : 'Nome do Grupo'}
+          </Label>
           <Input
-            placeholder="Ex: Grupo Principal"
+            placeholder={isConversion ? 'Ex: Tênis Masculino Esportivo' : 'Ex: Grupo Principal'}
             value={data.name ?? ''}
             onChange={handle('name')}
             className="bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500"
           />
+          {isConversion && (
+            <p className="text-[11px] text-zinc-500">Nome do produto desta campanha de conversão.</p>
+          )}
         </div>
         <div className="space-y-1.5">
-          <Label className="text-zinc-300 text-sm">Tipo de Conversão</Label>
-          <Input
-            placeholder="Ex: Compra, Visualização de Página"
-            value={data.conversion_type ?? ''}
-            onChange={handle('conversion_type')}
-            className="bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500"
-          />
+          {/* Conversão: "Meta de Otimização" com default ROI | Outros: "Tipo de Conversão" */}
+          <Label className="text-zinc-300 text-sm">
+            {isConversion ? 'Meta de Otimização' : 'Tipo de Conversão'}
+          </Label>
+          {isConversion ? (
+            <Select
+              value={adSetData.optimization_goal ?? 'roi'}
+              onValueChange={(v) => onChange('optimization_goal' as keyof CampaignFormPayload['adSet'], v || null)}
+            >
+              <SelectTrigger className="bg-zinc-900 border-zinc-700 text-white">
+                <SelectValue placeholder="Selecione a meta" />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-900 border-zinc-700">
+                <SelectItem value="roi">Meta de ROI</SelectItem>
+                <SelectItem value="click">Clique</SelectItem>
+                <SelectItem value="landing_page_view">Visualização de Página</SelectItem>
+                <SelectItem value="engagement_session">Sessão de Engajamento</SelectItem>
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              placeholder="Ex: Compra, Visualização de Página"
+              value={data.conversion_type ?? ''}
+              onChange={handle('conversion_type')}
+              className="bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500"
+            />
+          )}
         </div>
       </div>
+
+      {/* Conversão: Custo + ROI */}
+      {isConversion && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-zinc-300 text-sm">Custo (R$)</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm pointer-events-none">R$</span>
+              <Input
+                type="text"
+                inputMode="numeric"
+                placeholder="0,00"
+                value={adSetData.target_cost_per_result != null
+                  ? new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(adSetData.target_cost_per_result)
+                  : ''}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/\./g, '').replace(',', '.');
+                  const num = parseFloat(raw);
+                  onChange('target_cost_per_result' as keyof CampaignFormPayload['adSet'], isNaN(num) ? null : num);
+                }}
+                className="pl-9 bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-orange-500"
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-zinc-300 text-sm">ROI Alvo (%)</Label>
+            <div className="relative">
+              <Input
+                type="text"
+                inputMode="numeric"
+                placeholder="Ex: 150"
+                value={data.conversion_type ?? ''}
+                onChange={handle('conversion_type')}
+                className="pr-8 bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-orange-500"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm pointer-events-none">%</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">

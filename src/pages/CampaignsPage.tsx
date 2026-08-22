@@ -47,6 +47,41 @@ const SkeletonCard = () => (
   </div>
 );
 
+// Accordion group section
+const GroupSection: React.FC<{
+  groupKey: string;
+  label: string;
+  icon: string;
+  color: string;
+  borderColor: string;
+  count: number;
+  custo: number;
+  formatBRL: (v: number) => string;
+  children: React.ReactNode;
+}> = ({ label, icon, color, borderColor, count, custo, formatBRL, children }) => {
+  const [open, setOpen] = useState(true);
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-zinc-900/40 border ${borderColor} hover:bg-zinc-900/70 transition-colors`}
+      >
+        <span className="text-base">{icon}</span>
+        <span className={`text-xs font-semibold uppercase tracking-widest ${color}`}>{label}</span>
+        <span className="text-[10px] bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded-full">{count}</span>
+        {custo > 0 && (
+          <span className="text-[10px] text-orange-400/70 ml-auto mr-2">
+            Custo: R$ {formatBRL(custo)}
+          </span>
+        )}
+        <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${open ? '' : '-rotate-90'} ${custo > 0 ? '' : 'ml-auto'}`} />
+      </button>
+      {open && <div className="grid gap-3">{children}</div>}
+    </div>
+  );
+};
+
 interface CampaignCardProps {
   campaign: CampaignWithRelations;
   sc: { label: string; className: string };
@@ -430,47 +465,40 @@ const CampaignsPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Grouped by objective category */}
+            {/* Grouped by objective category — each group is collapsible */}
             {objGroups.map(group => {
               const groupCusto = group.campaigns.reduce((sum, c) =>
                 sum + c.campaign_products.reduce((s, p) => s + (p.marketing_cost_override != null ? Number(p.marketing_cost_override) : 0), 0)
               , 0);
               return (
-                <div key={group.key} className="space-y-2">
-                  {/* Group header */}
-                  <div className={`flex items-center gap-3 px-3 py-2 rounded-lg bg-zinc-900/40 border ${group.borderColor}`}>
-                    <span className="text-base">{group.icon}</span>
-                    <span className={`text-xs font-semibold uppercase tracking-widest ${group.color}`}>
-                      {group.label}
-                    </span>
-                    <span className="text-[10px] bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded-full">
-                      {group.campaigns.length}
-                    </span>
-                    {groupCusto > 0 && (
-                      <span className="text-[10px] text-orange-400/70 ml-auto">
-                        Custo: R$ {formatBRL(groupCusto)}
-                      </span>
-                    )}
-                  </div>
-                  <div className="grid gap-3">
-                    {group.campaigns.map((c) => {
-                      const sc = statusConfig[c.status] ?? statusConfig.active;
-                      const logo = MARKETPLACE_LOGOS[c.marketplace];
-                      const adSets = c.campaign_ad_sets ?? [];
-                      return (
-                        <CampaignCard
-                          key={c.id}
-                          campaign={c}
-                          sc={sc}
-                          logo={logo}
-                          adSets={adSets}
-                          onEdit={() => handleEdit(c)}
-                          onDelete={() => setDeleteId(c.id)}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
+                <GroupSection
+                  key={group.key}
+                  groupKey={group.key}
+                  label={group.label}
+                  icon={group.icon}
+                  color={group.color}
+                  borderColor={group.borderColor}
+                  count={group.campaigns.length}
+                  custo={groupCusto}
+                  formatBRL={formatBRL}
+                >
+                  {group.campaigns.map((c) => {
+                    const sc = statusConfig[c.status] ?? statusConfig.active;
+                    const logo = MARKETPLACE_LOGOS[c.marketplace];
+                    const adSets = c.campaign_ad_sets ?? [];
+                    return (
+                      <CampaignCard
+                        key={c.id}
+                        campaign={c}
+                        sc={sc}
+                        logo={logo}
+                        adSets={adSets}
+                        onEdit={() => handleEdit(c)}
+                        onDelete={() => setDeleteId(c.id)}
+                      />
+                    );
+                  })}
+                </GroupSection>
               );
             })}
           </div>
