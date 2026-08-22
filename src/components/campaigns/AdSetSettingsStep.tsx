@@ -33,6 +33,20 @@ export const AdSetSettingsStep: React.FC<AdSetSettingsStepProps> = ({
     target_cost_per_result?: number | null;
   };
 
+  // Raw local state for cost input to avoid BRL re-format during typing
+  const [rawCost, setRawCost] = React.useState<string>(
+    adSetData.target_cost_per_result != null
+      ? String(adSetData.target_cost_per_result).replace('.', ',')
+      : ''
+  );
+  // Sync rawCost when external data changes (e.g. switching adSet tab)
+  React.useEffect(() => {
+    setRawCost(adSetData.target_cost_per_result != null
+      ? new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(adSetData.target_cost_per_result)
+      : '');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adSetData.target_cost_per_result === null ? null : 'defined']);
+
   const handle = (field: keyof CampaignFormPayload['adSet']) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       onChange(field, e.target.value || null);
@@ -101,15 +115,21 @@ export const AdSetSettingsStep: React.FC<AdSetSettingsStepProps> = ({
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm pointer-events-none">R$</span>
               <Input
                 type="text"
-                inputMode="numeric"
+                inputMode="decimal"
                 placeholder="0,00"
-                value={adSetData.target_cost_per_result != null
-                  ? new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(adSetData.target_cost_per_result)
-                  : ''}
+                value={rawCost}
                 onChange={(e) => {
-                  const raw = e.target.value.replace(/\./g, '').replace(',', '.');
-                  const num = parseFloat(raw);
-                  onChange('target_cost_per_result' as keyof CampaignFormPayload['adSet'], isNaN(num) ? null : num);
+                  // Only digits + comma — no dots (avoid BRL thousand-dot confusion)
+                  setRawCost(e.target.value.replace(/[^0-9,]/g, ''));
+                }}
+                onBlur={() => {
+                  const cleaned = rawCost.replace(',', '.');
+                  const num = parseFloat(cleaned);
+                  const val = isNaN(num) ? null : num;
+                  onChange('target_cost_per_result' as keyof CampaignFormPayload['adSet'], val);
+                  setRawCost(val != null
+                    ? new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(val)
+                    : '');
                 }}
                 className="pl-9 bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-orange-500"
               />
@@ -119,12 +139,17 @@ export const AdSetSettingsStep: React.FC<AdSetSettingsStepProps> = ({
             <Label className="text-zinc-300 text-sm">ROI Alvo (%)</Label>
             <div className="relative">
               <Input
-                type="text"
+                type="number"
                 inputMode="numeric"
+                min="0"
+                step="1"
                 placeholder="Ex: 150"
-                value={data.conversion_type ?? ''}
-                onChange={handle('conversion_type')}
-                className="pr-8 bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-orange-500"
+                value={data.conversion_type != null && data.conversion_type !== '' ? data.conversion_type : ''}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/[^0-9]/g, '');
+                  onChange('conversion_type', v || null);
+                }}
+                className="pr-8 bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm pointer-events-none">%</span>
             </div>
