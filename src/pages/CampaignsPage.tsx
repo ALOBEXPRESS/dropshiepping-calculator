@@ -387,11 +387,25 @@ const CampaignsPage: React.FC = () => {
         , 0);
         const formatBRL = (v: number) => new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(v);
 
-        // Group sortedCampaigns by status
-        const groups: { status: 'active' | 'paused' | 'ended'; label: string; color: string; campaigns: typeof sortedCampaigns }[] = [
-          { status: 'active' as const,  label: 'Ativas',     color: 'text-green-400',  campaigns: sortedCampaigns.filter(c => c.status === 'active') },
-          { status: 'paused' as const,  label: 'Pausadas',   color: 'text-yellow-400', campaigns: sortedCampaigns.filter(c => c.status === 'paused') },
-          { status: 'ended' as const,   label: 'Encerradas', color: 'text-zinc-400',   campaigns: sortedCampaigns.filter(c => c.status === 'ended') },
+        // Group by objective category: Conversão vs Consideração/Conhecimento
+        const CONVERSION_OBJECTIVES = new Set(['sales', 'app_promotion', 'lead_generation']);
+        const objGroups: { key: string; label: string; icon: string; color: string; borderColor: string; campaigns: typeof sortedCampaigns }[] = [
+          {
+            key: 'conversao',
+            label: 'Conversão',
+            icon: '💰',
+            color: 'text-orange-400',
+            borderColor: 'border-orange-500/30',
+            campaigns: sortedCampaigns.filter(c => CONVERSION_OBJECTIVES.has(c.objective)),
+          },
+          {
+            key: 'consideracao',
+            label: 'Consideração & Conhecimento',
+            icon: '👁',
+            color: 'text-blue-400',
+            borderColor: 'border-blue-500/30',
+            campaigns: sortedCampaigns.filter(c => !CONVERSION_OBJECTIVES.has(c.objective)),
+          },
         ].filter(g => g.campaigns.length > 0);
 
         return (
@@ -416,15 +430,16 @@ const CampaignsPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Grouped sections */}
-            {groups.map(group => {
+            {/* Grouped by objective category */}
+            {objGroups.map(group => {
               const groupCusto = group.campaigns.reduce((sum, c) =>
                 sum + c.campaign_products.reduce((s, p) => s + (p.marketing_cost_override != null ? Number(p.marketing_cost_override) : 0), 0)
               , 0);
               return (
-                <div key={group.status} className="space-y-2">
+                <div key={group.key} className="space-y-2">
                   {/* Group header */}
-                  <div className="flex items-center gap-3 px-1">
+                  <div className={`flex items-center gap-3 px-3 py-2 rounded-lg bg-zinc-900/40 border ${group.borderColor}`}>
+                    <span className="text-base">{group.icon}</span>
                     <span className={`text-xs font-semibold uppercase tracking-widest ${group.color}`}>
                       {group.label}
                     </span>
