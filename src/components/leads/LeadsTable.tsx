@@ -380,6 +380,7 @@ export default function LeadsTable({
           onDelete={handleDelete}
           selectedLeads={selectedLeads}
           onSelectionChange={handleSelectionChange}
+          organizationId={organizationId}
         />
 
         {/* Pagination - Implemented in Task 8 */}

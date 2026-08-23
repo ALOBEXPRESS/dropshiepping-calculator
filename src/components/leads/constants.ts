@@ -69,6 +69,7 @@ export const LEAD_TABLE_COLUMNS: LeadTableColumn[] = [
   { key: 'phone', label: 'Telefone', sortable: false, width: '150px' },
   { key: 'company_name', label: 'Empresa', sortable: true, width: '180px' },
   { key: 'marketplace_name', label: 'Canal', sortable: true, width: '150px' },
+  { key: 'produto', label: 'Produto', sortable: false, width: '200px' },
   { key: 'lead_status', label: 'Status', sortable: true, width: '120px' },
   { key: 'created_at', label: 'Data de Criação', sortable: true, width: '150px' },
   { key: 'actions', label: 'Ações', sortable: false, width: '100px', align: 'center' },

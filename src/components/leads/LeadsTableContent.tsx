@@ -39,6 +39,7 @@ import {
   getStatusIcon,
 } from './utils';
 import { useKeyboardNavigation } from '@/hooks/useKeyboardNavigation';
+import { LeadProductBadge } from './LeadProductBadge';
 
 interface LeadsTableContentProps {
   leads: Lead[];
@@ -49,6 +50,7 @@ interface LeadsTableContentProps {
   onDelete: (leadId: string) => void;
   selectedLeads: string[];
   onSelectionChange: (leadIds: string[]) => void;
+  organizationId?: string;
 }
 
 /**
@@ -71,6 +73,7 @@ export function LeadsTableContent({
   onDelete,
   selectedLeads,
   onSelectionChange,
+  organizationId,
 }: LeadsTableContentProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -347,6 +350,15 @@ export function LeadsTableContent({
             </span>
           ) : (
             <span className="text-muted-foreground">-</span>
+          )}
+        </TableCell>
+
+        {/* Produto column */}
+        <TableCell role="cell">
+          {organizationId ? (
+            <LeadProductBadge leadName={lead.name} organizationId={organizationId} />
+          ) : (
+            <span className="text-muted-foreground">—</span>
           )}
         </TableCell>
 
