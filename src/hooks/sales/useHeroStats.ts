@@ -17,23 +17,24 @@ interface HeroStats {
 // Maps period to current/previous period labels returned by get_revenue_report
 const getPeriodLabels = (period: 'daily' | 'weekly' | 'monthly' | 'yearly') => {
   const now = new Date();
-  const ptMonths = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  // RPC returns English month abbreviations (TO_CHAR 'Mon')
+  const enMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
   if (period === 'monthly') {
-    const cur = ptMonths[now.getMonth()];
+    const cur = enMonths[now.getMonth()];
     const prevDate = new Date(now);
     prevDate.setMonth(prevDate.getMonth() - 1);
-    const prev = ptMonths[prevDate.getMonth()];
+    const prev = enMonths[prevDate.getMonth()];
     return { current: cur, previous: prev };
   }
   if (period === 'yearly') {
     return { current: String(now.getFullYear()), previous: String(now.getFullYear() - 1) };
   }
   // daily/weekly — use monthly as fallback
-  const cur = ptMonths[now.getMonth()];
+  const cur = enMonths[now.getMonth()];
   const prevDate = new Date(now);
   prevDate.setMonth(prevDate.getMonth() - 1);
-  return { current: cur, previous: ptMonths[prevDate.getMonth()] };
+  return { current: cur, previous: enMonths[prevDate.getMonth()] };
 };
 
 type RpcPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
