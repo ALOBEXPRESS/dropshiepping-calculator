@@ -1,0 +1,469 @@
+{
+  "name": "Shopee Afiliados",
+  "nodes": [
+    {
+      "parameters": {
+        "outputFieldName": "now_sp",
+        "options": {
+          "timezone": "America/Sao_Paulo"
+        }
+      },
+      "type": "n8n-nodes-base.dateTime",
+      "typeVersion": 2,
+      "position": [
+        304,
+        16
+      ],
+      "id": "2f32ecd0-3ffe-465a-a092-0af59c5826f4",
+      "name": "Date & Time"
+    },
+    {
+      "parameters": {
+        "operation": "formatDate",
+        "date": "={{ $json.now_sp  }}",
+        "format": "X",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTime",
+      "typeVersion": 2,
+      "position": [
+        576,
+        0
+      ],
+      "id": "636b4126-28ac-4a46-99b4-ee54f68d9ea1",
+      "name": "Date & Time1"
+    },
+    {
+      "parameters": {
+        "type": "SHA256",
+        "value": "={{ $json.AppID + $json.formattedDate + $json.Payload + $json.Secret }}"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "b2eac641-1f9f-417a-b547-1e6755110703",
+      "name": "Crypto"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open-api.affiliate.shopee.com.br/graphql",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=SHA256 Credential={{ $json.AppID }}, Timestamp={{ $json.Timestamp }}, Signature={{ $json.data }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ ${'Configuração do fluxo1'}.item.json.Payload }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1248,
+        0
+      ],
+      "id": "8593030a-c6b2-4ef9-9a86-07dd0765bd24",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "56d2e2a8-eabd-45a7-983f-5dee417d91dc",
+              "name": "AppID",
+              "value": "seu appid",
+              "type": "string"
+            },
+            {
+              "id": "d41a5467-6838-4dd0-b8e0-552b78584406",
+              "name": "Secret",
+              "value": "seu secret",
+              "type": "string"
+            },
+            {
+              "id": "e080bb5e-d01e-4220-b824-251423839e9b",
+              "name": "maxPrice",
+              "value": "60",
+              "type": "string"
+            },
+            {
+              "id": "89c24f06-c265-48be-8034-7f9c0faae914",
+              "name": "minPrice",
+              "value": "9.9",
+              "type": "string"
+            },
+            {
+              "id": "89908f47-282b-461c-93aa-107758541995",
+              "name": "MinComission",
+              "value": "1",
+              "type": "string"
+            },
+            {
+              "id": "0bd4cb8b-9b32-44f1-a2b4-5cc521622961",
+              "name": "minComissionRate",
+              "value": "0.7",
+              "type": "string"
+            },
+            {
+              "id": "b7711f00-6b9e-4f76-8212-764975ab0e47",
+              "name": "Payload",
+              "value": "{   \"query\": \"{ productOfferV2(listType: 0, sortType: 5, page: 0, limit: 50, isAMSOffer: true) { nodes { commissionRate commission imageUrl price productLink offerLink productName } } }\" }",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        832,
+        0
+      ],
+      "id": "fce4d63e-d8b2-4d8d-8d02-07a8c2a92a3c",
+      "name": "Configuração do fluxo1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filtrar Comissão (usa variáveis do node \"Configuração do fluxo\")\n\nconst cfg = $node[\"Configuração do fluxo\"].json;\n\n// seus nomes exatos (mantendo o tipo \"Comission\")\nconst minComission = Number(cfg.minComission ?? 1); // ex: 1.00 (R$)\nconst minComissionRate = Number(cfg.minComissionRate ?? 0); // ex: 0.30 (30%)\n\nconst items = $input.all();\n\nreturn items.filter((it) => {\n  const o = it.json.oferta || it.json;\n\n  const commission = Number(o.commission ?? 0);\n  const commissionRate = Number(o.commissionRate ?? 0);\n\n  return commission >= minComission && commissionRate >= minComissionRate;\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        0
+      ],
+      "id": "4a62540b-85c4-4dec-b4eb-ee3e61a6d0f3",
+      "name": "Filtrar Comissão1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================\n// Filtrar Achadinhos (Preço + Palavras) - Shopee\n// ============================================\n\n// ========================\n// 1) CONFIG (puxa do node \"Configuração do fluxo\")\n// ========================\n\n// jeito mais compatível com Code node:\nconst cfgItem = ($items(\"Configuração do fluxo1\")?.[0]?.json) ?? {};\nconst maxPrice = Number(cfgItem.maxPrice ?? 79.90);\nconst minPrice = Number(cfgItem.minPrice ?? 0);   // ✅ NOVO\nconst minScore = Number(cfgItem.minScore ?? 1);   // opcional\n\n// ========================\n// 2) KEYWORDS (edite à vontade)\n// ========================\nconst POSITIVE_KEYWORDS = [\n  \"kit\", \"organizador\", \"suporte\", \"capa\", \"capinha\", \"pelicula\", \"película\",\n  \"usb\", \"type c\", \"tipo c\", \"carregador\", \"cabo\", \"adaptador\",\n\n  \"led\", \"luz\", \"lanterna\", \"sensor\", \"magnetico\", \"magnético\", \"ima\", \"imã\",\n  \"portatil\", \"portátil\", \"dobravel\", \"dobrável\", \"recarregavel\", \"recarregável\", \"silicone\",\n\n  \"cozinha\", \"casa\", \"decoracao\", \"decoração\", \"banheiro\", \"limpeza\",\n\n  \"pet\", \"gato\", \"cachorro\", \"automotivo\", \"carro\",\n\n  // utilidades / organização\n  \"porta\", \"gancho\", \"ganchos\", \"cabide\", \"cabideiro\", \"prateleira\",\n  \"caixa\", \"caixinha\", \"pote\", \"pote hermetico\", \"pote hermético\", \"recipiente\",\n  \"cesto\", \"lixeira\", \"dispenser\", \"dispensador\", \"dosador\", \"borrifador\", \"pulverizador\",\n  \"escova\", \"esponja\", \"toalha\", \"pano\", \"tapete\", \"capacho\",\n\n  // tech / celular\n  \"pelicula 3d\", \"película 3d\", \"suporte celular\", \"suporte carro\", \"fone\", \"fone bluetooth\",\n\n  // decoração\n  \"decorativo\", \"decorativa\", \"quadro\", \"placa\", \"plaquinha\",\n\n  // beleza / cuidados pessoais  --> [PREENCHIDO: faltava no meio do arquivo]\n  \"maquiagem\", \"batom\", \"base\", \"skincare\", \"hidratante\", \"esmalte\", \"perfume\", \"necessaire\",\n\n  // bebê / infantil  --> [PREENCHIDO]\n  \"bebe\", \"bebê\", \"infantil\", \"mordedor\", \"chupeta\", \"brinquedo\",\n\n  // moda (roupas e acessórios)\n  \"camiseta\", \"camisa\", \"blusa\", \"cropped\", \"moletom\", \"jaqueta\",\n  \"calca\", \"calça\", \"bermuda\", \"short\", \"vestido\", \"saia\", \"conjunto\",\n  \"moda\", \"feminina\", \"masculino\", \"unissex\", \"casual\", \"basico\", \"básico\", \"inverno\", \"verao\", \"verão\"\n];\n\nconst NEGATIVE_KEYWORDS = [\n  \"emagrecedor\", \"capsulas\", \"cápsulas\", \"gotas\", \"original envio hoje\", \"green\", \"lepti\",\n  \"curso\", \"ebook\", \"apostila\", \"assinatura\",\n  \"casamento\", \"gravata\", \"urna\", \"pix\", \"alianca\", \"aliança\", \"porta alianca\", \"porta aliança\"\n];\n\n// ========================\n// 3) HELPERS\n// ========================\nfunction toNumber(v) {\n  if (v === null || v === undefined) return NaN;\n  if (typeof v === \"number\") return v;\n  const s = String(v).replace(/\\./g, \"\").replace(\",\", \".\").replace(/[^\\d.-]/g, \"\");\n  const n = parseFloat(s);\n  return isNaN(n) ? NaN : n;\n}\n\nfunction normalize(str) {\n  return String(str || \"\")\n    .toLowerCase()\n    .normalize(\"NFD\")\n    .replace(/[\\u0300-\\u036f]/g, \"\"); // remove acentos\n}\n\nfunction countHits(normalizedText, keywords) {\n  const hits = [];\n  for (const kw of keywords) {\n    if (normalizedText.includes(normalize(kw))) hits.push(kw);\n  }\n  return hits;\n}\n\n// ========================\n// 4) COLETA DOS ITENS (vem do HTTP Request1)\n// ========================\n// Estrutura da API da Shopee: data.productOfferV2.nodes[]\nconst httpItem = $input.first().json;\nconst nodes = httpItem?.data?.productOfferV2?.nodes ?? [];\n\n// ========================\n// 5) FILTRO DE PREÇO + PALAVRAS + SCORE\n// ========================\nconst results = [];\n\nfor (const node of nodes) {\n  const productName = node.productName ?? \"\";\n  const price = toNumber(node.price);\n  const commissionRate = toNumber(node.commissionRate);\n  const commission = toNumber(node.commission);\n  const offerLink = node.offerLink ?? \"\";\n  const productLink = node.productLink ?? \"\";\n  const imageUrl = node.imageUrl ?? \"\";\n\n  // filtro de preço\n  if (isNaN(price) || price < minPrice || price > maxPrice) continue;\n\n  const normalizedName = normalize(productName);\n  const posHits = countHits(normalizedName, POSITIVE_KEYWORDS);\n  const negHits = countHits(normalizedName, NEGATIVE_KEYWORDS);\n\n  // descarta na hora se bater em palavra negativa (curso, emagrecedor, etc)\n  if (negHits.length > 0) continue;\n\n  const score = posHits.length;\n\n  // filtro de score mínimo (quantas palavras-chave positivas bateram)\n  if (score < minScore) continue;\n\n  results.push({\n    json: {\n      oferta: {\n        productName,\n        offerLink,\n        productLink,\n        imageUrl,\n        price,\n        commissionRate,\n        commission,\n        score,\n        posHits,\n        negHits\n      }\n    }\n  });\n}\n\n// ========================\n// 6) ORDENA (maior score primeiro, depois maior comissão)\n// ========================\nresults.sort((a, b) => {\n  const s = b.json.oferta.score - a.json.oferta.score;\n  if (s !== 0) return s;\n  return b.json.oferta.commission - a.json.oferta.commission;\n});\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1456,
+        0
+      ],
+      "id": "47c104a2-27a7-4510-86ea-e035788b9cfb",
+      "name": "Filtrar Achadinhos (Preço +Palavras)1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Node: Diversificar (dedupe + limite por categoria)\n// Entrada esperada: [{ oferta: {...} }, { oferta: {...} }, ...]\n\nconst MAX_PER_CATEGORY = 3;\n\n// Só aplicamos limite pesado nessas categorias (as que costumam \"inundar\" o feed)\nconst LIMITED_CATEGORIES = new Set([\n  \"roupas\",\n  \"oculos\",\n  \"relogio\",\n  \"livros\",\n  \"capinhas\",\n  \"peliculas\",\n]);\n\n// Palavras-chave para inferir a categoria a partir do productName\nconst CATEGORY_RULES = [\n  {\n    cat: \"roupas\",\n    keys: [\n      \"camiseta\",\"camisa\",\"blusa\",\"cropped\",\"moletom\",\"jaqueta\",\n      \"calca\",\"calça\",\"bermuda\",\"short\",\"vestido\",\"saia\",\"conjunto\",\n      \"moda\",\"feminino\",\"masculino\",\"unissex\",\"casual\",\"basico\",\"básico\",\"inverno\",\"verao\",\"verão\"\n    ],\n  },\n  {\n    cat: \"oculos\",\n    keys: [\"oculos\",\"óculos\",\"lente\",\"uv400\",\"solar\",\"armação\",\"armacao\"],\n  },\n  {\n    cat: \"relogio\",\n    keys: [\"relogio\",\"relógio\",\"smartwatch\",\"pulseira\",\"cronometro\"],\n  },\n  {\n    cat: \"livros\",\n    keys: [\"livro\",\"livros\",\"literatura\",\"romance\",\"dicionario\"],\n  },\n  {\n    cat: \"capinhas\",\n    keys: [\"capinha\",\"capinhas\",\"capa celular\",\"case\",\"case iphone\",\"case samsung\"],\n  },\n  {\n    cat: \"peliculas\",\n    keys: [\"pelicula\",\"película\",\"vidro\",\"glass\",\"protector\",\"protetor de tela\"],\n  },\n];\n\nfunction norm(s) {\n  return String(s || \"\")\n    .toLowerCase()\n    .normalize(\"NFD\").replace(/[\\u0300-\\u036f]/g, \"\") // remove acentos\n    .replace(/[^\\p{L}\\p{N}\\s]+/gu, \" \")                // tira pontuação\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nfunction detectCategory(productName) {\n  const n = norm(productName);\n  for (const rule of CATEGORY_RULES) {\n    for (const k of rule.keys) {\n      if (n.includes(norm(k))) return rule.cat;\n    }\n  }\n  return \"outros\";\n}\n\n// --- começa aqui ---\nconst itemsIn = $input.all();\n\n// (opcional) se quiser priorizar os melhores antes de cortar repetidos,\n// ordena por score (desc) e depois por comissão (desc)\nitemsIn.sort((a, b) => {\n  const A = a.json?.oferta || {};\n  const B = b.json?.oferta || {};\n  const sA = Number(A.score ?? 0);\n  const sB = Number(B.score ?? 0);\n  if (sB !== sA) return sB - sA;\n\n  const cA = Number(A.commission ?? 0);\n  const cB = Number(B.commission ?? 0);\n  return cB - cA;\n});\n\n// --- estruturas de controle ---\nconst out = [];\nconst seenNames = new Set();\nconst catCounts = new Map();\n\nfor (const it of itemsIn) {\n  const oferta = it.json?.oferta || it.json || {};\n  const nameKey = norm(oferta.productName);\n\n  // 1) nenhum item igual\n  if (seenNames.has(nameKey)) continue;\n\n  const cat = detectCategory(oferta.productName);\n  oferta._categoria = cat; // útil para debug / próximos filtros\n\n  // 2) no máximo 3 para categorias repetitivas\n  if (LIMITED_CATEGORIES.has(cat)) {\n    const current = catCounts.get(cat) ?? 0;\n    if (current >= MAX_PER_CATEGORY) continue;\n    catCounts.set(cat, current + 1);\n  }\n\n  seenNames.add(nameKey);\n  out.push({ json: { oferta } });\n}\n\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1856,
+        -16
+      ],
+      "id": "3aa38fb1-e4aa-43e4-93b0-6b17e53aeb03",
+      "name": "Filtro do Filtro1"
+    },
+    {
+      "parameters": {
+        "sortFieldsUi": {
+          "sortField": [
+            {
+              "fieldName": "oferta"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.sort",
+      "typeVersion": 1,
+      "position": [
+        2000,
+        -16
+      ],
+      "id": "2e4616ca-d89f-42bc-bbc9-b88fb416edab",
+      "name": "Sort"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Crie uma copy para divulgar este produto:\n\nNome: {{ $json.oferta.productName }}\nCategoria: {{ $json.oferta_categoria }}\nPreço (R$): {{ $json.oferta.price }}\n\nLink curto (prioridade): {{ $json.oferta.offerLink }}\n\nRegras extras:\n- Não invente benefícios técnicos.\n- Se a categoria for \"roupas\" ou \"óculos\" ou \"relógios\" ou \"livros\", faça a copy bem neutra e focada em uso/estilo (sem prometer qualidade).\n- Se não houver preço, não cite preço.\n- Sempre inclua um link na última linha.",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "Você é um copywriter especialista em “achadinhos” (Shopee) para WhatsApp/Telegram no Brasil.\n\nOBJETIVO\nGerar uma copy curta, persuasiva e clara para divulgar 1 produto por vez, com foco em benefício real e conversão.\n\nREGRAS IMPORTANTES\n- Não invente nada. Use APENAS as informações fornecidas (nome, preço, categoria e links).\n- Não prometa “melhor do Brasil”, “original”, “garantia”, “frete grátis”, “cupom”, “desconto X%”, “últimas unidades”, “entrega amanhã”, etc. a menos que isso esteja explicitamente no input.\n- Não mencione comissão, taxa de comissão, ranking interno, score, ou lógica do seu sistema.\n- Evite claims absolutos: prefira linguagem segura (“ideal para...”, “ótimo para...”, “boa opção para...”).\n- Nada de texto longo: o objetivo é leitura rápida no celular.\n\nFORMATO DE SAÍDA (obrigatório)\nResponda SEMPRE em JSON válido, exatamente neste formato:\n\n{\n  \"copy\": \"texto final aqui\"\n}\n\nESTILO DA COPY\n- 1ª linha: gancho curto com emoji (1 emoji no início é suficiente).\n- 2ª linha: benefício/uso principal em linguagem simples.\n- 3ª linha: preço em BRL (R$) se estiver disponível.\n- 4ª linha: CTA curto + link (use o offerLink; se não tiver, use productLink).\n- No máximo 4 linhas. Sem hashtags. Sem markdown.\n- Evite repetição. Escreva natural (PT-BR).\n\nTRATAMENTO DE NOMES\n- Se o productName for muito grande, resuma sem perder o sentido (mantenha o tipo do item).\n- Remova excesso de termos como “Premium”, “Original”, “Promoção”, “Qualidade”, “Top”, se estiverem no nome e não forem essenciais.\n\nSEGURANÇA / BLOQUEIO\nSe o item parecer proibido (armas, drogas, conteúdo adulto explícito), retorne:\n{ \"copy\": \"\" }"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        2416,
+        -16
+      ],
+      "id": "a7d85a55-bda0-42f0-9dfb-f936b05b8226",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        2208,
+        -16
+      ],
+      "id": "c142a016-7605-43fd-95ab-b02ea345f2dc",
+      "name": "Limit1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Code Node (JavaScript)\n// Limpa output vindo com ```json ... ``` e transforma em JSON de verdade (quando possível).\n\nfunction stripMarkdownFences(text) {\n  if (typeof text !== \"string\") return text;\n\n  // Remove ```json, ``` e variantes\n  // Ex: ```json\\n{...}\\n```  ->  {...}\n  return text\n    .trim()\n    .replace(/^```[a-zA-Z0-9_-]*\\s*\\n?/, \"\") // abre fence\n    .replace(/\\n?```$/, \"\")                   // fecha fence\n    .trim();\n}\n\nreturn $input.all().map((item) => {\n  const raw = item.json?.output;\n\n  if (raw == null) {\n    return { json: { ...item.json, cleanedText: \"\", parsed: null } };\n  }\n\n  const cleanedText = stripMarkdownFences(String(raw));\n\n  // Tenta parsear como JSON\n  let parsed = null;\n  try {\n    parsed = JSON.parse(cleanedText);\n  } catch (e) {\n    // Se falhar, tenta um \"resgate\" comum: remover BOM / chars estranhos\n    try {\n      const rescued = cleanedText.replace(/^\\uFEFF/, \"\").trim();\n      parsed = JSON.parse(rescued);\n    } catch (e2) {\n      parsed = null;\n    }\n  }\n\n  // Se conseguiu parsear e tem \"copy\", já sobe um campo copy direto\n  const copy = parsed && typeof parsed === \"object\" && parsed.copy ? parsed.copy : null;\n\n  return {\n    json: {\n      ...item.json,\n      cleanedText, // string sem ``` ```\n      parsed,      // objeto (ou null)\n      copy         // atalho (ou null)\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2768,
+        -16
+      ],
+      "id": "0f5f684c-edec-4a9d-ac34-dcd5c199ba29",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2448,
+        256
+      ],
+      "id": "21f8164c-7f9c-47bc-890b-b5a7305c75a5",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "4Ymk4puxTNGEvP7F",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $vars.TELEGRAM_CHAT_ID }}",
+        "file": "={{ $json.oferta.imageUrl }}",
+        "additionalFields": {
+          "caption": "={{ $json.copy || '' }}",
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2976,
+        -80
+      ],
+      "id": "81eac21f-10c1-4402-abb9-10c3689f64e9",
+      "name": "Send Photo",
+      "webhookId": "5c07d799-1f37-4fa1-9ab4-8ef03671fa75"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $vars.TELEGRAM_CHAT_ID }}",
+        "text": "={{ $json.copy || '' }}",
+        "additionalFields": {
+          "parse_mode": "Markdown",
+          "disable_web_page_preview": true
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3176,
+        -80
+      ],
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Send Message"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Date & Time": {
+      "main": [
+        [
+          {
+            "node": "Date & Time1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Date & Time1": {
+      "main": [
+        [
+          {
+            "node": "Configuração do fluxo1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crypto": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuração do fluxo1": {
+      "main": [
+        [
+          {
+            "node": "Crypto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Filtrar Achadinhos (Preço +Palavras)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar Achadinhos (Preço +Palavras)1": {
+      "main": [
+        [
+          {
+            "node": "Filtrar Comissão1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar Comissão1": {
+      "main": [
+        [
+          {
+            "node": "Filtro do Filtro1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtro do Filtro1": {
+      "main": [
+        [
+          {
+            "node": "Sort",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sort": {
+      "main": [
+        [
+          {
+            "node": "Limit1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send Photo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Photo": {
+      "main": [
+        [
+          {
+            "node": "Send Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ae8a13a4-a442-46de-932d-b880497516cb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3d7d4fa7d3c4c290012153d978693be4156b77f6019587bc797861ba8b17bdab"
+  },
+  "id": "5Egadyk3pPAkxQ0z",
+  "tags": []
+}
