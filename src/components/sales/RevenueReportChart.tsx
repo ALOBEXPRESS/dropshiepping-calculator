@@ -1542,7 +1542,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               tiktok_reembolso_disabled: orderData.tiktok_reembolso_disabled,
             };
             setSelectedOrder(merged);
-            setCameFromAffiliate(Boolean(affiliateByOrderIdRef.current?.[merged.order_id]));
+            setCameFromAffiliate(Boolean(affiliateByOrderIdRef.current?.[merged.order_id]) || Boolean(merged.affiliate_id));
             setOpenProduto(false);
             setOpenMarketplace(false);
             setOpenDescontos(false);
@@ -3217,6 +3217,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         onAffiliateChange={(affiliateId) => {
                           if (selectedOrder) {
                             setSelectedOrder({ ...selectedOrder, affiliate_id: affiliateId });
+                            // Set cameFromAffiliate based on whether an affiliate is selected
+                            const hasAffiliate = !!affiliateId;
+                            setCameFromAffiliate(hasAffiliate);
+                            setAffiliateByOrderId((prev) => ({ ...prev, [selectedOrder.order_id]: hasAffiliate }));
                           }
                         }}
                       />
