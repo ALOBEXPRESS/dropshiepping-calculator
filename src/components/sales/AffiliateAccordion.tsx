@@ -61,18 +61,23 @@ export const AffiliateAccordion: React.FC<AffiliateAccordionProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [influencers, setInfluencers] = useState<InfluencerOption[]>([]);
   const [selectedInfluencerId, setSelectedInfluencerId] = useState<string>(currentAffiliateId || '');
+
+  // Sync when prop changes (different order opened)
+  useEffect(() => {
+    setSelectedInfluencerId(currentAffiliateId || '');
+  }, [currentAffiliateId]);
   const [showNewForm, setShowNewForm] = useState(false);
   const [form, setForm] = useState<NewInfluencerForm>(EMPTY_FORM);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  // Carregar influenciadores quando abrir o accordion
+  // Carregar influenciadores quando abrir o accordion ou quando tiver afiliado já selecionado
   useEffect(() => {
-    if (isOpen && influencers.length === 0) {
+    if ((isOpen || currentAffiliateId) && influencers.length === 0) {
       loadInfluencers();
     }
-  }, [isOpen]);
+  }, [isOpen, currentAffiliateId]);
 
   const loadInfluencers = async () => {
     setLoading(true);
