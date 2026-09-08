@@ -3,6 +3,57 @@
   "nodes": [
     {
       "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $('Configuração do fluxo').item.json.TELEGRAM_CHAT_ID }}",
+        "file": "={{ $json.oferta.imageUrl }}",
+        "additionalFields": {
+          "caption": "={{ $json.copy || '' }}",
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        384,
+        384
+      ],
+      "id": "6df0ff23-dd0f-4fb2-a013-e62e873a3483",
+      "name": "Send Photo",
+      "webhookId": "5c07d799-1f37-4fa1-9ab4-8ef03671fa75",
+      "credentials": {
+        "telegramApi": {
+          "id": "Afk7PUTiK84jmb60",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Configuração do fluxo').item.json.TELEGRAM_CHAT_ID }}",
+        "text": "={{ $json.copy || '' }}",
+        "additionalFields": {
+          "disable_web_page_preview": true,
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        592,
+        384
+      ],
+      "id": "2a29de3d-5798-43f5-ac94-dee49dbc2d3e",
+      "name": "Send Message",
+      "webhookId": "c6a7d682-feb1-4406-ba4a-e4621ff1a676",
+      "credentials": {
+        "telegramApi": {
+          "id": "Afk7PUTiK84jmb60",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
         "outputFieldName": "now_sp",
         "options": {
           "timezone": "America/Sao_Paulo"
@@ -11,11 +62,11 @@
       "type": "n8n-nodes-base.dateTime",
       "typeVersion": 2,
       "position": [
-        304,
-        16
+        -2288,
+        480
       ],
-      "id": "2f32ecd0-3ffe-465a-a092-0af59c5826f4",
-      "name": "Date & Time"
+      "id": "2cbddb44-fafd-4802-b72c-0f7d960e3cec",
+      "name": "Date & Time2"
     },
     {
       "parameters": {
@@ -27,25 +78,24 @@
       "type": "n8n-nodes-base.dateTime",
       "typeVersion": 2,
       "position": [
-        576,
-        0
+        -2016,
+        464
       ],
-      "id": "636b4126-28ac-4a46-99b4-ee54f68d9ea1",
-      "name": "Date & Time1"
+      "id": "77db2346-5394-4092-823d-c55e2e6f4d56",
+      "name": "Date & Time3"
     },
     {
       "parameters": {
-        "type": "SHA256",
-        "value": "={{ $json.AppID + $json.formattedDate + $json.Payload + $json.Secret }}"
+        "jsCode": "const crypto = require('crypto');\n\nconst item = $input.first().json;\nconst appID = String(item.AppID);\nconst secret = String(item.Secret);\nconst timestamp = String(item.formattedDate);\nconst payloadStr = String(item.PayloadStr);\n\n// Shopee Affiliate BR: SHA256(AppID + Secret + Timestamp + Payload)\n// Based on official header name 'SHA256' (not HMAC)\nconst message = appID + secret + timestamp + payloadStr;\nconst signature = crypto\n  .createHash('sha256')\n  .update(message, 'utf8')\n  .digest('hex');\n\nreturn [{ json: { ...item, data: signature } }];"
       },
-      "type": "n8n-nodes-base.crypto",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        1040,
-        0
+        -1552,
+        464
       ],
-      "id": "b2eac641-1f9f-417a-b547-1e6755110703",
-      "name": "Crypto"
+      "id": "e48ea40c-c6c2-4342-9a45-b49d3837dceb",
+      "name": "Crypto1"
     },
     {
       "parameters": {
@@ -56,23 +106,24 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "=SHA256 Credential={{ $json.AppID }}, Timestamp={{ $json.Timestamp }}, Signature={{ $json.data }}"
+              "value": "=SHA256 Credential={{ $json.AppID }}, Signature={{ $json.data }}, Timestamp={{ $json.Timestamp }}"
             }
           ]
         },
         "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ ${'Configuração do fluxo1'}.item.json.Payload }}",
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $('Configuração do fluxo').item.json.PayloadStr }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        1248,
-        0
+        -1344,
+        464
       ],
-      "id": "8593030a-c6b2-4ef9-9a86-07dd0765bd24",
-      "name": "HTTP Request"
+      "id": "f5735c46-0af3-4933-ae25-2392748e831f",
+      "name": "HTTP Request1"
     },
     {
       "parameters": {
@@ -81,13 +132,13 @@
             {
               "id": "56d2e2a8-eabd-45a7-983f-5dee417d91dc",
               "name": "AppID",
-              "value": "seu appid",
+              "value": "18144680012",
               "type": "string"
             },
             {
               "id": "d41a5467-6838-4dd0-b8e0-552b78584406",
               "name": "Secret",
-              "value": "seu secret",
+              "value": "YLOUDI3UCMYHUBKPTWS7GZD6XO35HF36",
               "type": "string"
             },
             {
@@ -119,6 +170,36 @@
               "name": "Payload",
               "value": "{   \"query\": \"{ productOfferV2(listType: 0, sortType: 5, page: 0, limit: 50, isAMSOffer: true) { nodes { commissionRate commission imageUrl price productLink offerLink productName } } }\" }",
               "type": "object"
+            },
+            {
+              "id": "fab3f42a-faf8-46ef-b1d0-4e39e04d5886",
+              "name": "TELEGRAM_CHAT_ID",
+              "value": "6056212201",
+              "type": "string"
+            },
+            {
+              "id": "c1a2b3c4-d5e6-7890-abcd-111111111111",
+              "name": "Timestamp",
+              "value": "={{ $('Date & Time3').item.json.formattedDate }}",
+              "type": "string"
+            },
+            {
+              "id": "c1a2b3c4-d5e6-7890-abcd-222222222222",
+              "name": "formattedDate",
+              "value": "={{ $('Date & Time3').item.json.formattedDate }}",
+              "type": "string"
+            },
+            {
+              "id": "c1a2b3c4-d5e6-7890-abcd-333333333333",
+              "name": "PayloadStr",
+              "value": "{\"query\":\"{ productOfferV2(listType: 0, sortType: 5, page: 0, limit: 50, isAMSOffer: true) { nodes { commissionRate commission imageUrl price productLink offerLink productName } } }\"}",
+              "type": "string"
+            },
+            {
+              "id": "c1a2b3c4-d5e6-7890-abcd-444444444444",
+              "name": "minScore",
+              "value": "0",
+              "type": "string"
             }
           ]
         },
@@ -127,11 +208,11 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        832,
-        0
+        -1760,
+        464
       ],
-      "id": "fce4d63e-d8b2-4d8d-8d02-07a8c2a92a3c",
-      "name": "Configuração do fluxo1"
+      "id": "8fe0010e-fe19-40cb-a130-6f6e214ae360",
+      "name": "Configuração do fluxo"
     },
     {
       "parameters": {
@@ -140,24 +221,24 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1680,
-        0
+        -912,
+        464
       ],
-      "id": "4a62540b-85c4-4dec-b4eb-ee3e61a6d0f3",
-      "name": "Filtrar Comissão1"
+      "id": "39bc23e2-3d00-47ed-bd3f-eb1a031918ff",
+      "name": "Filtrar Comissão"
     },
     {
       "parameters": {
-        "jsCode": "// ============================================\n// Filtrar Achadinhos (Preço + Palavras) - Shopee\n// ============================================\n\n// ========================\n// 1) CONFIG (puxa do node \"Configuração do fluxo\")\n// ========================\n\n// jeito mais compatível com Code node:\nconst cfgItem = ($items(\"Configuração do fluxo1\")?.[0]?.json) ?? {};\nconst maxPrice = Number(cfgItem.maxPrice ?? 79.90);\nconst minPrice = Number(cfgItem.minPrice ?? 0);   // ✅ NOVO\nconst minScore = Number(cfgItem.minScore ?? 1);   // opcional\n\n// ========================\n// 2) KEYWORDS (edite à vontade)\n// ========================\nconst POSITIVE_KEYWORDS = [\n  \"kit\", \"organizador\", \"suporte\", \"capa\", \"capinha\", \"pelicula\", \"película\",\n  \"usb\", \"type c\", \"tipo c\", \"carregador\", \"cabo\", \"adaptador\",\n\n  \"led\", \"luz\", \"lanterna\", \"sensor\", \"magnetico\", \"magnético\", \"ima\", \"imã\",\n  \"portatil\", \"portátil\", \"dobravel\", \"dobrável\", \"recarregavel\", \"recarregável\", \"silicone\",\n\n  \"cozinha\", \"casa\", \"decoracao\", \"decoração\", \"banheiro\", \"limpeza\",\n\n  \"pet\", \"gato\", \"cachorro\", \"automotivo\", \"carro\",\n\n  // utilidades / organização\n  \"porta\", \"gancho\", \"ganchos\", \"cabide\", \"cabideiro\", \"prateleira\",\n  \"caixa\", \"caixinha\", \"pote\", \"pote hermetico\", \"pote hermético\", \"recipiente\",\n  \"cesto\", \"lixeira\", \"dispenser\", \"dispensador\", \"dosador\", \"borrifador\", \"pulverizador\",\n  \"escova\", \"esponja\", \"toalha\", \"pano\", \"tapete\", \"capacho\",\n\n  // tech / celular\n  \"pelicula 3d\", \"película 3d\", \"suporte celular\", \"suporte carro\", \"fone\", \"fone bluetooth\",\n\n  // decoração\n  \"decorativo\", \"decorativa\", \"quadro\", \"placa\", \"plaquinha\",\n\n  // beleza / cuidados pessoais  --> [PREENCHIDO: faltava no meio do arquivo]\n  \"maquiagem\", \"batom\", \"base\", \"skincare\", \"hidratante\", \"esmalte\", \"perfume\", \"necessaire\",\n\n  // bebê / infantil  --> [PREENCHIDO]\n  \"bebe\", \"bebê\", \"infantil\", \"mordedor\", \"chupeta\", \"brinquedo\",\n\n  // moda (roupas e acessórios)\n  \"camiseta\", \"camisa\", \"blusa\", \"cropped\", \"moletom\", \"jaqueta\",\n  \"calca\", \"calça\", \"bermuda\", \"short\", \"vestido\", \"saia\", \"conjunto\",\n  \"moda\", \"feminina\", \"masculino\", \"unissex\", \"casual\", \"basico\", \"básico\", \"inverno\", \"verao\", \"verão\"\n];\n\nconst NEGATIVE_KEYWORDS = [\n  \"emagrecedor\", \"capsulas\", \"cápsulas\", \"gotas\", \"original envio hoje\", \"green\", \"lepti\",\n  \"curso\", \"ebook\", \"apostila\", \"assinatura\",\n  \"casamento\", \"gravata\", \"urna\", \"pix\", \"alianca\", \"aliança\", \"porta alianca\", \"porta aliança\"\n];\n\n// ========================\n// 3) HELPERS\n// ========================\nfunction toNumber(v) {\n  if (v === null || v === undefined) return NaN;\n  if (typeof v === \"number\") return v;\n  const s = String(v).replace(/\\./g, \"\").replace(\",\", \".\").replace(/[^\\d.-]/g, \"\");\n  const n = parseFloat(s);\n  return isNaN(n) ? NaN : n;\n}\n\nfunction normalize(str) {\n  return String(str || \"\")\n    .toLowerCase()\n    .normalize(\"NFD\")\n    .replace(/[\\u0300-\\u036f]/g, \"\"); // remove acentos\n}\n\nfunction countHits(normalizedText, keywords) {\n  const hits = [];\n  for (const kw of keywords) {\n    if (normalizedText.includes(normalize(kw))) hits.push(kw);\n  }\n  return hits;\n}\n\n// ========================\n// 4) COLETA DOS ITENS (vem do HTTP Request1)\n// ========================\n// Estrutura da API da Shopee: data.productOfferV2.nodes[]\nconst httpItem = $input.first().json;\nconst nodes = httpItem?.data?.productOfferV2?.nodes ?? [];\n\n// ========================\n// 5) FILTRO DE PREÇO + PALAVRAS + SCORE\n// ========================\nconst results = [];\n\nfor (const node of nodes) {\n  const productName = node.productName ?? \"\";\n  const price = toNumber(node.price);\n  const commissionRate = toNumber(node.commissionRate);\n  const commission = toNumber(node.commission);\n  const offerLink = node.offerLink ?? \"\";\n  const productLink = node.productLink ?? \"\";\n  const imageUrl = node.imageUrl ?? \"\";\n\n  // filtro de preço\n  if (isNaN(price) || price < minPrice || price > maxPrice) continue;\n\n  const normalizedName = normalize(productName);\n  const posHits = countHits(normalizedName, POSITIVE_KEYWORDS);\n  const negHits = countHits(normalizedName, NEGATIVE_KEYWORDS);\n\n  // descarta na hora se bater em palavra negativa (curso, emagrecedor, etc)\n  if (negHits.length > 0) continue;\n\n  const score = posHits.length;\n\n  // filtro de score mínimo (quantas palavras-chave positivas bateram)\n  if (score < minScore) continue;\n\n  results.push({\n    json: {\n      oferta: {\n        productName,\n        offerLink,\n        productLink,\n        imageUrl,\n        price,\n        commissionRate,\n        commission,\n        score,\n        posHits,\n        negHits\n      }\n    }\n  });\n}\n\n// ========================\n// 6) ORDENA (maior score primeiro, depois maior comissão)\n// ========================\nresults.sort((a, b) => {\n  const s = b.json.oferta.score - a.json.oferta.score;\n  if (s !== 0) return s;\n  return b.json.oferta.commission - a.json.oferta.commission;\n});\n\nreturn results;"
+        "jsCode": "// ============================================\n// Filtrar Achadinhos (Preço + Palavras) - Shopee\n// ============================================\n\n// ========================\n// 1) CONFIG (puxa do node \"Configuração do fluxo\")\n// ========================\n\n// jeito mais compatível com Code node:\nconst cfgItem = ($items(\"Configuração do fluxo\")?.[0]?.json) ?? {};\nconst maxPrice = Number(cfgItem.maxPrice ?? 79.90);\nconst minPrice = Number(cfgItem.minPrice ?? 0);   // ✅ NOVO\nconst minScore = Number(cfgItem.minScore ?? 1);   // opcional\n\n// ========================\n// 2) KEYWORDS (edite à vontade)\n// ========================\nconst POSITIVE_KEYWORDS = [\n  \"kit\", \"organizador\", \"suporte\", \"capa\", \"capinha\", \"pelicula\", \"película\",\n  \"usb\", \"type c\", \"tipo c\", \"carregador\", \"cabo\", \"adaptador\",\n\n  \"led\", \"luz\", \"lanterna\", \"sensor\", \"magnetico\", \"magnético\", \"ima\", \"imã\",\n  \"portatil\", \"portátil\", \"dobravel\", \"dobrável\", \"recarregavel\", \"recarregável\", \"silicone\",\n\n  \"cozinha\", \"casa\", \"decoracao\", \"decoração\", \"banheiro\", \"limpeza\",\n\n  \"pet\", \"gato\", \"cachorro\", \"automotivo\", \"carro\",\n\n  // utilidades / organização\n  \"porta\", \"gancho\", \"ganchos\", \"cabide\", \"cabideiro\", \"prateleira\",\n  \"caixa\", \"caixinha\", \"pote\", \"pote hermetico\", \"pote hermético\", \"recipiente\",\n  \"cesto\", \"lixeira\", \"dispenser\", \"dispensador\", \"dosador\", \"borrifador\", \"pulverizador\",\n  \"escova\", \"esponja\", \"toalha\", \"pano\", \"tapete\", \"capacho\",\n\n  // tech / celular\n  \"pelicula 3d\", \"película 3d\", \"suporte celular\", \"suporte carro\", \"fone\", \"fone bluetooth\",\n\n  // decoração\n  \"decorativo\", \"decorativa\", \"quadro\", \"placa\", \"plaquinha\",\n\n  // beleza / cuidados pessoais  --> [PREENCHIDO: faltava no meio do arquivo]\n  \"maquiagem\", \"batom\", \"base\", \"skincare\", \"hidratante\", \"esmalte\", \"perfume\", \"necessaire\",\n\n  // bebê / infantil  --> [PREENCHIDO]\n  \"bebe\", \"bebê\", \"infantil\", \"mordedor\", \"chupeta\", \"brinquedo\",\n\n  // moda (roupas e acessórios)\n  \"camiseta\", \"camisa\", \"blusa\", \"cropped\", \"moletom\", \"jaqueta\",\n  \"calca\", \"calça\", \"bermuda\", \"short\", \"vestido\", \"saia\", \"conjunto\",\n  \"moda\", \"feminina\", \"masculino\", \"unissex\", \"casual\", \"basico\", \"básico\", \"inverno\", \"verao\", \"verão\"\n];\n\nconst NEGATIVE_KEYWORDS = [\n  \"emagrecedor\", \"capsulas\", \"cápsulas\", \"gotas\", \"original envio hoje\", \"green\", \"lepti\",\n  \"curso\", \"ebook\", \"apostila\", \"assinatura\",\n  \"casamento\", \"gravata\", \"urna\", \"pix\", \"alianca\", \"aliança\", \"porta alianca\", \"porta aliança\"\n];\n\n// ========================\n// 3) HELPERS\n// ========================\nfunction toNumber(v) {\n  if (v === null || v === undefined) return NaN;\n  if (typeof v === \"number\") return v;\n  const s = String(v).replace(/\\./g, \"\").replace(\",\", \".\").replace(/[^\\d.-]/g, \"\");\n  const n = parseFloat(s);\n  return isNaN(n) ? NaN : n;\n}\n\nfunction normalize(str) {\n  return String(str || \"\")\n    .toLowerCase()\n    .normalize(\"NFD\")\n    .replace(/[\\u0300-\\u036f]/g, \"\"); // remove acentos\n}\n\nfunction countHits(normalizedText, keywords) {\n  const hits = [];\n  for (const kw of keywords) {\n    if (normalizedText.includes(normalize(kw))) hits.push(kw);\n  }\n  return hits;\n}\n\n// ========================\n// 4) COLETA DOS ITENS (vem do HTTP Request1)\n// ========================\n// Estrutura da API da Shopee: data.productOfferV2.nodes[]\nconst httpItem = $input.first().json;\nconst nodes = httpItem?.data?.productOfferV2?.nodes ?? [];\n\n// ========================\n// 5) FILTRO DE PREÇO + PALAVRAS + SCORE\n// ========================\nconst results = [];\n\nfor (const node of nodes) {\n  const productName = node.productName ?? \"\";\n  const price = toNumber(node.price);\n  const commissionRate = toNumber(node.commissionRate);\n  const commission = toNumber(node.commission);\n  const offerLink = node.offerLink ?? \"\";\n  const productLink = node.productLink ?? \"\";\n  const imageUrl = node.imageUrl ?? \"\";\n\n  // filtro de preço\n  if (isNaN(price) || price < minPrice || price > maxPrice) continue;\n\n  const normalizedName = normalize(productName);\n  const posHits = countHits(normalizedName, POSITIVE_KEYWORDS);\n  const negHits = countHits(normalizedName, NEGATIVE_KEYWORDS);\n\n  // descarta na hora se bater em palavra negativa (curso, emagrecedor, etc)\n  if (negHits.length > 0) continue;\n\n  const score = posHits.length;\n\n  // filtro de score mínimo (quantas palavras-chave positivas bateram)\n  if (score < minScore) continue;\n\n  results.push({\n    json: {\n      oferta: {\n        productName,\n        offerLink,\n        productLink,\n        imageUrl,\n        price,\n        commissionRate,\n        commission,\n        score,\n        posHits,\n        negHits\n      }\n    }\n  });\n}\n\n// ========================\n// 6) ORDENA (maior score primeiro, depois maior comissão)\n// ========================\nresults.sort((a, b) => {\n  const s = b.json.oferta.score - a.json.oferta.score;\n  if (s !== 0) return s;\n  return b.json.oferta.commission - a.json.oferta.commission;\n});\n\nreturn results;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1456,
-        0
+        -1136,
+        464
       ],
-      "id": "47c104a2-27a7-4510-86ea-e035788b9cfb",
-      "name": "Filtrar Achadinhos (Preço +Palavras)1"
+      "id": "5395d331-7d6d-48d1-948c-e823e4a18f98",
+      "name": "Filtrar Achadinhos (Preço +Palavras)"
     },
     {
       "parameters": {
@@ -166,11 +247,11 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1856,
-        -16
+        -736,
+        448
       ],
-      "id": "3aa38fb1-e4aa-43e4-93b0-6b17e53aeb03",
-      "name": "Filtro do Filtro1"
+      "id": "2dc06205-eb34-4830-9ade-bb8a1c175a90",
+      "name": "Filtro do Filtro"
     },
     {
       "parameters": {
@@ -186,11 +267,11 @@
       "type": "n8n-nodes-base.sort",
       "typeVersion": 1,
       "position": [
-        2000,
-        -16
+        -592,
+        448
       ],
-      "id": "2e4616ca-d89f-42bc-bbc9-b88fb416edab",
-      "name": "Sort"
+      "id": "98a71f7f-af60-4469-8444-d9c80f3eaa34",
+      "name": "Sort1"
     },
     {
       "parameters": {
@@ -204,22 +285,22 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3,
       "position": [
-        2416,
-        -16
+        -176,
+        448
       ],
-      "id": "a7d85a55-bda0-42f0-9dfb-f936b05b8226",
-      "name": "AI Agent"
+      "id": "f169ff64-52bd-4149-bf5b-dac83921177c",
+      "name": "AI Agent1"
     },
     {
       "parameters": {},
       "type": "n8n-nodes-base.limit",
       "typeVersion": 1,
       "position": [
-        2208,
-        -16
+        -384,
+        448
       ],
-      "id": "c142a016-7605-43fd-95ab-b02ea345f2dc",
-      "name": "Limit1"
+      "id": "81ceee23-cdb9-46ee-b792-1c3e011a6954",
+      "name": "Limit"
     },
     {
       "parameters": {
@@ -228,11 +309,11 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2768,
-        -16
+        176,
+        448
       ],
-      "id": "0f5f684c-edec-4a9d-ac34-dcd5c199ba29",
-      "name": "Code in JavaScript"
+      "id": "b22afb34-d979-499c-859c-40525af660ce",
+      "name": "Code in JavaScript1"
     },
     {
       "parameters": {
@@ -247,11 +328,11 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [
-        2448,
-        256
+        -176,
+        752
       ],
-      "id": "21f8164c-7f9c-47bc-890b-b5a7305c75a5",
-      "name": "OpenAI Chat Model",
+      "id": "54d0dbb2-525a-4915-9acd-a6fb8d6f5204",
+      "name": "OpenAI Chat Model1",
       "credentials": {
         "openAiApi": {
           "id": "4Ymk4puxTNGEvP7F",
@@ -260,179 +341,169 @@
       }
     },
     {
-      "parameters": {
-        "operation": "sendPhoto",
-        "chatId": "={{ $vars.TELEGRAM_CHAT_ID }}",
-        "file": "={{ $json.oferta.imageUrl }}",
-        "additionalFields": {
-          "caption": "={{ $json.copy || '' }}",
-          "parse_mode": "Markdown"
-        }
-      },
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.5,
       "position": [
-        2976,
-        -80
+        -64,
+        624
       ],
-      "id": "81eac21f-10c1-4402-abb9-10c3689f64e9",
-      "name": "Send Photo",
-      "webhookId": "5c07d799-1f37-4fa1-9ab4-8ef03671fa75"
+      "id": "a3d9afa3-498c-40e9-b41a-dcddecb3a48b",
+      "name": "Redis Chat Memory",
+      "credentials": {
+        "redis": {
+          "id": "GUxagOlQlVnH6g5g",
+          "name": "Redis account"
+        }
+      }
     },
     {
-      "parameters": {
-        "chatId": "={{ $vars.TELEGRAM_CHAT_ID }}",
-        "text": "={{ $json.copy || '' }}",
-        "additionalFields": {
-          "parse_mode": "Markdown",
-          "disable_web_page_preview": true
-        }
-      },
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
       "position": [
-        3176,
-        -80
+        -2592,
+        496
       ],
-      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-      "name": "Send Message"
+      "id": "41eae1b9-0e9a-4471-a28b-edd19b009d60",
+      "name": "When clicking ‘Execute workflow’"
     }
   ],
   "pinData": {},
   "connections": {
-    "Date & Time": {
+    "Send Photo": {
       "main": [
         [
           {
-            "node": "Date & Time1",
+            "node": "Send Message",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Date & Time1": {
+    "Date & Time2": {
       "main": [
         [
           {
-            "node": "Configuração do fluxo1",
+            "node": "Date & Time3",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Crypto": {
+    "Date & Time3": {
       "main": [
         [
           {
-            "node": "HTTP Request",
+            "node": "Configuração do fluxo",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Configuração do fluxo1": {
+    "Crypto1": {
       "main": [
         [
           {
-            "node": "Crypto",
+            "node": "HTTP Request1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "HTTP Request": {
+    "HTTP Request1": {
       "main": [
         [
           {
-            "node": "Filtrar Achadinhos (Preço +Palavras)1",
+            "node": "Filtrar Achadinhos (Preço +Palavras)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Filtrar Achadinhos (Preço +Palavras)1": {
+    "Configuração do fluxo": {
       "main": [
         [
           {
-            "node": "Filtrar Comissão1",
+            "node": "Crypto1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Filtrar Comissão1": {
+    "Filtrar Comissão": {
       "main": [
         [
           {
-            "node": "Filtro do Filtro1",
+            "node": "Filtro do Filtro",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Filtro do Filtro1": {
+    "Filtrar Achadinhos (Preço +Palavras)": {
       "main": [
         [
           {
-            "node": "Sort",
+            "node": "Filtrar Comissão",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Sort": {
+    "Filtro do Filtro": {
       "main": [
         [
           {
-            "node": "Limit1",
+            "node": "Sort1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Limit1": {
+    "Sort1": {
       "main": [
         [
           {
-            "node": "AI Agent",
+            "node": "Limit",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "AI Agent": {
+    "AI Agent1": {
       "main": [
         [
           {
-            "node": "Code in JavaScript",
+            "node": "Code in JavaScript1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "OpenAI Chat Model": {
-      "ai_languageModel": [
+    "Limit": {
+      "main": [
         [
           {
-            "node": "AI Agent",
-            "type": "ai_languageModel",
-            "index": 1
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
     },
-    "Code in JavaScript": {
+    "Code in JavaScript1": {
       "main": [
         [
           {
@@ -443,11 +514,33 @@
         ]
       ]
     },
-    "Send Photo": {
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Redis Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
       "main": [
         [
           {
-            "node": "Send Message",
+            "node": "Date & Time2",
             "type": "main",
             "index": 0
           }
@@ -459,7 +552,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "ae8a13a4-a442-46de-932d-b880497516cb",
+  "versionId": "ed6f4274-82ed-484f-856c-afab7245e13a",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "3d7d4fa7d3c4c290012153d978693be4156b77f6019587bc797861ba8b17bdab"

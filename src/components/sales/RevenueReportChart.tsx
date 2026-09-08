@@ -1187,19 +1187,37 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   useEffect(() => {
     if (!organizationId) return;
     const fetchCampaignCosts = async () => {
+      // 1. Campaign products total (from campaign_products)
       const { data: cpRows } = await supabase
         .from('campaign_products')
         .select('marketing_cost_override, campaign_id')
         .not('marketing_cost_override', 'is', null);
       const rows = (cpRows ?? []) as Array<{ marketing_cost_override: number; campaign_id: string }>;
-      const total = rows.reduce((s, r) => s + Number(r.marketing_cost_override ?? 0), 0);
-      setCampaignProductsTotalCost(total);
+      const campaignTotal = rows.reduce((s, r) => s + Number(r.marketing_cost_override ?? 0), 0);
 
-      // Current period: filter by campaigns whose adSets are in current month
+      // 2. GVM PLAY total (campaign_order_costs with campaign_id = null)
+      const { data: gvmRows } = await supabase
+        .from('campaign_order_costs')
+        .select('marketing_cost, order_id')
+        .is('campaign_id', null)
+        .eq('organization_id', organizationId);
+      const gvmTotal = (gvmRows ?? []).reduce((s: number, r: { marketing_cost: number }) => s + Number(r.marketing_cost ?? 0), 0);
+
+      setCampaignProductsTotalCost(campaignTotal + gvmTotal);
+
+      // 3. Current period campaign cost (by adSet start_date in visible window)
       const now = new Date();
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+      const windowStart = new Date(visibleData.length > 0 
+        ? (visibleData[0] as { period_start?: string }).period_start ?? now.toISOString()
+        : new Date(now.getFullYear(), now.getMonth(), 1).toISOString());
+      const windowEnd = new Date(visibleData.length > 0
+        ? (visibleData[visibleData.length - 1] as { period_end?: string }).period_end ?? now.toISOString()
+        : new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString());
+      const monthStart = windowStart.toISOString();
+      const monthEnd = windowEnd.toISOString();
+
       const campaignIds = [...new Set(rows.map(r => r.campaign_id))];
+      let periodCampaignTotal = 0;
       if (campaignIds.length > 0) {
         const { data: adSetRows } = await supabase
           .from('campaign_ad_sets')
@@ -1207,13 +1225,28 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           .in('campaign_id', campaignIds)
           .or(`start_date.gte.${monthStart},end_date.lte.${monthEnd},start_date.is.null`);
         const activeCampaignIds = new Set((adSetRows ?? []).map((a: { campaign_id: string }) => a.campaign_id));
-        const periodTotal = rows
+        periodCampaignTotal = rows
           .filter(r => activeCampaignIds.has(r.campaign_id))
           .reduce((s, r) => s + Number(r.marketing_cost_override ?? 0), 0);
-        setCampaignProductsCurrentPeriodCost(periodTotal);
-      } else {
-        setCampaignProductsCurrentPeriodCost(0);
       }
+
+      // GVM PLAY for current period (by order_date of linked order)
+      let periodGvmTotal = 0;
+      if ((gvmRows ?? []).length > 0) {
+        const gvmOrderIds = (gvmRows ?? []).map((r: { order_id: string }) => r.order_id);
+        const { data: gvmOrders } = await supabase
+          .from('orders')
+          .select('id, order_date')
+          .in('id', gvmOrderIds)
+          .gte('order_date', monthStart)
+          .lte('order_date', monthEnd);
+        const gvmOrderIdsInPeriod = new Set((gvmOrders ?? []).map((o: { id: string }) => o.id));
+        periodGvmTotal = (gvmRows ?? [])
+          .filter((r: { order_id: string }) => gvmOrderIdsInPeriod.has(r.order_id))
+          .reduce((s: number, r: { marketing_cost: number }) => s + Number(r.marketing_cost ?? 0), 0);
+      }
+
+      setCampaignProductsCurrentPeriodCost(periodCampaignTotal + periodGvmTotal);
     };
     fetchCampaignCosts().catch(() => {});
   }, [organizationId, data]);
