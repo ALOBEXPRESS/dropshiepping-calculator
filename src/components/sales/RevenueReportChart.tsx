@@ -262,6 +262,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   // Campaign products total cost (from campaign_products.marketing_cost_override — all linked products)
   const [campaignProductsTotalCost, setCampaignProductsTotalCost] = useState<number>(0);
   const [campaignProductsCurrentPeriodCost, setCampaignProductsCurrentPeriodCost] = useState<number>(0);
+  // GVM PLAY (campaign_order_costs with campaign_id = null)
+  const [gvmPlayTotalCost, setGvmPlayTotalCost] = useState<number>(0);
+  const [gvmPlayCurrentPeriodCost, setGvmPlayCurrentPeriodCost] = useState<number>(0);
   const [savingMarketingCost, setSavingMarketingCost] = useState(false);
   const [linkedCampaignId, setLinkedCampaignId] = useState<string | null>(null);
   const [availableCampaigns, setAvailableCampaigns] = useState<Array<{ id: string; name: string; marketing_cost: number | null }>>([]);
@@ -1204,6 +1207,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       const gvmTotal = (gvmRows ?? []).reduce((s: number, r: { marketing_cost: number }) => s + Number(r.marketing_cost ?? 0), 0);
 
       setCampaignProductsTotalCost(campaignTotal + gvmTotal);
+      setGvmPlayTotalCost(gvmTotal);
 
       // 3. Current period campaign cost (by adSet start_date in visible window)
       const now = new Date();
@@ -1247,6 +1251,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       }
 
       setCampaignProductsCurrentPeriodCost(periodCampaignTotal + periodGvmTotal);
+      setGvmPlayCurrentPeriodCost(periodGvmTotal);
     };
     fetchCampaignCosts().catch(() => {});
   }, [organizationId, data]);
@@ -3934,46 +3939,61 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             Relatório de Receita
           </h3>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6 flex-wrap">
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Receita</p>
               <p className="text-xl font-bold text-green-600">{formatCurrency(totalRevenue)}</p>
             </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{periodLabel}</p>
-              <p className={`text-xl font-bold ${currentPeriodProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(currentPeriodProfit)}</p>
-            </div>
+            {/* Row 1 alongside Receita: Lucro Total, Lucro {mês} */}
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Lucro Total</p>
               <p className={`text-xl font-bold ${allDataTotalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(allDataTotalProfit)}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{costLabel}</p>
-              <p className="text-xl font-bold text-red-600">{formatCurrency(currentPeriodCost)}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{periodLabel}</p>
+              <p className={`text-xl font-bold ${currentPeriodProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(currentPeriodProfit)}</p>
             </div>
+          </div>
+          {/* Row 2: Custo Total, Custo {mês} */}
+          <div className="flex items-center gap-6 mt-2 flex-wrap">
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Custo Total</p>
               <p className="text-xl font-bold text-red-600">{formatCurrency(allDataTotalCost)}</p>
             </div>
-          </div>
-          {(totalMarketingCost > 0 || totalMarketingCostAllTime > 0 || campaignProductsTotalCost > 0) && (
-            <div className="flex items-center gap-6 mt-2">
-              {(campaignProductsCurrentPeriodCost > 0 || totalMarketingCost > 0) && (
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{`Marketing ${periodLabel.replace('Lucro ', '')}`}</p>
-                  <p className="text-xl font-bold text-orange-500">
-                    {formatCurrency(campaignProductsCurrentPeriodCost > 0 ? campaignProductsCurrentPeriodCost : totalMarketingCost)}
-                  </p>
-                </div>
-              )}
-              {campaignProductsTotalCost > 0 && (
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Marketing Total</p>
-                  <p className="text-xl font-bold text-orange-500">{formatCurrency(campaignProductsTotalCost)}</p>
-                </div>
-              )}
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{costLabel}</p>
+              <p className="text-xl font-bold text-red-600">{formatCurrency(currentPeriodCost)}</p>
             </div>
-          )}
+          </div>
+          {/* Row 3: Marketing Total, Marketing {mês}, GVM Play Total, GVM Play {mês} */}
+          <div className="flex items-center gap-6 mt-2 flex-wrap">
+            {campaignProductsTotalCost > 0 && (
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Marketing Total</p>
+                <p className="text-xl font-bold text-orange-500">{formatCurrency(campaignProductsTotalCost)}</p>
+              </div>
+            )}
+            {(campaignProductsCurrentPeriodCost > 0 || totalMarketingCost > 0) && (
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{`Marketing ${periodLabel.replace('Lucro ', '')}`}</p>
+                <p className="text-xl font-bold text-orange-500">
+                  {formatCurrency(campaignProductsCurrentPeriodCost > 0 ? campaignProductsCurrentPeriodCost : totalMarketingCost)}
+                </p>
+              </div>
+            )}
+            {gvmPlayTotalCost > 0 && (
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">GVM Play Total</p>
+                <p className="text-xl font-bold text-purple-400">{formatCurrency(gvmPlayTotalCost)}</p>
+              </div>
+            )}
+            {gvmPlayCurrentPeriodCost > 0 && (
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{`GVM Play ${periodLabel.replace('Lucro ', '')}`}</p>
+                <p className="text-xl font-bold text-purple-400">{formatCurrency(gvmPlayCurrentPeriodCost)}</p>
+              </div>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Select value={period} onValueChange={(value) => handlePeriodChange(value as PeriodFilter)}>
