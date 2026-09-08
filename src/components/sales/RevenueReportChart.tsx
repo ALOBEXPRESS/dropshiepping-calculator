@@ -1990,7 +1990,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     return sum + periodMarketingCost;
   }, 0);
 
-  const _totalMarketingCostAllTime = 0;
 
   const marketingCostSeriesData = visibleData.map((periodData) => {
     const periodMarketingCost = (periodData.orders_data ?? []).reduce((sum, order) => {
