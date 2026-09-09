@@ -872,22 +872,39 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   const adImageUrl = product.adMedia === 'imagem' ? product.adUrl : '';
   const adVideoUrl = product.adMedia === 'video' ? product.adUrl : '';
   
+  // Extrair TikTok video ID de qualquer formato (URL direta, blockquote, iframe)
+  const extractTikTokVideoId = (input: string): string => {
+    // data-video-id="ID" (blockquote)
+    const dvid = input.match(/data-video-id=["'](\d+)["']/);
+    if (dvid) return dvid[1];
+    // cite="https://www.tiktok.com/@x/video/ID"
+    const cite = input.match(/cite=["'][^"']*\/video\/(\d+)/);
+    if (cite) return cite[1];
+    // https://www.tiktok.com/@x/video/ID ou /video/ID
+    const url = input.match(/\/video\/(\d+)/);
+    if (url) return url[1];
+    return '';
+  };
+
   // Função para extrair URL do iframe ou retornar a URL direta
   const extractVideoUrl = (input: string | undefined): string => {
     if (!input) return '';
-    
-    // Se for um iframe HTML, extrair a URL do src
+    // iframe src
     const iframeMatch = input.match(/src=["']([^"']+)["']/);
-    if (iframeMatch && iframeMatch[1]) {
-      return iframeMatch[1];
-    }
-    
-    // Se for uma URL direta, retornar como está
+    if (iframeMatch && iframeMatch[1]) return iframeMatch[1];
+    // URL direta
     return input;
   };
-  
-  const processedVideoUrl = extractVideoUrl(adVideoUrl);
-  const isIframeEmbed = (adVideoUrl || '').includes('<iframe') || (adVideoUrl || '').includes('streamable.com');
+
+  const adVideoRaw = adVideoUrl || '';
+  const tiktokVideoId = adVideoRaw.includes('tiktok.com') ? extractTikTokVideoId(adVideoRaw) : '';
+  const processedVideoUrl = tiktokVideoId
+    ? `https://www.tiktok.com/embed/v2/${tiktokVideoId}`
+    : extractVideoUrl(adVideoUrl);
+  // TikTok embed via iframe/v2 — treat as iframe
+  const isIframeEmbed = tiktokVideoId
+    ? true
+    : (adVideoRaw.includes('<iframe') || adVideoRaw.includes('streamable.com'));
   
   const adAspectClass = product.placement === 'stories' || product.placement === 'reels'
     ? 'aspect-[9/16]'
@@ -2192,17 +2209,24 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                   />
                 </div>
                 {investData.adMedia ? (
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label className="text-right text-gray-700 dark:text-gray-200">
+                  <div className="grid grid-cols-4 items-start gap-4">
+                    <Label className="text-right text-gray-700 dark:text-gray-200 pt-2">
                       {investData.adMedia === 'imagem' ? 'Link da imagem' : 'Link do vídeo'}
                     </Label>
-                    <Input
-                      type="url"
-                      value={investData.adUrl}
-                      onChange={(e) => handleInvestChange('adUrl', e.target.value)}
-                      className="col-span-3"
-                      placeholder="https://"
-                    />
+                    <div className="col-span-3">
+                      <textarea
+                        value={investData.adUrl}
+                        onChange={(e) => handleInvestChange('adUrl', e.target.value)}
+                        rows={3}
+                        placeholder={investData.adMedia === 'video'
+                          ? 'URL do TikTok, iframe ou blockquote embed'
+                          : 'https://'}
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+                      />
+                      {investData.adMedia === 'video' && (
+                        <p className="text-[11px] text-muted-foreground mt-1">Cole URL direta, &lt;blockquote&gt; ou &lt;iframe&gt; do TikTok.</p>
+                      )}
+                    </div>
                   </div>
                 ) : null}
                 {investData.adMedia ? (

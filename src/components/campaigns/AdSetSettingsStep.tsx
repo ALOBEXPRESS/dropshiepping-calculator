@@ -330,13 +330,18 @@ export const AdSetSettingsStep: React.FC<AdSetSettingsStepProps> = ({
             Link do {adSetData.ad_media_type === 'imagem' ? 'Imagem' : 'Vídeo'}
             <span className="text-orange-400 ml-1">*</span>
           </Label>
-          <Input
-            type="url"
-            placeholder="https://"
+          <textarea
+            placeholder={adSetData.ad_media_type === 'video'
+              ? 'URL do vídeo (https://...) ou cole o embed/blockquote do TikTok'
+              : 'https://'}
             value={adSetData.ad_media_url ?? ''}
             onChange={(e) => onChange('ad_media_url' as keyof CampaignFormPayload['adSet'], e.target.value || null)}
-            className="bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-orange-500"
+            rows={3}
+            className="w-full rounded-md bg-zinc-900 border border-zinc-700 text-white placeholder:text-zinc-500 focus:border-orange-500 focus:outline-none px-3 py-2 text-sm resize-none"
           />
+          {adSetData.ad_media_type === 'video' && (
+            <p className="text-[11px] text-zinc-500">Cole a URL direta, o &lt;blockquote&gt; do TikTok, ou um iframe.</p>
+          )}
         </div>
         <div className="space-y-1.5">
           <Label className="text-zinc-300 text-sm">
