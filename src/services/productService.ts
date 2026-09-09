@@ -118,6 +118,7 @@ type ProductRow = {
   mercado_ads_conversion_rate?: number | null;
   campaign_name?: string | null;
   campaign_objective?: string | null;
+  campaign_status?: string | null;
   budget_type?: string | null;
   conversion?: string | null;
   start_date?: string | null;
@@ -329,6 +330,7 @@ type ProductPayload = {
   mercado_ads_conversion_rate?: number | null;
   campaign_name?: string | null;
   campaign_objective?: string | null;
+  campaign_status?: string | null;
   budget_type?: string | null;
   conversion?: string | null;
   start_date?: string | null;
@@ -960,6 +962,7 @@ const mapProductRow = (item: ProductRow): ProductItem => ({
   mercadoAdsConversionRate: item.mercado_ads_conversion_rate != null ? String(item.mercado_ads_conversion_rate) : '',
   campaignName: item.campaign_name ?? '',
   campaignObjective: item.campaign_objective ?? '',
+  campaignStatus: item.campaign_status ?? '',
   budgetType: item.budget_type ?? '',
   conversion: item.conversion ?? '',
   startDate: formatDateToUtcMinus3(item.start_date ?? ''),
@@ -1149,6 +1152,7 @@ const productSelectColumnList = [
   'mercado_ads_conversion_rate',
   'campaign_name',
   'campaign_objective',
+  'campaign_status',
   'budget_type',
   'conversion',
   'start_date',
@@ -1675,6 +1679,7 @@ export const ProductService = {
         : null,
       campaign_name: product.campaignName,
       campaign_objective: product.campaignObjective,
+      campaign_status: product.campaignStatus ?? null,
       budget_type: product.budgetType,
       conversion: product.conversion,
       start_date: product.startDate ? product.startDate : null,
@@ -1928,6 +1933,7 @@ export const ProductService = {
         : null,
       campaign_name: product.campaignName,
       campaign_objective: product.campaignObjective,
+      campaign_status: product.campaignStatus ?? null,
       budget_type: product.budgetType,
       conversion: product.conversion,
       start_date: product.startDate ? product.startDate : null,

@@ -317,6 +317,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     campaignName: '',
     campaignObjective: '',  // categoria: conhecimento | consideracao | conversao
     campaignType: '',       // sub-tipo: reach | traffic | video_views | community_interaction | app_promotion | lead_generation | sales
+    campaignStatus: '',     // active | paused | ended
     budgetType: '',
     dailyBudget: '',        // valor do orçamento (R$)
     // step 1 — Nível de Conjunto
@@ -772,6 +773,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
       ...product,
       campaignName: investData.campaignName,
       campaignObjective: investData.campaignType || investData.campaignObjective,
+      campaignStatus: investData.campaignStatus || 'active',
       budgetType: investData.budgetType,
       conversion: investData.trafficDestination,
       startDate: formatDateToIso(investData.startDate),
@@ -800,6 +802,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
       campaignName: '',
       campaignObjective: '',
       campaignType: '',
+      campaignStatus: '',
       budgetType: '',
       dailyBudget: '',
       trafficDestination: '',
@@ -944,6 +947,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     campaignName: product.campaignName ?? '',
     campaignObjective: product.campaignObjective ?? '',
     campaignType: '',
+    campaignStatus: product.campaignStatus ?? '',
     budgetType: product.budgetType ?? '',
     dailyBudget: '',
     trafficDestination: product.conversion ?? '',
@@ -1104,7 +1108,13 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
       }
     `}</style>
     <div style={{ opacity: 1, visibility: 'visible' }}>
-      <AnimatedCard className="rounded-xl p-4 shadow-sm relative group h-full flex flex-col justify-between min-w-0 backdrop-blur-xl bg-white dark:bg-gray-900 border border-white/20 dark:border-gray-700/20" data-product-id={product.id}>
+      {(() => {
+        const statusBorderColor = product.campaignStatus === 'active' ? '#16a34a'
+          : product.campaignStatus === 'paused' ? '#f97316'
+          : product.campaignStatus === 'ended' ? '#ef4444'
+          : null;
+        const inner = (
+          <AnimatedCard className="rounded-xl p-4 shadow-sm relative group h-full flex flex-col justify-between min-w-0 backdrop-blur-xl bg-white dark:bg-gray-900 border border-white/20 dark:border-gray-700/20" data-product-id={product.id}>
       {isUpdatingBling && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-2 rounded-xl bg-background/80 backdrop-blur-sm">
           <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
@@ -1778,7 +1788,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
             if (organizationId) {
               supabase
                 .from('campaigns')
-                .select('id, name, objective, budget_type, budget_amount, campaign_ad_sets(id, name, conversion_type, traffic_destination, optimization_goal, target_cost_per_result, start_date, end_date, audience_mode, saved_audience_name, audience_location, audience_age, audience_gender, audience_interests, audience_behavior, ad_media_url, ad_redirect_url, ad_text, ad_title, ad_cta, ad_media_type), campaign_products(marketing_cost_override)')
+                .select('id, name, objective, status, budget_type, budget_amount, campaign_ad_sets(id, name, conversion_type, traffic_destination, optimization_goal, target_cost_per_result, start_date, end_date, audience_mode, saved_audience_name, audience_location, audience_age, audience_gender, audience_interests, audience_behavior, ad_media_url, ad_redirect_url, ad_text, ad_title, ad_cta, ad_media_type), campaign_products(marketing_cost_override)')
                 .eq('organization_id', organizationId)
                 .order('updated_at', { ascending: false })
                 .then(({ data }) => {
@@ -1810,7 +1820,12 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
           {hasValue(product.campaignName) ? 'Ver Campanha' : 'Investir'}
         </button>
       </div>
-    </AnimatedCard>
+          </AnimatedCard>
+        );
+        return statusBorderColor
+          ? <ElectricBorder color={statusBorderColor} speed={1}>{inner}</ElectricBorder>
+          : inner;
+      })()}
     </div>
     <Dialog open={isInvestOpen} onOpenChange={(open) => {
       setIsInvestOpen(open);
@@ -1981,6 +1996,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                               campaignName: camp.name,
                               campaignObjective: objectiveCategoryMap[camp.objective] ?? 'conversao',
                               campaignType: camp.objective,
+                              campaignStatus: (camp as typeof camp & { status?: string }).status ?? 'active',
                               budgetType: budgetMap[camp.budget_type] ?? camp.budget_type,
                               dailyBudget: camp.budget_amount != null
                                 ? Number(camp.budget_amount).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -2165,6 +2181,32 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                         className="pl-9 h-8 text-sm"
                       />
                     </div>
+                  )}
+                </div>
+
+                {/* Status da Campanha */}
+                <div className="grid grid-cols-[120px_1fr] items-center gap-3">
+                  <Label className="text-right text-gray-700 dark:text-gray-200 text-xs">Status</Label>
+                  {selectedCampaignId ? (
+                    <div className="px-3 py-1.5 rounded-md border border-border bg-muted text-sm text-foreground flex items-center gap-2">
+                      <span className={`inline-block w-2 h-2 rounded-full ${
+                        investData.campaignStatus === 'active' ? 'bg-green-500'
+                        : investData.campaignStatus === 'paused' ? 'bg-orange-500'
+                        : 'bg-red-500'
+                      }`} />
+                      {investData.campaignStatus === 'active' ? 'Ativo' : investData.campaignStatus === 'paused' ? 'Pausado' : investData.campaignStatus === 'ended' ? 'Encerrado' : '-'}
+                    </div>
+                  ) : (
+                    <Select value={investData.campaignStatus} onValueChange={(val) => handleInvestChange('campaignStatus', val)}>
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Ativo</SelectItem>
+                        <SelectItem value="paused">Pausado</SelectItem>
+                        <SelectItem value="ended">Encerrado</SelectItem>
+                      </SelectContent>
+                    </Select>
                   )}
                 </div>
               </div>
