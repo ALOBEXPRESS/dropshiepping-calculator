@@ -262,6 +262,8 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   const [isInvestReadonly, setIsInvestReadonly] = useState(false);
   const [linkedAdMediaUrl, setLinkedAdMediaUrl] = useState<string>('');
   const [linkedAudienceMode, setLinkedAudienceMode] = useState<string>('auto');
+  // Resolved campaign status — fetched from DB when product has campaign but no local status
+  const [resolvedCampaignStatus, setResolvedCampaignStatus] = useState<string>(product.campaignStatus ?? '');
   const [isBlingConfirmOpen, setIsBlingConfirmOpen] = useState(false);
   const [investStep, setInvestStep] = useState(0);
   const [savedAudiences, setSavedAudiences] = useState<Array<{
@@ -1049,6 +1051,31 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     setCardPanelIndex(0);
   }
 
+  // Sync resolvedCampaignStatus when product.campaignStatus changes (e.g. after re-save)
+  useEffect(() => {
+    if (product.campaignStatus) {
+      setResolvedCampaignStatus(product.campaignStatus);
+      return;
+    }
+    // Fetch from campaigns table if product has a campaign name but no status saved locally
+    if (product.campaignName && organizationId) {
+      supabase
+        .from('campaigns')
+        .select('status')
+        .eq('organization_id', organizationId)
+        .eq('name', product.campaignName)
+        .limit(1)
+        .then(({ data }) => {
+          const s = (data as Array<{ status?: string | null }>)?.[0]?.status;
+          if (s) setResolvedCampaignStatus(s);
+          else setResolvedCampaignStatus('active'); // fallback
+        });
+    } else {
+      setResolvedCampaignStatus('');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.campaignName, product.campaignStatus, organizationId]);
+
   useEffect(() => {
     const slider = cardSliderRef.current;
     if (!slider) return;
@@ -1109,12 +1136,10 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     `}</style>
     <div style={{ opacity: 1, visibility: 'visible' }}>
       {(() => {
-        // Derive effective status: fallback to 'active' for products with campaign but no status set yet
-        const effectiveStatus = product.campaignStatus
-          || (product.campaignName ? 'active' : null);
-        const statusBorderColor = effectiveStatus === 'active' ? '#16a34a'
-          : effectiveStatus === 'paused' ? '#f97316'
-          : effectiveStatus === 'ended' ? '#ef4444'
+        // Use resolvedCampaignStatus — fetched from DB when campaignStatus not stored locally
+        const statusBorderColor = resolvedCampaignStatus === 'active' ? '#16a34a'
+          : resolvedCampaignStatus === 'paused' ? '#f97316'
+          : resolvedCampaignStatus === 'ended' ? '#ef4444'
           : null;
         const inner = (
           <AnimatedCard className="rounded-xl p-4 shadow-sm relative group h-full flex flex-col justify-between min-w-0 backdrop-blur-xl bg-white dark:bg-gray-900 border border-white/20 dark:border-gray-700/20" data-product-id={product.id}>
