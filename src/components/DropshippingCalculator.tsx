@@ -4335,6 +4335,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                               onBlingUpdate={handleBlingUpdate}
                               isUpdatingBling={updatingBlingIds.has(product.id)}
                               onInvestSave={handleInvestSaveProduct}
+                              organizationId={organizationId ?? undefined}
                             />
                           </div>
                         ))}

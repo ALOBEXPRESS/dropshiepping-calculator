@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Trash2, Edit2, ChevronLeft, ChevronRight, RefreshCw, Loader2, DollarSign } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import ElectricBorder from '@/components/ui/ElectricBorder';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -251,13 +252,18 @@ interface ProductCardProps {
   onBlingUpdate: (product: ProductItem) => void;
   isUpdatingBling?: boolean;
   onInvestSave: (product: ProductItem) => void;
+  organizationId?: string;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onDelete, onEdit, onBlingUpdate, isUpdatingBling, onInvestSave }) => {
+export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onDelete, onEdit, onBlingUpdate, isUpdatingBling, onInvestSave, organizationId }) => {
   const [currentVarIndex, setCurrentVarIndex] = useState(0);
   const [isInvestOpen, setIsInvestOpen] = useState(false);
   const [isBlingConfirmOpen, setIsBlingConfirmOpen] = useState(false);
   const [investStep, setInvestStep] = useState(0);
+  
+  // Campanhas existentes para seleção no modal Investir
+  const [availableCampaigns, setAvailableCampaigns] = useState<Array<{ id: string; name: string; objective: string; budget_type: string }>>([]);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>('');
   
   // Buscar vendas reais do produto
   const { stats: salesStats } = useProductSalesStats(product.id);
@@ -1534,6 +1540,18 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
           onClick={() => {
             setInvestData(getInvestDataFromProduct());
             setInvestStep(0);
+            setSelectedCampaignId('');
+            // Fetch campanhas existentes
+            if (organizationId) {
+              supabase
+                .from('campaigns')
+                .select('id, name, objective, budget_type')
+                .eq('organization_id', organizationId)
+                .order('created_at', { ascending: false })
+                .then(({ data }) => {
+                  if (data) setAvailableCampaigns(data as Array<{ id: string; name: string; objective: string; budget_type: string }>);
+                });
+            }
             setIsInvestOpen(true);
           }}
           className="inline-flex items-center justify-center gap-1 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border bg-background shadow-sm rounded-md px-2 h-8 w-full text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border-emerald-100 dark:bg-white dark:border-gray-200 dark:hover:bg-gray-50"
@@ -1584,6 +1602,52 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
             {investStep === 0 && (
               <div className="grid gap-3">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Nível de Campanha</h3>
+                
+                {/* Selecionar campanha existente */}
+                {availableCampaigns.length > 0 && (
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right text-gray-700 dark:text-gray-200">Campanha existente</Label>
+                    <Select
+                      value={selectedCampaignId}
+                      onValueChange={(val) => {
+                        setSelectedCampaignId(val);
+                        if (val) {
+                          const camp = availableCampaigns.find((c) => c.id === val);
+                          if (camp) {
+                            // Mapear objective do DB para os valores do select local
+                            const objectiveMap: Record<string, string> = {
+                              reach: 'reconhecimento',
+                              traffic: 'trafego',
+                              video_views: 'engajamento',
+                              community_interaction: 'engajamento',
+                              lead_generation: 'cadastros',
+                              app_promotion: 'promocao_app',
+                              sales: 'vendas',
+                            };
+                            // Mapear budget_type do DB
+                            const budgetMap: Record<string, string> = {
+                              daily: 'diario',
+                              lifetime: 'total',
+                            };
+                            handleInvestChange('campaignName', camp.name);
+                            handleInvestChange('campaignObjective', objectiveMap[camp.objective] ?? camp.objective);
+                            handleInvestChange('budgetType', budgetMap[camp.budget_type] ?? camp.budget_type);
+                          }
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Selecione uma campanha criada" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableCampaigns.map((camp) => (
+                          <SelectItem key={camp.id} value={camp.id}>{camp.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label className="text-right text-gray-700 dark:text-gray-200">Nome da Campanha</Label>
                   <Input
@@ -1865,5 +1929,6 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
          prevProps.onEdit === nextProps.onEdit &&
          prevProps.onBlingUpdate === nextProps.onBlingUpdate &&
          prevProps.isUpdatingBling === nextProps.isUpdatingBling &&
-         prevProps.onInvestSave === nextProps.onInvestSave;
+         prevProps.onInvestSave === nextProps.onInvestSave &&
+         prevProps.organizationId === nextProps.organizationId;
 });
