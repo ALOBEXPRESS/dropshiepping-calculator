@@ -1109,9 +1109,12 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     `}</style>
     <div style={{ opacity: 1, visibility: 'visible' }}>
       {(() => {
-        const statusBorderColor = product.campaignStatus === 'active' ? '#16a34a'
-          : product.campaignStatus === 'paused' ? '#f97316'
-          : product.campaignStatus === 'ended' ? '#ef4444'
+        // Derive effective status: fallback to 'active' for products with campaign but no status set yet
+        const effectiveStatus = product.campaignStatus
+          || (product.campaignName ? 'active' : null);
+        const statusBorderColor = effectiveStatus === 'active' ? '#16a34a'
+          : effectiveStatus === 'paused' ? '#f97316'
+          : effectiveStatus === 'ended' ? '#ef4444'
           : null;
         const inner = (
           <AnimatedCard className="rounded-xl p-4 shadow-sm relative group h-full flex flex-col justify-between min-w-0 backdrop-blur-xl bg-white dark:bg-gray-900 border border-white/20 dark:border-gray-700/20" data-product-id={product.id}>
