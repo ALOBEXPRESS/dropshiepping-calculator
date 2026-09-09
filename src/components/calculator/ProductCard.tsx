@@ -29,6 +29,7 @@ import type { ProductItem } from '../../types/calculator';
 import meliPlusLogo from '../../imgs/pill-meliplus@3x.png';
 import reputationExcellentIllustration from '../../imgs/ilustracao-reputacao-mercado-livre.png';
 import wooCommerceLogo from '../../imgs/free-woocommerce-icon-svg-download-png-226060.webp';
+import androidLogo from '../../imgs/android.png';
 import shopeeLogo from '../../imgs/18790-256x256x32.png';
 import amazonLogo from '../../imgs/amazon.jpg';
 import sheinLogo from '../../imgs/shein.svg';
@@ -769,7 +770,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
         && isNonEmpty(investData.audienceBehavior);
     }
     if (step === 3) {
-      return isNonEmpty(investData.placement);
+      return isNonEmpty(investData.trafficDestination);
     }
     if (step === 4) {
       return isNonEmpty(investData.adText)
@@ -2014,21 +2015,38 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
             )}
 
             {investStep === 3 && (
-              <div className="grid gap-3">
+              <div className="grid gap-4">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Posicionamento</h3>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right text-gray-700 dark:text-gray-200">Anúncio aparece em</Label>
-                  <Select value={investData.placement} onValueChange={(val) => handleInvestChange('placement', val)}>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="feed_insta">Feed do insta</SelectItem>
-                      <SelectItem value="stories">Stories</SelectItem>
-                      <SelectItem value="reels">Reels</SelectItem>
-                      <SelectItem value="feed_face">Feed do face</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-3">Local de Exibição</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    {([
+                      { value: 'site', label: 'Site', img: wooCommerceLogo },
+                      { value: 'app', label: 'App', img: androidLogo },
+                      { value: 'tiktok_shop', label: 'Loja TikTok', img: tiktokLogo },
+                    ] as const).map((opt) => {
+                      const isSelected = investData.trafficDestination === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => handleInvestChange('trafficDestination', isSelected ? '' : opt.value)}
+                          className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
+                            isSelected
+                              ? 'border-orange-500 bg-orange-500/10 ring-1 ring-orange-500/50'
+                              : 'border-border bg-muted/30 hover:border-muted-foreground'
+                          }`}
+                        >
+                          <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-white p-1">
+                            <img src={opt.img} alt={opt.label} className="w-full h-full object-contain" />
+                          </div>
+                          <span className={`text-xs font-medium ${isSelected ? 'text-orange-500' : 'text-foreground'}`}>
+                            {opt.label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             )}
