@@ -1451,15 +1451,28 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                           onError={(e) => {
                             const target = e.target as HTMLVideoElement;
                             target.style.display = 'none';
+                            // show product image as fallback
                             const parent = target.parentElement;
-                            if (parent) {
-                              parent.innerHTML = '<div class="absolute inset-0 flex items-center justify-center text-[10px] text-muted-foreground">Erro ao carregar vídeo</div>';
+                            if (parent && displayImage) {
+                              const img = document.createElement('img');
+                              img.src = displayImage;
+                              img.alt = displayName;
+                              img.className = 'absolute inset-0 h-full w-full object-contain bg-white';
+                              parent.appendChild(img);
                             }
                           }}
                         />
                       ) : adImageUrl ? (
                         <img src={adImageUrl} alt="Imagem do anúncio" className="absolute inset-0 h-full w-full object-contain bg-white" loading="lazy" />
-                      ) : null}
+                      ) : (
+                        /* Sem mídia configurada — mostrar imagem do produto */
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-3 bg-background">
+                          {displayImage && (
+                            <img src={displayImage} alt={displayName} className="h-24 w-24 object-contain" loading="lazy" />
+                          )}
+                          <p className="text-center text-[10px] text-muted-foreground font-medium">{product.campaignName}</p>
+                        </div>
+                      )}
                     </div>
                   </ElectricBorder>
                 ) : (
