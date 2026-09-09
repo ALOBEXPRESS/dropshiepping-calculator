@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import gsap from 'gsap';
 import { Megaphone, Plus, Pencil, Trash2, Loader2, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -243,8 +244,115 @@ const AdCreativeAccordion: React.FC<{
   );
 };
 
+// ── AdSetsSection (extracted to keep CampaignCard clean) ────────────────────
+const AdSetsSection: React.FC<{
+  adSets: CampaignWithRelations['campaign_ad_sets'];
+  campaign: CampaignWithRelations;
+  audienceModeLabel: Record<string, string>;
+  formatBRL: (v: number) => string;
+  organizationId?: string;
+}> = ({ adSets, campaign: c, audienceModeLabel, formatBRL, organizationId }) => {
+  const [open, setOpen] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const chevronRef = useRef<SVGSVGElement>(null);
+
+  useEffect(() => {
+    if (bodyRef.current) gsap.set(bodyRef.current, { height: 0, opacity: 0, overflow: 'hidden' });
+  }, []);
+
+  const toggle = () => {
+    const el = bodyRef.current;
+    if (!el) { setOpen(v => !v); return; }
+    if (!open) {
+      setOpen(true);
+      gsap.fromTo(el, { height: 0, opacity: 0 }, { height: 'auto', opacity: 1, duration: 0.32, ease: 'power2.out', onComplete: () => { el.style.height = 'auto'; } });
+      gsap.to(chevronRef.current, { rotation: 180, duration: 0.28, ease: 'power2.out' });
+    } else {
+      gsap.to(el, { height: 0, opacity: 0, duration: 0.25, ease: 'power2.in', onComplete: () => setOpen(false) });
+      gsap.to(chevronRef.current, { rotation: 0, duration: 0.25, ease: 'power2.in' });
+    }
+  };
+
+  const destinationLabel: Record<string, string> = { site: 'Site', app: 'Aplicativo', tiktok_shop: 'Loja TikTok' };
+  const goalLabel: Record<string, string> = { click: 'Clique', landing_page_view: 'Visualização pg inicial', engagement_session: 'Sessão de Engajamento' };
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={toggle}
+        className="w-full flex items-center justify-between px-4 py-2.5 bg-zinc-900/30 hover:bg-zinc-800/40 transition-colors text-left border-t border-zinc-800"
+      >
+        <span className="text-xs font-medium text-zinc-500">
+          Grupos de Anúncios
+          {adSets.length > 0 && (
+            <span className="ml-1.5 bg-zinc-800 text-zinc-400 text-[10px] px-1.5 py-0.5 rounded-full">{adSets.length}</span>
+          )}
+        </span>
+        <ChevronDown ref={chevronRef} className="w-3.5 h-3.5 text-zinc-600" style={{ transform: 'rotate(0deg)' }} />
+      </button>
+
+      <div ref={bodyRef} style={{ overflow: 'hidden' }}>
+        {open && (
+          <div className="divide-y divide-zinc-800/60">
+            {adSets.length === 0 ? (
+              <p className="px-5 py-3 text-xs text-zinc-600 italic">Nenhum grupo configurado.</p>
+            ) : adSets.map((adSet, i) => {
+              const ext = adSet as typeof adSet & {
+                traffic_destination?: string | null;
+                optimization_goal?: string | null;
+                target_cost_per_result?: number | null;
+                ad_media_url?: string | null;
+                ad_media_type?: string | null;
+                ad_text?: string | null;
+                ad_title?: string | null;
+                ad_cta?: string | null;
+              };
+              return (
+                <div key={adSet.id ?? i} className="px-4 py-3 space-y-1.5 bg-zinc-950/30">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-zinc-300">{adSet.name ?? `Grupo ${i + 1}`}</span>
+                    {adSet.audience_mode && (
+                      <span className="text-[10px] bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded">
+                        {audienceModeLabel[adSet.audience_mode] ?? adSet.audience_mode}
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                    {adSet.start_date && <p className="text-[11px] text-zinc-500">Início: <span className="text-zinc-300">{new Intl.DateTimeFormat('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }).format(new Date(adSet.start_date))}</span></p>}
+                    {adSet.end_date && <p className="text-[11px] text-zinc-500">Fim: <span className="text-zinc-300">{new Intl.DateTimeFormat('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }).format(new Date(adSet.end_date))}</span></p>}
+                    {c.budget_amount != null && <p className="text-[11px] text-zinc-500">Orçamento: <span className="text-zinc-300">R$ {formatBRL(Number(c.budget_amount))}</span></p>}
+                    {ext.traffic_destination && <p className="text-[11px] text-zinc-500">Destino: <span className="text-zinc-300">{destinationLabel[ext.traffic_destination] ?? ext.traffic_destination}</span></p>}
+                    {ext.optimization_goal && <p className="text-[11px] text-zinc-500">Objetivo: <span className="text-zinc-300">{goalLabel[ext.optimization_goal] ?? ext.optimization_goal}</span></p>}
+                    {adSet.audience_location && <p className="text-[11px] text-zinc-500">Localização: <span className="text-zinc-300">{adSet.audience_location}</span></p>}
+                    {adSet.audience_interests && <p className="text-[11px] text-zinc-500">Interesses: <span className="text-zinc-300">{adSet.audience_interests}</span></p>}
+                    {ext.target_cost_per_result != null && <p className="text-[11px] text-zinc-500">CPA Alvo: <span className="text-zinc-300">R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(ext.target_cost_per_result)}</span></p>}
+                  </div>
+                  {ext.ad_media_url && (
+                    <AdCreativeAccordion
+                      mediaUrl={ext.ad_media_url}
+                      mediaType={ext.ad_media_type}
+                      adText={ext.ad_text}
+                      adTitle={ext.ad_title}
+                      adCta={ext.ad_cta}
+                      organizationId={organizationId}
+                      productIds={c.campaign_products.map(p => p.product_id).filter(Boolean) as string[]}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSets, onEdit, onDelete, organizationId }) => {
   const [expanded, setExpanded] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const chevronRef = useRef<SVGSVGElement>(null);
 
   const marketplaceLabel: Record<string, string> = {
     tiktok: 'TikTok Shop',
@@ -267,206 +375,142 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSe
   const periodEnd = formatDate(firstAdSetWithDates?.end_date);
   const periodStr = periodStart && periodEnd
     ? `${periodStart} – ${periodEnd}`
-    : periodStart
-    ? `A partir de ${periodStart}`
-    : periodEnd
-    ? `Até ${periodEnd}`
+    : periodStart ? `A partir de ${periodStart}`
+    : periodEnd ? `Até ${periodEnd}`
     : null;
 
-  // Total custo = sum marketing_cost_override across linked products
   const totalCusto = c.campaign_products.reduce(
-    (sum, p) => sum + (p.marketing_cost_override != null ? Number(p.marketing_cost_override) : 0),
-    0
+    (sum, p) => sum + (p.marketing_cost_override != null ? Number(p.marketing_cost_override) : 0), 0
   );
   const formatBRL = (v: number) => new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(v);
 
+  // GSAP expand/collapse
+  const toggle = () => {
+    const el = bodyRef.current;
+    if (!el) { setExpanded(v => !v); return; }
+    if (!expanded) {
+      // expand
+      setExpanded(true);
+      gsap.fromTo(el,
+        { height: 0, opacity: 0 },
+        { height: 'auto', opacity: 1, duration: 0.38, ease: 'power2.out',
+          onComplete: () => { el.style.height = 'auto'; } }
+      );
+      gsap.to(chevronRef.current, { rotation: 180, duration: 0.3, ease: 'power2.out' });
+    } else {
+      // collapse
+      gsap.to(el, {
+        height: 0, opacity: 0, duration: 0.3, ease: 'power2.in',
+        onComplete: () => setExpanded(false),
+      });
+      gsap.to(chevronRef.current, { rotation: 0, duration: 0.3, ease: 'power2.in' });
+    }
+  };
+
+  // Init: body hidden on mount
+  useEffect(() => {
+    if (bodyRef.current) {
+      gsap.set(bodyRef.current, { height: 0, opacity: 0, overflow: 'hidden' });
+    }
+  }, []);
+
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 overflow-hidden">
-      {/* Card header */}
-      <div className="p-5">
-        <div className="flex items-start gap-4">
-          {/* Marketplace logo */}
-          <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center flex-shrink-0 overflow-hidden p-1 shadow-sm">
-            {logo ? (
-              <img src={logo} alt={c.marketplace} className="w-full h-full object-contain" />
-            ) : (
-              <Megaphone className="w-6 h-6 text-zinc-400" />
-            )}
-          </div>
-
-          {/* Info */}
-          <div className="flex-1 min-w-0 space-y-1.5">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-sm font-semibold text-white truncate">{c.name}</h3>
-              <Badge className="bg-pink-500/15 text-pink-400 border-pink-500/30 text-[10px]">
-                {marketplaceLabel[c.marketplace] ?? c.marketplace}
-              </Badge>
-              <Badge className={`text-[10px] border ${sc.className}`}>
-                {sc.label}
-              </Badge>
-            </div>
-            <p className="text-xs text-zinc-400">
-              Objetivo: <span className="text-zinc-200">{getObjectiveLabel(c.objective)}</span>
-              {' · '}
-              Orçamento: <span className="text-zinc-200">
-                {c.budget_type === 'daily' ? 'Diário' : 'Vitalício'}
-                {c.budget_amount != null
-                  ? ` · R$ ${formatBRL(Number(c.budget_amount))}`
-                  : ''}
-              </span>
-              {totalCusto > 0 && (
-                <>
-                  {' · '}
-                  Custo: <span className="text-orange-400 font-medium">R$ {formatBRL(totalCusto)}</span>
-                </>
-              )}
-            </p>
-            {periodStr && (
-              <p className="text-xs text-zinc-500 flex items-center gap-1.5">
-                <svg className="w-3 h-3 text-zinc-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <span>{periodStr}</span>
-              </p>
-            )}
-            {c.campaign_products.length > 0 && (
-              <p className="text-xs text-zinc-500">
-                {c.campaign_products.length} produto(s) vinculado(s)
-              </p>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-2 flex-shrink-0 items-center">
-            <Button size="sm" variant="ghost" onClick={onEdit}
-              className="text-zinc-400 hover:text-white hover:bg-zinc-800 h-8 w-8 p-0">
-              <Pencil className="w-3.5 h-3.5" />
-            </Button>
-            <Button size="sm" variant="ghost" onClick={onDelete}
-              className="text-zinc-400 hover:text-red-400 hover:bg-zinc-800 h-8 w-8 p-0">
-              <Trash2 className="w-3.5 h-3.5" />
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Accordion trigger: Grupos de Anúncios */}
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 overflow-hidden transition-colors hover:border-zinc-700/70">
+      {/* ── Collapsed header (always visible) ── */}
       <button
         type="button"
-        onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center justify-between px-5 py-3 border-t border-zinc-800 bg-zinc-900/30 hover:bg-zinc-800/50 transition-colors text-left"
+        onClick={toggle}
+        className="w-full text-left cursor-pointer"
+        aria-expanded={expanded}
       >
-        <span className="text-xs font-medium text-zinc-400">
-          Grupos de Anúncios
-          {adSets.length > 0 && (
-            <span className="ml-1.5 bg-zinc-700 text-zinc-300 text-[10px] px-1.5 py-0.5 rounded-full">
-              {adSets.length}
+        <div className="flex items-center gap-3 px-4 py-3.5">
+          {/* Marketplace logo */}
+          <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center flex-shrink-0 overflow-hidden p-1 shadow-sm">
+            {logo
+              ? <img src={logo} alt={c.marketplace} className="w-full h-full object-contain" />
+              : <Megaphone className="w-4 h-4 text-zinc-400" />}
+          </div>
+
+          {/* Title + badges */}
+          <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-semibold text-white truncate max-w-[340px]">{c.name}</span>
+            <span className="flex-shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full bg-pink-500/15 text-pink-400 border border-pink-500/30">
+              {marketplaceLabel[c.marketplace] ?? c.marketplace}
             </span>
-          )}
-        </span>
-        <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+            <span className={`flex-shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full border ${sc.className}`}>
+              {sc.label}
+            </span>
+          </div>
+
+          {/* Actions + chevron */}
+          <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
+            <button
+              type="button"
+              aria-label="Editar"
+              onClick={onEdit}
+              className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              aria-label="Excluir"
+              onClick={onDelete}
+              className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-red-400 hover:bg-zinc-800 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <ChevronDown
+            ref={chevronRef}
+            className="w-4 h-4 text-zinc-500 flex-shrink-0"
+            style={{ transform: 'rotate(0deg)' }}
+          />
+        </div>
       </button>
 
-      {/* Accordion body */}
-      {expanded && (
-        <div className="border-t border-zinc-800 divide-y divide-zinc-800/60">
-          {adSets.length === 0 ? (
-            <div className="px-5 py-4 text-xs text-zinc-500 italic">
-              Nenhum grupo de anúncios configurado.
+      {/* ── Expanded body (GSAP-animated) ── */}
+      <div ref={bodyRef} style={{ overflow: 'hidden' }}>
+        {expanded && (
+          <div className="border-t border-zinc-800">
+            {/* Details row */}
+            <div className="px-4 py-3 space-y-1.5">
+              <p className="text-xs text-zinc-400">
+                Objetivo: <span className="text-zinc-200">{getObjectiveLabel(c.objective)}</span>
+                {' · '}
+                Orçamento: <span className="text-zinc-200">
+                  {c.budget_type === 'daily' ? 'Diário' : 'Vitalício'}
+                  {c.budget_amount != null ? ` · R$ ${formatBRL(Number(c.budget_amount))}` : ''}
+                </span>
+                {totalCusto > 0 && (
+                  <> · Custo: <span className="text-orange-400 font-medium">R$ {formatBRL(totalCusto)}</span></>
+                )}
+              </p>
+              {periodStr && (
+                <p className="text-xs text-zinc-500 flex items-center gap-1.5">
+                  <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  {periodStr}
+                </p>
+              )}
+              {c.campaign_products.length > 0 && (
+                <p className="text-xs text-zinc-500">{c.campaign_products.length} produto(s) vinculado(s)</p>
+              )}
             </div>
-          ) : (
-            adSets.map((adSet, i) => {
-              const ext = adSet as typeof adSet & {
-                traffic_destination?: string | null;
-                optimization_goal?: string | null;
-                target_cost_per_result?: number | null;
-                ad_media_url?: string | null;
-                ad_media_type?: string | null;
-                ad_text?: string | null;
-                ad_title?: string | null;
-                ad_cta?: string | null;
-              };
-              const destinationLabel: Record<string, string> = {
-                site: 'Site', app: 'Aplicativo', tiktok_shop: 'Loja TikTok',
-              };
-              const goalLabel: Record<string, string> = {
-                click: 'Clique', landing_page_view: 'Visualização pg inicial', engagement_session: 'Sessão de Engajamento',
-              };
-              return (
-                <div key={adSet.id ?? i} className="px-5 py-4 space-y-2 bg-zinc-950/30">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-zinc-300">
-                      {adSet.name ?? `Grupo ${i + 1}`}
-                    </span>
-                    {adSet.audience_mode && (
-                      <span className="text-[10px] bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded">
-                        {audienceModeLabel[adSet.audience_mode] ?? adSet.audience_mode}
-                      </span>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                    {adSet.start_date && (
-                      <p className="text-[11px] text-zinc-500">
-                        Início: <span className="text-zinc-300">{new Intl.DateTimeFormat('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }).format(new Date(adSet.start_date))}</span>
-                      </p>
-                    )}
-                    {adSet.end_date && (
-                      <p className="text-[11px] text-zinc-500">
-                        Fim: <span className="text-zinc-300">{new Intl.DateTimeFormat('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }).format(new Date(adSet.end_date))}</span>
-                      </p>
-                    )}
-                    {c.budget_amount != null && (
-                      <p className="text-[11px] text-zinc-500">
-                        Orçamento: <span className="text-zinc-300">R$ {formatBRL(Number(c.budget_amount))}</span>
-                      </p>
-                    )}
-                    {ext.traffic_destination && (
-                      <p className="text-[11px] text-zinc-500">
-                        Destino: <span className="text-zinc-300">{destinationLabel[ext.traffic_destination] ?? ext.traffic_destination}</span>
-                      </p>
-                    )}
-                    {ext.optimization_goal && (
-                      <p className="text-[11px] text-zinc-500">
-                        Objetivo: <span className="text-zinc-300">{goalLabel[ext.optimization_goal] ?? ext.optimization_goal}</span>
-                      </p>
-                    )}
-                    {adSet.audience_location && (
-                      <p className="text-[11px] text-zinc-500">
-                        Localização: <span className="text-zinc-300">{adSet.audience_location}</span>
-                      </p>
-                    )}
-                    {adSet.audience_interests && (
-                      <p className="text-[11px] text-zinc-500">
-                        Interesses: <span className="text-zinc-300">{adSet.audience_interests}</span>
-                      </p>
-                    )}
-                    {ext.target_cost_per_result != null && (
-                      <p className="text-[11px] text-zinc-500">
-                        CPA Alvo: <span className="text-zinc-300">
-                          R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(ext.target_cost_per_result)}
-                        </span>
-                      </p>
-                    )}
-                  </div>
 
-                  {/* ── Ad/Criativo accordion ── */}
-                  {ext.ad_media_url && (
-                    <AdCreativeAccordion
-                      mediaUrl={ext.ad_media_url}
-                      mediaType={ext.ad_media_type}
-                      adText={ext.ad_text}
-                      adTitle={ext.ad_title}
-                      adCta={ext.ad_cta}
-                      organizationId={organizationId}
-                      productIds={c.campaign_products.map(p => p.product_id).filter(Boolean) as string[]}
-                    />
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
-      )}
+            {/* Ad Sets accordion */}
+            <AdSetsSection
+              adSets={adSets}
+              campaign={c}
+              audienceModeLabel={audienceModeLabel}
+              formatBRL={formatBRL}
+              organizationId={organizationId}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 };
