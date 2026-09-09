@@ -158,6 +158,7 @@ export interface ProductItem {
   shopeeSellerVoucherType?: 'percent' | 'fixed';
   campaignName?: string;
   campaignObjective?: string;
+  campaignStatus?: string;
   budgetType?: string;
   conversion?: string;
   startDate?: string;
