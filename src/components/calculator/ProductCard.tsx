@@ -276,6 +276,12 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     audience_behavior: string | null;
   }>>([]);
   const [isSavingAudience, setIsSavingAudience] = useState(false);
+
+  // Campaign returns (views, sales, impressions, clicks)
+  const [campaignReturns, setCampaignReturns] = useState({ views: 0, sales: 0, impressions: 0, clicks: 0 });
+  const [returnsForm, setReturnsForm] = useState({ views: '', sales: '', impressions: '', clicks: '' });
+  const [isReturnsPanelOpen, setIsReturnsPanelOpen] = useState(false);
+  const [isSavingReturns, setIsSavingReturns] = useState(false);
   
   // Campanhas existentes para seleção no modal Investir
   const [availableCampaigns, setAvailableCampaigns] = useState<Array<{
@@ -1076,6 +1082,52 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.campaignName, product.campaignStatus, organizationId]);
 
+  // Fetch campaign returns for this product
+  useEffect(() => {
+    if (!organizationId || !product.id || !product.campaignName) return;
+    supabase
+      .from('campaign_returns')
+      .select('views, sales, impressions, clicks')
+      .eq('organization_id', organizationId)
+      .eq('product_id', product.id)
+      .limit(1)
+      .then(({ data }) => {
+        const row = (data as Array<{ views: number; sales: number; impressions: number; clicks: number }>)?.[0];
+        if (row) {
+          setCampaignReturns(row);
+          setReturnsForm({
+            views: row.views ? String(row.views) : '',
+            sales: row.sales ? String(row.sales) : '',
+            impressions: row.impressions ? String(row.impressions) : '',
+            clicks: row.clicks ? String(row.clicks) : '',
+          });
+        }
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.id, product.campaignName, organizationId]);
+
+  const handleSaveReturns = async () => {
+    if (!organizationId || !product.id) return;
+    setIsSavingReturns(true);
+    const payload = {
+      organization_id: organizationId,
+      product_id: product.id,
+      campaign_name: product.campaignName ?? null,
+      views: parseInt(returnsForm.views) || 0,
+      sales: parseInt(returnsForm.sales) || 0,
+      impressions: parseInt(returnsForm.impressions) || 0,
+      clicks: parseInt(returnsForm.clicks) || 0,
+      updated_at: new Date().toISOString(),
+    };
+    try {
+      await supabase.from('campaign_returns').upsert(payload, { onConflict: 'organization_id,product_id' });
+      setCampaignReturns({ views: payload.views, sales: payload.sales, impressions: payload.impressions, clicks: payload.clicks });
+      setIsReturnsPanelOpen(false);
+    } finally {
+      setIsSavingReturns(false);
+    }
+  };
+
   useEffect(() => {
     const slider = cardSliderRef.current;
     if (!slider) return;
@@ -1192,7 +1244,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                       <img
                         src={shopeeAdsMoney}
                         alt="Investimento Shopee Ads"
-                        className="absolute left-1/2 top-1/2 w-24 -translate-x-1/2 -translate-y-1/2 -rotate-45 opacity-90 drop-shadow-md pointer-events-none"
+                        className="absolute left-1/2 top-1/2 w-32 -translate-x-1/2 -translate-y-1/2 -rotate-45 opacity-90 drop-shadow-md pointer-events-none"
                       />
                     )}
                     {hasTrafficInvestment && (
@@ -1728,6 +1780,75 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                   )}
                 </div>
               </div>
+
+              {/* ── Benefícios da Campanha ── só quando há campanha investida */}
+              {hasTrafficInvestment && (
+                <div className="mt-3">
+                  <div className="border-t border-orange-500/20 pt-3">
+                    <div className="rounded-lg p-3" style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.25)' }}>
+                      <div className="flex items-center justify-between mb-2.5">
+                        <p className="text-[10px] font-bold text-orange-400 uppercase tracking-widest">Benefícios da Campanha</p>
+                        <button
+                          type="button"
+                          onClick={() => setIsReturnsPanelOpen(v => !v)}
+                          className="text-[9px] text-orange-400/70 hover:text-orange-400 transition-colors"
+                        >
+                          {isReturnsPanelOpen ? 'fechar ▲' : 'editar ▼'}
+                        </button>
+                      </div>
+
+                      {isReturnsPanelOpen ? (
+                        <div className="grid grid-cols-2 gap-2">
+                          {([
+                            { key: 'views', label: 'Visualizações', icon: '👁' },
+                            { key: 'sales', label: 'Vendas', icon: '🛒' },
+                            { key: 'impressions', label: 'Impressões', icon: '📊' },
+                            { key: 'clicks', label: 'Clicks', icon: '🖱' },
+                          ] as const).map(({ key, label, icon }) => (
+                            <div key={key} className="flex flex-col gap-0.5">
+                              <span className="text-[9px] text-orange-300/70">{icon} {label}</span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={returnsForm[key]}
+                                onChange={e => setReturnsForm(prev => ({ ...prev, [key]: e.target.value }))}
+                                placeholder="0"
+                                className="w-full rounded px-2 py-1 text-xs bg-zinc-900 border border-orange-500/30 text-white focus:outline-none focus:border-orange-500 placeholder:text-zinc-600"
+                              />
+                            </div>
+                          ))}
+                          <div className="col-span-2 flex justify-end mt-1">
+                            <button
+                              type="button"
+                              onClick={handleSaveReturns}
+                              disabled={isSavingReturns}
+                              className="text-[10px] px-3 py-1 rounded bg-orange-500 hover:bg-orange-600 text-white font-semibold transition-colors disabled:opacity-50"
+                            >
+                              {isSavingReturns ? 'Salvando...' : 'Salvar'}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                          {([
+                            { key: 'views' as const, label: 'Visualizações', icon: '👁' },
+                            { key: 'sales' as const, label: 'Vendas', icon: '🛒' },
+                            { key: 'impressions' as const, label: 'Impressões', icon: '📊' },
+                            { key: 'clicks' as const, label: 'Clicks', icon: '🖱' },
+                          ]).map(({ key, label, icon }) => (
+                            <div key={key} className="flex flex-col gap-0">
+                              <span className="text-[8px] text-orange-300/60 uppercase">{icon} {label}</span>
+                              <span className="text-[11px] font-bold text-orange-300">
+                                {campaignReturns[key] ? campaignReturns[key].toLocaleString('pt-BR') : '—'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1932,6 +2053,13 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                 className="inline-flex items-center gap-1 rounded-md border border-border bg-background text-xs font-medium px-3 py-2 hover:bg-muted transition-colors"
               >
                 Vincular outra campanha
+              </button>
+              <button
+                type="button"
+                onClick={() => { setIsReturnsPanelOpen(true); setIsInvestOpen(false); }}
+                className="inline-flex items-center gap-1 rounded-md border border-orange-500/40 bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 text-xs font-medium px-3 py-2 transition-colors"
+              >
+                📊 Retorno
               </button>
             </div>
           </div>
