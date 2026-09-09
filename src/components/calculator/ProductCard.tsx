@@ -277,6 +277,13 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
       target_cost_per_result: number | null;
       start_date: string | null;
       end_date: string | null;
+      audience_mode: string | null;
+      saved_audience_name: string | null;
+      audience_location: string | null;
+      audience_age: string | null;
+      audience_gender: string | null;
+      audience_interests: string | null;
+      audience_behavior: string | null;
     }>;
     campaign_products?: Array<{ marketing_cost_override: number | null }>;
   }>>([]);
@@ -304,6 +311,8 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     audienceGender: '',
     audienceInterests: '',
     audienceBehavior: '',
+    audienceMode: 'auto' as 'auto' | 'manual' | 'saved',
+    savedAudienceName: '',
     placement: '',
     adText: '',
     adTitle: '',
@@ -707,6 +716,8 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
       audienceGender: '',
       audienceInterests: '',
       audienceBehavior: '',
+      audienceMode: 'auto',
+      savedAudienceName: '',
       placement: '',
       adText: '',
       adTitle: '',
@@ -748,6 +759,9 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
         && parseFloat(invVal) > 0;
     }
     if (step === 2) {
+      if (investData.audienceMode === 'auto') return true;
+      if (investData.audienceMode === 'saved') return isNonEmpty(investData.savedAudienceName);
+      // manual
       return isNonEmpty(investData.audienceLocation)
         && isNonEmpty(investData.audienceAge)
         && isNonEmpty(investData.audienceGender)
@@ -834,6 +848,8 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     audienceGender: product.audienceGender ?? '',
     audienceInterests: product.audienceInterests ?? '',
     audienceBehavior: product.audienceBehavior ?? '',
+    audienceMode: 'auto' as 'auto' | 'manual' | 'saved',
+    savedAudienceName: '',
     placement: product.placement ?? '',
     adText: product.adText ?? '',
     adTitle: product.adTitle ?? '',
@@ -1574,7 +1590,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
             if (organizationId) {
               supabase
                 .from('campaigns')
-                .select('id, name, objective, budget_type, budget_amount, campaign_ad_sets(id, name, conversion_type, traffic_destination, optimization_goal, target_cost_per_result, start_date, end_date), campaign_products(marketing_cost_override)')
+                .select('id, name, objective, budget_type, budget_amount, campaign_ad_sets(id, name, conversion_type, traffic_destination, optimization_goal, target_cost_per_result, start_date, end_date, audience_mode, saved_audience_name, audience_location, audience_age, audience_gender, audience_interests, audience_behavior), campaign_products(marketing_cost_override)')
                 .eq('organization_id', organizationId)
                 .order('created_at', { ascending: false })
                 .then(({ data }) => {
@@ -1695,6 +1711,14 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                               investmentValue: totalCost != null
                                 ? totalCost.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                                 : prev.investmentValue,
+                              // Audiência do primeiro ad set
+                              audienceMode: (firstAdSet?.audience_mode as 'auto' | 'manual' | 'saved' | null) ?? 'auto',
+                              savedAudienceName: firstAdSet?.saved_audience_name ?? '',
+                              audienceLocation: firstAdSet?.audience_location ?? prev.audienceLocation,
+                              audienceAge: firstAdSet?.audience_age ?? prev.audienceAge,
+                              audienceGender: firstAdSet?.audience_gender ?? prev.audienceGender,
+                              audienceInterests: firstAdSet?.audience_interests ?? prev.audienceInterests,
+                              audienceBehavior: firstAdSet?.audience_behavior ?? prev.audienceBehavior,
                             }));
                           }
                         }
@@ -1889,53 +1913,103 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
             )}
 
             {investStep === 2 && (
-              <div className="grid gap-3">
+              <div className="grid gap-4">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Público</h3>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right text-gray-700 dark:text-gray-200">Localização</Label>
-                  <Input
-                    value={investData.audienceLocation}
-                    onChange={(e) => handleInvestChange('audienceLocation', e.target.value)}
-                    className="col-span-3"
-                  />
+                
+                {/* Modo de Audiência — 3 botões */}
+                <div className="grid grid-cols-4 items-start gap-4">
+                  <Label className="text-right text-gray-700 dark:text-gray-200 pt-2">Modo de Audiência</Label>
+                  <div className="col-span-3 flex gap-2">
+                    {(['auto', 'manual', 'saved'] as const).map((mode) => {
+                      const labels = { auto: 'Automático (Smart+)', manual: 'Manual', saved: 'Audiência Salva' };
+                      const isActive = investData.audienceMode === mode;
+                      return (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => handleInvestChange('audienceMode', mode)}
+                          className={`flex-1 rounded-md border px-3 py-2 text-xs font-medium transition-colors ${isActive ? 'bg-orange-500 border-orange-500 text-white' : 'border-border bg-background text-foreground hover:bg-muted'}`}
+                        >
+                          {labels[mode]}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right text-gray-700 dark:text-gray-200">Idade</Label>
-                  <Input
-                    type="number"
-                    value={investData.audienceAge}
-                    onChange={(e) => handleInvestChange('audienceAge', e.target.value)}
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right text-gray-700 dark:text-gray-200">Gênero</Label>
-                  <Select value={investData.audienceGender} onValueChange={(val) => handleInvestChange('audienceGender', val)}>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="m">M</SelectItem>
-                      <SelectItem value="f">F</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right text-gray-700 dark:text-gray-200">Interesses</Label>
-                  <Input
-                    value={investData.audienceInterests}
-                    onChange={(e) => handleInvestChange('audienceInterests', e.target.value)}
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right text-gray-700 dark:text-gray-200">Comportamento</Label>
-                  <Input
-                    value={investData.audienceBehavior}
-                    onChange={(e) => handleInvestChange('audienceBehavior', e.target.value)}
-                    className="col-span-3"
-                  />
-                </div>
+                
+                {/* Auto: info box */}
+                {investData.audienceMode === 'auto' && (
+                  <div className="grid grid-cols-4 gap-4">
+                    <div className="col-start-2 col-span-3 rounded-md border border-border bg-muted p-3 text-xs text-muted-foreground">
+                      🤖 <strong>Smart+ — Audiência Automática</strong><br />
+                      O algoritmo define automaticamente a melhor audiência. Nenhuma configuração manual necessária.
+                    </div>
+                  </div>
+                )}
+                
+                {/* Saved: nome da audiência */}
+                {investData.audienceMode === 'saved' && (
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right text-gray-700 dark:text-gray-200">Audiência Salva</Label>
+                    <Input
+                      value={investData.savedAudienceName}
+                      onChange={(e) => handleInvestChange('savedAudienceName', e.target.value)}
+                      className="col-span-3"
+                      placeholder="Nome da audiência salva"
+                    />
+                  </div>
+                )}
+                
+                {/* Manual: campos completos */}
+                {investData.audienceMode === 'manual' && (
+                  <>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label className="text-right text-gray-700 dark:text-gray-200">Localização</Label>
+                      <Input
+                        value={investData.audienceLocation}
+                        onChange={(e) => handleInvestChange('audienceLocation', e.target.value)}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label className="text-right text-gray-700 dark:text-gray-200">Idade</Label>
+                      <Input
+                        value={investData.audienceAge}
+                        onChange={(e) => handleInvestChange('audienceAge', e.target.value)}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label className="text-right text-gray-700 dark:text-gray-200">Gênero</Label>
+                      <Select value={investData.audienceGender} onValueChange={(val) => handleInvestChange('audienceGender', val)}>
+                        <SelectTrigger className="col-span-3">
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos</SelectItem>
+                          <SelectItem value="male">Masculino</SelectItem>
+                          <SelectItem value="female">Feminino</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label className="text-right text-gray-700 dark:text-gray-200">Interesses</Label>
+                      <Input
+                        value={investData.audienceInterests}
+                        onChange={(e) => handleInvestChange('audienceInterests', e.target.value)}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label className="text-right text-gray-700 dark:text-gray-200">Comportamento</Label>
+                      <Input
+                        value={investData.audienceBehavior}
+                        onChange={(e) => handleInvestChange('audienceBehavior', e.target.value)}
+                        className="col-span-3"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
