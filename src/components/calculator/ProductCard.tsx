@@ -259,6 +259,7 @@ interface ProductCardProps {
 export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onDelete, onEdit, onBlingUpdate, isUpdatingBling, onInvestSave, organizationId }) => {
   const [currentVarIndex, setCurrentVarIndex] = useState(0);
   const [isInvestOpen, setIsInvestOpen] = useState(false);
+  const [isInvestReadonly, setIsInvestReadonly] = useState(false);
   const [isBlingConfirmOpen, setIsBlingConfirmOpen] = useState(false);
   const [investStep, setInvestStep] = useState(0);
   
@@ -795,26 +796,12 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     const strValue = String(value).trim();
     return strValue !== '' && strValue !== '0';
   };
+  // Painel de investimento existe se campanha vinculada com valores mínimos
   const hasCompleteInvestData = hasValue(product.campaignName)
-    && hasValue(product.campaignObjective)
-    && hasValue(product.budgetType)
-    && hasValue(product.conversion)
-    && hasValue(product.startDate)
-    && hasValue(product.endDate)
     && hasValue(product.investmentValue)
-    && hasValue(product.audienceLocation)
-    && hasValue(product.audienceAge)
-    && hasValue(product.audienceGender)
-    && hasValue(product.audienceInterests)
-    && hasValue(product.audienceBehavior)
-    && hasValue(product.placement)
-    && hasValue(product.adText)
-    && hasValue(product.adTitle)
     && hasValue(product.adMedia)
-    && hasValue(product.adCta)
-    && hasValue(product.instagramAccount)
-    && (product.adMedia ? hasValue(product.adUrl) && hasValue(product.adRedirectUrl) : true);
-  const hasTrafficInvestment = hasCompleteInvestData && parseCurrency(product.investmentValue ?? 0) > 0;
+    && hasValue(product.adUrl);
+  const hasTrafficInvestment = hasValue(product.campaignName) && parseCurrency(product.investmentValue ?? 0) > 0;
   const showMoneyBorder = hasShopeeAdsInvestment || hasTrafficInvestment;
   const hasAffiliateCommission = Array.isArray(product.affiliates) && product.affiliates.length > 0;
   
@@ -1587,6 +1574,13 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
         </AlertDialog>
         <button
           onClick={() => {
+            const hasCampaign = hasValue(product.campaignName);
+            if (hasCampaign) {
+              // Somente leitura — mostrar resumo da campanha
+              setIsInvestReadonly(true);
+              setIsInvestOpen(true);
+              return;
+            }
             setInvestData(getInvestDataFromProduct());
             setInvestStep(0);
             setSelectedCampaignId('');
@@ -1608,12 +1602,13 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                   }
                 });
             }
+            setIsInvestReadonly(false);
             setIsInvestOpen(true);
           }}
           className="inline-flex items-center justify-center gap-1 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border bg-background shadow-sm rounded-md px-2 h-8 w-full text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border-emerald-100 dark:bg-white dark:border-gray-200 dark:hover:bg-gray-50"
         >
           <DollarSign className="w-3.5 h-3.5 mr-1" />
-          Investir
+          {hasValue(product.campaignName) ? 'Ver Campanha' : 'Investir'}
         </button>
       </div>
     </AnimatedCard>
@@ -1626,9 +1621,82 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     }}>
       <DialogContent className="sm:max-w-[900px]">
         <DialogHeader>
-          <DialogTitle>Investir</DialogTitle>
-          <DialogDescription>Preencha os dados da campanha</DialogDescription>
+          <DialogTitle>{isInvestReadonly ? 'Campanha Vinculada' : 'Investir'}</DialogTitle>
+          <DialogDescription>
+            {isInvestReadonly
+              ? 'Resumo da campanha. Para editar, acesse a página Campanhas.'
+              : 'Preencha os dados da campanha'}
+          </DialogDescription>
         </DialogHeader>
+
+        {/* ── MODO SOMENTE LEITURA ── */}
+        {isInvestReadonly && (
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              {[
+                ['Campanha', product.campaignName],
+                ['Objetivo', product.campaignObjective],
+                ['Orçamento', product.budgetType === 'diario' ? 'Diário' : product.budgetType === 'total' ? 'Total' : product.budgetType],
+                ['Destino', product.conversion === 'tiktok_shop' ? 'Loja TikTok' : product.conversion === 'app' ? 'App' : product.conversion === 'site' ? 'Site' : product.conversion],
+                ['Investimento', product.investmentValue ? `R$ ${parseCurrency(product.investmentValue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '-'],
+                ['Período', product.startDate && product.endDate ? `${formatDateToBr(product.startDate)} - ${formatDateToBr(product.endDate)}` : '-'],
+                ['Mídia', product.adMedia],
+                ['CTA', product.adCta],
+                ['Texto', product.adText],
+                ['Título', product.adTitle],
+                ['Link Mídia', product.adUrl],
+                ['URL Redirect', product.adRedirectUrl],
+              ].filter(([, v]) => v).map(([label, value]) => (
+                <div key={label as string} className="flex flex-col gap-0.5">
+                  <span className="text-[10px] uppercase text-muted-foreground">{label}</span>
+                  <span className="text-xs font-medium text-foreground truncate">{value || '-'}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2 pt-2">
+              <a
+                href="/campanhas"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 rounded-md bg-orange-500 hover:bg-orange-600 text-white text-xs font-medium px-3 py-2 transition-colors"
+              >
+                Editar na página Campanhas ↗
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  // Limpar campanha vinculada e abrir modal de edição
+                  setIsInvestReadonly(false);
+                  setInvestData(getInvestDataFromProduct());
+                  setInvestStep(0);
+                  setSelectedCampaignId('');
+                  if (organizationId) {
+                    supabase
+                      .from('campaigns')
+                      .select('id, name, objective, budget_type, budget_amount, campaign_ad_sets(id, name, conversion_type, traffic_destination, optimization_goal, target_cost_per_result, start_date, end_date, audience_mode, saved_audience_name, audience_location, audience_age, audience_gender, audience_interests, audience_behavior, ad_media_url, ad_redirect_url, ad_text, ad_title, ad_cta, ad_media_type), campaign_products(marketing_cost_override)')
+                      .eq('organization_id', organizationId)
+                      .order('updated_at', { ascending: false })
+                      .then(({ data }) => {
+                        if (data) {
+                          const lastId = localStorage.getItem(`lastCampaignId_${organizationId}`);
+                          const sorted = lastId
+                            ? [...data].sort((a, b) => (a.id === lastId ? -1 : b.id === lastId ? 1 : 0))
+                            : data;
+                          setAvailableCampaigns(sorted as typeof availableCampaigns);
+                        }
+                      });
+                  }
+                }}
+                className="inline-flex items-center gap-1 rounded-md border border-border bg-background text-xs font-medium px-3 py-2 hover:bg-muted transition-colors"
+              >
+                Vincular outra campanha
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── MODO EDIÇÃO ── */}
+        {!isInvestReadonly && (
         <div className="grid gap-6 py-2 md:grid-cols-[220px_1fr]">
           <aside className="rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900 p-3">
             <div className="text-xs font-semibold text-gray-700 dark:text-gray-200 mb-3">Etapas</div>
@@ -2162,6 +2230,8 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
             )}
           </div>
         </div>
+        )} {/* end !isInvestReadonly */}
+        {!isInvestReadonly && (
         <DialogFooter>
           <Button variant="outline" onClick={() => setIsInvestOpen(false)}>Cancelar</Button>
           <div className="flex items-center gap-2">
@@ -2181,6 +2251,12 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
             )}
           </div>
         </DialogFooter>
+        )}
+        {isInvestReadonly && (
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsInvestOpen(false)}>Fechar</Button>
+        </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
     </>
