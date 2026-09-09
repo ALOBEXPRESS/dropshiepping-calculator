@@ -261,6 +261,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   const [isInvestOpen, setIsInvestOpen] = useState(false);
   const [isInvestReadonly, setIsInvestReadonly] = useState(false);
   const [linkedAdMediaUrl, setLinkedAdMediaUrl] = useState<string>('');
+  const [linkedAudienceMode, setLinkedAudienceMode] = useState<string>('auto');
   const [isBlingConfirmOpen, setIsBlingConfirmOpen] = useState(false);
   const [investStep, setInvestStep] = useState(0);
   
@@ -1541,22 +1542,35 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                     <span>Período</span>
                     <span className="font-semibold text-foreground">{paidTrafficPeriodLabel}</span>
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <span>Localização</span>
-                    <span className="font-semibold text-foreground">{product.audienceLocation || '-'}</span>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span>Idade</span>
-                    <span className="font-semibold text-foreground">{product.audienceAge || '-'}</span>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span>Interesses</span>
-                    <span className="font-semibold text-foreground">{product.audienceInterests || '-'}</span>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span>Gênero</span>
-                    <span className="font-semibold text-foreground">{product.audienceGender || '-'}</span>
-                  </div>
+                  {/* Audiência — Smart+ ou campos manuais */}
+                  {(linkedAudienceMode === 'auto' || (!product.audienceLocation && !product.audienceAge && !product.audienceInterests)) ? (
+                    <div className="col-span-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-2 flex items-start gap-2">
+                      <span className="text-base leading-none mt-0.5">🤖</span>
+                      <div>
+                        <p className="text-[10px] font-semibold text-emerald-400">Smart+ — Audiência Automática</p>
+                        <p className="text-[9px] text-muted-foreground leading-relaxed mt-0.5">O algoritmo do TikTok define automaticamente a melhor audiência para seus objetivos. Nenhuma configuração manual necessária.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex flex-col gap-1">
+                        <span>Localização</span>
+                        <span className="font-semibold text-foreground">{product.audienceLocation || '-'}</span>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <span>Idade</span>
+                        <span className="font-semibold text-foreground">{product.audienceAge || '-'}</span>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <span>Interesses</span>
+                        <span className="font-semibold text-foreground">{product.audienceInterests || '-'}</span>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <span>Gênero</span>
+                        <span className="font-semibold text-foreground">{product.audienceGender || '-'}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -1628,13 +1642,14 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
               if (organizationId && product.campaignName) {
                 supabase
                   .from('campaigns')
-                  .select('campaign_ad_sets(ad_media_url, ad_media_type)')
+                  .select('campaign_ad_sets(ad_media_url, ad_media_type, audience_mode)')
                   .eq('organization_id', organizationId)
                   .eq('name', product.campaignName)
                   .limit(1)
                   .then(({ data }) => {
-                    const firstAdSet = data?.[0]?.campaign_ad_sets?.[0] as { ad_media_url?: string | null; ad_media_type?: string | null } | undefined;
+                    const firstAdSet = data?.[0]?.campaign_ad_sets?.[0] as { ad_media_url?: string | null; ad_media_type?: string | null; audience_mode?: string | null } | undefined;
                     setLinkedAdMediaUrl(firstAdSet?.ad_media_url ?? '');
+                    setLinkedAudienceMode(firstAdSet?.audience_mode ?? 'auto');
                   });
               }
               return;
