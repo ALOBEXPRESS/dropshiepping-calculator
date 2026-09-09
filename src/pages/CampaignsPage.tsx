@@ -3,6 +3,7 @@ import { Megaphone, Plus, Pencil, Trash2, Loader2, ChevronDown } from 'lucide-re
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { supabase } from '@/lib/supabase';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -89,6 +90,7 @@ interface CampaignCardProps {
   adSets: CampaignWithRelations['campaign_ad_sets'];
   onEdit: () => void;
   onDelete: () => void;
+  organizationId?: string;
 }
 
 // ── AdCreativeAccordion ───────────────────────────────────────────────────────
@@ -98,8 +100,34 @@ const AdCreativeAccordion: React.FC<{
   adText?: string | null;
   adTitle?: string | null;
   adCta?: string | null;
-}> = ({ mediaUrl, mediaType, adText, adTitle, adCta }) => {
+  organizationId?: string;
+  productIds?: string[];
+}> = ({ mediaUrl, mediaType, adText, adTitle, adCta, organizationId, productIds }) => {
   const [open, setOpen] = React.useState(false);
+  const [returns, setReturns] = React.useState<{ views: number; sales: number; impressions: number; clicks: number } | null>(null);
+
+  React.useEffect(() => {
+    if (!open || !organizationId || !productIds?.length) return;
+    supabase
+      .from('campaign_returns')
+      .select('views, sales, impressions, clicks')
+      .eq('organization_id', organizationId)
+      .in('product_id', productIds)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          const agg = (data as Array<{ views: number; sales: number; impressions: number; clicks: number }>).reduce(
+            (acc, row) => ({
+              views: acc.views + (row.views || 0),
+              sales: acc.sales + (row.sales || 0),
+              impressions: acc.impressions + (row.impressions || 0),
+              clicks: acc.clicks + (row.clicks || 0),
+            }),
+            { views: 0, sales: 0, impressions: 0, clicks: 0 }
+          );
+          setReturns(agg);
+        }
+      });
+  }, [open, organizationId, productIds?.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Extract TikTok video ID from any format (URL, blockquote, iframe)
   const extractTikTokId = (input: string): string => {
@@ -164,13 +192,34 @@ const AdCreativeAccordion: React.FC<{
               {adCta && <span className="inline-block text-[10px] bg-orange-500/20 text-orange-300 border border-orange-500/30 px-2 py-0.5 rounded">{adCta}</span>}
             </div>
           )}
+          {/* Campaign returns metrics */}
+          {returns && (
+            <div className="rounded-lg p-2.5" style={{ background: 'rgba(249,115,22,0.09)', border: '1px solid rgba(249,115,22,0.25)' }}>
+              <p className="text-[9px] font-bold text-orange-400 uppercase tracking-widest mb-2">📈 Benefícios da Campanha</p>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                {([
+                  { key: 'views' as const, label: 'Visualizações', icon: '👁' },
+                  { key: 'sales' as const, label: 'Vendas', icon: '🛒' },
+                  { key: 'impressions' as const, label: 'Impressões', icon: '📊' },
+                  { key: 'clicks' as const, label: 'Clicks', icon: '🖱' },
+                ]).map(({ key, label, icon }) => (
+                  <div key={key}>
+                    <p className="text-[8px] text-orange-300/50 uppercase">{icon} {label}</p>
+                    <p className="text-[12px] font-bold text-orange-300 leading-tight">
+                      {returns[key] ? returns[key].toLocaleString('pt-BR') : <span className="text-zinc-600 text-[9px]">—</span>}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 };
 
-const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSets, onEdit, onDelete }) => {
+const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSets, onEdit, onDelete, organizationId }) => {
   const [expanded, setExpanded] = useState(false);
 
   const marketplaceLabel: Record<string, string> = {
@@ -384,6 +433,8 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSe
                       adText={ext.ad_text}
                       adTitle={ext.ad_title}
                       adCta={ext.ad_cta}
+                      organizationId={organizationId}
+                      productIds={c.campaign_products.map(p => p.product_id).filter(Boolean) as string[]}
                     />
                   )}
                 </div>
@@ -590,6 +641,7 @@ const CampaignsPage: React.FC = () => {
                         adSets={adSets}
                         onEdit={() => handleEdit(c)}
                         onDelete={() => setDeleteId(c.id)}
+                        organizationId={organizationId ?? undefined}
                       />
                     );
                   })}

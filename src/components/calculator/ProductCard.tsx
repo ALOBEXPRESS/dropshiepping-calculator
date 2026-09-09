@@ -1462,6 +1462,72 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                   </p>
                 </div>
               )}
+
+              {/* ── Benefícios da Campanha ── aparece no card principal quando há campanha */}
+              {hasValue(product.campaignName) && (
+                <div className="col-span-2 mt-3">
+                  <div className="rounded-xl p-3" style={{ background: 'rgba(249,115,22,0.09)', border: '1px solid rgba(249,115,22,0.28)' }}>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-[9px] font-bold text-orange-400 uppercase tracking-widest">📈 Benefícios da Campanha</p>
+                      <button
+                        type="button"
+                        onClick={() => setIsReturnsPanelOpen(v => !v)}
+                        className="text-[9px] text-orange-400/70 hover:text-orange-400 transition-colors leading-none"
+                      >
+                        {isReturnsPanelOpen ? '▲' : '✏️'}
+                      </button>
+                    </div>
+                    {isReturnsPanelOpen ? (
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {([
+                          { key: 'views', label: 'Visualizações', icon: '👁' },
+                          { key: 'sales', label: 'Vendas', icon: '🛒' },
+                          { key: 'impressions', label: 'Impressões', icon: '📊' },
+                          { key: 'clicks', label: 'Clicks', icon: '🖱' },
+                        ] as const).map(({ key, label, icon }) => (
+                          <div key={key} className="flex flex-col gap-0.5">
+                            <span className="text-[8px] text-orange-300/70">{icon} {label}</span>
+                            <input
+                              type="number"
+                              min="0"
+                              value={returnsForm[key]}
+                              onChange={e => setReturnsForm(prev => ({ ...prev, [key]: e.target.value }))}
+                              placeholder="0"
+                              className="w-full rounded px-1.5 py-0.5 text-[10px] bg-zinc-900/80 border border-orange-500/30 text-white focus:outline-none focus:border-orange-500 placeholder:text-zinc-600"
+                            />
+                          </div>
+                        ))}
+                        <div className="col-span-2 flex justify-end mt-0.5">
+                          <button
+                            type="button"
+                            onClick={handleSaveReturns}
+                            disabled={isSavingReturns}
+                            className="text-[9px] px-2.5 py-1 rounded bg-orange-500 hover:bg-orange-600 text-white font-semibold transition-colors disabled:opacity-50"
+                          >
+                            {isSavingReturns ? '...' : 'Salvar'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                        {([
+                          { key: 'views' as const, label: 'Views', icon: '👁' },
+                          { key: 'sales' as const, label: 'Vendas', icon: '🛒' },
+                          { key: 'impressions' as const, label: 'Impressões', icon: '📊' },
+                          { key: 'clicks' as const, label: 'Clicks', icon: '🖱' },
+                        ]).map(({ key, label, icon }) => (
+                          <div key={key} className="flex flex-col gap-0">
+                            <span className="text-[7px] text-orange-300/50 uppercase">{icon} {label}</span>
+                            <span className="text-[11px] font-bold text-orange-300 leading-tight">
+                              {campaignReturns[key] ? campaignReturns[key].toLocaleString('pt-BR') : <span className="text-zinc-600 text-[9px]">—</span>}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
