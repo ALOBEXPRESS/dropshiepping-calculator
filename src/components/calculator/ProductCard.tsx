@@ -262,7 +262,24 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   const [investStep, setInvestStep] = useState(0);
   
   // Campanhas existentes para seleção no modal Investir
-  const [availableCampaigns, setAvailableCampaigns] = useState<Array<{ id: string; name: string; objective: string; budget_type: string; campaign_ad_sets?: Array<{ id: string; name: string | null; conversion_type: string | null; traffic_destination: string | null; optimization_goal: string | null; target_cost_per_result: number | null; start_date: string | null; end_date: string | null }> }>>([]);
+  const [availableCampaigns, setAvailableCampaigns] = useState<Array<{
+    id: string;
+    name: string;
+    objective: string;
+    budget_type: string;
+    budget_amount: number | null;
+    campaign_ad_sets?: Array<{
+      id: string;
+      name: string | null;
+      conversion_type: string | null;
+      traffic_destination: string | null;
+      optimization_goal: string | null;
+      target_cost_per_result: number | null;
+      start_date: string | null;
+      end_date: string | null;
+    }>;
+    campaign_products?: Array<{ marketing_cost_override: number | null }>;
+  }>>([]);
   const [selectedCampaignId, setSelectedCampaignId] = useState<string>('');
   
   // Buscar vendas reais do produto
@@ -281,7 +298,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     endDate: '',
     investmentValue: '',
     // ad sets da campanha selecionada (read-only display)
-    adSetsDisplay: [] as Array<{ id: string; name: string | null }>,
+    adSetsDisplay: [] as Array<{ id: string; name: string | null; budget?: number | null }>,
     audienceLocation: '',
     audienceAge: '',
     audienceGender: '',
@@ -811,7 +828,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     startDate: formatDateToBr(product.startDate ?? ''),
     endDate: formatDateToBr(product.endDate ?? ''),
     investmentValue: product.investmentValue != null ? String(product.investmentValue) : '',
-    adSetsDisplay: [] as Array<{ id: string; name: string | null }>,
+    adSetsDisplay: [] as Array<{ id: string; name: string | null; budget?: number | null }>,
     audienceLocation: product.audienceLocation ?? '',
     audienceAge: product.audienceAge ?? '',
     audienceGender: product.audienceGender ?? '',
@@ -1557,7 +1574,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
             if (organizationId) {
               supabase
                 .from('campaigns')
-                .select('id, name, objective, budget_type, campaign_ad_sets(id, name, conversion_type, traffic_destination, optimization_goal, target_cost_per_result, start_date, end_date)')
+                .select('id, name, objective, budget_type, budget_amount, campaign_ad_sets(id, name, conversion_type, traffic_destination, optimization_goal, target_cost_per_result, start_date, end_date), campaign_products(marketing_cost_override)')
                 .eq('organization_id', organizationId)
                 .order('created_at', { ascending: false })
                 .then(({ data }) => {
@@ -1654,12 +1671,21 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                               landing_page_view: 'landing_page_view',
                               engagement_session: 'engagement_session',
                             };
+                            // Custo total = marketing_cost_override do primeiro produto vinculado
+                            const totalCost = camp.campaign_products?.[0]?.marketing_cost_override ?? null;
+                            // Orçamento diário por grupo = budget_amount da campanha
+                            const budgetPerGroup = camp.budget_amount;
+                            const adSetsWithBudget = (camp.campaign_ad_sets ?? []).map(a => ({
+                              id: a.id,
+                              name: a.name,
+                              budget: budgetPerGroup,
+                            }));
                             setInvestData(prev => ({
                               ...prev,
                               campaignName: camp.name,
                               campaignObjective: objectiveMap[camp.objective] ?? camp.objective,
                               budgetType: budgetMap[camp.budget_type] ?? camp.budget_type,
-                              adSetsDisplay: adSets,
+                              adSetsDisplay: adSetsWithBudget,
                               trafficDestination: firstAdSet ? (destMap[firstAdSet.traffic_destination ?? ''] ?? firstAdSet.traffic_destination ?? '') : prev.trafficDestination,
                               optimizationGoal: firstAdSet ? (optMap[firstAdSet.optimization_goal ?? ''] ?? firstAdSet.optimization_goal ?? '') : prev.optimizationGoal,
                               targetCostPerResult: firstAdSet?.target_cost_per_result != null
@@ -1667,6 +1693,9 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                                 : prev.targetCostPerResult,
                               startDate: firstAdSet?.start_date ? formatDateToBr(firstAdSet.start_date) : prev.startDate,
                               endDate: firstAdSet?.end_date ? formatDateToBr(firstAdSet.end_date) : prev.endDate,
+                              investmentValue: totalCost != null
+                                ? totalCost.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                : prev.investmentValue,
                             }));
                           }
                         }
@@ -1744,11 +1773,16 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                 {investData.adSetsDisplay.length > 0 && (
                   <div className="grid grid-cols-4 items-start gap-4">
                     <Label className="text-right text-gray-700 dark:text-gray-200 pt-2">Grupos de Anúncios</Label>
-                    <div className="col-span-3 flex flex-wrap gap-2">
+                    <div className="col-span-3 flex flex-col gap-2">
                       {investData.adSetsDisplay.map((as) => (
-                        <span key={as.id} className="rounded-md bg-muted border border-border px-2 py-1 text-xs text-foreground">
-                          {as.name || as.id.slice(0, 8)}
-                        </span>
+                        <div key={as.id} className="flex items-center justify-between rounded-md bg-muted border border-border px-3 py-1.5">
+                          <span className="text-xs text-foreground truncate mr-2">{as.name || as.id.slice(0, 8)}</span>
+                          {as.budget != null && (
+                            <span className="text-xs font-semibold text-emerald-500 shrink-0">
+                              R$ {Number(as.budget).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/dia
+                            </span>
+                          )}
+                        </div>
                       ))}
                     </div>
                   </div>
