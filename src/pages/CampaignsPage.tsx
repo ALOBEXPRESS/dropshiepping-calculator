@@ -94,6 +94,13 @@ interface CampaignCardProps {
 }
 
 // ── AdCreativeAccordion ───────────────────────────────────────────────────────
+const RETURNS_METRICS = [
+  { key: 'views'       as const, label: 'Visualizações', icon: '👁' },
+  { key: 'sales'       as const, label: 'Vendas',        icon: '🛒' },
+  { key: 'impressions' as const, label: 'Impressões',    icon: '📊' },
+  { key: 'clicks'      as const, label: 'Clicks',        icon: '🖱' },
+];
+
 const AdCreativeAccordion: React.FC<{
   mediaUrl: string;
   mediaType?: string | null;
@@ -104,7 +111,10 @@ const AdCreativeAccordion: React.FC<{
   productIds?: string[];
 }> = ({ mediaUrl, mediaType, adText, adTitle, adCta, organizationId, productIds }) => {
   const [open, setOpen] = React.useState(false);
-  const [returns, setReturns] = React.useState<{ views: number; sales: number; impressions: number; clicks: number } | null>(null);
+  type Metrics = { views: number; sales: number; impressions: number; clicks: number };
+  const [form, setForm] = React.useState<Record<keyof Metrics, string>>({ views: '', sales: '', impressions: '', clicks: '' });
+  const [saved, setSaved] = React.useState<Metrics>({ views: 0, sales: 0, impressions: 0, clicks: 0 });
+  const [saving, setSaving] = React.useState(false);
 
   React.useEffect(() => {
     if (!open || !organizationId || !productIds?.length) return;
@@ -114,22 +124,33 @@ const AdCreativeAccordion: React.FC<{
       .eq('organization_id', organizationId)
       .in('product_id', productIds)
       .then(({ data }) => {
-        if (data && data.length > 0) {
-          const agg = (data as Array<{ views: number; sales: number; impressions: number; clicks: number }>).reduce(
-            (acc, row) => ({
-              views: acc.views + (row.views || 0),
-              sales: acc.sales + (row.sales || 0),
-              impressions: acc.impressions + (row.impressions || 0),
-              clicks: acc.clicks + (row.clicks || 0),
-            }),
-            { views: 0, sales: 0, impressions: 0, clicks: 0 }
-          );
-          setReturns(agg);
-        }
+        if (!data?.length) return;
+        const agg = (data as Metrics[]).reduce(
+          (acc, r) => ({ views: acc.views+(r.views||0), sales: acc.sales+(r.sales||0), impressions: acc.impressions+(r.impressions||0), clicks: acc.clicks+(r.clicks||0) }),
+          { views: 0, sales: 0, impressions: 0, clicks: 0 }
+        );
+        setSaved(agg);
+        setForm({ views: agg.views ? String(agg.views) : '', sales: agg.sales ? String(agg.sales) : '', impressions: agg.impressions ? String(agg.impressions) : '', clicks: agg.clicks ? String(agg.clicks) : '' });
       });
   }, [open, organizationId, productIds?.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Extract TikTok video ID from any format (URL, blockquote, iframe)
+  const handleSave = async () => {
+    if (!organizationId || !productIds?.length) return;
+    setSaving(true);
+    const payload = {
+      organization_id: organizationId,
+      product_id: productIds[0],
+      views: parseInt(form.views) || 0,
+      sales: parseInt(form.sales) || 0,
+      impressions: parseInt(form.impressions) || 0,
+      clicks: parseInt(form.clicks) || 0,
+      updated_at: new Date().toISOString(),
+    };
+    await supabase.from('campaign_returns').upsert(payload, { onConflict: 'organization_id,product_id' });
+    setSaved({ views: payload.views, sales: payload.sales, impressions: payload.impressions, clicks: payload.clicks });
+    setSaving(false);
+  };
+
   const extractTikTokId = (input: string): string => {
     const dvid = input.match(/data-video-id=["'](\d+)["']/);
     if (dvid) return dvid[1];
@@ -159,60 +180,63 @@ const AdCreativeAccordion: React.FC<{
         <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="px-3 py-3 bg-zinc-950/40 flex flex-col gap-3">
-          {/* Video / Image preview */}
-          <div className="mx-auto" style={{ width: '160px', height: '284px', borderRadius: 10, overflow: 'hidden', position: 'relative', background: '#000' }}>
-            {isImage ? (
-              <img src={resolvedUrl} alt="Criativo" className="w-full h-full object-contain bg-white" loading="lazy" />
-            ) : isEmbed ? (
-              <iframe
-                src={resolvedUrl}
-                allow="encrypted-media;"
-                allowFullScreen
-                scrolling="no"
-                title="Criativo"
-                style={{ border: 'none', width: '160px', height: '284px', position: 'absolute', top: 0, left: 0, overflow: 'hidden', borderRadius: 10 }}
-              />
-            ) : (
-              <video
-                src={resolvedUrl}
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            )}
-          </div>
-          {/* Ad copy info */}
-          {(adTitle || adText || adCta) && (
-            <div className="space-y-1.5">
-              {adTitle && <p className="text-[11px] font-semibold text-zinc-200">{adTitle}</p>}
-              {adText && <p className="text-[10px] text-zinc-400 leading-relaxed line-clamp-3">{adText}</p>}
-              {adCta && <span className="inline-block text-[10px] bg-orange-500/20 text-orange-300 border border-orange-500/30 px-2 py-0.5 rounded">{adCta}</span>}
+        <div className="px-4 py-4 bg-zinc-950/40">
+          <div className="flex gap-5 items-start">
+            {/* ── LEFT: vídeo / imagem ── */}
+            <div className="flex-shrink-0">
+              <div style={{ width: '140px', height: '248px', borderRadius: 10, overflow: 'hidden', position: 'relative', background: '#000' }}>
+                {isImage ? (
+                  <img src={resolvedUrl} alt="Criativo" className="w-full h-full object-contain bg-white" loading="lazy" />
+                ) : isEmbed ? (
+                  <iframe
+                    src={resolvedUrl}
+                    allow="encrypted-media;"
+                    allowFullScreen
+                    scrolling="no"
+                    title="Criativo"
+                    style={{ border: 'none', width: '140px', height: '248px', position: 'absolute', top: 0, left: 0, overflow: 'hidden', borderRadius: 10 }}
+                  />
+                ) : (
+                  <video src={resolvedUrl} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover" />
+                )}
+              </div>
+              {/* Ad copy below video */}
+              {(adTitle || adText || adCta) && (
+                <div className="mt-2 space-y-1 max-w-[140px]">
+                  {adTitle && <p className="text-[11px] font-semibold text-zinc-200 truncate">{adTitle}</p>}
+                  {adText && <p className="text-[10px] text-zinc-400 leading-relaxed line-clamp-2">{adText}</p>}
+                  {adCta && <span className="inline-block text-[10px] bg-orange-500/20 text-orange-300 border border-orange-500/30 px-2 py-0.5 rounded">{adCta}</span>}
+                </div>
+              )}
             </div>
-          )}
-          {/* Campaign returns metrics */}
-          {returns && (
-            <div className="rounded-lg p-2.5" style={{ background: 'rgba(249,115,22,0.09)', border: '1px solid rgba(249,115,22,0.25)' }}>
-              <p className="text-[9px] font-bold text-orange-400 uppercase tracking-widest mb-2">📈 Benefícios da Campanha</p>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
-                {([
-                  { key: 'views' as const, label: 'Visualizações', icon: '👁' },
-                  { key: 'sales' as const, label: 'Vendas', icon: '🛒' },
-                  { key: 'impressions' as const, label: 'Impressões', icon: '📊' },
-                  { key: 'clicks' as const, label: 'Clicks', icon: '🖱' },
-                ]).map(({ key, label, icon }) => (
-                  <div key={key}>
-                    <p className="text-[8px] text-orange-300/50 uppercase">{icon} {label}</p>
-                    <p className="text-[12px] font-bold text-orange-300 leading-tight">
-                      {returns[key] ? returns[key].toLocaleString('pt-BR') : <span className="text-zinc-600 text-[9px]">—</span>}
-                    </p>
-                  </div>
-                ))}
+
+            {/* ── RIGHT: benefícios editáveis ── */}
+            <div className="flex-1 min-w-0">
+              <div className="rounded-xl p-3 h-full" style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.28)' }}>
+                <p className="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-3">📈 Benefícios da Campanha</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {RETURNS_METRICS.map(({ key, label, icon }) => (
+                    <div key={key} className="flex flex-col gap-1">
+                      <label className="text-[9px] text-orange-300/60 uppercase font-medium">{icon} {label}</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={form[key]}
+                        onChange={e => setForm(prev => ({ ...prev, [key]: e.target.value }))}
+                        onBlur={handleSave}
+                        placeholder={saved[key] ? String(saved[key]) : '0'}
+                        className="w-full rounded-lg px-2 py-1.5 text-[12px] font-bold bg-zinc-900/80 border border-orange-500/25 text-orange-200 focus:outline-none focus:border-orange-500 placeholder:text-zinc-600 transition-colors"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 flex items-center justify-between">
+                  <p className="text-[9px] text-zinc-600">Salva automaticamente ao sair do campo</p>
+                  {saving && <span className="text-[9px] text-orange-400 animate-pulse">Salvando…</span>}
+                </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>
