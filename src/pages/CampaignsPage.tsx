@@ -91,6 +91,85 @@ interface CampaignCardProps {
   onDelete: () => void;
 }
 
+// ── AdCreativeAccordion ───────────────────────────────────────────────────────
+const AdCreativeAccordion: React.FC<{
+  mediaUrl: string;
+  mediaType?: string | null;
+  adText?: string | null;
+  adTitle?: string | null;
+  adCta?: string | null;
+}> = ({ mediaUrl, mediaType, adText, adTitle, adCta }) => {
+  const [open, setOpen] = React.useState(false);
+
+  // Extract TikTok video ID from any format (URL, blockquote, iframe)
+  const extractTikTokId = (input: string): string => {
+    const dvid = input.match(/data-video-id=["'](\d+)["']/);
+    if (dvid) return dvid[1];
+    const cite = input.match(/cite=["'][^"']*\/video\/(\d+)/);
+    if (cite) return cite[1];
+    const urlMatch = input.match(/\/video\/(\d+)/);
+    if (urlMatch) return urlMatch[1];
+    return '';
+  };
+
+  const tiktokId = mediaUrl.includes('tiktok.com') ? extractTikTokId(mediaUrl) : '';
+  const iframeMatch = mediaUrl.match(/src=["']([^"']+)["']/);
+  const resolvedUrl = tiktokId
+    ? `https://www.tiktok.com/embed/v2/${tiktokId}`
+    : iframeMatch ? iframeMatch[1] : mediaUrl;
+  const isEmbed = !!(tiktokId || iframeMatch || mediaUrl.includes('<iframe') || mediaUrl.includes('streamable.com'));
+  const isImage = mediaType === 'imagem';
+
+  return (
+    <div className="mt-2 rounded-lg border border-zinc-800 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-3 py-2 bg-zinc-900/60 hover:bg-zinc-800/60 transition-colors text-left"
+      >
+        <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-widest">Ad / Criativo</span>
+        <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="px-3 py-3 bg-zinc-950/40 flex flex-col gap-3">
+          {/* Video / Image preview */}
+          <div className="mx-auto" style={{ width: '160px', height: '284px', borderRadius: 10, overflow: 'hidden', position: 'relative', background: '#000' }}>
+            {isImage ? (
+              <img src={resolvedUrl} alt="Criativo" className="w-full h-full object-contain bg-white" loading="lazy" />
+            ) : isEmbed ? (
+              <iframe
+                src={resolvedUrl}
+                allow="encrypted-media;"
+                allowFullScreen
+                scrolling="no"
+                title="Criativo"
+                style={{ border: 'none', width: '160px', height: '284px', position: 'absolute', top: 0, left: 0, overflow: 'hidden', borderRadius: 10 }}
+              />
+            ) : (
+              <video
+                src={resolvedUrl}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            )}
+          </div>
+          {/* Ad copy info */}
+          {(adTitle || adText || adCta) && (
+            <div className="space-y-1.5">
+              {adTitle && <p className="text-[11px] font-semibold text-zinc-200">{adTitle}</p>}
+              {adText && <p className="text-[10px] text-zinc-400 leading-relaxed line-clamp-3">{adText}</p>}
+              {adCta && <span className="inline-block text-[10px] bg-orange-500/20 text-orange-300 border border-orange-500/30 px-2 py-0.5 rounded">{adCta}</span>}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSets, onEdit, onDelete }) => {
   const [expanded, setExpanded] = useState(false);
 
@@ -228,6 +307,11 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSe
                 traffic_destination?: string | null;
                 optimization_goal?: string | null;
                 target_cost_per_result?: number | null;
+                ad_media_url?: string | null;
+                ad_media_type?: string | null;
+                ad_text?: string | null;
+                ad_title?: string | null;
+                ad_cta?: string | null;
               };
               const destinationLabel: Record<string, string> = {
                 site: 'Site', app: 'Aplicativo', tiktok_shop: 'Loja TikTok',
@@ -291,6 +375,17 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSe
                       </p>
                     )}
                   </div>
+
+                  {/* ── Ad/Criativo accordion ── */}
+                  {ext.ad_media_url && (
+                    <AdCreativeAccordion
+                      mediaUrl={ext.ad_media_url}
+                      mediaType={ext.ad_media_type}
+                      adText={ext.ad_text}
+                      adTitle={ext.ad_title}
+                      adCta={ext.ad_cta}
+                    />
+                  )}
                 </div>
               );
             })
