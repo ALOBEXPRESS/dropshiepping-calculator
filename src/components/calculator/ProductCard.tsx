@@ -262,7 +262,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   const [investStep, setInvestStep] = useState(0);
   
   // Campanhas existentes para seleção no modal Investir
-  const [availableCampaigns, setAvailableCampaigns] = useState<Array<{ id: string; name: string; objective: string; budget_type: string }>>([]);
+  const [availableCampaigns, setAvailableCampaigns] = useState<Array<{ id: string; name: string; objective: string; budget_type: string; campaign_ad_sets?: Array<{ id: string; name: string | null; conversion_type: string | null; traffic_destination: string | null; optimization_goal: string | null; target_cost_per_result: number | null; start_date: string | null; end_date: string | null }> }>>([]);
   const [selectedCampaignId, setSelectedCampaignId] = useState<string>('');
   
   // Buscar vendas reais do produto
@@ -273,10 +273,15 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     campaignName: '',
     campaignObjective: '',
     budgetType: '',
-    conversion: '',
+    // step 1 — Nível de Conjunto
+    trafficDestination: '',       // site | tiktok_shop | app
+    optimizationGoal: '',         // click | landing_page_view | engagement_session
+    targetCostPerResult: '',      // custo alvo por resultado (opcional)
     startDate: new Date().toLocaleDateString('pt-BR'),
     endDate: '',
     investmentValue: '',
+    // ad sets da campanha selecionada (read-only display)
+    adSetsDisplay: [] as Array<{ id: string; name: string | null }>,
     audienceLocation: '',
     audienceAge: '',
     audienceGender: '',
@@ -639,16 +644,18 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     setInvestData((prev) => ({ ...prev, [field]: value }));
   };
   const handleInvestSave = () => {
+    // Normalizar investmentValue de BRL string para número
+    const investValueNormalized = investData.investmentValue.replace('.', '').replace(',', '.');
     onInvestSave({
       ...product,
       campaignName: investData.campaignName,
       campaignObjective: investData.campaignObjective,
       budgetType: investData.budgetType,
-      conversion: investData.conversion,
+      conversion: investData.trafficDestination,
       startDate: formatDateToIso(investData.startDate),
       endDate: formatDateToIso(investData.endDate),
-      investmentValue: investData.investmentValue,
-      paidTraffic: investData.investmentValue,
+      investmentValue: investValueNormalized,
+      paidTraffic: investValueNormalized,
       trafficMode: 'paid',
       audienceLocation: investData.audienceLocation,
       audienceAge: investData.audienceAge,
@@ -671,10 +678,13 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
       campaignName: '',
       campaignObjective: '',
       budgetType: '',
-      conversion: '',
+      trafficDestination: '',
+      optimizationGoal: '',
+      targetCostPerResult: '',
       startDate: new Date().toLocaleDateString('pt-BR'),
       endDate: '',
       investmentValue: '',
+      adSetsDisplay: [],
       audienceLocation: '',
       audienceAge: '',
       audienceGender: '',
@@ -693,7 +703,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     
     // Voltar para o primeiro step
     setInvestStep(0);
-    
+    setSelectedCampaignId('');
     setIsInvestOpen(false);
   };
   const investSteps = [
@@ -714,10 +724,11 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
         && isNonEmpty(investData.budgetType);
     }
     if (step === 1) {
-      return isNonEmpty(investData.conversion)
+      const invVal = investData.investmentValue.replace(',', '.').replace(/[^0-9.]/g, '');
+      return isNonEmpty(investData.trafficDestination)
         && isValidBrDate(investData.startDate)
         && (!investData.endDate || isValidBrDate(investData.endDate))
-        && isNonEmpty(investData.investmentValue);
+        && parseFloat(invVal) > 0;
     }
     if (step === 2) {
       return isNonEmpty(investData.audienceLocation)
@@ -794,10 +805,13 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     campaignName: product.campaignName ?? '',
     campaignObjective: product.campaignObjective ?? '',
     budgetType: product.budgetType ?? '',
-    conversion: product.conversion ?? '',
+    trafficDestination: product.conversion ?? '',
+    optimizationGoal: '',
+    targetCostPerResult: '',
     startDate: formatDateToBr(product.startDate ?? ''),
     endDate: formatDateToBr(product.endDate ?? ''),
     investmentValue: product.investmentValue != null ? String(product.investmentValue) : '',
+    adSetsDisplay: [] as Array<{ id: string; name: string | null }>,
     audienceLocation: product.audienceLocation ?? '',
     audienceAge: product.audienceAge ?? '',
     audienceGender: product.audienceGender ?? '',
@@ -826,13 +840,11 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     : '-';
   const paidTrafficConversionLabel = product.conversion === 'site'
     ? 'Site'
-    : product.conversion === 'whatsapp'
-      ? 'Whatsapp'
+    : product.conversion === 'tiktok_shop'
+      ? 'Loja TikTok'
       : product.conversion === 'app'
         ? 'App'
-        : product.conversion === 'messenger'
-          ? 'Messenger'
-          : product.conversion || '-';
+        : product.conversion || '-';
   const adImageUrl = product.adMedia === 'imagem' ? product.adUrl : '';
   const adVideoUrl = product.adMedia === 'video' ? product.adUrl : '';
   
@@ -1545,11 +1557,11 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
             if (organizationId) {
               supabase
                 .from('campaigns')
-                .select('id, name, objective, budget_type')
+                .select('id, name, objective, budget_type, campaign_ad_sets(id, name, conversion_type, traffic_destination, optimization_goal, target_cost_per_result, start_date, end_date)')
                 .eq('organization_id', organizationId)
                 .order('created_at', { ascending: false })
                 .then(({ data }) => {
-                  if (data) setAvailableCampaigns(data as Array<{ id: string; name: string; objective: string; budget_type: string }>);
+                  if (data) setAvailableCampaigns(data as typeof availableCampaigns);
                 });
             }
             setIsInvestOpen(true);
@@ -1629,9 +1641,29 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                               daily: 'diario',
                               lifetime: 'total',
                             };
-                            handleInvestChange('campaignName', camp.name);
-                            handleInvestChange('campaignObjective', objectiveMap[camp.objective] ?? camp.objective);
-                            handleInvestChange('budgetType', budgetMap[camp.budget_type] ?? camp.budget_type);
+                            const adSets = (camp.campaign_ad_sets ?? []).map(a => ({ id: a.id, name: a.name }));
+                            // Pegar dados do primeiro ad set para pré-preencher step 1
+                            const firstAdSet = camp.campaign_ad_sets?.[0];
+                            const destMap: Record<string, string> = {
+                              tiktok_shop: 'tiktok_shop',
+                              app: 'app',
+                              site: 'site',
+                            };
+                            const optMap: Record<string, string> = {
+                              click: 'click',
+                              landing_page_view: 'landing_page_view',
+                              engagement_session: 'engagement_session',
+                            };
+                            setInvestData(prev => ({
+                              ...prev,
+                              campaignName: camp.name,
+                              campaignObjective: objectiveMap[camp.objective] ?? camp.objective,
+                              budgetType: budgetMap[camp.budget_type] ?? camp.budget_type,
+                              adSetsDisplay: adSets,
+                              trafficDestination: firstAdSet ? (destMap[firstAdSet.traffic_destination ?? ''] ?? firstAdSet.traffic_destination ?? '') : prev.trafficDestination,
+                              optimizationGoal: firstAdSet ? (optMap[firstAdSet.optimization_goal ?? ''] ?? firstAdSet.optimization_goal ?? '') : prev.optimizationGoal,
+                              targetCostPerResult: firstAdSet?.target_cost_per_result != null ? String(firstAdSet.target_cost_per_result) : prev.targetCostPerResult,
+                            }));
                           }
                         }
                       }}
@@ -1654,35 +1686,48 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                     value={investData.campaignName}
                     onChange={(e) => handleInvestChange('campaignName', e.target.value)}
                     className="col-span-3"
+                    readOnly={!!selectedCampaignId}
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label className="text-right text-gray-700 dark:text-gray-200">Objetivo</Label>
-                  <Select value={investData.campaignObjective} onValueChange={(val) => handleInvestChange('campaignObjective', val)}>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="reconhecimento">Reconhecimento</SelectItem>
-                      <SelectItem value="trafego">Tráfego</SelectItem>
-                      <SelectItem value="engajamento">Engajamento</SelectItem>
-                      <SelectItem value="cadastros">Cadastros</SelectItem>
-                      <SelectItem value="promocao_app">Promoção do app</SelectItem>
-                      <SelectItem value="vendas">Vendas</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {selectedCampaignId ? (
+                    <div className="col-span-3 px-3 py-2 rounded-md border border-border bg-muted text-sm text-foreground">
+                      {investData.campaignObjective || '-'}
+                    </div>
+                  ) : (
+                    <Select value={investData.campaignObjective} onValueChange={(val) => handleInvestChange('campaignObjective', val)}>
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="reconhecimento">Reconhecimento</SelectItem>
+                        <SelectItem value="trafego">Tráfego</SelectItem>
+                        <SelectItem value="engajamento">Engajamento</SelectItem>
+                        <SelectItem value="cadastros">Cadastros</SelectItem>
+                        <SelectItem value="promocao_app">Promoção do app</SelectItem>
+                        <SelectItem value="vendas">Vendas</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label className="text-right text-gray-700 dark:text-gray-200">Orçamento</Label>
-                  <Select value={investData.budgetType} onValueChange={(val) => handleInvestChange('budgetType', val)}>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="diario">Diário</SelectItem>
-                      <SelectItem value="total">Total</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {selectedCampaignId ? (
+                    <div className="col-span-3 px-3 py-2 rounded-md border border-border bg-muted text-sm text-foreground">
+                      {investData.budgetType === 'diario' ? 'Diário' : investData.budgetType === 'total' ? 'Total' : investData.budgetType || '-'}
+                    </div>
+                  ) : (
+                    <Select value={investData.budgetType} onValueChange={(val) => handleInvestChange('budgetType', val)}>
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="diario">Diário</SelectItem>
+                        <SelectItem value="total">Total</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               </div>
             )}
@@ -1690,21 +1735,76 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
             {investStep === 1 && (
               <div className="grid gap-3">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Nível de Conjunto</h3>
+                
+                {/* Grupos de anúncios da campanha (read-only) */}
+                {investData.adSetsDisplay.length > 0 && (
+                  <div className="grid grid-cols-4 items-start gap-4">
+                    <Label className="text-right text-gray-700 dark:text-gray-200 pt-2">Grupos de Anúncios</Label>
+                    <div className="col-span-3 flex flex-wrap gap-2">
+                      {investData.adSetsDisplay.map((as) => (
+                        <span key={as.id} className="rounded-md bg-muted border border-border px-2 py-1 text-xs text-foreground">
+                          {as.name || as.id.slice(0, 8)}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right text-gray-700 dark:text-gray-200">Conversão</Label>
-                  <Select value={investData.conversion} onValueChange={(val) => handleInvestChange('conversion', val)}>
+                  <Label className="text-right text-gray-700 dark:text-gray-200">Destino</Label>
+                  <Select value={investData.trafficDestination} onValueChange={(val) => handleInvestChange('trafficDestination', val)}>
                     <SelectTrigger className="col-span-3">
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="tiktok_shop">Loja do TikTok</SelectItem>
+                      <SelectItem value="app">Aplicativo</SelectItem>
                       <SelectItem value="site">Site</SelectItem>
-                      <SelectItem value="whatsapp">Whatsapp</SelectItem>
-                      <SelectItem value="app">App</SelectItem>
-                      <SelectItem value="messenger">Messenger</SelectItem>
-                      <SelectItem value="marketplace">Marketplace</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+                
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right text-gray-700 dark:text-gray-200">Objetivo de Otimização</Label>
+                  <Select value={investData.optimizationGoal} onValueChange={(val) => handleInvestChange('optimizationGoal', val)}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="click">Clique</SelectItem>
+                      <SelectItem value="landing_page_view">Visualização de Página de Destino</SelectItem>
+                      <SelectItem value="engagement_session">Sessão de Engajamento</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right text-gray-700 dark:text-gray-200">
+                    Custo Alvo por Resultado <span className="text-[10px] text-muted-foreground">(opcional)</span>
+                  </Label>
+                  <div className="col-span-3 relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">R$</span>
+                    <Input
+                      inputMode="decimal"
+                      value={investData.targetCostPerResult}
+                      onChange={(e) => {
+                        // só dígitos e vírgula
+                        const raw = e.target.value.replace(/\./g, '').replace(/[^0-9,]/g, '');
+                        handleInvestChange('targetCostPerResult', raw);
+                      }}
+                      onBlur={() => {
+                        const raw = investData.targetCostPerResult.replace(',', '.');
+                        const num = parseFloat(raw);
+                        if (!isNaN(num)) {
+                          handleInvestChange('targetCostPerResult', num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                        }
+                      }}
+                      className="pl-9"
+                      placeholder="0,00"
+                    />
+                  </div>
+                </div>
+                
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label className="text-right text-gray-700 dark:text-gray-200">Cronograma</Label>
                   <div className="col-span-3 grid grid-cols-2 gap-2">
@@ -1726,13 +1826,27 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label className="text-right text-gray-700 dark:text-gray-200">Investimento</Label>
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    value={investData.investmentValue}
-                    onChange={(e) => handleInvestChange('investmentValue', e.target.value)}
-                    className="col-span-3"
-                  />
+                  <div className="col-span-3 relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">R$</span>
+                    <Input
+                      inputMode="decimal"
+                      value={investData.investmentValue}
+                      onChange={(e) => {
+                        // só dígitos e vírgula, sem ponto
+                        const raw = e.target.value.replace(/\./g, '').replace(/[^0-9,]/g, '');
+                        handleInvestChange('investmentValue', raw);
+                      }}
+                      onBlur={() => {
+                        const raw = investData.investmentValue.replace(',', '.');
+                        const num = parseFloat(raw);
+                        if (!isNaN(num)) {
+                          handleInvestChange('investmentValue', num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                        }
+                      }}
+                      className="pl-9"
+                      placeholder="0,00"
+                    />
+                  </div>
                 </div>
               </div>
             )}
