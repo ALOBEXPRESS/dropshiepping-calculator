@@ -54,6 +54,12 @@ const buildDefault = (organizationId: string, marketplace: CampaignMarketplace =
     audience_interests: null,
     audience_behavior: null,
     placement: null,
+    ad_text: null,
+    ad_title: null,
+    ad_cta: null,
+    ad_media_type: null,
+    ad_media_url: null,
+    ad_redirect_url: null,
   } as CampaignFormPayload['adSet'];
   return {
     campaign: {
@@ -78,6 +84,12 @@ const fromExisting = (c: CampaignWithRelations): CampaignFormPayload => {
       traffic_destination?: string | null;
       optimization_goal?: string | null;
       target_cost_per_result?: number | null;
+      ad_text?: string | null;
+      ad_title?: string | null;
+      ad_cta?: string | null;
+      ad_media_type?: string | null;
+      ad_media_url?: string | null;
+      ad_redirect_url?: string | null;
     };
     return {
       name: a.name,
@@ -96,6 +108,12 @@ const fromExisting = (c: CampaignWithRelations): CampaignFormPayload => {
       audience_interests: a.audience_interests,
       audience_behavior: a.audience_behavior,
       placement: a.placement,
+      ad_text: ext.ad_text ?? null,
+      ad_title: ext.ad_title ?? null,
+      ad_cta: ext.ad_cta ?? null,
+      ad_media_type: ext.ad_media_type ?? null,
+      ad_media_url: ext.ad_media_url ?? null,
+      ad_redirect_url: ext.ad_redirect_url ?? null,
     } as CampaignFormPayload['adSet'];
   };
   const def = buildDefault(c.organization_id).adSet;
