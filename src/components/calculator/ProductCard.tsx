@@ -308,6 +308,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     campaignObjective: '',  // categoria: conhecimento | consideracao | conversao
     campaignType: '',       // sub-tipo: reach | traffic | video_views | community_interaction | app_promotion | lead_generation | sales
     budgetType: '',
+    dailyBudget: '',        // valor do orçamento (R$)
     // step 1 — Nível de Conjunto
     trafficDestination: '',       // site | tiktok_shop | app
     optimizationGoal: '',         // click | landing_page_view | engagement_session
@@ -695,6 +696,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
         const investValueNum = parseFloat(investValueNormalized);
 
         // 1. Insert campaign
+        const dailyBudgetNum = parseFloat(investData.dailyBudget.replace(/\./g, '').replace(',', '.'));
         const { data: newCampaign, error: campaignError } = await supabase
           .from('campaigns')
           .insert({
@@ -703,7 +705,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
             name: investData.campaignName,
             objective: investData.campaignType, // campaignType holds the DB CampaignObjective
             budget_type: dbBudgetType,
-            budget_amount: !isNaN(investValueNum) && investValueNum > 0 ? investValueNum : null,
+            budget_amount: !isNaN(dailyBudgetNum) && dailyBudgetNum > 0 ? dailyBudgetNum : null,
             status: 'active',
           })
           .select('id')
@@ -789,6 +791,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
       campaignObjective: '',
       campaignType: '',
       budgetType: '',
+      dailyBudget: '',
       trafficDestination: '',
       optimizationGoal: '',
       targetCostPerResult: '',
@@ -908,6 +911,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     campaignObjective: product.campaignObjective ?? '',
     campaignType: '',
     budgetType: product.budgetType ?? '',
+    dailyBudget: '',
     trafficDestination: product.conversion ?? '',
     optimizationGoal: '',
     targetCostPerResult: '',
@@ -1876,13 +1880,13 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
 
           <div className="rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-4">
             {investStep === 0 && (
-              <div className="grid gap-3">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Nível de Campanha</h3>
+              <div className="grid gap-2">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Nível de Campanha</h3>
                 
                 {/* Selecionar campanha existente */}
                 {availableCampaigns.length > 0 && (
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label className="text-right text-gray-700 dark:text-gray-200">Campanha existente</Label>
+                  <div className="grid grid-cols-[120px_1fr] items-center gap-3">
+                    <Label className="text-right text-gray-700 dark:text-gray-200 text-xs">Campanha existente</Label>
                     <Select
                       value={selectedCampaignId}
                       onValueChange={(val) => {
@@ -1935,6 +1939,9 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                               campaignObjective: objectiveCategoryMap[camp.objective] ?? 'conversao',
                               campaignType: camp.objective,
                               budgetType: budgetMap[camp.budget_type] ?? camp.budget_type,
+                              dailyBudget: camp.budget_amount != null
+                                ? Number(camp.budget_amount).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                : '',
                               adSetsDisplay: adSetsWithBudget,
                               trafficDestination: firstAdSet ? (destMap[firstAdSet.traffic_destination ?? ''] ?? firstAdSet.traffic_destination ?? '') : prev.trafficDestination,
                               optimizationGoal: firstAdSet ? (optMap[firstAdSet.optimization_goal ?? ''] ?? firstAdSet.optimization_goal ?? '') : prev.optimizationGoal,
@@ -1966,7 +1973,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                         }
                       }}
                     >
-                      <SelectTrigger className="col-span-3">
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Selecione uma campanha criada" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1978,20 +1985,20 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                   </div>
                 )}
                 
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right text-gray-700 dark:text-gray-200">Nome da Campanha</Label>
+                <div className="grid grid-cols-[120px_1fr] items-center gap-3">
+                  <Label className="text-right text-gray-700 dark:text-gray-200 text-xs">Nome da Campanha</Label>
                   <Input
                     value={investData.campaignName}
                     onChange={(e) => handleInvestChange('campaignName', e.target.value)}
-                    className="col-span-3"
+                    className="h-8 text-sm"
                     readOnly={!!selectedCampaignId}
                   />
                 </div>
                 {/* Objetivo da Campanha — 3 categorias */}
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right text-gray-700 dark:text-gray-200">Objetivo</Label>
+                <div className="grid grid-cols-[120px_1fr] items-center gap-3">
+                  <Label className="text-right text-gray-700 dark:text-gray-200 text-xs">Objetivo</Label>
                   {selectedCampaignId ? (
-                    <div className="col-span-3 px-3 py-2 rounded-md border border-border bg-muted text-sm text-foreground">
+                    <div className="px-3 py-1.5 rounded-md border border-border bg-muted text-sm text-foreground">
                       {investData.campaignObjective
                         ? investData.campaignObjective === 'conhecimento' ? 'Conhecimento'
                           : investData.campaignObjective === 'consideracao' ? 'Consideração'
@@ -2004,11 +2011,10 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                       value={investData.campaignObjective}
                       onValueChange={(val) => {
                         handleInvestChange('campaignObjective', val);
-                        // Reset sub-tipo quando categoria muda
                         handleInvestChange('campaignType', '');
                       }}
                     >
-                      <SelectTrigger className="col-span-3">
+                      <SelectTrigger className="h-8 text-sm">
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent>
@@ -2022,13 +2028,13 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
 
                 {/* Tipo de Campanha — sub-tipo baseado no objetivo */}
                 {!selectedCampaignId && investData.campaignObjective && (
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label className="text-right text-gray-700 dark:text-gray-200">Tipo de Campanha</Label>
+                  <div className="grid grid-cols-[120px_1fr] items-center gap-3">
+                    <Label className="text-right text-gray-700 dark:text-gray-200 text-xs">Tipo de Campanha</Label>
                     <Select
                       value={investData.campaignType}
                       onValueChange={(val) => handleInvestChange('campaignType', val)}
                     >
-                      <SelectTrigger className="col-span-3">
+                      <SelectTrigger className="h-8 text-sm">
                         <SelectValue placeholder="Selecione o tipo" />
                       </SelectTrigger>
                       <SelectContent>
@@ -2050,9 +2056,9 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                   </div>
                 )}
                 {selectedCampaignId && investData.campaignType && (
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label className="text-right text-gray-700 dark:text-gray-200">Tipo de Campanha</Label>
-                    <div className="col-span-3 px-3 py-2 rounded-md border border-border bg-muted text-sm text-foreground">
+                  <div className="grid grid-cols-[120px_1fr] items-center gap-3">
+                    <Label className="text-right text-gray-700 dark:text-gray-200 text-xs">Tipo de Campanha</Label>
+                    <div className="px-3 py-1.5 rounded-md border border-border bg-muted text-sm text-foreground">
                       {investData.campaignType === 'reach' ? 'Alcançar'
                         : investData.campaignType === 'traffic' ? 'Tráfego'
                         : investData.campaignType === 'video_views' ? 'Visualizações de Vídeo'
@@ -2064,15 +2070,15 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                     </div>
                   </div>
                 )}
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right text-gray-700 dark:text-gray-200">Orçamento</Label>
+                <div className="grid grid-cols-[120px_1fr] items-center gap-3">
+                  <Label className="text-right text-gray-700 dark:text-gray-200 text-xs">Orçamento</Label>
                   {selectedCampaignId ? (
-                    <div className="col-span-3 px-3 py-2 rounded-md border border-border bg-muted text-sm text-foreground">
+                    <div className="px-3 py-1.5 rounded-md border border-border bg-muted text-sm text-foreground">
                       {investData.budgetType === 'diario' ? 'Diário' : investData.budgetType === 'total' ? 'Total' : investData.budgetType || '-'}
                     </div>
                   ) : (
                     <Select value={investData.budgetType} onValueChange={(val) => handleInvestChange('budgetType', val)}>
-                      <SelectTrigger className="col-span-3">
+                      <SelectTrigger className="h-8 text-sm">
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent>
@@ -2080,6 +2086,42 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                         <SelectItem value="total">Total</SelectItem>
                       </SelectContent>
                     </Select>
+                  )}
+                </div>
+
+                {/* Valor do Orçamento (R$) */}
+                <div className="grid grid-cols-[120px_1fr] items-center gap-3">
+                  <Label className="text-right text-gray-700 dark:text-gray-200 text-xs">
+                    Valor do Orçamento
+                  </Label>
+                  {selectedCampaignId ? (
+                    <div className="px-3 py-1.5 rounded-md border border-border bg-muted text-sm text-foreground">
+                      {investData.dailyBudget ? `R$ ${investData.dailyBudget}` : '-'}
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-xs pointer-events-none select-none">R$</span>
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="0,00"
+                        value={investData.dailyBudget}
+                        onChange={(e) => {
+                          const v = e.target.value.replace(/[^0-9,.]/g, '');
+                          handleInvestChange('dailyBudget', v);
+                        }}
+                        onBlur={() => {
+                          const cleaned = investData.dailyBudget.replace(/\./g, '').replace(',', '.');
+                          const num = parseFloat(cleaned);
+                          if (!isNaN(num)) {
+                            handleInvestChange('dailyBudget',
+                              num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                            );
+                          }
+                        }}
+                        className="pl-9 h-8 text-sm"
+                      />
+                    </div>
                   )}
                 </div>
               </div>
