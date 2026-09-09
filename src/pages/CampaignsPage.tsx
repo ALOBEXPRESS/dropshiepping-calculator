@@ -61,12 +61,41 @@ const GroupSection: React.FC<{
   children: React.ReactNode;
 }> = ({ label, icon, color, borderColor, count, custo, formatBRL, children }) => {
   const [open, setOpen] = useState(true);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const chevronRef = useRef<SVGSVGElement>(null);
+
+  // Init open (expanded by default)
+  useEffect(() => {
+    if (bodyRef.current) {
+      gsap.set(bodyRef.current, { height: 'auto', opacity: 1, overflow: 'hidden' });
+    }
+  }, []);
+
+  const toggle = () => {
+    const el = bodyRef.current;
+    if (!el) { setOpen(v => !v); return; }
+    if (!open) {
+      setOpen(true);
+      gsap.fromTo(el,
+        { height: 0, opacity: 0 },
+        { height: 'auto', opacity: 1, duration: 0.4, ease: 'power2.out', onComplete: () => { el.style.height = 'auto'; } }
+      );
+      gsap.to(chevronRef.current, { rotation: 0, duration: 0.3, ease: 'power2.out' });
+    } else {
+      gsap.to(el, {
+        height: 0, opacity: 0, duration: 0.3, ease: 'power2.in',
+        onComplete: () => setOpen(false),
+      });
+      gsap.to(chevronRef.current, { rotation: -90, duration: 0.3, ease: 'power2.in' });
+    }
+  };
+
   return (
     <div className="space-y-2">
       <button
         type="button"
-        onClick={() => setOpen(v => !v)}
-        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-zinc-900/40 border ${borderColor} hover:bg-zinc-900/70 transition-colors`}
+        onClick={toggle}
+        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-zinc-900/40 border ${borderColor} hover:bg-zinc-900/70 transition-colors cursor-pointer`}
       >
         <span className="text-base">{icon}</span>
         <span className={`text-xs font-semibold uppercase tracking-widest ${color}`}>{label}</span>
@@ -76,9 +105,15 @@ const GroupSection: React.FC<{
             Custo: R$ {formatBRL(custo)}
           </span>
         )}
-        <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${open ? '' : '-rotate-90'} ${custo > 0 ? '' : 'ml-auto'}`} />
+        <ChevronDown
+          ref={chevronRef}
+          className={`w-4 h-4 text-zinc-500 ${custo > 0 ? '' : 'ml-auto'}`}
+          style={{ transform: 'rotate(0deg)' }}
+        />
       </button>
-      {open && <div className="grid gap-3">{children}</div>}
+      <div ref={bodyRef} style={{ overflow: 'hidden' }}>
+        {open && <div className="grid gap-3">{children}</div>}
+      </div>
     </div>
   );
 };
