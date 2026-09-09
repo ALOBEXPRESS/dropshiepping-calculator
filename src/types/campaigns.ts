@@ -52,6 +52,9 @@ export interface CampaignAdSet {
   audience_behavior: string | null;
   placement: string | null;
   created_at: string;
+  // Ad-level fields
+  ad_media_url: string | null;
+  ad_redirect_url: string | null;
 }
 
 export interface CampaignProduct {

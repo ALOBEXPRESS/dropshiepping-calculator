@@ -773,11 +773,8 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
       return isNonEmpty(investData.trafficDestination);
     }
     if (step === 4) {
-      return isNonEmpty(investData.adText)
-        && isNonEmpty(investData.adTitle)
-        && isNonEmpty(investData.adMedia)
-        && isNonEmpty(investData.adCta)
-        && (investData.adMedia ? isNonEmpty(investData.adUrl) && isNonEmpty(investData.adRedirectUrl) : true);
+      return isNonEmpty(investData.adMedia)
+        && isNonEmpty(investData.adUrl);
     }
     if (step === 5) {
       return isNonEmpty(investData.instagramAccount);
