@@ -264,6 +264,16 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   const [linkedAudienceMode, setLinkedAudienceMode] = useState<string>('auto');
   const [isBlingConfirmOpen, setIsBlingConfirmOpen] = useState(false);
   const [investStep, setInvestStep] = useState(0);
+  const [savedAudiences, setSavedAudiences] = useState<Array<{
+    id: string;
+    name: string;
+    audience_location: string | null;
+    audience_age: string | null;
+    audience_gender: string | null;
+    audience_interests: string | null;
+    audience_behavior: string | null;
+  }>>([]);
+  const [isSavingAudience, setIsSavingAudience] = useState(false);
   
   // Campanhas existentes para seleção no modal Investir
   const [availableCampaigns, setAvailableCampaigns] = useState<Array<{
@@ -821,6 +831,30 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     setInvestStep(0);
     setSelectedCampaignId('');
     setIsInvestOpen(false);
+  };
+  const handleSaveAudience = async () => {
+    if (!organizationId) return;
+    const { audienceLocation, audienceAge, audienceGender, audienceInterests, audienceBehavior } = investData;
+    const name = [audienceLocation, audienceAge].filter(Boolean).join(' · ') || `Audiência ${new Date().toLocaleDateString('pt-BR')}`;
+    setIsSavingAudience(true);
+    try {
+      const { data } = await supabase
+        .from('saved_audiences')
+        .insert({
+          organization_id: organizationId,
+          name,
+          audience_location: audienceLocation || null,
+          audience_age: audienceAge || null,
+          audience_gender: audienceGender || 'all',
+          audience_interests: audienceInterests || null,
+          audience_behavior: audienceBehavior || null,
+        })
+        .select('id, name, audience_location, audience_age, audience_gender, audience_interests, audience_behavior')
+        .single();
+      if (data) setSavedAudiences(prev => [...prev, data as typeof savedAudiences[0]]);
+    } finally {
+      setIsSavingAudience(false);
+    }
   };
   const investSteps = [
     'Nível de Campanha',
@@ -1757,6 +1791,15 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                     setAvailableCampaigns(sorted as typeof availableCampaigns);
                   }
                 });
+              // Fetch audiências salvas
+              supabase
+                .from('saved_audiences')
+                .select('id, name, audience_location, audience_age, audience_gender, audience_interests, audience_behavior')
+                .eq('organization_id', organizationId)
+                .order('name', { ascending: true })
+                .then(({ data }) => {
+                  if (data) setSavedAudiences(data as typeof savedAudiences);
+                });
             }
             setIsInvestReadonly(false);
             setIsInvestOpen(true);
@@ -2260,7 +2303,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                   <Label className="text-right text-gray-700 dark:text-gray-200 pt-2">Modo de Audiência</Label>
                   <div className="col-span-3 flex gap-2">
                     {(['auto', 'manual', 'saved'] as const).map((mode) => {
-                      const labels = { auto: 'Automático (Smart+)', manual: 'Manual', saved: 'Audiência Salva' };
+                      const labels = { auto: 'Automático (Smart+)', manual: 'Manual', saved: 'Selecionar Audiência' };
                       const isActive = investData.audienceMode === mode;
                       return (
                         <button
@@ -2286,20 +2329,55 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                   </div>
                 )}
                 
-                {/* Saved: nome da audiência */}
+                {/* Selecionar Audiência Salva: dropdown */}
                 {investData.audienceMode === 'saved' && (
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label className="text-right text-gray-700 dark:text-gray-200">Audiência Salva</Label>
-                    <Input
-                      value={investData.savedAudienceName}
-                      onChange={(e) => handleInvestChange('savedAudienceName', e.target.value)}
-                      className="col-span-3"
-                      placeholder="Nome da audiência salva"
-                    />
+                    <Label className="text-right text-gray-700 dark:text-gray-200">Selecionar Audiência</Label>
+                    <div className="col-span-3">
+                      {savedAudiences.length === 0 ? (
+                        <p className="text-xs text-muted-foreground px-1">Nenhuma audiência salva. Crie uma no modo Manual.</p>
+                      ) : (
+                        <Select
+                          value={investData.savedAudienceName}
+                          onValueChange={(val) => {
+                            const aud = savedAudiences.find(a => a.name === val);
+                            if (aud) {
+                              handleInvestChange('savedAudienceName', aud.name);
+                              handleInvestChange('audienceLocation', aud.audience_location ?? '');
+                              handleInvestChange('audienceAge', aud.audience_age ?? '');
+                              handleInvestChange('audienceGender', aud.audience_gender ?? 'all');
+                              handleInvestChange('audienceInterests', aud.audience_interests ?? '');
+                              handleInvestChange('audienceBehavior', aud.audience_behavior ?? '');
+                            }
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione uma audiência salva" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {savedAudiences.map(a => (
+                              <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {/* Campos preenchidos após seleção de audiência salva */}
+                {investData.audienceMode === 'saved' && investData.savedAudienceName && (
+                  <div className="grid grid-cols-4 gap-4 col-span-4">
+                    <div className="col-start-2 col-span-3 grid gap-2 rounded-md border border-border bg-muted/40 p-3">
+                      {investData.audienceLocation && <p className="text-xs text-muted-foreground"><span className="font-medium text-foreground">Localização:</span> {investData.audienceLocation}</p>}
+                      {investData.audienceAge && <p className="text-xs text-muted-foreground"><span className="font-medium text-foreground">Idade:</span> {investData.audienceAge}</p>}
+                      {investData.audienceGender && investData.audienceGender !== 'all' && <p className="text-xs text-muted-foreground"><span className="font-medium text-foreground">Gênero:</span> {investData.audienceGender === 'male' ? 'Masculino' : 'Feminino'}</p>}
+                      {investData.audienceInterests && <p className="text-xs text-muted-foreground"><span className="font-medium text-foreground">Interesses:</span> {investData.audienceInterests}</p>}
+                      {investData.audienceBehavior && <p className="text-xs text-muted-foreground"><span className="font-medium text-foreground">Comportamento:</span> {investData.audienceBehavior}</p>}
+                    </div>
                   </div>
                 )}
                 
-                {/* Manual: campos completos */}
+                {/* Manual: campos completos + botão salvar */}
                 {investData.audienceMode === 'manual' && (
                   <>
                     <div className="grid grid-cols-4 items-center gap-4">
@@ -2346,6 +2424,20 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                         onChange={(e) => handleInvestChange('audienceBehavior', e.target.value)}
                         className="col-span-3"
                       />
+                    </div>
+                    {/* Salvar Audiência */}
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <div />
+                      <div className="col-span-3">
+                        <button
+                          type="button"
+                          disabled={isSavingAudience || !investData.audienceLocation}
+                          onClick={handleSaveAudience}
+                          className="text-xs px-3 py-1.5 rounded-md border border-orange-500/50 text-orange-400 hover:bg-orange-500/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {isSavingAudience ? 'Salvando...' : '+ Salvar Audiência'}
+                        </button>
+                      </div>
                     </div>
                   </>
                 )}
