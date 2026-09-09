@@ -1662,7 +1662,11 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                               adSetsDisplay: adSets,
                               trafficDestination: firstAdSet ? (destMap[firstAdSet.traffic_destination ?? ''] ?? firstAdSet.traffic_destination ?? '') : prev.trafficDestination,
                               optimizationGoal: firstAdSet ? (optMap[firstAdSet.optimization_goal ?? ''] ?? firstAdSet.optimization_goal ?? '') : prev.optimizationGoal,
-                              targetCostPerResult: firstAdSet?.target_cost_per_result != null ? String(firstAdSet.target_cost_per_result) : prev.targetCostPerResult,
+                              targetCostPerResult: firstAdSet?.target_cost_per_result != null
+                                ? firstAdSet.target_cost_per_result.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                : prev.targetCostPerResult,
+                              startDate: firstAdSet?.start_date ? formatDateToBr(firstAdSet.start_date) : prev.startDate,
+                              endDate: firstAdSet?.end_date ? formatDateToBr(firstAdSet.end_date) : prev.endDate,
                             }));
                           }
                         }
