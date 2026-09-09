@@ -1658,7 +1658,6 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                               daily: 'diario',
                               lifetime: 'total',
                             };
-                            const adSets = (camp.campaign_ad_sets ?? []).map(a => ({ id: a.id, name: a.name }));
                             // Pegar dados do primeiro ad set para pré-preencher step 1
                             const firstAdSet = camp.campaign_ad_sets?.[0];
                             const destMap: Record<string, string> = {
