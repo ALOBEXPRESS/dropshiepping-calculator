@@ -354,7 +354,18 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     instagramAccount: '',
     instantForm: false
   });
-  const [cardPanelIndex, setCardPanelIndex] = useState(0);
+  const [cardPanelIndex, setCardPanelIndex] = useState(() => {
+    // Start on invest panel (last slide) if product already has a campaign
+    if (product.campaignName && String(product.campaignName).trim().length > 0) {
+      // We don't know cardPanelsCount yet at init time — compute it inline
+      const promoCount = ((product.promoVideoChannels ?? []) as string[]).filter(
+        ch => product.promoVideoChannelLinks && (product.promoVideoChannelLinks as Record<string, string>)[ch]
+      ).length;
+      const additionalCount = ((product.additionalVideos ?? []) as unknown[]).length;
+      return promoCount + additionalCount + 1; // last panel = invest panel
+    }
+    return 0;
+  });
   const cardSliderRef = useRef<HTMLDivElement | null>(null);
   const variations = product.variations ?? [];
   const normalizedVariations = variations.map((variation) => ({
