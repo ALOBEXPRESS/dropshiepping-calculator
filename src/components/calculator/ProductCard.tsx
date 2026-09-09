@@ -305,7 +305,8 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   
   const [investData, setInvestData] = useState({
     campaignName: '',
-    campaignObjective: '',
+    campaignObjective: '',  // categoria: conhecimento | consideracao | conversao
+    campaignType: '',       // sub-tipo: reach | traffic | video_views | community_interaction | app_promotion | lead_generation | sales
     budgetType: '',
     // step 1 — Nível de Conjunto
     trafficDestination: '',       // site | tiktok_shop | app
@@ -679,13 +680,86 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   const handleInvestChange = <K extends keyof typeof investData>(field: K, value: (typeof investData)[K]) => {
     setInvestData((prev) => ({ ...prev, [field]: value }));
   };
-  const handleInvestSave = () => {
+  const handleInvestSave = async () => {
     // Normalizar investmentValue de BRL string para número
     const investValueNormalized = investData.investmentValue.replace('.', '').replace(',', '.');
+
+    // Se não há campanha existente selecionada, criar nova campanha no DB
+    if (!selectedCampaignId && organizationId && investData.campaignName && investData.campaignType) {
+      try {
+        const budgetTypeMap: Record<string, 'daily' | 'lifetime'> = {
+          diario: 'daily',
+          total: 'lifetime',
+        };
+        const dbBudgetType = budgetTypeMap[investData.budgetType] ?? 'daily';
+        const investValueNum = parseFloat(investValueNormalized);
+
+        // 1. Insert campaign
+        const { data: newCampaign, error: campaignError } = await supabase
+          .from('campaigns')
+          .insert({
+            organization_id: organizationId,
+            marketplace: 'tiktok',
+            name: investData.campaignName,
+            objective: investData.campaignType, // campaignType holds the DB CampaignObjective
+            budget_type: dbBudgetType,
+            budget_amount: !isNaN(investValueNum) && investValueNum > 0 ? investValueNum : null,
+            status: 'active',
+          })
+          .select('id')
+          .single();
+
+        if (!campaignError && newCampaign) {
+          const campaignId = newCampaign.id as string;
+
+          // 2. Insert ad set
+          const startIso = formatDateToIso(investData.startDate);
+          const endIso = investData.endDate ? formatDateToIso(investData.endDate) : null;
+          await supabase.from('campaign_ad_sets').insert({
+            campaign_id: campaignId,
+            name: null,
+            conversion_type: null,
+            start_date: startIso || null,
+            end_date: endIso || null,
+            traffic_destination: (investData.trafficDestination as 'site' | 'app' | 'tiktok_shop') || null,
+            optimization_goal: (investData.optimizationGoal as 'click' | 'landing_page_view' | 'engagement_session') || null,
+            target_cost_per_result: null,
+            audience_mode: investData.audienceMode ?? 'auto',
+            saved_audience_id: null,
+            saved_audience_name: investData.savedAudienceName || null,
+            audience_location: investData.audienceLocation || null,
+            audience_age: investData.audienceAge || null,
+            audience_gender: investData.audienceGender || 'all',
+            audience_interests: investData.audienceInterests || null,
+            audience_behavior: investData.audienceBehavior || null,
+            placement: investData.placement || null,
+            ad_text: investData.adText || null,
+            ad_title: investData.adTitle || null,
+            ad_cta: investData.adCta || null,
+            ad_media_type: investData.adMedia || null,
+            ad_media_url: investData.adUrl || null,
+            ad_redirect_url: investData.adRedirectUrl || null,
+          });
+
+          // 3. Link product
+          if (product.id) {
+            await supabase.from('campaign_products').insert({
+              campaign_id: campaignId,
+              product_id: product.id,
+              marketing_cost_override: !isNaN(investValueNum) && investValueNum > 0 ? investValueNum : null,
+              linked_order_id: null,
+            });
+          }
+        }
+      } catch {
+        // Non-blocking — product investment still saved locally even if DB insert fails
+      }
+    }
+
     onInvestSave({
       ...product,
       campaignName: investData.campaignName,
-      campaignObjective: investData.campaignObjective,
+      campaignObjective: investData.campaignType || investData.campaignObjective,
       budgetType: investData.budgetType,
       conversion: investData.trafficDestination,
       startDate: formatDateToIso(investData.startDate),
@@ -713,6 +787,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     setInvestData({
       campaignName: '',
       campaignObjective: '',
+      campaignType: '',
       budgetType: '',
       trafficDestination: '',
       optimizationGoal: '',
@@ -757,9 +832,12 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   const isValidBrDate = (value: string) => /^\d{2}\/\d{2}\/\d{4}$/.test(value);
   const isStepValid = (step: number) => {
     if (step === 0) {
-      return isNonEmpty(investData.campaignName)
+      const baseValid = isNonEmpty(investData.campaignName)
         && isNonEmpty(investData.campaignObjective)
         && isNonEmpty(investData.budgetType);
+      // When creating new campaign, also require sub-type (campaignType)
+      if (!selectedCampaignId) return baseValid && isNonEmpty(investData.campaignType);
+      return baseValid;
     }
     if (step === 1) {
       const invVal = investData.investmentValue.replace(',', '.').replace(/[^0-9.]/g, '');
@@ -828,6 +906,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   const getInvestDataFromProduct = () => ({
     campaignName: product.campaignName ?? '',
     campaignObjective: product.campaignObjective ?? '',
+    campaignType: '',
     budgetType: product.budgetType ?? '',
     trafficDestination: product.conversion ?? '',
     optimizationGoal: '',
@@ -1814,15 +1893,15 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                             if (organizationId) {
                               localStorage.setItem(`lastCampaignId_${organizationId}`, val);
                             }
-                            // Mapear objective do DB para os valores do select local
-                            const objectiveMap: Record<string, string> = {
-                              reach: 'reconhecimento',
-                              traffic: 'trafego',
-                              video_views: 'engajamento',
-                              community_interaction: 'engajamento',
-                              lead_generation: 'cadastros',
-                              app_promotion: 'promocao_app',
-                              sales: 'vendas',
+                            // Mapear objective do DB para categoria (campaignObjective) + sub-tipo (campaignType)
+                            const objectiveCategoryMap: Record<string, string> = {
+                              reach: 'conhecimento',
+                              traffic: 'consideracao',
+                              video_views: 'consideracao',
+                              community_interaction: 'consideracao',
+                              lead_generation: 'conversao',
+                              app_promotion: 'conversao',
+                              sales: 'conversao',
                             };
                             // Mapear budget_type do DB
                             const budgetMap: Record<string, string> = {
@@ -1853,7 +1932,8 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                             setInvestData(prev => ({
                               ...prev,
                               campaignName: camp.name,
-                              campaignObjective: objectiveMap[camp.objective] ?? camp.objective,
+                              campaignObjective: objectiveCategoryMap[camp.objective] ?? 'conversao',
+                              campaignType: camp.objective,
                               budgetType: budgetMap[camp.budget_type] ?? camp.budget_type,
                               adSetsDisplay: adSetsWithBudget,
                               trafficDestination: firstAdSet ? (destMap[firstAdSet.traffic_destination ?? ''] ?? firstAdSet.traffic_destination ?? '') : prev.trafficDestination,
@@ -1907,28 +1987,83 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                     readOnly={!!selectedCampaignId}
                   />
                 </div>
+                {/* Objetivo da Campanha — 3 categorias */}
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label className="text-right text-gray-700 dark:text-gray-200">Objetivo</Label>
                   {selectedCampaignId ? (
                     <div className="col-span-3 px-3 py-2 rounded-md border border-border bg-muted text-sm text-foreground">
-                      {investData.campaignObjective || '-'}
+                      {investData.campaignObjective
+                        ? investData.campaignObjective === 'conhecimento' ? 'Conhecimento'
+                          : investData.campaignObjective === 'consideracao' ? 'Consideração'
+                          : investData.campaignObjective === 'conversao' ? 'Conversão'
+                          : investData.campaignObjective
+                        : '-'}
                     </div>
                   ) : (
-                    <Select value={investData.campaignObjective} onValueChange={(val) => handleInvestChange('campaignObjective', val)}>
+                    <Select
+                      value={investData.campaignObjective}
+                      onValueChange={(val) => {
+                        handleInvestChange('campaignObjective', val);
+                        // Reset sub-tipo quando categoria muda
+                        handleInvestChange('campaignType', '');
+                      }}
+                    >
                       <SelectTrigger className="col-span-3">
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="reconhecimento">Reconhecimento</SelectItem>
-                        <SelectItem value="trafego">Tráfego</SelectItem>
-                        <SelectItem value="engajamento">Engajamento</SelectItem>
-                        <SelectItem value="cadastros">Cadastros</SelectItem>
-                        <SelectItem value="promocao_app">Promoção do app</SelectItem>
-                        <SelectItem value="vendas">Vendas</SelectItem>
+                        <SelectItem value="conhecimento">Conhecimento</SelectItem>
+                        <SelectItem value="consideracao">Consideração</SelectItem>
+                        <SelectItem value="conversao">Conversão</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
                 </div>
+
+                {/* Tipo de Campanha — sub-tipo baseado no objetivo */}
+                {!selectedCampaignId && investData.campaignObjective && (
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right text-gray-700 dark:text-gray-200">Tipo de Campanha</Label>
+                    <Select
+                      value={investData.campaignType}
+                      onValueChange={(val) => handleInvestChange('campaignType', val)}
+                    >
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {investData.campaignObjective === 'conhecimento' && (
+                          <SelectItem value="reach">Alcançar</SelectItem>
+                        )}
+                        {investData.campaignObjective === 'consideracao' && (<>
+                          <SelectItem value="traffic">Tráfego</SelectItem>
+                          <SelectItem value="video_views">Visualizações de Vídeo</SelectItem>
+                          <SelectItem value="community_interaction">Interação Comunitária</SelectItem>
+                        </>)}
+                        {investData.campaignObjective === 'conversao' && (<>
+                          <SelectItem value="app_promotion">Promoção do Aplicativo</SelectItem>
+                          <SelectItem value="lead_generation">Geração de Leads</SelectItem>
+                          <SelectItem value="sales">Vendas</SelectItem>
+                        </>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                {selectedCampaignId && investData.campaignType && (
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right text-gray-700 dark:text-gray-200">Tipo de Campanha</Label>
+                    <div className="col-span-3 px-3 py-2 rounded-md border border-border bg-muted text-sm text-foreground">
+                      {investData.campaignType === 'reach' ? 'Alcançar'
+                        : investData.campaignType === 'traffic' ? 'Tráfego'
+                        : investData.campaignType === 'video_views' ? 'Visualizações de Vídeo'
+                        : investData.campaignType === 'community_interaction' ? 'Interação Comunitária'
+                        : investData.campaignType === 'app_promotion' ? 'Promoção do Aplicativo'
+                        : investData.campaignType === 'lead_generation' ? 'Geração de Leads'
+                        : investData.campaignType === 'sales' ? 'Vendas'
+                        : investData.campaignType}
+                    </div>
+                  </div>
+                )}
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label className="text-right text-gray-700 dark:text-gray-200">Orçamento</Label>
                   {selectedCampaignId ? (
