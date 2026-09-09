@@ -60,14 +60,17 @@ const GroupSection: React.FC<{
   formatBRL: (v: number) => string;
   children: React.ReactNode;
 }> = ({ label, icon, color, borderColor, count, custo, formatBRL, children }) => {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
   const chevronRef = useRef<SVGSVGElement>(null);
 
-  // Init open (expanded by default)
+  // Init closed
   useEffect(() => {
     if (bodyRef.current) {
-      gsap.set(bodyRef.current, { height: 'auto', opacity: 1, overflow: 'hidden' });
+      gsap.set(bodyRef.current, { height: 0, opacity: 0, overflow: 'hidden' });
+    }
+    if (chevronRef.current) {
+      gsap.set(chevronRef.current, { rotation: -90 });
     }
   }, []);
 
