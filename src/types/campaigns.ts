@@ -55,6 +55,10 @@ export interface CampaignAdSet {
   // Ad-level fields
   ad_media_url: string | null;
   ad_redirect_url: string | null;
+  ad_text: string | null;
+  ad_title: string | null;
+  ad_cta: string | null;
+  ad_media_type: string | null;
 }
 
 export interface CampaignProduct {

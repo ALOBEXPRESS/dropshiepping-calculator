@@ -285,6 +285,12 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
       audience_gender: string | null;
       audience_interests: string | null;
       audience_behavior: string | null;
+      ad_media_url: string | null;
+      ad_redirect_url: string | null;
+      ad_text: string | null;
+      ad_title: string | null;
+      ad_cta: string | null;
+      ad_media_type: string | null;
     }>;
     campaign_products?: Array<{ marketing_cost_override: number | null }>;
   }>>([]);
@@ -1588,11 +1594,18 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
             if (organizationId) {
               supabase
                 .from('campaigns')
-                .select('id, name, objective, budget_type, budget_amount, campaign_ad_sets(id, name, conversion_type, traffic_destination, optimization_goal, target_cost_per_result, start_date, end_date, audience_mode, saved_audience_name, audience_location, audience_age, audience_gender, audience_interests, audience_behavior), campaign_products(marketing_cost_override)')
+                .select('id, name, objective, budget_type, budget_amount, campaign_ad_sets(id, name, conversion_type, traffic_destination, optimization_goal, target_cost_per_result, start_date, end_date, audience_mode, saved_audience_name, audience_location, audience_age, audience_gender, audience_interests, audience_behavior, ad_media_url, ad_redirect_url, ad_text, ad_title, ad_cta, ad_media_type), campaign_products(marketing_cost_override)')
                 .eq('organization_id', organizationId)
-                .order('created_at', { ascending: false })
+                .order('updated_at', { ascending: false })
                 .then(({ data }) => {
-                  if (data) setAvailableCampaigns(data as typeof availableCampaigns);
+                  if (data) {
+                    // Última campanha selecionada (persistida em localStorage) aparece primeiro
+                    const lastId = localStorage.getItem(`lastCampaignId_${organizationId}`);
+                    const sorted = lastId
+                      ? [...data].sort((a, b) => (a.id === lastId ? -1 : b.id === lastId ? 1 : 0))
+                      : data;
+                    setAvailableCampaigns(sorted as typeof availableCampaigns);
+                  }
                 });
             }
             setIsInvestOpen(true);
@@ -1657,6 +1670,9 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                         if (val) {
                           const camp = availableCampaigns.find((c) => c.id === val);
                           if (camp) {
+                            if (organizationId) {
+                              localStorage.setItem(`lastCampaignId_${organizationId}`, val);
+                            }
                             // Mapear objective do DB para os valores do select local
                             const objectiveMap: Record<string, string> = {
                               reach: 'reconhecimento',
@@ -1717,6 +1733,13 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                               audienceGender: firstAdSet?.audience_gender ?? prev.audienceGender,
                               audienceInterests: firstAdSet?.audience_interests ?? prev.audienceInterests,
                               audienceBehavior: firstAdSet?.audience_behavior ?? prev.audienceBehavior,
+                              // Nível de Anúncio do primeiro ad set
+                              adText: firstAdSet?.ad_text ?? prev.adText,
+                              adTitle: firstAdSet?.ad_title ?? prev.adTitle,
+                              adMedia: firstAdSet?.ad_media_type ?? prev.adMedia,
+                              adCta: firstAdSet?.ad_cta ?? prev.adCta,
+                              adUrl: firstAdSet?.ad_media_url ?? prev.adUrl,
+                              adRedirectUrl: firstAdSet?.ad_redirect_url ?? prev.adRedirectUrl,
                             }));
                           }
                         }

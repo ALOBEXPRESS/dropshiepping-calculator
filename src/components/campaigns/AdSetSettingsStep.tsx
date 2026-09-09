@@ -280,8 +280,54 @@ export const AdSetSettingsStep: React.FC<AdSetSettingsStepProps> = ({
       {/* ── Nível de Anúncio ─────────────────────────────────────── */}
       <Accordion title="Nível de Anúncio">
         <div className="space-y-1.5">
+          <Label className="text-zinc-300 text-sm">Texto Principal</Label>
+          <Input
+            placeholder="Ex: Confira nosso produto exclusivo!"
+            value={adSetData.ad_text ?? ''}
+            onChange={(e) => onChange('ad_text' as keyof CampaignFormPayload['adSet'], e.target.value || null)}
+            className="bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-zinc-300 text-sm">Título</Label>
+          <Input
+            placeholder="Ex: Oferta Especial"
+            value={adSetData.ad_title ?? ''}
+            onChange={(e) => onChange('ad_title' as keyof CampaignFormPayload['adSet'], e.target.value || null)}
+            className="bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500"
+          />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-zinc-300 text-sm">
+              Mídia <span className="text-orange-400">*</span>
+            </Label>
+            <Select
+              value={adSetData.ad_media_type ?? ''}
+              onValueChange={(v) => onChange('ad_media_type' as keyof CampaignFormPayload['adSet'], v || null)}
+            >
+              <SelectTrigger className="bg-zinc-900 border-zinc-700 text-white">
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-900 border-zinc-700">
+                <SelectItem value="video">Vídeo</SelectItem>
+                <SelectItem value="imagem">Imagem</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-zinc-300 text-sm">CTA</Label>
+            <Input
+              placeholder="Ex: Compre Agora"
+              value={adSetData.ad_cta ?? ''}
+              onChange={(e) => onChange('ad_cta' as keyof CampaignFormPayload['adSet'], e.target.value || null)}
+              className="bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500"
+            />
+          </div>
+        </div>
+        <div className="space-y-1.5">
           <Label className="text-zinc-300 text-sm">
-            Link do Vídeo / Imagem
+            Link do {adSetData.ad_media_type === 'imagem' ? 'Imagem' : 'Vídeo'}
             <span className="text-orange-400 ml-1">*</span>
           </Label>
           <Input
