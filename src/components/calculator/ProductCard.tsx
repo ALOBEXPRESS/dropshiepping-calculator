@@ -260,6 +260,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   const [currentVarIndex, setCurrentVarIndex] = useState(0);
   const [isInvestOpen, setIsInvestOpen] = useState(false);
   const [isInvestReadonly, setIsInvestReadonly] = useState(false);
+  const [linkedAdMediaUrl, setLinkedAdMediaUrl] = useState<string>('');
   const [isBlingConfirmOpen, setIsBlingConfirmOpen] = useState(false);
   const [investStep, setInvestStep] = useState(0);
   
@@ -869,8 +870,10 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
       : product.conversion === 'app'
         ? 'App'
         : product.conversion || '-';
-  const adImageUrl = product.adMedia === 'imagem' ? product.adUrl : '';
-  const adVideoUrl = product.adMedia === 'video' ? product.adUrl : '';
+  // Use linkedAdMediaUrl (fetched from campaign) as fallback when product.adUrl is empty
+  const effectiveAdMediaUrl = product.adUrl || linkedAdMediaUrl;
+  const adImageUrl = product.adMedia === 'imagem' ? effectiveAdMediaUrl : '';
+  const adVideoUrl = product.adMedia === 'video' ? effectiveAdMediaUrl : '';
   
   // Extrair TikTok video ID de qualquer formato (URL direta, blockquote, iframe)
   const extractTikTokVideoId = (input: string): string => {
@@ -1609,6 +1612,19 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
               // Somente leitura — mostrar resumo da campanha
               setIsInvestReadonly(true);
               setIsInvestOpen(true);
+              // Buscar ad_media_url da campanha pelo nome para exibir no painel
+              if (organizationId && product.campaignName) {
+                supabase
+                  .from('campaigns')
+                  .select('campaign_ad_sets(ad_media_url, ad_media_type)')
+                  .eq('organization_id', organizationId)
+                  .eq('name', product.campaignName)
+                  .limit(1)
+                  .then(({ data }) => {
+                    const firstAdSet = data?.[0]?.campaign_ad_sets?.[0] as { ad_media_url?: string | null; ad_media_type?: string | null } | undefined;
+                    setLinkedAdMediaUrl(firstAdSet?.ad_media_url ?? '');
+                  });
+              }
               return;
             }
             setInvestData(getInvestDataFromProduct());
