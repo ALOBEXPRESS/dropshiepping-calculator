@@ -265,6 +265,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   // GVM PLAY (campaign_order_costs with campaign_id = null)
   const [gvmPlayTotalCost, setGvmPlayTotalCost] = useState<number>(0);
   const [gvmPlayCurrentPeriodCost, setGvmPlayCurrentPeriodCost] = useState<number>(0);
+  // Manual entries (Nova Entrada)
+  const [manualEntriesCurrentPeriod, setManualEntriesCurrentPeriod] = useState<Array<{ entry_type: string; name: string; value: number }>>([]);
   const [savingMarketingCost, setSavingMarketingCost] = useState(false);
   const [linkedCampaignId, setLinkedCampaignId] = useState<string | null>(null);
   const [availableCampaigns, setAvailableCampaigns] = useState<Array<{ id: string; name: string; marketing_cost: number | null }>>([]);
@@ -1227,7 +1229,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           .from('campaign_ad_sets')
           .select('campaign_id')
           .in('campaign_id', campaignIds)
-          .or(`start_date.is.null,and(start_date.lte.${monthEnd},end_date.gte.${monthStart}),and(start_date.lte.${monthEnd},end_date.is.null)`);
+          .or(`and(start_date.lte.${monthEnd},end_date.gte.${monthStart}),and(start_date.lte.${monthEnd},end_date.is.null)`);
         const activeCampaignIds = new Set((adSetRows ?? []).map((a: { campaign_id: string }) => a.campaign_id));
         periodCampaignTotal = rows
           .filter(r => activeCampaignIds.has(r.campaign_id))
@@ -1252,6 +1254,17 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
       setCampaignProductsCurrentPeriodCost(periodCampaignTotal + periodGvmTotal);
       setGvmPlayCurrentPeriodCost(periodGvmTotal);
+
+      // 4. Manual entries for current period window
+      const { data: entriesRows } = await supabase
+        .from('manual_entries')
+        .select('entry_type, name, value')
+        .eq('organization_id', organizationId)
+        .gte('created_at', monthStart)
+        .lte('created_at', monthEnd);
+      setManualEntriesCurrentPeriod(
+        ((entriesRows ?? []) as Array<{ entry_type: string; name: string; value: number }>)
+      );
     };
     fetchCampaignCosts().catch(() => {});
   }, [organizationId, data]);
@@ -3983,6 +3996,35 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 <p className="text-xl font-bold text-purple-400">{formatCurrency(gvmPlayCurrentPeriodCost)}</p>
               </div>
             )}
+
+            {/* Manual entries for current period — grouped by type */}
+            {manualEntriesCurrentPeriod.length > 0 && (() => {
+              const LABELS: Record<string, { label: string; color: string; sign: number }> = {
+                beneficio_shopee:         { label: 'Benef. Shopee',  color: 'text-orange-400', sign: 1 },
+                balanco_shopee_acrescimo: { label: 'Bal. Shopee +',  color: 'text-green-400',  sign: 1 },
+                balanco_shopee_desconto:  { label: 'Bal. Shopee −',  color: 'text-red-400',    sign: -1 },
+                beneficio_tiktok:         { label: 'Benef. TikTok',  color: 'text-pink-400',   sign: 1 },
+                balanco_tiktok_acrescimo: { label: 'Bal. TikTok +',  color: 'text-green-400',  sign: 1 },
+                balanco_tiktok_desconto:  { label: 'Bal. TikTok −',  color: 'text-red-400',    sign: -1 },
+                pedido_afiliacao:         { label: 'Afiliação',      color: 'text-violet-400', sign: -1 },
+              };
+              // Group by type, sum values
+              const grouped: Record<string, number> = {};
+              manualEntriesCurrentPeriod.forEach(e => {
+                grouped[e.entry_type] = (grouped[e.entry_type] ?? 0) + Number(e.value);
+              });
+              return Object.entries(grouped).map(([type, total]) => {
+                const meta = LABELS[type] ?? { label: type, color: 'text-zinc-400', sign: 1 };
+                return (
+                  <div key={type}>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{`${meta.label} ${periodLabel.replace('Lucro ', '')}`}</p>
+                    <p className={`text-xl font-bold ${meta.color}`}>
+                      {meta.sign < 0 ? '−' : ''}{formatCurrency(total)}
+                    </p>
+                  </div>
+                );
+              });
+            })()}
           </div>
         </div>
         <div className="flex items-center gap-2">
