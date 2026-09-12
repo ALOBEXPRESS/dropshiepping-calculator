@@ -1227,7 +1227,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           .from('campaign_ad_sets')
           .select('campaign_id')
           .in('campaign_id', campaignIds)
-          .or(`start_date.gte.${monthStart},end_date.lte.${monthEnd},start_date.is.null`);
+          .or(`start_date.is.null,and(start_date.lte.${monthEnd},end_date.gte.${monthStart}),and(start_date.lte.${monthEnd},end_date.is.null)`);
         const activeCampaignIds = new Set((adSetRows ?? []).map((a: { campaign_id: string }) => a.campaign_id));
         periodCampaignTotal = rows
           .filter(r => activeCampaignIds.has(r.campaign_id))
