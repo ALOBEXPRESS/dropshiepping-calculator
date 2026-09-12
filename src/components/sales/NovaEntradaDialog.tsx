@@ -239,12 +239,12 @@ export const NovaEntradaDialog: React.FC<Props> = ({ open, onOpenChange, organiz
             <div className="space-y-1.5">
               <Label className="text-sm text-zinc-700 dark:text-zinc-300">Afiliado</Label>
               {affiliates.length > 0 ? (
-                <Select value={affiliateId} onValueChange={setAffiliateId}>
+                <Select value={affiliateId || 'none'} onValueChange={(v) => setAffiliateId(v === 'none' ? '' : v)}>
                   <SelectTrigger className="bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white">
                     <SelectValue placeholder="Selecione um afiliado (opcional)" />
                   </SelectTrigger>
                   <SelectContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700">
-                    <SelectItem value="">— Nenhum —</SelectItem>
+                    <SelectItem value="none">— Nenhum —</SelectItem>
                     {affiliates.map((a) => (
                       <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                     ))}
