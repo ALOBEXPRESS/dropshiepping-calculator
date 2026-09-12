@@ -1229,7 +1229,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           .from('campaign_ad_sets')
           .select('campaign_id')
           .in('campaign_id', campaignIds)
-          .or(`and(start_date.lte.${monthEnd},end_date.gte.${monthStart}),and(start_date.lte.${monthEnd},end_date.is.null)`);
+          .gte('start_date', monthStart)
+          .lte('start_date', monthEnd);
         const activeCampaignIds = new Set((adSetRows ?? []).map((a: { campaign_id: string }) => a.campaign_id));
         periodCampaignTotal = rows
           .filter(r => activeCampaignIds.has(r.campaign_id))
@@ -1256,12 +1257,15 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       setGvmPlayCurrentPeriodCost(periodGvmTotal);
 
       // 4. Manual entries for current period window
+      // Use windowEnd extended to end of day to capture today's entries
+      const windowEndExtended = new Date(windowEnd);
+      windowEndExtended.setHours(23, 59, 59, 999);
       const { data: entriesRows } = await supabase
         .from('manual_entries')
         .select('entry_type, name, value')
         .eq('organization_id', organizationId)
         .gte('created_at', monthStart)
-        .lte('created_at', monthEnd);
+        .lte('created_at', windowEndExtended.toISOString());
       setManualEntriesCurrentPeriod(
         ((entriesRows ?? []) as Array<{ entry_type: string; name: string; value: number }>)
       );
