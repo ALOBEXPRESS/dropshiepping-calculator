@@ -10,6 +10,7 @@ import {
   AffiliateCommissionChart,
 } from '@/components/sales';
 import { RealtimeStatusBadge } from '@/components/sales/RealtimeStatusBadge';
+import { NovaEntradaDialog } from '@/components/sales/NovaEntradaDialog';
 import { PendingOrders } from '@/components/PendingOrders';
 import { FreeSampleLane } from '@/components/FreeSampleLane';
 import { PersonalPurchaseLane } from '@/components/PersonalPurchaseLane';
@@ -19,7 +20,7 @@ import { useFilterPersistence } from '@/hooks/useFilterPersistence';
 import { SalesFiltersBar } from '@/components/sales/SalesFiltersBar';
 import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Plus } from 'lucide-react';
 import gsap from 'gsap';
 import type { PendingOrder } from '@/types/pendingOrder';
 
@@ -28,6 +29,7 @@ const Sales: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
+  const [novaEntradaOpen, setNovaEntradaOpen] = useState(false);
   const { stats } = useHeroStats(organizationId || '', period, refreshKey);
 
   // Free sample lane state — rehydrated from sessionStorage
@@ -219,6 +221,14 @@ const Sales: React.FC = () => {
             <RefreshCw className="w-4 h-4 mr-2" />
             Atualizar
           </Button>
+          <Button
+            size="sm"
+            onClick={() => setNovaEntradaOpen(true)}
+            className="bg-orange-500 hover:bg-orange-600 text-white gap-1.5"
+          >
+            <Plus className="w-4 h-4" />
+            Nova Entrada
+          </Button>
         </div>
       </div>
 
@@ -323,6 +333,15 @@ const Sales: React.FC = () => {
           <StockReportTable organizationId={organizationId} refreshTrigger={refreshKey} />
         </div>
       </div>
+
+      {/* Nova Entrada Dialog */}
+      {organizationId && (
+        <NovaEntradaDialog
+          open={novaEntradaOpen}
+          onOpenChange={setNovaEntradaOpen}
+          organizationId={organizationId}
+        />
+      )}
     </div>
   );
 };
