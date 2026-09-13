@@ -267,6 +267,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [gvmPlayCurrentPeriodCost, setGvmPlayCurrentPeriodCost] = useState<number>(0);
   // Manual entries (Nova Entrada)
   const [manualEntriesCurrentPeriod, setManualEntriesCurrentPeriod] = useState<Array<{ entry_type: string; name: string; value: number }>>([]);
+  // All manual entries (for series data across all periods)
+  const [allManualEntries, setAllManualEntries] = useState<Array<{ entry_type: string; name: string; value: number; created_at: string }>>([]);
   const [savingMarketingCost, setSavingMarketingCost] = useState(false);
   const [linkedCampaignId, setLinkedCampaignId] = useState<string | null>(null);
   const [availableCampaigns, setAvailableCampaigns] = useState<Array<{ id: string; name: string; marketing_cost: number | null }>>([]);
@@ -1277,6 +1279,16 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       setManualEntriesCurrentPeriod(
         ((entriesRows ?? []) as Array<{ entry_type: string; name: string; value: number }>)
       );
+
+      // 5. All manual entries (for full series across all periods)
+      const { data: allEntriesRows } = await supabase
+        .from('manual_entries')
+        .select('entry_type, name, value, created_at')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: true });
+      setAllManualEntries(
+        ((allEntriesRows ?? []) as Array<{ entry_type: string; name: string; value: number; created_at: string }>)
+      );
     };
     fetchCampaignCosts().catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2016,6 +2028,18 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     return -Math.abs(periodMarketingCost);
   });
 
+  // Comissão de Afiliação por período (manual_entries tipo pedido_afiliacao)
+  const affiliateSeriesData = visibleData.map((periodData) => {
+    const pStart = (periodData as { period_start?: string }).period_start;
+    const pEnd = (periodData as { period_end?: string }).period_end;
+    if (!pStart || !pEnd) return 0;
+    const start = new Date(pStart).getTime();
+    const end = new Date(pEnd).getTime() + 86_400_000; // inclusive end
+    return allManualEntries
+      .filter(e => e.entry_type === 'pedido_afiliacao' && new Date(e.created_at).getTime() >= start && new Date(e.created_at).getTime() < end)
+      .reduce((s, e) => s + Number(e.value), 0);
+  });
+
   // Label dinâmico para "Custo {período atual}" — baseado na janela visível (mesmo padrão do periodLabel)
   const costLabel = (() => {
     const now = new Date();
@@ -2104,7 +2128,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       curve: 'smooth',
       width: [2, 2],
     },
-    colors: ['#22c55e', '#f97316'],
+    colors: ['#22c55e', '#f97316', '#10b981'],
     fill: {
       type: 'gradient',
       gradient: {
@@ -2113,13 +2137,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         opacityTo: 0.05,
         stops: [0, 90, 100],
       },
-      colors: ['#22c55e', '#ef4444'],
+      colors: ['#22c55e', '#ef4444', '#10b981'],
     },
     markers: {
       size: 4,
       strokeWidth: 2,
-      colors: ['#22c55e', '#f97316'],
-      strokeColors: ['#86efac', '#fca5a5'],
+      colors: ['#22c55e', '#f97316', '#10b981'],
+      strokeColors: ['#86efac', '#fca5a5', '#6ee7b7'],
       hover: {
         size: 6,
       },
@@ -2421,6 +2445,39 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             <div data-tooltip-order-root style="padding-top:6px;margin-top:6px;">
               ${orderInnerHtml || `<div style="font-size:11px;color:${tooltipSubColor}">Sem pedidos</div>`}
             </div>
+            ${(() => {
+              // Affiliate entries for this period
+              const pStart = (periodData as { period_start?: string }).period_start;
+              const pEnd = (periodData as { period_end?: string }).period_end;
+              if (!pStart || !pEnd) return '';
+              const start = new Date(pStart).getTime();
+              const end = new Date(pEnd).getTime() + 86_400_000;
+              const affEntries = allManualEntries.filter(e =>
+                e.entry_type === 'pedido_afiliacao' &&
+                new Date(e.created_at).getTime() >= start &&
+                new Date(e.created_at).getTime() < end
+              );
+              if (affEntries.length === 0) return '';
+              const affTotal = affEntries.reduce((s, e) => s + Number(e.value), 0);
+              const rows = affEntries.map(e =>
+                `<div style="display:flex;justify-content:space-between;font-size:10px;margin-top:3px;">
+                  <span style="color:#6ee7b7;truncate;max-width:180px;">${e.name}</span>
+                  <span style="color:#10b981;font-weight:700;">+R$ ${Number(e.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                </div>`
+              ).join('');
+              return `
+                <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(16,185,129,0.25);">
+                  <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;">
+                    <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;flex-shrink:0;"></span>
+                    <span style="font-size:10px;font-weight:700;color:#10b981;letter-spacing:0.06em;text-transform:uppercase;">Comissão Afiliação</span>
+                  </div>
+                  ${rows}
+                  <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px;padding-top:4px;border-top:1px solid rgba(16,185,129,0.15);">
+                    <span style="color:#6ee7b7;font-weight:600;">Total</span>
+                    <span style="color:#10b981;font-weight:800;">+R$ ${affTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                </div>`;
+            })()}
           </div>`;
       },
     },
@@ -2431,7 +2488,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         colors: '#6b7280',
       },
       markers: {
-        fillColors: ['#22c55e', '#f97316'],
+        fillColors: ['#22c55e', '#f97316', '#10b981'],
       },
       onItemClick: {
         toggleDataSeries: true,
@@ -2453,6 +2510,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     {
       name: 'Custo de Marketing',
       data: marketingCostSeriesData,
+    },
+    {
+      name: 'Comissão Afiliação',
+      data: affiliateSeriesData,
     },
   ];
 
