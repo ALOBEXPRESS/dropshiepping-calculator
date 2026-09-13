@@ -3989,11 +3989,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 <p className="text-xl font-bold text-orange-500">{formatCurrency(campaignProductsTotalCost)}</p>
               </div>
             )}
-            {(campaignProductsCurrentPeriodCost > 0 || totalMarketingCost > 0) && (
+            {(campaignProductsCurrentPeriodCost > 0) && (
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{`Marketing ${periodLabel.replace('Lucro ', '')}`}</p>
                 <p className="text-xl font-bold text-orange-500">
-                  {formatCurrency(campaignProductsCurrentPeriodCost > 0 ? campaignProductsCurrentPeriodCost : totalMarketingCost)}
+                  {formatCurrency(campaignProductsCurrentPeriodCost)}
                 </p>
               </div>
             )}
@@ -4019,7 +4019,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 beneficio_tiktok:         { label: 'Benef. TikTok',  color: 'text-pink-400',   sign: 1 },
                 balanco_tiktok_acrescimo: { label: 'Bal. TikTok +',  color: 'text-green-400',  sign: 1 },
                 balanco_tiktok_desconto:  { label: 'Bal. TikTok −',  color: 'text-red-400',    sign: -1 },
-                pedido_afiliacao:         { label: 'Afiliação',      color: 'text-violet-400', sign: -1 },
+                pedido_afiliacao:         { label: 'Comissão Afiliação', color: 'text-emerald-400', sign: 1 },
               };
               // Group by type, sum values
               const grouped: Record<string, number> = {};
@@ -4032,7 +4032,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   <div key={type}>
                     <p className="text-xs text-gray-500 dark:text-gray-400">{`${meta.label} ${periodLabel.replace('Lucro ', '')}`}</p>
                     <p className={`text-xl font-bold ${meta.color}`}>
-                      {meta.sign < 0 ? '−' : ''}{formatCurrency(total)}
+                      {meta.sign < 0 ? '−' : '+'}{formatCurrency(total)}
                     </p>
                   </div>
                 );
