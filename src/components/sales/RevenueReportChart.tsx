@@ -292,6 +292,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [tooltipPages, setTooltipPages] = useState<Record<number, number>>({});
   const tooltipPagesRef = useRef(tooltipPages);
   tooltipPagesRef.current = tooltipPages;
+  const allManualEntriesRef = useRef(allManualEntries);
+  allManualEntriesRef.current = allManualEntries;
 
   // Bloqueia re-render do tooltip pela custom fn por ~300ms após nav click
   // para que o DOM update manual persista sem ser sobrescrito pelo mousemove
@@ -2243,14 +2245,68 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const periodData = currentData[globalDataIdx];
         const ordersCount = periodData.orders_data?.length || 0;
 
+        // Affiliate entries for this period
+        const pStart = (periodData as { period_start?: string }).period_start;
+        const pEnd = (periodData as { period_end?: string }).period_end;
+        const affEntries: Array<{ entry_type: string; name: string; value: number; created_at: string }> = (() => {
+          if (!pStart || !pEnd) return [];
+          const start = new Date(pStart).getTime();
+          const end = new Date(pEnd).getTime() + 86_400_000;
+          return allManualEntriesRef.current.filter(e =>
+            e.entry_type === 'pedido_afiliacao' &&
+            new Date(e.created_at).getTime() >= start &&
+            new Date(e.created_at).getTime() < end
+          );
+        })();
+        const totalItems = ordersCount + affEntries.length;
+
         // Estado de paginação do tooltip por período (via estado React)
         const stateKey = `tooltip_page_${dataPointIndex}`;
         const currentPageUnsafe: number = tooltipPagesRef.current[globalDataIdx] ?? 0;
-        const currentPage = ordersCount > 0 ? Math.min(currentPageUnsafe, ordersCount - 1) : 0;
-        const order = periodData.orders_data?.[currentPage];
+        const currentPage = totalItems > 0 ? Math.min(currentPageUnsafe, totalItems - 1) : 0;
+        const isAffPage = currentPage >= ordersCount;
+        const order = !isAffPage ? periodData.orders_data?.[currentPage] : undefined;
+        const affEntry = isAffPage ? affEntries[currentPage - ordersCount] : undefined;
 
         // Gerar HTML de um único pedido (paginado)
-        const { orderInnerHtml, orderIsFreeSample, orderIsPersonalPurchase } = order ? (() => {
+        // Affiliate card (emerald theme) when on an affiliate entry page
+        const affCardHtml = affEntry ? (() => {
+          const affValue = Number(affEntry.value);
+          const affiliateName = affEntry.name;
+          // nav with totalItems context
+          const affNavColors = { bg: 'rgba(16,185,129,0.25)', txt: '#6ee7b7', disabledBg: 'rgba(16,185,129,0.08)', disabledTxt: 'rgba(110,231,183,0.3)' };
+          const navAff = totalItems > 1 ? `
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid rgba(16,185,129,0.2);">
+              <button data-tooltip-nav data-nav-dir="prev" data-nav-key="${stateKey}" data-nav-max="${totalItems - 1}"
+                style="background:${affNavColors.bg};color:${affNavColors.txt};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;font-weight:600;line-height:1;">‹</button>
+              <span style="font-size:11px;color:#6ee7b7;font-weight:500;">${currentPage + 1} / ${totalItems} item${totalItems > 1 ? 's' : ''}</span>
+              <button data-tooltip-nav data-nav-dir="next" data-nav-key="${stateKey}" data-nav-max="${totalItems - 1}"
+                style="background:${currentPage === totalItems - 1 ? affNavColors.disabledBg : affNavColors.bg};color:${currentPage === totalItems - 1 ? affNavColors.disabledTxt : affNavColors.txt};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:${currentPage === totalItems - 1 ? 'default' : 'pointer'};font-weight:600;line-height:1;"
+                ${currentPage === totalItems - 1 ? 'disabled' : ''}>›</button>
+            </div>` : '';
+          return `
+            ${navAff}
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;padding:5px 8px;background:rgba(16,185,129,0.18);border-radius:6px;border:1px solid rgba(16,185,129,0.35);">
+              <span style="font-size:13px;">🤝</span>
+              <span style="font-size:10px;font-weight:800;color:#6ee7b7;letter-spacing:0.08em;text-transform:uppercase;">Comissão de Afiliação</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
+              <div style="flex:1;min-width:0">
+                <p style="font-weight:700;color:#d1fae5;font-size:12px;margin:0;line-height:1.4;word-break:break-word;">${affiliateName}</p>
+                <p style="color:#6ee7b7;font-size:10px;margin:2px 0 0;opacity:0.8;">Pedido de Afiliação · TikTok Shop</p>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;padding-top:6px;border-top:1px solid rgba(16,185,129,0.2);">
+              <span style="color:#6ee7b7;font-weight:600;">Comissão:</span>
+              <span style="font-weight:800;color:#10b981;">+R$ ${affValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+            </div>`;
+        })() : null;
+
+        const { orderInnerHtml, orderIsFreeSample, orderIsPersonalPurchase } = affEntry ? {
+          orderInnerHtml: affCardHtml ?? '',
+          orderIsFreeSample: false,
+          orderIsPersonalPurchase: false,
+        } : order ? (() => {
           const mergedOrder = mergeOrderForTooltip(order) as unknown as {
             customer_name?: string;
             product_name?: string;
@@ -2340,24 +2396,24 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             is_free_sample: isFreeSample,
           };
 
-          // Setas de navegação (só aparece se há mais de 1 pedido)
-          const navHtml = ordersCount > 1 ? `
+          // Setas de navegação (só aparece se há mais de 1 item total — inclui afiliados)
+          const navHtml = totalItems > 1 ? `
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid ${dividerColor};">
               <button
                 data-tooltip-nav
                 data-nav-dir="prev"
                 data-nav-key="${stateKey}"
-                data-nav-max="${ordersCount - 1}"
+                data-nav-max="${totalItems - 1}"
                 style="background:${navBtnBg};color:${navBtnColor};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;font-weight:600;line-height:1;"
               >‹</button>
-              <span style="font-size:11px;color:${textSecondary};font-weight:500">${currentPage + 1} / ${ordersCount} pedido${ordersCount > 1 ? 's' : ''}</span>
+              <span style="font-size:11px;color:${textSecondary};font-weight:500">${currentPage + 1} / ${totalItems} item${totalItems > 1 ? 's' : ''}</span>
               <button
                 data-tooltip-nav
                 data-nav-dir="next"
                 data-nav-key="${stateKey}"
-                data-nav-max="${ordersCount - 1}"
-                style="background:${currentPage === ordersCount - 1 ? navBtnDisabledBg : navBtnBg};color:${currentPage === ordersCount - 1 ? navBtnDisabledColor : navBtnColor};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:${currentPage === ordersCount - 1 ? 'default' : 'pointer'};font-weight:600;line-height:1;"
-                ${currentPage === ordersCount - 1 ? 'disabled' : ''}
+                data-nav-max="${totalItems - 1}"
+                style="background:${currentPage === totalItems - 1 ? navBtnDisabledBg : navBtnBg};color:${currentPage === totalItems - 1 ? navBtnDisabledColor : navBtnColor};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:${currentPage === totalItems - 1 ? 'default' : 'pointer'};font-weight:600;line-height:1;"
+                ${currentPage === totalItems - 1 ? 'disabled' : ''}
               >›</button>
             </div>
           ` : '';
@@ -2416,68 +2472,42 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         // Detectar tipo de pedido para colorir tooltip
         const currentOrderIsFreeSample = orderIsFreeSample;
         const currentOrderIsPersonal = orderIsPersonalPurchase;
-        const tooltipBg = currentOrderIsPersonal
+        const currentOrderIsAffiliate = !!affEntry;
+        const tooltipBg = currentOrderIsAffiliate
+          ? 'linear-gradient(135deg, #022c22 0%, #064e3b 50%, #022c22 100%)'
+          : currentOrderIsPersonal
           ? 'linear-gradient(135deg, #431407 0%, #7c2d12 50%, #431407 100%)'
           : currentOrderIsFreeSample
           ? 'linear-gradient(135deg, #3b0764 0%, #4c1d95 50%, #2e1065 100%)'
           : 'rgba(255,255,255,0.98)';
-        const tooltipBorder = currentOrderIsPersonal
+        const tooltipBorder = currentOrderIsAffiliate
+          ? '1px solid rgba(16,185,129,0.5)'
+          : currentOrderIsPersonal
           ? '1px solid rgba(251,146,60,0.5)'
           : currentOrderIsFreeSample
           ? '1px solid rgba(167,139,250,0.5)'
           : '1px solid rgba(2,6,23,0.08)';
-        const tooltipShadow = currentOrderIsPersonal
+        const tooltipShadow = currentOrderIsAffiliate
+          ? '0 8px 34px rgba(16,185,129,0.35)'
+          : currentOrderIsPersonal
           ? '0 8px 34px rgba(234,88,12,0.35)'
           : currentOrderIsFreeSample
           ? '0 8px 34px rgba(109,40,217,0.35)'
           : '0 18px 50px rgba(2,6,23,0.14)';
-        const tooltipHeaderColor = currentOrderIsPersonal ? '#fed7aa' : currentOrderIsFreeSample ? '#e9d5ff' : '#111827';
-        const tooltipSubColor = currentOrderIsPersonal ? '#fdba74' : currentOrderIsFreeSample ? '#c4b5fd' : '#6b7280';
-        const tooltipBadgeBg = currentOrderIsPersonal ? 'rgba(234,88,12,0.4)' : currentOrderIsFreeSample ? 'rgba(109,40,217,0.4)' : 'rgba(2,6,23,0.06)';
-        const tooltipBadgeColor = currentOrderIsPersonal ? '#fed7aa' : currentOrderIsFreeSample ? '#e9d5ff' : '#6b7280';
+        const tooltipHeaderColor = currentOrderIsAffiliate ? '#6ee7b7' : currentOrderIsPersonal ? '#fed7aa' : currentOrderIsFreeSample ? '#e9d5ff' : '#111827';
+        const tooltipSubColor = currentOrderIsAffiliate ? '#34d399' : currentOrderIsPersonal ? '#fdba74' : currentOrderIsFreeSample ? '#c4b5fd' : '#6b7280';
+        const tooltipBadgeBg = currentOrderIsAffiliate ? 'rgba(16,185,129,0.25)' : currentOrderIsPersonal ? 'rgba(234,88,12,0.4)' : currentOrderIsFreeSample ? 'rgba(109,40,217,0.4)' : 'rgba(2,6,23,0.06)';
+        const tooltipBadgeColor = currentOrderIsAffiliate ? '#6ee7b7' : currentOrderIsPersonal ? '#fed7aa' : currentOrderIsFreeSample ? '#e9d5ff' : '#6b7280';
 
         return `
           <div class="apexcharts-tooltip-custom" style="background:${tooltipBg};border:${tooltipBorder};border-radius:12px;padding:10px 12px;box-shadow:${tooltipShadow};backdrop-filter:blur(10px);min-width:270px;max-width:360px;pointer-events:auto;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
               <span style="font-weight:600;color:${tooltipHeaderColor};font-size:13px">${periodData.period_label}</span>
-              <span style="font-size:11px;color:${tooltipBadgeColor};background:${tooltipBadgeBg};padding:2px 8px;border-radius:99px;">${ordersCount} pedido${ordersCount !== 1 ? 's' : ''}</span>
+              <span style="font-size:11px;color:${tooltipBadgeColor};background:${tooltipBadgeBg};padding:2px 8px;border-radius:99px;">${totalItems} item${totalItems !== 1 ? 's' : ''}</span>
             </div>
             <div data-tooltip-order-root style="padding-top:6px;margin-top:6px;">
               ${orderInnerHtml || `<div style="font-size:11px;color:${tooltipSubColor}">Sem pedidos</div>`}
             </div>
-            ${(() => {
-              // Affiliate entries for this period
-              const pStart = (periodData as { period_start?: string }).period_start;
-              const pEnd = (periodData as { period_end?: string }).period_end;
-              if (!pStart || !pEnd) return '';
-              const start = new Date(pStart).getTime();
-              const end = new Date(pEnd).getTime() + 86_400_000;
-              const affEntries = allManualEntries.filter(e =>
-                e.entry_type === 'pedido_afiliacao' &&
-                new Date(e.created_at).getTime() >= start &&
-                new Date(e.created_at).getTime() < end
-              );
-              if (affEntries.length === 0) return '';
-              const affTotal = affEntries.reduce((s, e) => s + Number(e.value), 0);
-              const rows = affEntries.map(e =>
-                `<div style="display:flex;justify-content:space-between;font-size:10px;margin-top:3px;">
-                  <span style="color:#6ee7b7;truncate;max-width:180px;">${e.name}</span>
-                  <span style="color:#10b981;font-weight:700;">+R$ ${Number(e.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                </div>`
-              ).join('');
-              return `
-                <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(16,185,129,0.25);">
-                  <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;">
-                    <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;flex-shrink:0;"></span>
-                    <span style="font-size:10px;font-weight:700;color:#10b981;letter-spacing:0.06em;text-transform:uppercase;">Comissão Afiliação</span>
-                  </div>
-                  ${rows}
-                  <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px;padding-top:4px;border-top:1px solid rgba(16,185,129,0.15);">
-                    <span style="color:#6ee7b7;font-weight:600;">Total</span>
-                    <span style="color:#10b981;font-weight:800;">+R$ ${affTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                  </div>
-                </div>`;
-            })()}
           </div>`;
       },
     },
