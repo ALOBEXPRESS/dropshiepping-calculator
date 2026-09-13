@@ -2005,18 +2005,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     }, 0);
   }, [yearlyData, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig]);
 
-  const totalMarketingCost = visibleData.reduce((sum, periodData) => {
-    const periodMarketingCost = (periodData.orders_data ?? []).reduce((orderSum, order) => {
-      const orderId = (order as { order_id?: string }).order_id;
-      if (!orderId) return orderSum;
-
-      return orderSum + Number(marketingCostByProductId[`order:${orderId}`] ?? 0);
-    }, 0);
-
-    return sum + periodMarketingCost;
-  }, 0);
-
-
   const marketingCostSeriesData = visibleData.map((periodData) => {
     const periodMarketingCost = (periodData.orders_data ?? []).reduce((sum, order) => {
       const orderId = (order as { order_id?: string }).order_id;
