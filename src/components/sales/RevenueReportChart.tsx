@@ -1213,7 +1213,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
       // 3. Current period campaign cost (by adSet start_date in visible window)
       const now = new Date();
-      const isLatestWin = windowOffset >= maxOffset;
+      const windowSize3 = period === 'daily' ? 14 : period === 'weekly' ? 12 : period === 'monthly' ? 3 : 5;
+      const maxOffsetInEffect = Math.max(0, data.length - windowSize3);
+      const isLatestWin = windowOffset >= maxOffsetInEffect;
       // Compute the visible slice directly (avoid stale closure on visibleData)
       const windowSize3 = period === 'daily' ? 14 : period === 'weekly' ? 12 : period === 'monthly' ? 3 : 5;
       const slice = data.slice(windowOffset, windowOffset + windowSize3);
@@ -1279,7 +1281,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     };
     fetchCampaignCosts().catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId, data, windowOffset, maxOffset]);
+  }, [organizationId, data, windowOffset]);
 
   useEffect(() => {
     let cancelled = false;
