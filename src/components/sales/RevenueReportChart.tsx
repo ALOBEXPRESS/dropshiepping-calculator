@@ -1213,14 +1213,21 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
       // 3. Current period campaign cost (by adSet start_date in visible window)
       const now = new Date();
-      const windowStart = new Date(visibleData.length > 0 
-        ? (visibleData[0] as { period_start?: string }).period_start ?? now.toISOString()
-        : new Date(now.getFullYear(), now.getMonth(), 1).toISOString());
-      const windowEnd = new Date(visibleData.length > 0
-        ? (visibleData[visibleData.length - 1] as { period_end?: string }).period_end ?? now.toISOString()
-        : new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString());
-      const monthStart = windowStart.toISOString();
-      const monthEnd = windowEnd.toISOString();
+      const isLatestWin = windowOffset >= maxOffset;
+      // Compute the visible slice directly (avoid stale closure on visibleData)
+      const windowSize3 = period === 'daily' ? 14 : period === 'weekly' ? 12 : period === 'monthly' ? 3 : 5;
+      const slice = data.slice(windowOffset, windowOffset + windowSize3);
+      const lastSliceItem = slice[slice.length - 1] as { period_start?: string; period_end?: string } | undefined;
+      const firstSliceItem = slice[0] as { period_start?: string } | undefined;
+      // When at latest window: scope to LAST month only (e.g. "Set"), not whole Jul–Set window
+      const windowStartDate = isLatestWin && lastSliceItem
+        ? new Date(lastSliceItem.period_start ?? now.toISOString())
+        : new Date(firstSliceItem?.period_start ?? now.toISOString());
+      const windowEndDate = new Date(
+        lastSliceItem?.period_end ?? new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString()
+      );
+      const monthStart = windowStartDate.toISOString();
+      const monthEnd = windowEndDate.toISOString();
 
       const campaignIds = [...new Set(rows.map(r => r.campaign_id))];
       let periodCampaignTotal = 0;
@@ -1258,7 +1265,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
       // 4. Manual entries for current period window
       // Use windowEnd extended to end of day to capture today's entries
-      const windowEndExtended = new Date(windowEnd);
+      const windowEndExtended = new Date(windowEndDate);
       windowEndExtended.setHours(23, 59, 59, 999);
       const { data: entriesRows } = await supabase
         .from('manual_entries')
@@ -1271,7 +1278,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       );
     };
     fetchCampaignCosts().catch(() => {});
-  }, [organizationId, data]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [organizationId, data, windowOffset, maxOffset]);
 
   useEffect(() => {
     let cancelled = false;
