@@ -91,6 +91,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const { data: yearlyData, refetch: refetchYearly } = useRevenueReport(organizationId, 'yearly');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<{ id: string; number: string; store: string } | null>(null);
+  const [affToDelete, setAffToDelete] = useState<string | null>(null); // manual_entry id
+  const [deleteAffDialogOpen, setDeleteAffDialogOpen] = useState(false);
+  const [deletingAff, setDeletingAff] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
@@ -268,7 +271,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   // Manual entries (Nova Entrada)
   const [manualEntriesCurrentPeriod, setManualEntriesCurrentPeriod] = useState<Array<{ entry_type: string; name: string; value: number }>>([]);
   // All manual entries (for series data across all periods)
-  const [allManualEntries, setAllManualEntries] = useState<Array<{ entry_type: string; name: string; value: number; created_at: string }>>([]);
+  const [allManualEntries, setAllManualEntries] = useState<Array<{ id: string; entry_type: string; name: string; value: number; created_at: string }>>([]);
   const [savingMarketingCost, setSavingMarketingCost] = useState(false);
   const [linkedCampaignId, setLinkedCampaignId] = useState<string | null>(null);
   const [availableCampaigns, setAvailableCampaigns] = useState<Array<{ id: string; name: string; marketing_cost: number | null }>>([]);
@@ -1285,11 +1288,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       // 5. All manual entries (for full series across all periods)
       const { data: allEntriesRows } = await supabase
         .from('manual_entries')
-        .select('entry_type, name, value, created_at')
+        .select('id, entry_type, name, value, created_at')
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: true });
       setAllManualEntries(
-        ((allEntriesRows ?? []) as Array<{ entry_type: string; name: string; value: number; created_at: string }>)
+        ((allEntriesRows ?? []) as Array<{ id: string; entry_type: string; name: string; value: number; created_at: string }>)
       );
     };
     fetchCampaignCosts().catch(() => {});
@@ -1406,6 +1409,16 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           setOrderToDelete({ id: orderId, number: orderNumber, store: orderStore });
           setDeleteDialogOpen(true);
         }
+        return;
+      }
+
+      // Botão de excluir afiliação
+      const deleteAffButton = target.closest('[data-delete-aff-btn]') as HTMLElement;
+      if (deleteAffButton) {
+        e.preventDefault();
+        e.stopPropagation();
+        const affId = deleteAffButton.getAttribute('data-aff-id');
+        if (affId) { setAffToDelete(affId); setDeleteAffDialogOpen(true); }
         return;
       }
 
@@ -1807,6 +1820,19 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       console.error('Erro ao salvar custos:', err);
     } finally {
       setSavingCosts(false);
+    }
+  };
+
+  const handleDeleteAff = async () => {
+    if (!affToDelete) return;
+    setDeletingAff(true);
+    try {
+      await supabase.from('manual_entries').delete().eq('id', affToDelete);
+      setAllManualEntries(prev => prev.filter(e => e.id !== affToDelete));
+      setDeleteAffDialogOpen(false);
+      setAffToDelete(null);
+    } finally {
+      setDeletingAff(false);
     }
   };
 
@@ -2299,6 +2325,15 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             <div style="display:flex;justify-content:space-between;font-size:12px;padding-top:6px;border-top:1px solid rgba(16,185,129,0.2);">
               <span style="color:#6ee7b7;font-weight:600;">Comissão:</span>
               <span style="font-weight:800;color:#10b981;">+R$ ${affValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:8px;">
+              <button
+                data-delete-aff-btn
+                data-aff-id="${affEntry.id ?? ''}"
+                style="flex:1;background:#ef4444;color:white;border:none;border-radius:5px;padding:5px 8px;font-size:10px;cursor:pointer;font-weight:600;"
+                onmouseover="this.style.background='#dc2626'"
+                onmouseout="this.style.background='#ef4444'"
+              >🗑 Excluir</button>
             </div>`;
         })() : null;
 
@@ -4023,6 +4058,23 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   Excluir
                 </>
               )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteAffDialogOpen} onOpenChange={setDeleteAffDialogOpen}>
+        <AlertDialogContent className="dark:bg-zinc-900 dark:border-zinc-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="dark:text-white">Excluir comissão de afiliação?</AlertDialogTitle>
+            <AlertDialogDescription className="dark:text-zinc-400">
+              Essa ação é irreversível. A entrada será removida do relatório e do gráfico.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingAff} className="dark:border-zinc-700 dark:text-zinc-300">Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteAff} disabled={deletingAff} className="bg-red-600 hover:bg-red-700 text-white">
+              {deletingAff ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Excluindo...</> : <><Trash2 className="w-4 h-4 mr-2" />Excluir</>}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
