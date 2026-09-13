@@ -93,6 +93,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [orderToDelete, setOrderToDelete] = useState<{ id: string; number: string; store: string } | null>(null);
   const [affToDelete, setAffToDelete] = useState<string | null>(null); // manual_entry id
   const [deleteAffDialogOpen, setDeleteAffDialogOpen] = useState(false);
+  const [affDetailOpen, setAffDetailOpen] = useState(false);
+  const [affDetailData, setAffDetailData] = useState<{ id: string; name: string; value: number; ref: string; date: string } | null>(null);
   const [deletingAff, setDeletingAff] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
@@ -1422,6 +1424,22 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         return;
       }
 
+      // Botão de detalhar afiliação
+      const detailAffButton = target.closest('[data-detail-aff-btn]') as HTMLElement;
+      if (detailAffButton) {
+        e.preventDefault();
+        e.stopPropagation();
+        setAffDetailData({
+          id: detailAffButton.getAttribute('data-aff-id') ?? '',
+          name: detailAffButton.getAttribute('data-aff-name') ?? '',
+          value: Number(detailAffButton.getAttribute('data-aff-value') ?? 0),
+          ref: detailAffButton.getAttribute('data-aff-ref') ?? '',
+          date: detailAffButton.getAttribute('data-aff-date') ?? '',
+        });
+        setAffDetailOpen(true);
+        return;
+      }
+
       // Botão de navegação (setas prev/next)
       const navButton = target.closest('[data-tooltip-nav]') as HTMLElement;
       if (navButton && !navButton.hasAttribute('disabled')) {
@@ -2312,27 +2330,42 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             </div>` : '';
           return `
             ${navAff}
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;padding:5px 8px;background:rgba(16,185,129,0.18);border-radius:6px;border:1px solid rgba(16,185,129,0.35);">
-              <span style="font-size:13px;">🤝</span>
-              <span style="font-size:10px;font-weight:800;color:#6ee7b7;letter-spacing:0.08em;text-transform:uppercase;">Comissão de Afiliação</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
-              <div style="flex:1;min-width:0">
-                <p style="font-weight:700;color:#d1fae5;font-size:12px;margin:0;line-height:1.4;word-break:break-word;">${affiliateName}</p>
-                <p style="color:#6ee7b7;font-size:10px;margin:2px 0 0;opacity:0.8;">Pedido de Afiliação · TikTok Shop</p>
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;padding:6px 10px;background:linear-gradient(135deg,rgba(16,185,129,0.22),rgba(5,150,105,0.12));border-radius:8px;border:1px solid rgba(16,185,129,0.4);">
+              <span style="font-size:15px;line-height:1;">🤝</span>
+              <div>
+                <span style="font-size:9px;font-weight:800;color:#34d399;letter-spacing:0.1em;text-transform:uppercase;display:block;">Comissão de Afiliação</span>
+                <span style="font-size:9px;color:#6ee7b7;opacity:0.7;">TikTok Shop Vitrine</span>
               </div>
             </div>
-            <div style="display:flex;justify-content:space-between;font-size:12px;padding-top:6px;border-top:1px solid rgba(16,185,129,0.2);">
-              <span style="color:#6ee7b7;font-weight:600;">Comissão:</span>
-              <span style="font-weight:800;color:#10b981;">+R$ ${affValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+            <div style="margin-bottom:10px;">
+              <p style="font-weight:700;color:#d1fae5;font-size:13px;margin:0 0 3px;line-height:1.3;">${affiliateName}</p>
+              <div style="display:flex;align-items:center;gap:5px;">
+                <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;"></span>
+                <span style="font-size:10px;color:#6ee7b7;opacity:0.75;">${affEntry.order_reference || 'Pedido de Afiliação'}</span>
+              </div>
             </div>
-            <div style="display:flex;gap:6px;margin-top:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:rgba(16,185,129,0.1);border-radius:6px;margin-bottom:10px;">
+              <span style="color:#6ee7b7;font-size:11px;font-weight:600;">Comissão recebida</span>
+              <span style="font-weight:800;color:#10b981;font-size:15px;">+R$ ${affValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <button
+                data-detail-aff-btn
+                data-aff-id="${affEntry.id ?? ''}"
+                data-aff-name="${affiliateName}"
+                data-aff-value="${affValue}"
+                data-aff-ref="${affEntry.order_reference || ''}"
+                data-aff-date="${affEntry.created_at}"
+                style="flex:1;background:rgba(16,185,129,0.2);color:#6ee7b7;border:1px solid rgba(16,185,129,0.4);border-radius:5px;padding:6px 8px;font-size:10px;cursor:pointer;font-weight:700;"
+                onmouseover="this.style.background='rgba(16,185,129,0.35)'"
+                onmouseout="this.style.background='rgba(16,185,129,0.2)'"
+              >🔍 Detalhar</button>
               <button
                 data-delete-aff-btn
                 data-aff-id="${affEntry.id ?? ''}"
-                style="flex:1;background:#ef4444;color:white;border:none;border-radius:5px;padding:5px 8px;font-size:10px;cursor:pointer;font-weight:600;"
-                onmouseover="this.style.background='#dc2626'"
-                onmouseout="this.style.background='#ef4444'"
+                style="flex:1;background:rgba(239,68,68,0.15);color:#fca5a5;border:1px solid rgba(239,68,68,0.35);border-radius:5px;padding:6px 8px;font-size:10px;cursor:pointer;font-weight:700;"
+                onmouseover="this.style.background='rgba(239,68,68,0.3)'"
+                onmouseout="this.style.background='rgba(239,68,68,0.15)'"
               >🗑 Excluir</button>
             </div>`;
         })() : null;
@@ -4079,6 +4112,83 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Modal de detalhe de afiliação */}
+      {affDetailOpen && affDetailData && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setAffDetailOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-sm rounded-2xl overflow-hidden"
+            style={{ background: 'linear-gradient(160deg,#022c22 0%,#064e3b 60%,#065f46 100%)', border: '1px solid rgba(16,185,129,0.45)', boxShadow: '0 24px 60px rgba(16,185,129,0.25)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-5 pt-5 pb-4" style={{ borderBottom: '1px solid rgba(16,185,129,0.2)' }}>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🤝</span>
+                  <div>
+                    <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Comissão de Afiliação</p>
+                    <p className="text-[10px] text-emerald-600">TikTok Shop Vitrine</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setAffDetailOpen(false)}
+                  className="w-7 h-7 flex items-center justify-center rounded-full text-emerald-500 hover:bg-emerald-500/20 transition-colors text-lg leading-none"
+                >×</button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="px-5 py-4 space-y-3">
+              <div>
+                <p className="text-[10px] text-emerald-600 uppercase tracking-wide mb-0.5">Produto / Referência</p>
+                <p className="text-base font-bold text-emerald-100">{affDetailData.name}</p>
+              </div>
+              {affDetailData.ref && (
+                <div>
+                  <p className="text-[10px] text-emerald-600 uppercase tracking-wide mb-0.5">Marketplace / Pedido</p>
+                  <p className="text-sm text-emerald-200">{affDetailData.ref}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-[10px] text-emerald-600 uppercase tracking-wide mb-0.5">Data de Registro</p>
+                <p className="text-sm text-emerald-200">
+                  {affDetailData.date ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(affDetailData.date)) : '—'}
+                </p>
+              </div>
+
+              {/* Commission highlight */}
+              <div className="rounded-xl p-4 flex items-center justify-between" style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)' }}>
+                <div>
+                  <p className="text-[10px] text-emerald-500 uppercase tracking-widest font-bold">Comissão Recebida</p>
+                  <p className="text-[10px] text-emerald-600 mt-0.5">Receita adicional AlobExpress</p>
+                </div>
+                <p className="text-2xl font-black text-emerald-400">
+                  +{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(affDetailData.value)}
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 pb-5 flex gap-3">
+              <button
+                onClick={() => setAffDetailOpen(false)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                style={{ background: 'rgba(16,185,129,0.12)', color: '#6ee7b7', border: '1px solid rgba(16,185,129,0.3)' }}
+              >Fechar</button>
+              <button
+                onClick={() => { setAffToDelete(affDetailData.id); setAffDetailOpen(false); setDeleteAffDialogOpen(true); }}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                style={{ background: 'rgba(239,68,68,0.15)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.35)' }}
+              >Excluir Entrada</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Card className="p-6 border-gray-100 dark:border-zinc-800">
       <div className="flex items-center justify-between mb-6">
