@@ -1217,7 +1217,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       const maxOffsetInEffect = Math.max(0, data.length - windowSize3);
       const isLatestWin = windowOffset >= maxOffsetInEffect;
       // Compute the visible slice directly (avoid stale closure on visibleData)
-      const windowSize3 = period === 'daily' ? 14 : period === 'weekly' ? 12 : period === 'monthly' ? 3 : 5;
       const slice = data.slice(windowOffset, windowOffset + windowSize3);
       const lastSliceItem = slice[slice.length - 1] as { period_start?: string; period_end?: string } | undefined;
       const firstSliceItem = slice[0] as { period_start?: string } | undefined;
