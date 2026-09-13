@@ -2274,7 +2274,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         // Affiliate entries for this period
         const pStart = (periodData as { period_start?: string }).period_start;
         const pEnd = (periodData as { period_end?: string }).period_end;
-        const affEntries: Array<{ entry_type: string; name: string; value: number; created_at: string }> = (() => {
+        const affEntries: Array<{ id: string; entry_type: string; name: string; value: number; created_at: string }> = (() => {
           if (!pStart || !pEnd) return [];
           const start = new Date(pStart).getTime();
           const end = new Date(pEnd).getTime() + 86_400_000;
