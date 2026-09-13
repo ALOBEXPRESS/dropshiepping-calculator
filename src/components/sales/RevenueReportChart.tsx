@@ -273,7 +273,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   // Manual entries (Nova Entrada)
   const [manualEntriesCurrentPeriod, setManualEntriesCurrentPeriod] = useState<Array<{ entry_type: string; name: string; value: number }>>([]);
   // All manual entries (for series data across all periods)
-  const [allManualEntries, setAllManualEntries] = useState<Array<{ id: string; entry_type: string; name: string; value: number; created_at: string }>>([]);
+  const [allManualEntries, setAllManualEntries] = useState<Array<{ id: string; entry_type: string; name: string; value: number; created_at: string; order_reference?: string | null }>>([]);
   const [savingMarketingCost, setSavingMarketingCost] = useState(false);
   const [linkedCampaignId, setLinkedCampaignId] = useState<string | null>(null);
   const [availableCampaigns, setAvailableCampaigns] = useState<Array<{ id: string; name: string; marketing_cost: number | null }>>([]);
@@ -1290,11 +1290,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       // 5. All manual entries (for full series across all periods)
       const { data: allEntriesRows } = await supabase
         .from('manual_entries')
-        .select('id, entry_type, name, value, created_at')
+        .select('id, entry_type, name, value, created_at, order_reference')
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: true });
       setAllManualEntries(
-        ((allEntriesRows ?? []) as Array<{ id: string; entry_type: string; name: string; value: number; created_at: string }>)
+        ((allEntriesRows ?? []) as Array<{ id: string; entry_type: string; name: string; value: number; created_at: string; order_reference?: string | null }>)
       );
     };
     fetchCampaignCosts().catch(() => {});
@@ -2292,7 +2292,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         // Affiliate entries for this period
         const pStart = (periodData as { period_start?: string }).period_start;
         const pEnd = (periodData as { period_end?: string }).period_end;
-        const affEntries: Array<{ id: string; entry_type: string; name: string; value: number; created_at: string }> = (() => {
+        const affEntries: Array<{ id: string; entry_type: string; name: string; value: number; created_at: string; order_reference?: string | null }> = (() => {
           if (!pStart || !pEnd) return [];
           const start = new Date(pStart).getTime();
           const end = new Date(pEnd).getTime() + 86_400_000;
