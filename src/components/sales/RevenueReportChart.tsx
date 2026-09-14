@@ -40,6 +40,7 @@ interface RevenueReportChartProps {
   onRegisterOpenOrder?: (fn: (orderId: string) => void) => void;
   /** Register a callback so external components can open the affiliate detail modal */
   onRegisterOpenAff?: (fn: (aff: { id: string; name: string; value: number; ref: string; date: string }) => void) => void;
+  onAffDeleted?: () => void;
 }
 
 
@@ -87,7 +88,7 @@ interface OrderDetail {
   tiktok_sfp_enabled?: boolean;
 }
 
-export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organizationId, refreshTrigger, onOrderDeleted, period: externalPeriod, onPeriodChange, onRegisterOpenOrder, onRegisterOpenAff }) => {
+export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organizationId, refreshTrigger, onOrderDeleted, period: externalPeriod, onPeriodChange, onRegisterOpenOrder, onRegisterOpenAff, onAffDeleted }) => {
   const [period, setPeriod] = useState<PeriodFilter>(externalPeriod || 'monthly');
   const [windowOffset, setWindowOffset] = useState(0);
   const { data, loading, error, refetch } = useRevenueReport(organizationId, period);
@@ -1962,6 +1963,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       setAllManualEntries(prev => prev.filter(e => e.id !== affToDelete));
       setDeleteAffDialogOpen(false);
       setAffToDelete(null);
+      setAffDetailOpen(false);
+      onAffDeleted?.();
     } finally {
       setDeletingAff(false);
     }

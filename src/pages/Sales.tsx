@@ -312,6 +312,7 @@ const Sales: React.FC = () => {
               onPeriodChange={setPeriod}
               onRegisterOpenOrder={(fn) => { openOrderByIdRef.current = fn; }}
               onRegisterOpenAff={(fn) => { openAffByIdRef.current = fn; }}
+              onAffDeleted={handleRefresh}
             />
           </div>
         </div>
