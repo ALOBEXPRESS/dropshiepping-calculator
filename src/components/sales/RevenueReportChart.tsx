@@ -126,10 +126,19 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     }
   }, [externalPeriod, period]);
 
+  // Reset period marketing cost immediately when window scrolls to avoid stale values
+  useEffect(() => {
+    setCampaignProductsCurrentPeriodCost(0);
+    setGvmPlayCurrentPeriodCost(0);
+  }, [windowOffset]);
+
   // Notificar mudança de período para o componente pai
   const handlePeriodChange = useCallback((newPeriod: PeriodFilter) => {
     setPeriod(newPeriod);
     setWindowOffset(0);
+    // Reset period marketing cost immediately to avoid stale value showing
+    setCampaignProductsCurrentPeriodCost(0);
+    setGvmPlayCurrentPeriodCost(0);
     if (onPeriodChange) {
       onPeriodChange(newPeriod);
     }
