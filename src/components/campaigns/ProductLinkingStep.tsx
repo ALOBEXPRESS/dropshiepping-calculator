@@ -401,7 +401,17 @@ export const ProductLinkingStep: React.FC<ProductLinkingStepProps> = ({
 
                 {isSelected && (
                   <div className="mt-3 pl-[52px] space-y-2">
-                    {/* Cost of marketing — only shown when adSets have no cost defined */}
+                    {/* Venda vinculada — PRIMEIRO */}
+                    <div className="flex items-center gap-3">
+                      <label className="text-xs text-zinc-400 whitespace-nowrap">Venda vinculada</label>
+                      <OrderPicker
+                        productId={product.id}
+                        organizationId={organizationId}
+                        selectedOrderId={(entry as ProductLinkEntry).linked_order_id ?? null}
+                        onSelect={(orderId) => setLinkedOrder(product.id, orderId)}
+                      />
+                    </div>
+                    {/* Custo de Marketing — só quando adSets não definem custo */}
                     {hideCostInput ? (
                       adSetsCostHint != null && (
                         <div className="flex items-center gap-3">
@@ -420,16 +430,6 @@ export const ProductLinkingStep: React.FC<ProductLinkingStepProps> = ({
                         />
                       </div>
                     )}
-                    {/* Optional order link */}
-                    <div className="flex items-center gap-3">
-                      <label className="text-xs text-zinc-400 whitespace-nowrap">Venda vinculada</label>
-                      <OrderPicker
-                        productId={product.id}
-                        organizationId={organizationId}
-                        selectedOrderId={(entry as ProductLinkEntry).linked_order_id ?? null}
-                        onSelect={(orderId) => setLinkedOrder(product.id, orderId)}
-                      />
-                    </div>
                   </div>
                 )}
               </div>

@@ -1824,8 +1824,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   setManualMarketingCost(
                     new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(ec.marketing_cost)
                   );
-                  // If no campaign linked, it's a manual cost
-                  if (!ec.campaign_id) setManualCostEnabled(true);
+                  // Enable checkbox for both GVM PLAY (no campaign) and linked campaign costs
+                  setManualCostEnabled(true);
                 }
                 // Auto-fill coupon from orders.coupon_value
                 const { data: orderRow } = await supabase
@@ -3989,21 +3989,25 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           Custo investido em tráfego pago para este pedido. Será subtraído do lucro.
                         </p>
 
-                        {/* Custo Manual */}
+                        {/* Custo Manual / Campanha */}
                         <div className="flex items-center gap-2">
                           <input
                             type="checkbox"
                             id="manual-cost-check"
                             checked={manualCostEnabled}
+                            disabled={!!linkedCampaignId}
                             onChange={(e) => {
+                              if (linkedCampaignId) return; // locked when campaign linked
                               setManualCostEnabled(e.target.checked);
-                              // Do NOT clear manualMarketingCost on uncheck — preserve for recheck
                             }}
-                            className="w-4 h-4 accent-purple-500 cursor-pointer"
+                            className={`w-4 h-4 accent-purple-500 ${linkedCampaignId ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
                           />
-                          <label htmlFor="manual-cost-check" className="text-zinc-400 text-xs cursor-pointer select-none">
-                            Custo GVM PLAY
+                          <label htmlFor="manual-cost-check" className={`text-xs select-none ${linkedCampaignId ? 'text-zinc-500 cursor-not-allowed' : 'text-zinc-400 cursor-pointer'}`}>
+                            {linkedCampaignId ? 'Custo de Marketing (Campanha)' : 'Custo GVM PLAY'}
                           </label>
+                          {linkedCampaignId && (
+                            <span className="text-[10px] bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded">bloqueado</span>
+                          )}
                         </div>
 
                         {/* Campanha vinculada — sempre read-only, sempre visível se existir */}
@@ -4027,9 +4031,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             inputMode="decimal"
                             placeholder="0,00"
                             value={manualMarketingCost}
-                            readOnly={!manualCostEnabled}
-                            onChange={manualCostEnabled ? (e) => setManualMarketingCost(e.target.value.replace(/[^0-9,.]/g, '')) : undefined}
-                            className={`flex-1 border rounded-lg px-3 py-1.5 text-sm placeholder-zinc-600 tabular-nums ${manualCostEnabled ? 'bg-zinc-800 border-zinc-600 text-white focus:outline-none focus:border-purple-500 cursor-text' : 'bg-zinc-900 border-zinc-700 text-zinc-400 cursor-not-allowed'}`}
+                            readOnly={!manualCostEnabled || !!linkedCampaignId}
+                            onChange={manualCostEnabled && !linkedCampaignId ? (e) => setManualMarketingCost(e.target.value.replace(/[^0-9,.]/g, '')) : undefined}
+                            className={`flex-1 border rounded-lg px-3 py-1.5 text-sm placeholder-zinc-600 tabular-nums ${manualCostEnabled && !linkedCampaignId ? 'bg-zinc-800 border-zinc-600 text-white focus:outline-none focus:border-purple-500 cursor-text' : 'bg-zinc-900 border-zinc-700 text-zinc-400 cursor-not-allowed'}`}
                           />
                           {manualMarketingCost && (
                             <button onClick={() => { setManualMarketingCost(''); setLinkedCampaignId(null); }} className="text-zinc-500 hover:text-zinc-300 transition-colors">
