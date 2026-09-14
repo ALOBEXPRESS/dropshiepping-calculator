@@ -147,45 +147,81 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   }, [onPeriodChange]);
 
   // Allow external components (e.g. PaymentTransactions) to open the order detail modal
-  const openOrderById = useCallback(async (orderId: string) => {
+  const openOrderById = useCallback((orderId: string) => {
     if (!orderId) return;
-    try {
-      const { data: rows } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('id', orderId)
-        .limit(1);
-      const row = rows?.[0];
-      if (!row) return;
-      const detail: OrderDetail = {
-        order_id: orderId,
-        bling_order_id: (row as { bling_order_id?: string | null }).bling_order_id ?? null,
-        order_date: (row as { order_date?: string | null }).order_date ?? null,
-        order_number: String((row as { order_number?: string | number }).order_number ?? ''),
-        marketplace: (row as { marketplace?: string }).marketplace ?? '',
-        marketplace_fixed_fee: 0,
-        customer_name: (row as { customer_name?: string | null }).customer_name ?? undefined,
-        product_name: (row as { product_name?: string | null }).product_name ?? undefined,
-        total_amount: Number((row as { total_amount?: number }).total_amount ?? 0),
-        total_products: Number((row as { total_products?: number }).total_products ?? 0),
-        base_value: 0,
-        total_cost: 0,
-        product_cost_price: 0,
-        marketplace_commission: 0,
-        commission_rate: 0,
-        shipping_cost: 0,
-        other_expenses: 0,
-        discount_value: 0,
-        total_profit: 0,
-        is_free_sample: false,
-        tiktok_sfp_enabled: false,
-        tiktok_reembolso_disabled: false,
-        tiktok_retorno_liquido: null,
-      };
-      setSelectedOrder(detail);
-      setDetailDialogOpen(true);
-    } catch { /* silent */ }
-  }, []);
+    // Search in all yearly data (already loaded and enriched)
+    const allOrders = dataRef.current.flatMap(p => p.orders_data ?? []);
+    const order = allOrders.find(o => (o as { order_id?: string }).order_id === orderId);
+    if (!order) return;
+
+    const mergedOrder = mergeOrderForTooltip(order) as unknown as {
+      customer_name?: string;
+      product_name?: string;
+      product_sku?: string;
+      product_image_url?: string;
+      total_cost?: number | string | null;
+      product_cost_price?: number | string | null;
+      products?: Array<{ name: string; sku?: string }>;
+    };
+    const resolvedMarketplaceConfig = resolveMarketplaceConfig(
+      (order as { marketplace?: string }).marketplace,
+      Number((order as { commission_rate?: number }).commission_rate ?? 0),
+      Number((order as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0)
+    );
+    const enrichment = orderEnrichmentByIdRef.current[orderId];
+    const productsForDisplay = mergedOrder.products ?? [];
+    const productNamesFromItems = productsForDisplay.map(p => p.name).filter(Boolean);
+    const mainProductName = mergedOrder.product_name || productNamesFromItems[0] || 'Produto não vinculado';
+    const productSku = mergedOrder.product_sku || (productsForDisplay[0]?.sku ?? null);
+    const marketplaceName = resolvedMarketplaceConfig?.name ?? (order as { marketplace?: string }).marketplace ?? '';
+    const customerName = mergedOrder.customer_name || 'Cliente não identificado';
+    const orderNumber = String((order as { order_number?: string | number }).order_number ?? 'S/N');
+    const orderRevenue = Number((order as { total_amount?: number }).total_amount ?? 0);
+    const { realProfit, isFreeSample } = computeOrderRealProfit(mergedOrder, resolvedMarketplaceConfig);
+    const manualMktDeduct = manualMarketingCostByOrderIdRef.current[orderId] ?? 0;
+    const reembolsoOv = reembolsoByOrderIdRef.current[orderId] ?? 0;
+    const effectiveProfit = reembolsoOv > 0 ? reembolsoOv : (realProfit - manualMktDeduct);
+
+    const detail: OrderDetail = {
+      ...((enrichment ?? {}) as Partial<OrderDetail>),
+      order_id: orderId,
+      bling_order_id: (order as { bling_order_id?: string | null }).bling_order_id ?? null,
+      order_date: (order as { order_date?: string | null }).order_date ?? null,
+      tiktok_reembolso_disabled: (order as { tiktok_reembolso_disabled?: boolean }).tiktok_reembolso_disabled === true,
+      tiktok_retorno_liquido: (order as { tiktok_retorno_liquido?: number | null }).tiktok_retorno_liquido ?? null,
+      order_number: orderNumber,
+      marketplace: marketplaceName,
+      marketplace_fixed_fee: Number(resolvedMarketplaceConfig?.fixed_fee ?? (order as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0),
+      customer_name: customerName,
+      product_name: mainProductName,
+      product_sku: productSku ?? undefined,
+      product_image_url: mergedOrder.product_image_url ?? undefined,
+      products: mergedOrder.products as OrderDetail['products'],
+      total_amount: orderRevenue,
+      total_products: Number((order as { total_products?: number | string | null }).total_products ?? orderRevenue),
+      base_value: Number((order as { base_value?: number | string | null }).base_value ?? 0),
+      total_cost: Number(mergedOrder.total_cost ?? 0),
+      product_cost_price: Number(mergedOrder.product_cost_price ?? 0),
+      marketplace_commission: Number((order as { marketplace_commission?: number }).marketplace_commission ?? 0),
+      commission_rate: Number(resolvedMarketplaceConfig?.commission_rate ?? (order as { commission_rate?: number }).commission_rate ?? 0),
+      shipping_cost: Number((order as { shipping_cost?: number }).shipping_cost ?? 0),
+      other_expenses: Number((order as { other_expenses?: number }).other_expenses ?? 0),
+      discount_value: Number((order as { discount_value?: number | string | null }).discount_value ?? 0),
+      supplier_fee_value: (order as { supplier_fee_value?: string }).supplier_fee_value,
+      supplier_fee_type: (order as { supplier_fee_type?: string }).supplier_fee_type,
+      supplier_gateway_fee_value: (order as { supplier_gateway_fee_value?: string }).supplier_gateway_fee_value,
+      supplier_gateway_fee_type: (order as { supplier_gateway_fee_type?: string }).supplier_gateway_fee_type,
+      total_profit: effectiveProfit,
+      tiktok_sfp_enabled: (order as { tiktok_sfp_enabled?: boolean | string }).tiktok_sfp_enabled === true
+        || String((order as { tiktok_sfp_enabled?: unknown }).tiktok_sfp_enabled) === 'true',
+      is_free_sample: isFreeSample,
+    };
+
+    setSelectedOrder(detail);
+    setCameFromAffiliate(Boolean(affiliateByOrderIdRef.current?.[orderId]) || Boolean((detail as { affiliate_id?: string }).affiliate_id));
+    setOpenProduto(false);
+    setDetailDialogOpen(true);
+  }, [mergeOrderForTooltip, resolveMarketplaceConfig, computeOrderRealProfit]);
 
   // Register openOrderById with parent via callback
   useEffect(() => {
