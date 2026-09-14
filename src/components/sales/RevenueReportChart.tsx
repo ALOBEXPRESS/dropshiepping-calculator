@@ -2969,6 +2969,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             })();
             const realProfit = isFreeSample
               ? -totalProductCost
+              // When retorno liquido: already net received — don't add manual acréscimo/desconto
+              : hasRetornoLiquido
+              ? (precoVendaLiquidoFinal - totalProductCost - manualMarketingCostVal)
               : (precoVendaLiquidoFinal - totalProductCost + acrescimoManual - manualMarketingCostVal);
             // Reembolso override: substitui todo cálculo pelo valor inserido
             const reembolsoVal = parseFloat(reembolsoValue.replace(',', '.')) || 0;
@@ -4232,14 +4235,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             <span className="text-zinc-500">Custo de Marketing</span>
                             <span className="text-purple-400 font-semibold tabular-nums">
                               -{formatCurrency(manualMarketingCostVal)}
-                            </span>
-                          </div>
-                        )}
-                        {manualCouponVal > 0 && (
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-zinc-500">Cupom de Desconto</span>
-                            <span className="text-yellow-400 font-semibold tabular-nums">
-                              -{formatCurrency(manualCouponVal)}
                             </span>
                           </div>
                         )}
