@@ -4151,6 +4151,24 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                     )}
                   </div>
 
+                  {/* Custo Total Marketing — acima do Lucro Real */}
+                  {manualMarketingCostVal > 0 && (
+                    <div className="rounded-xl px-4 py-3 border border-purple-800/30 bg-purple-950/15 flex items-center justify-between">
+                      <div>
+                        <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-medium mb-0.5">Custo Total Marketing</p>
+                        <p className="text-lg font-bold text-purple-400 tabular-nums">
+                          -{formatCurrency(manualMarketingCostVal)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-medium mb-0.5">Lucro Real</p>
+                        <p className={`text-lg font-bold tabular-nums ${finalRealProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {formatCurrency(finalRealProfit)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Lucro Real */}
                   <div className={`rounded-xl px-4 py-4 border ${profitPositive ? 'bg-emerald-950/25 border-emerald-800/40' : 'bg-red-950/25 border-red-800/40'}`}>
                     <div className="flex items-center justify-between mb-3">
@@ -4195,24 +4213,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       />
                     </div>
                   </div>
-
-                  {/* Custo Total Marketing */}
-                  {manualMarketingCostVal > 0 && (
-                    <div className="rounded-xl px-4 py-3 border border-purple-800/30 bg-purple-950/15 flex items-center justify-between">
-                      <div>
-                        <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-medium mb-0.5">Custo Total Marketing</p>
-                        <p className="text-lg font-bold text-purple-400 tabular-nums">
-                          -{formatCurrency(manualMarketingCostVal)}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-medium mb-0.5">Lucro Real</p>
-                        <p className={`text-lg font-bold tabular-nums ${finalRealProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {formatCurrency(finalRealProfit)}
-                        </p>
-                      </div>
-                    </div>
-                  )}
 
                 </div>
               </div>
