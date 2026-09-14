@@ -167,6 +167,33 @@ export const AdSetSettingsStep: React.FC<AdSetSettingsStepProps> = ({
           </div>
         )}
 
+        {isConsideration && (
+          <div className="space-y-1.5">
+            <Label className="text-zinc-300 text-sm">Custo (R$) <span className="text-zinc-500 font-normal">— opcional</span></Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm pointer-events-none">R$</span>
+              <Input
+                type="text"
+                inputMode="decimal"
+                placeholder="0,00"
+                value={rawCost}
+                onChange={(e) => setRawCost(e.target.value.replace(/[^0-9,]/g, ''))}
+                onBlur={() => {
+                  const cleaned = rawCost.replace(',', '.');
+                  const num = parseFloat(cleaned);
+                  const val = isNaN(num) ? null : num;
+                  onChange('target_cost_per_result' as keyof CampaignFormPayload['adSet'], val);
+                  setRawCost(val != null
+                    ? new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(val)
+                    : '');
+                }}
+                className="pl-9 bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-orange-500"
+              />
+            </div>
+            <p className="text-[11px] text-zinc-500">Custo total investido neste grupo de anúncios.</p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label className="text-zinc-300 text-sm">Data de Início</Label>

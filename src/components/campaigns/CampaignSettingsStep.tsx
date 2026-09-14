@@ -113,11 +113,13 @@ export const CampaignSettingsStep: React.FC<CampaignSettingsStepProps> = ({ data
               }}
               onBlur={() => {
                 commitBudget(rawBudget);
-                // Re-format display on blur if valid
-                if (data.budget_amount != null) {
+                // Re-format display on blur directly from rawBudget
+                const cleaned = rawBudget.replace(/\./g, '').replace(',', '.');
+                const num = parseFloat(cleaned);
+                if (!isNaN(num) && cleaned !== '') {
                   setRawBudget(
                     new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                      .format(data.budget_amount)
+                      .format(num)
                   );
                 }
               }}
