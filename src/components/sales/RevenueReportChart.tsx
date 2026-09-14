@@ -1342,17 +1342,43 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       const windowSize3 = period === 'daily' ? 14 : period === 'weekly' ? 12 : period === 'monthly' ? 3 : 5;
       const maxOffsetInEffect = Math.max(0, data.length - windowSize3);
       const isLatestWin = windowOffset >= maxOffsetInEffect;
-      // Compute the visible slice directly (avoid stale closure on visibleData)
+      // Compute date range from orders in the visible slice
       const slice = data.slice(windowOffset, windowOffset + windowSize3);
-      const lastSliceItem = slice[slice.length - 1] as { period_start?: string; period_end?: string } | undefined;
-      const firstSliceItem = slice[0] as { period_start?: string } | undefined;
-      // When at latest window: scope to LAST month only (e.g. "Set"), not whole Jul–Set window
-      const windowStartDate = isLatestWin && lastSliceItem
-        ? new Date(lastSliceItem.period_start ?? now.toISOString())
-        : new Date(firstSliceItem?.period_start ?? now.toISOString());
-      const windowEndDate = new Date(
-        lastSliceItem?.period_end ?? new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString()
-      );
+      // Collect all order dates in the slice to derive real start/end
+      const allSliceOrders = slice.flatMap(p => p.orders_data ?? []);
+      const sliceDates = allSliceOrders
+        .map(o => (o as { order_date?: string }).order_date)
+        .filter(Boolean) as string[];
+      // Fallback: use period_label to construct dates (label = 'May', 'Jun', etc.)
+      const firstSliceLabel = (slice[0] as { period_label?: string }).period_label ?? '';
+      const lastSliceLabel = (slice[slice.length - 1] as { period_label?: string }).period_label ?? '';
+      const MONTH_MAP: Record<string, number> = { Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11 };
+      const deriveDateFromLabel = (label: string, isStart: boolean) => {
+        const m = MONTH_MAP[label];
+        if (m === undefined) return now;
+        const y = new Date().getFullYear(); // current year assumption
+        return isStart ? new Date(y, m, 1) : new Date(y, m + 1, 0, 23, 59, 59);
+      };
+      let windowStartDate: Date;
+      let windowEndDate: Date;
+      if (sliceDates.length > 0) {
+        sliceDates.sort();
+        windowStartDate = new Date(sliceDates[0]);
+        windowEndDate = new Date(sliceDates[sliceDates.length - 1]);
+        windowEndDate.setHours(23, 59, 59);
+      } else {
+        // Use period labels
+        if (isLatestWin) {
+          windowStartDate = deriveDateFromLabel(lastSliceLabel, true);
+        } else {
+          windowStartDate = deriveDateFromLabel(firstSliceLabel, true);
+        }
+        windowEndDate = deriveDateFromLabel(lastSliceLabel, false);
+      }
+      // When at latest window: scope to LAST month only
+      if (isLatestWin && lastSliceLabel) {
+        windowStartDate = deriveDateFromLabel(lastSliceLabel, true);
+      }
       const monthStart = windowStartDate.toISOString();
       const monthEnd = windowEndDate.toISOString();
 
@@ -4426,7 +4452,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           {/* Navigation arrows — outside chart div to avoid ApexCharts SVG intercept */}
           {period !== 'yearly' && (
             <button
-              onClick={() => setWindowOffset(o => Math.max(0, o - 1))}
+              onClick={() => setWindowOffset(o => Math.max(0, o - windowSize))}
               disabled={windowOffset === 0}
               style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', zIndex: 50 }}
               className="w-8 h-16 flex items-center justify-center bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-700/60 rounded-r-lg text-zinc-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all"
@@ -4439,7 +4465,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           )}
           {period !== 'yearly' && (
             <button
-              onClick={() => setWindowOffset(o => Math.min(maxOffset, o + 1))}
+              onClick={() => setWindowOffset(o => Math.min(maxOffset, o + windowSize))}
               disabled={windowOffset >= maxOffset}
               style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', zIndex: 50 }}
               className="w-8 h-16 flex items-center justify-center bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-700/60 rounded-l-lg text-zinc-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all"
