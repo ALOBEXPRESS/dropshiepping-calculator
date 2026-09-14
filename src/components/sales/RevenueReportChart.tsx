@@ -38,6 +38,8 @@ interface RevenueReportChartProps {
   onPeriodChange?: (period: PeriodFilter) => void;
   /** Register a callback so external components can open the order detail modal by order_id */
   onRegisterOpenOrder?: (fn: (orderId: string) => void) => void;
+  /** Register a callback so external components can open the affiliate detail modal */
+  onRegisterOpenAff?: (fn: (aff: { id: string; name: string; value: number; ref: string; date: string }) => void) => void;
 }
 
 
@@ -85,7 +87,7 @@ interface OrderDetail {
   tiktok_sfp_enabled?: boolean;
 }
 
-export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organizationId, refreshTrigger, onOrderDeleted, period: externalPeriod, onPeriodChange, onRegisterOpenOrder }) => {
+export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organizationId, refreshTrigger, onOrderDeleted, period: externalPeriod, onPeriodChange, onRegisterOpenOrder, onRegisterOpenAff }) => {
   const [period, setPeriod] = useState<PeriodFilter>(externalPeriod || 'monthly');
   const [windowOffset, setWindowOffset] = useState(0);
   const { data, loading, error, refetch } = useRevenueReport(organizationId, period);
@@ -230,6 +232,16 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   useEffect(() => {
     if (onRegisterOpenOrder) onRegisterOpenOrder(openOrderById);
   }, [onRegisterOpenOrder, openOrderById]);
+
+  // Expose openAffDetail for external use (e.g. PaymentTransactions)
+  const openAffDetail = useCallback((aff: { id: string; name: string; value: number; ref: string; date: string }) => {
+    setAffDetailData(aff);
+    setAffDetailOpen(true);
+  }, []);
+
+  useEffect(() => {
+    if (onRegisterOpenAff) onRegisterOpenAff(openAffDetail);
+  }, [onRegisterOpenAff, openAffDetail]);
   const marketplacesForResolution = useMemo<Marketplace[]>(() => {
     if (marketplaces.length > 0) return marketplaces;
     return [{

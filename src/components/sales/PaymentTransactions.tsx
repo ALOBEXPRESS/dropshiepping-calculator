@@ -74,6 +74,7 @@ interface PaymentTransactionsProps {
   organizationId: string;
   refreshTrigger?: number;
   onOrderClick?: (orderId: string) => void;
+  onAffClick?: (aff: AffEntry) => void;
 }
 
 const TX_PAGE_SIZE = 5;
@@ -86,7 +87,7 @@ const formatName = (name: string | null) => {
   return name.replace(/\s*\(.*?\)\s*$/, '').split(' ').slice(0, 2).join(' ');
 };
 
-export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organizationId, refreshTrigger, onOrderClick }) => {
+export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organizationId, refreshTrigger, onOrderClick, onAffClick }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [affEntries, setAffEntries] = useState<AffEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -235,7 +236,11 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
               <>
                 <div className="flex-1 space-y-0 overflow-hidden">
                   {visibleAff.map((aff) => (
-                    <div key={aff.id} className="flex items-center gap-2.5 py-2 border-b border-emerald-900/20 last:border-0">
+                    <div
+                      key={aff.id}
+                      onClick={() => onAffClick?.(aff)}
+                      className={`flex items-center gap-2.5 py-2 border-b border-emerald-900/20 last:border-0 ${onAffClick ? 'cursor-pointer hover:bg-emerald-900/20 rounded-lg px-1 -mx-1 transition-colors' : ''}`}
+                    >
                       <div className="w-8 h-8 rounded-lg bg-emerald-500/12 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
                         <Handshake className="w-4 h-4 text-emerald-400" />
                       </div>

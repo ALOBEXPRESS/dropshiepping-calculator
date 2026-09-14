@@ -32,6 +32,7 @@ const Sales: React.FC = () => {
   const [novaEntradaOpen, setNovaEntradaOpen] = useState(false);
   // Ref to openOrderById function registered by RevenueReportChart
   const openOrderByIdRef = useRef<((orderId: string) => void) | null>(null);
+  const openAffByIdRef = useRef<((aff: { id: string; name: string; value: number; ref: string; date: string }) => void) | null>(null);
   const { stats } = useHeroStats(organizationId || '', period, refreshKey);
 
   // Free sample lane state — rehydrated from sessionStorage
@@ -310,6 +311,7 @@ const Sales: React.FC = () => {
               period={period}
               onPeriodChange={setPeriod}
               onRegisterOpenOrder={(fn) => { openOrderByIdRef.current = fn; }}
+              onRegisterOpenAff={(fn) => { openAffByIdRef.current = fn; }}
             />
           </div>
         </div>
@@ -320,6 +322,13 @@ const Sales: React.FC = () => {
             organizationId={organizationId}
             refreshTrigger={refreshKey}
             onOrderClick={(orderId) => openOrderByIdRef.current?.(orderId)}
+            onAffClick={(aff) => openAffByIdRef.current?.({
+              id: aff.id,
+              name: aff.name,
+              value: Number(aff.value),
+              ref: aff.order_reference ?? '',
+              date: aff.created_at,
+            })}
           />
         </div>
       </div>
