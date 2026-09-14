@@ -1269,12 +1269,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const cost = Number(row.marketing_cost ?? 0);
         costMap[`order:${row.order_id}`] = cost;
         manualOverrideIds.add(row.order_id);
-        // GVM PLAY (campaign_id=null): desconta do lucro do pedido E do Lucro Total
-        // Campanha (campaign_id!=null): só aparece em Marketing Total, não desconta lucro
-        if (!row.campaign_id) {
-          manualCostMap[row.order_id] = cost;
-          perOrderCostMap[row.order_id] = cost;
-        }
+        // GVM PLAY e campanhas com pedido vinculado: ambos descontam do lucro
+        manualCostMap[row.order_id] = cost;
+        perOrderCostMap[row.order_id] = cost;
         if (row.campaign_id) seenCampaigns.set(row.campaign_id, cost);
       }
 
