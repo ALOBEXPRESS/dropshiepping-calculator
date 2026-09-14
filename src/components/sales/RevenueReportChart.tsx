@@ -1309,7 +1309,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       }
     };
     fetchMarketingCosts().catch(() => {});
-  }, [data, organizationId]);
+  }, [data, organizationId, refreshTrigger]);
 
   // Fetch total campaign products cost directly from campaign_products table
   useEffect(() => {
@@ -1413,7 +1413,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     };
     fetchCampaignCosts().catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId, data, windowOffset]);
+  }, [organizationId, data, windowOffset, refreshTrigger]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1876,9 +1876,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   // Refetch quando refreshTrigger mudar (apenas se for > 0)
   React.useEffect(() => {
     if (refreshTrigger && refreshTrigger > 0) {
-      console.log('🔄 RevenueReportChart: refreshTrigger mudou, refazendo query...', refreshTrigger);
       refetch();
       refetchYearly();
+      // Clear marketing cost cache so fetchMarketingCosts re-runs with fresh data
+      setManualMarketingCostByOrderId({});
+      setMarketingCostByProductId({});
     }
   }, [refreshTrigger, refetch, refetchYearly]);
 
