@@ -164,7 +164,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         order_number: String((row as { order_number?: string | number }).order_number ?? ''),
         marketplace: (row as { marketplace?: string }).marketplace ?? '',
         marketplace_fixed_fee: 0,
-        customer_name: (row as { customer_name?: string | null }).customer_name ?? null,
+        customer_name: (row as { customer_name?: string | null }).customer_name ?? undefined,
         product_name: (row as { product_name?: string | null }).product_name ?? undefined,
         total_amount: Number((row as { total_amount?: number }).total_amount ?? 0),
         total_products: Number((row as { total_products?: number }).total_products ?? 0),
