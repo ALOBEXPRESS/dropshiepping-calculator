@@ -101,10 +101,22 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
     const doFetch = async () => {
       setLoading(true);
       const startDate = new Date();
-      if (period === 'this_week') startDate.setDate(startDate.getDate() - 7);
-      else if (period === 'this_month') startDate.setMonth(startDate.getMonth() - 1);
-      else startDate.setMonth(startDate.getMonth() - 3);
-      const start = startDate.toISOString().split('T')[0];
+    if (period === 'this_week') {
+      // Start of current week (Monday)
+      const day = startDate.getDay(); // 0=Sun,1=Mon,...
+      const diff = day === 0 ? 6 : day - 1; // days since Monday
+      startDate.setDate(startDate.getDate() - diff);
+      startDate.setHours(0, 0, 0, 0);
+    } else if (period === 'this_month') {
+      // Start of current month
+      startDate.setDate(1);
+      startDate.setHours(0, 0, 0, 0);
+    } else {
+      // this_quarter: last 3 months
+      startDate.setMonth(startDate.getMonth() - 3);
+      startDate.setHours(0, 0, 0, 0);
+    }
+    const start = startDate.toISOString().split('T')[0];
 
       const [txRes, affRes] = await Promise.all([
         supabase
