@@ -1263,11 +1263,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const cost = Number(row.marketing_cost ?? 0);
         costMap[`order:${row.order_id}`] = cost;
         manualOverrideIds.add(row.order_id);
-        // Only GVM PLAY (campaign_id = null) deducts from Lucro Total
-        if (!row.campaign_id) {
-          manualCostMap[row.order_id] = cost;
-        }
-        // ALL costs deduct from per-order tooltip profit
+        // ALL campaign_order_costs deduct from Lucro Total (GVM PLAY + campaign-linked)
+        manualCostMap[row.order_id] = cost;
+        // Also store in perOrderCostMap for tooltip
         perOrderCostMap[row.order_id] = cost;
         if (row.campaign_id) seenCampaigns.set(row.campaign_id, cost);
       }
@@ -1288,7 +1286,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             if (!seenCampaigns.has(row.campaign_id)) {
               seenCampaigns.set(row.campaign_id, cost);
               costMap[`order:${row.linked_order_id}`] = cost;
-              perOrderCostMap[row.linked_order_id] = cost; // for tooltip
+              manualCostMap[row.linked_order_id] = cost;
+              perOrderCostMap[row.linked_order_id] = cost;
             } else {
               costMap[`order:${row.linked_order_id}`] = 0;
             }
