@@ -1258,8 +1258,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const cost = Number(row.marketing_cost ?? 0);
         costMap[`order:${row.order_id}`] = cost;
         manualOverrideIds.add(row.order_id);
-        // ALL campaign_order_costs entries deduct from profit (GVM PLAY + linked campaigns)
-        manualCostMap[row.order_id] = cost;
+        // Only GVM PLAY (campaign_id = null) deducts from profit in Lucro Total
+        // Campaign-linked costs are tracked separately (campaignProductsTotalCost)
+        if (!row.campaign_id) {
+          manualCostMap[row.order_id] = cost;
+        }
         if (row.campaign_id) seenCampaigns.set(row.campaign_id, cost);
       }
 
@@ -1279,7 +1282,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             if (!seenCampaigns.has(row.campaign_id)) {
               seenCampaigns.set(row.campaign_id, cost);
               costMap[`order:${row.linked_order_id}`] = cost;
-              manualCostMap[row.linked_order_id] = cost; // deduct from profit
+              // Campaign costs do NOT deduct from Lucro Total (tracked via campaignProductsTotalCost)
             } else {
               costMap[`order:${row.linked_order_id}`] = 0;
             }
