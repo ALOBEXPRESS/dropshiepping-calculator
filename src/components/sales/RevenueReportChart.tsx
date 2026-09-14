@@ -187,7 +187,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     const orderNumber = String((order as { order_number?: string | number }).order_number ?? 'S/N');
     const orderRevenue = Number((order as { total_amount?: number }).total_amount ?? 0);
     const { realProfit, isFreeSample } = compute(mergedOrder, resolvedMarketplaceConfig);
-    const manualMktDeduct = manualMarketingCostByOrderIdRef.current[orderId] ?? 0;
+    const manualMktDeduct = perOrderMarketingCostRef.current[orderId] ?? 0;
     const reembolsoOv = reembolsoByOrderIdRef.current[orderId] ?? 0;
     const effectiveProfit = reembolsoOv > 0 ? reembolsoOv : (realProfit - manualMktDeduct);
 
@@ -368,8 +368,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [openMarketingCost, setOpenMarketingCost] = useState(false);
   const [marketingCostByProductId, setMarketingCostByProductId] = useState<Record<string, number>>({});
   const [manualMarketingCostByOrderId, setManualMarketingCostByOrderId] = useState<Record<string, number>>({});
+  // Per-order marketing cost for tooltip display (includes campaign costs, not just GVM PLAY)
+  const [perOrderMarketingCost, setPerOrderMarketingCost] = useState<Record<string, number>>({});
   const manualMarketingCostByOrderIdRef = useRef<Record<string, number>>({});
   manualMarketingCostByOrderIdRef.current = manualMarketingCostByOrderId;
+  const perOrderMarketingCostRef = useRef<Record<string, number>>({});
+  perOrderMarketingCostRef.current = perOrderMarketingCost;
   const [reembolsoByOrderId, setReembolsoByOrderId] = useState<Record<string, number>>({});
   const reembolsoByOrderIdRef = useRef<Record<string, number>>({});
   reembolsoByOrderIdRef.current = reembolsoByOrderId;
@@ -1246,6 +1250,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
       const costMap: Record<string, number> = {};
       const manualCostMap: Record<string, number> = {};
+      const perOrderCostMap: Record<string, number> = {};
       const seenCampaigns = new Map<string, number>();
 
       // STEP 1: campaign_order_costs has highest priority (user explicit override)
@@ -1258,11 +1263,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const cost = Number(row.marketing_cost ?? 0);
         costMap[`order:${row.order_id}`] = cost;
         manualOverrideIds.add(row.order_id);
-        // Only GVM PLAY (campaign_id = null) deducts from profit in Lucro Total
-        // Campaign-linked costs are tracked separately (campaignProductsTotalCost)
+        // Only GVM PLAY (campaign_id = null) deducts from Lucro Total
         if (!row.campaign_id) {
           manualCostMap[row.order_id] = cost;
         }
+        // ALL costs deduct from per-order tooltip profit
+        perOrderCostMap[row.order_id] = cost;
         if (row.campaign_id) seenCampaigns.set(row.campaign_id, cost);
       }
 
@@ -1282,19 +1288,21 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             if (!seenCampaigns.has(row.campaign_id)) {
               seenCampaigns.set(row.campaign_id, cost);
               costMap[`order:${row.linked_order_id}`] = cost;
-              // Campaign costs do NOT deduct from Lucro Total (tracked via campaignProductsTotalCost)
+              perOrderCostMap[row.linked_order_id] = cost; // for tooltip
             } else {
               costMap[`order:${row.linked_order_id}`] = 0;
             }
           } else {
             costMap[`order:${row.linked_order_id}`] = cost;
             manualCostMap[row.linked_order_id] = cost;
+            perOrderCostMap[row.linked_order_id] = cost;
           }
         }
       }
 
       setMarketingCostByProductId(costMap);
       setManualMarketingCostByOrderId(manualCostMap);
+      setPerOrderMarketingCost(perOrderCostMap);
 
       // Fetch reembolso values for all orders
       if (allOrderIds.length > 0) {
@@ -1662,7 +1670,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 const productCount = productNamesFromItems.length;
                 const productSku = mergedOrder.product_sku || (productsForDisplay[0]?.sku ?? null);
                 const { realProfit: rawRealProfit, isFreeSample } = computeOrderRealProfit(mergedOrder, resolvedMarketplaceConfig);
-                const manualMktDeduct1 = manualMarketingCostByOrderIdRef.current[(order as { order_id?: string }).order_id ?? ''] ?? 0;
+                const manualMktDeduct1 = perOrderMarketingCostRef.current[(order as { order_id?: string }).order_id ?? ''] ?? 0;
                 const reembolsoOv1 = reembolsoByOrderIdRef.current[(order as { order_id?: string }).order_id ?? ''] ?? 0;
                 const realProfit = reembolsoOv1 > 0 ? reembolsoOv1 : (rawRealProfit - manualMktDeduct1);
                 const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true;
@@ -1910,6 +1918,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       // Clear marketing cost cache so fetchMarketingCosts re-runs with fresh data
       setManualMarketingCostByOrderId({});
       setMarketingCostByProductId({});
+      setPerOrderMarketingCost({});
     }
   }, [refreshTrigger, refetch, refetchYearly]);
 
@@ -2548,7 +2557,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const orderNumber = order.order_number || 'S/N';
 
           const { realProfit: rawRealProfit2, isFreeSample } = computeOrderRealProfit(mergedOrder, resolvedMarketplaceConfig);
-          const manualMktDeduct2 = manualMarketingCostByOrderIdRef.current[order.order_id] ?? 0;
+          const manualMktDeduct2 = perOrderMarketingCostRef.current[order.order_id] ?? 0;
           const reembolsoOv2 = reembolsoByOrderIdRef.current[order.order_id] ?? 0;
           const realProfit = reembolsoOv2 > 0 ? reembolsoOv2 : (rawRealProfit2 - manualMktDeduct2);
           const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true;
