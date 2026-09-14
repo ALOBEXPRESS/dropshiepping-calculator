@@ -147,23 +147,29 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   }, [onPeriodChange]);
 
   // Allow external components (e.g. PaymentTransactions) to open the order detail modal
+  // Uses refs to call mergeOrderForTooltip etc. lazily (they are declared later in component)
+  const mergeOrderForTooltipRef = useRef<((order: unknown) => unknown) | null>(null);
+  const resolveMarketplaceConfigRef = useRef<((mp: string | null | undefined, rate: number | null | undefined, fee: number | null | undefined) => Marketplace | undefined) | null>(null);
+  const computeOrderRealProfitRef = useRef<((order: unknown, cfg: Marketplace | undefined) => { realProfit: number; isFreeSample: boolean; precoVendaLiquidoFinal: number }) | null>(null);
+
   const openOrderById = useCallback((orderId: string) => {
     if (!orderId) return;
-    // Search in all yearly data (already loaded and enriched)
+    const merge = mergeOrderForTooltipRef.current;
+    const resolve = resolveMarketplaceConfigRef.current;
+    const compute = computeOrderRealProfitRef.current;
+    if (!merge || !resolve || !compute) return;
+
     const allOrders = dataRef.current.flatMap(p => p.orders_data ?? []);
     const order = allOrders.find(o => (o as { order_id?: string }).order_id === orderId);
     if (!order) return;
 
-    const mergedOrder = mergeOrderForTooltip(order) as unknown as {
-      customer_name?: string;
-      product_name?: string;
-      product_sku?: string;
-      product_image_url?: string;
-      total_cost?: number | string | null;
+    const mergedOrder = merge(order) as unknown as {
+      customer_name?: string; product_name?: string; product_sku?: string;
+      product_image_url?: string; total_cost?: number | string | null;
       product_cost_price?: number | string | null;
       products?: Array<{ name: string; sku?: string }>;
     };
-    const resolvedMarketplaceConfig = resolveMarketplaceConfig(
+    const resolvedMarketplaceConfig = resolve(
       (order as { marketplace?: string }).marketplace,
       Number((order as { commission_rate?: number }).commission_rate ?? 0),
       Number((order as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0)
@@ -177,7 +183,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     const customerName = mergedOrder.customer_name || 'Cliente não identificado';
     const orderNumber = String((order as { order_number?: string | number }).order_number ?? 'S/N');
     const orderRevenue = Number((order as { total_amount?: number }).total_amount ?? 0);
-    const { realProfit, isFreeSample } = computeOrderRealProfit(mergedOrder, resolvedMarketplaceConfig);
+    const { realProfit, isFreeSample } = compute(mergedOrder, resolvedMarketplaceConfig);
     const manualMktDeduct = manualMarketingCostByOrderIdRef.current[orderId] ?? 0;
     const reembolsoOv = reembolsoByOrderIdRef.current[orderId] ?? 0;
     const effectiveProfit = reembolsoOv > 0 ? reembolsoOv : (realProfit - manualMktDeduct);
@@ -189,13 +195,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       order_date: (order as { order_date?: string | null }).order_date ?? null,
       tiktok_reembolso_disabled: (order as { tiktok_reembolso_disabled?: boolean }).tiktok_reembolso_disabled === true,
       tiktok_retorno_liquido: (order as { tiktok_retorno_liquido?: number | null }).tiktok_retorno_liquido ?? null,
-      order_number: orderNumber,
-      marketplace: marketplaceName,
+      order_number: orderNumber, marketplace: marketplaceName,
       marketplace_fixed_fee: Number(resolvedMarketplaceConfig?.fixed_fee ?? (order as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0),
-      customer_name: customerName,
-      product_name: mainProductName,
-      product_sku: productSku ?? undefined,
-      product_image_url: mergedOrder.product_image_url ?? undefined,
+      customer_name: customerName, product_name: mainProductName,
+      product_sku: productSku ?? undefined, product_image_url: mergedOrder.product_image_url ?? undefined,
       products: mergedOrder.products as OrderDetail['products'],
       total_amount: orderRevenue,
       total_products: Number((order as { total_products?: number | string | null }).total_products ?? orderRevenue),
@@ -221,7 +224,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     setCameFromAffiliate(Boolean(affiliateByOrderIdRef.current?.[orderId]) || Boolean((detail as { affiliate_id?: string }).affiliate_id));
     setOpenProduto(false);
     setDetailDialogOpen(true);
-  }, [mergeOrderForTooltip, resolveMarketplaceConfig, computeOrderRealProfit]);
+  }, []);
 
   // Register openOrderById with parent via callback
   useEffect(() => {
@@ -440,6 +443,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         ?? enrichment.tiktok_reembolso_disabled,
     };
   }, []);
+
+  // Sync refs so openOrderById (declared earlier) can call these functions lazily
+  mergeOrderForTooltipRef.current = mergeOrderForTooltip;
+  resolveMarketplaceConfigRef.current = resolveMarketplaceConfig;
+  computeOrderRealProfitRef.current = computeOrderRealProfit;
 
   useEffect(() => {
     let cancelled = false;
