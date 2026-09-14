@@ -104,6 +104,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [deleting, setDeleting] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
+  const [modalOrderList, setModalOrderList] = useState<string[]>([]); // ordered list of order_ids for arrow navigation
+  const [modalOrderIdx, setModalOrderIdx] = useState<number>(-1);
   const [marketplaces, setMarketplaces] = useState<Marketplace[]>([]);
   const [cameFromAffiliate, setCameFromAffiliate] = useState(false);
   const [affiliateByOrderId, setAffiliateByOrderId] = useState<Record<string, boolean>>({});
@@ -226,6 +228,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     setSelectedOrder(detail);
     setCameFromAffiliate(Boolean(affiliateByOrderIdRef.current?.[orderId]) || Boolean((detail as { affiliate_id?: string }).affiliate_id));
     setOpenProduto(false);
+    // Build nav list from all loaded data
+    const allIds = dataRef.current.flatMap(p => (p.orders_data ?? []).map(o => (o as { order_id?: string }).order_id)).filter(Boolean) as string[];
+    setModalOrderList(allIds);
+    setModalOrderIdx(allIds.indexOf(orderId));
     setDetailDialogOpen(true);
   }, []);
 
@@ -1894,6 +1900,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 }
               } catch { /* graceful */ }
             })();
+            // Build nav list from all loaded data
+            const allNavIds = dataRef.current.flatMap(p => (p.orders_data ?? []).map(o => (o as { order_id?: string }).order_id)).filter(Boolean) as string[];
+            setModalOrderList(allNavIds);
+            setModalOrderIdx(allNavIds.indexOf(merged.order_id));
             setDetailDialogOpen(true);
           } catch (err) {
             console.error('Error parsing order data:', err);
@@ -2986,11 +2996,40 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </DialogClose>
-                  <div className="absolute top-3 left-3 z-10">
+                  <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5">
+                    {/* Prev arrow */}
+                    {modalOrderList.length > 1 && modalOrderIdx > 0 && (
+                      <button
+                        onClick={() => {
+                          const prevId = modalOrderList[modalOrderIdx - 1];
+                          if (prevId) openOrderById(prevId);
+                        }}
+                        className="w-6 h-6 flex items-center justify-center rounded-full bg-zinc-900/90 border border-zinc-700/50 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
+                        title="Pedido anterior"
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                      </button>
+                    )}
                     <span className="inline-flex items-center gap-1.5 bg-zinc-900/90 backdrop-blur-sm text-zinc-300 text-xs font-mono px-2.5 py-1 rounded-full border border-zinc-700/50">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                       #{selectedOrder.order_number}
+                      {modalOrderList.length > 1 && (
+                        <span className="text-zinc-600 text-[9px]">{modalOrderIdx + 1}/{modalOrderList.length}</span>
+                      )}
                     </span>
+                    {/* Next arrow */}
+                    {modalOrderList.length > 1 && modalOrderIdx < modalOrderList.length - 1 && (
+                      <button
+                        onClick={() => {
+                          const nextId = modalOrderList[modalOrderIdx + 1];
+                          if (nextId) openOrderById(nextId);
+                        }}
+                        className="w-6 h-6 flex items-center justify-center rounded-full bg-zinc-900/90 border border-zinc-700/50 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
+                        title="Próximo pedido"
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                      </button>
+                    )}
                   </div>
                   <div className="absolute top-3 right-12 z-10">
                     <span className="inline-flex items-center bg-orange-500/90 backdrop-blur-sm text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-lg shadow-orange-900/40">
