@@ -30,7 +30,9 @@ interface ProductLinkingStepProps {
   organizationId: string;
   selectedProducts: CampaignFormPayload['products'];
   onChange: (products: CampaignFormPayload['products']) => void;
-  preSelectName?: string | null; // auto-select product matching this name
+  preSelectName?: string | null;
+  hideCostInput?: boolean;       // true when adSets already define cost
+  adSetsCostHint?: number;       // total cost from adSets (shown as info)
 }
 
 // Raw-string cost input to avoid cursor-jump on BRL formatting
@@ -231,6 +233,8 @@ export const ProductLinkingStep: React.FC<ProductLinkingStepProps> = ({
   selectedProducts,
   onChange,
   preSelectName,
+  hideCostInput = false,
+  adSetsCostHint,
 }) => {
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -397,14 +401,25 @@ export const ProductLinkingStep: React.FC<ProductLinkingStepProps> = ({
 
                 {isSelected && (
                   <div className="mt-3 pl-[52px] space-y-2">
-                    {/* Cost of marketing */}
-                    <div className="flex items-center gap-3">
-                      <label className="text-xs text-zinc-400 whitespace-nowrap">Custo de Marketing (R$)</label>
-                      <CostInput
-                        value={entry.marketing_cost_override ?? null}
-                        onCommit={(v) => setCost(product.id, v)}
-                      />
-                    </div>
+                    {/* Cost of marketing — only shown when adSets have no cost defined */}
+                    {hideCostInput ? (
+                      adSetsCostHint != null && (
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-zinc-500">Custo de Marketing</span>
+                          <span className="text-xs text-orange-400 font-semibold">
+                            R$ {adSetsCostHint.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (do grupo de anúncios)
+                          </span>
+                        </div>
+                      )
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        <label className="text-xs text-zinc-400 whitespace-nowrap">Custo de Marketing (R$)</label>
+                        <CostInput
+                          value={entry.marketing_cost_override ?? null}
+                          onCommit={(v) => setCost(product.id, v)}
+                        />
+                      </div>
+                    )}
                     {/* Optional order link */}
                     <div className="flex items-center gap-3">
                       <label className="text-xs text-zinc-400 whitespace-nowrap">Venda vinculada</label>

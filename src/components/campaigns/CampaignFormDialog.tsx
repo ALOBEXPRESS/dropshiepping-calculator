@@ -246,10 +246,28 @@ export const CampaignFormDialog: React.FC<CampaignFormDialogProps> = ({
     if (!validateStep1()) { setStep(1); return; }
     setSaving(true);
     try {
+      // Compute effective marketing cost:
+      // If any adSet has target_cost_per_result, sum those and use as marketing_cost_override.
+      // Otherwise, use the manually entered cost in campaign_products.
+      const adSetsCostTotal = (payload.adSets ?? [payload.adSet]).reduce(
+        (sum, a) => sum + (Number((a as { target_cost_per_result?: number | null }).target_cost_per_result ?? 0)),
+        0
+      );
+      const hasAdSetCost = adSetsCostTotal > 0;
+      const finalPayload = hasAdSetCost
+        ? {
+            ...payload,
+            products: payload.products.map(p => ({
+              ...p,
+              marketing_cost_override: adSetsCostTotal,
+            })),
+          }
+        : payload;
+
       if (campaign) {
-        await updateCampaign(campaign.id, payload);
+        await updateCampaign(campaign.id, finalPayload);
       } else {
-        await createCampaign(payload);
+        await createCampaign(finalPayload);
       }
       onSaved();
       onOpenChange(false);
@@ -261,6 +279,12 @@ export const CampaignFormDialog: React.FC<CampaignFormDialogProps> = ({
       setSaving(false);
     }
   };
+
+  // Computed: total cost from adSets — used to hide manual cost in ProductLinkingStep
+  const adSetsCostTotal = (payload.adSets ?? [payload.adSet]).reduce(
+    (sum, a) => sum + (Number((a as { target_cost_per_result?: number | null }).target_cost_per_result ?? 0)),
+    0
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -376,6 +400,8 @@ export const CampaignFormDialog: React.FC<CampaignFormDialogProps> = ({
               selectedProducts={payload.products}
               onChange={(products) => setPayload((p) => ({ ...p, products }))}
               preSelectName={payload.adSets[selectedAdSetIndex]?.name ?? payload.adSet.name}
+              hideCostInput={adSetsCostTotal > 0}
+              adSetsCostHint={adSetsCostTotal > 0 ? adSetsCostTotal : undefined}
             />
           )}
         </div>
