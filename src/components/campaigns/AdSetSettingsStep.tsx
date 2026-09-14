@@ -8,7 +8,7 @@ import tiktokShopImg from '@/imgs/tiktok-shop-seller-cent-icon-filled-256.png';
 import androidImg from '@/imgs/android.png';
 import type { CampaignFormPayload, CampaignObjective } from '@/types/campaigns';
 
-const CONSIDERATION_OBJECTIVES: CampaignObjective[] = ['traffic', 'video_views', 'community_interaction'];
+const CONSIDERATION_OBJECTIVES: CampaignObjective[] = ['reach', 'traffic', 'video_views', 'community_interaction'];
 const CONVERSION_OBJECTIVES: CampaignObjective[] = ['sales', 'app_promotion', 'lead_generation'];
 
 interface AdSetSettingsStepProps {
