@@ -36,6 +36,8 @@ interface RevenueReportChartProps {
   onOrderDeleted?: () => void;
   period?: PeriodFilter;
   onPeriodChange?: (period: PeriodFilter) => void;
+  /** Register a callback so external components can open the order detail modal by order_id */
+  onRegisterOpenOrder?: (fn: (orderId: string) => void) => void;
 }
 
 
@@ -83,7 +85,7 @@ interface OrderDetail {
   tiktok_sfp_enabled?: boolean;
 }
 
-export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organizationId, refreshTrigger, onOrderDeleted, period: externalPeriod, onPeriodChange }) => {
+export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organizationId, refreshTrigger, onOrderDeleted, period: externalPeriod, onPeriodChange, onRegisterOpenOrder }) => {
   const [period, setPeriod] = useState<PeriodFilter>(externalPeriod || 'monthly');
   const [windowOffset, setWindowOffset] = useState(0);
   const { data, loading, error, refetch } = useRevenueReport(organizationId, period);
@@ -143,6 +145,52 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       onPeriodChange(newPeriod);
     }
   }, [onPeriodChange]);
+
+  // Allow external components (e.g. PaymentTransactions) to open the order detail modal
+  const openOrderById = useCallback(async (orderId: string) => {
+    if (!orderId) return;
+    try {
+      const { data: rows } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .limit(1);
+      const row = rows?.[0];
+      if (!row) return;
+      const detail: OrderDetail = {
+        order_id: orderId,
+        bling_order_id: (row as { bling_order_id?: string | null }).bling_order_id ?? null,
+        order_date: (row as { order_date?: string | null }).order_date ?? null,
+        order_number: String((row as { order_number?: string | number }).order_number ?? ''),
+        marketplace: (row as { marketplace?: string }).marketplace ?? '',
+        marketplace_fixed_fee: 0,
+        customer_name: (row as { customer_name?: string | null }).customer_name ?? null,
+        product_name: (row as { product_name?: string | null }).product_name ?? undefined,
+        total_amount: Number((row as { total_amount?: number }).total_amount ?? 0),
+        total_products: Number((row as { total_products?: number }).total_products ?? 0),
+        base_value: 0,
+        total_cost: 0,
+        product_cost_price: 0,
+        marketplace_commission: 0,
+        commission_rate: 0,
+        shipping_cost: 0,
+        other_expenses: 0,
+        discount_value: 0,
+        total_profit: 0,
+        is_free_sample: false,
+        tiktok_sfp_enabled: false,
+        tiktok_reembolso_disabled: false,
+        tiktok_retorno_liquido: null,
+      };
+      setSelectedOrder(detail);
+      setDetailDialogOpen(true);
+    } catch { /* silent */ }
+  }, []);
+
+  // Register openOrderById with parent via callback
+  useEffect(() => {
+    if (onRegisterOpenOrder) onRegisterOpenOrder(openOrderById);
+  }, [onRegisterOpenOrder, openOrderById]);
   const marketplacesForResolution = useMemo<Marketplace[]>(() => {
     if (marketplaces.length > 0) return marketplaces;
     return [{

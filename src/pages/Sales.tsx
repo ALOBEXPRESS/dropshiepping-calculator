@@ -30,6 +30,8 @@ const Sales: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
   const [novaEntradaOpen, setNovaEntradaOpen] = useState(false);
+  // Ref to openOrderById function registered by RevenueReportChart
+  const openOrderByIdRef = useRef<((orderId: string) => void) | null>(null);
   const { stats } = useHeroStats(organizationId || '', period, refreshKey);
 
   // Free sample lane state — rehydrated from sessionStorage
@@ -307,13 +309,18 @@ const Sales: React.FC = () => {
               onOrderDeleted={handleRefresh}
               period={period}
               onPeriodChange={setPeriod}
+              onRegisterOpenOrder={(fn) => { openOrderByIdRef.current = fn; }}
             />
           </div>
         </div>
 
         {/* Coluna 2 - Transações com formas de pagamento (ocupa 1/3) - Alinhado ao topo */}
         <div className="animate-on-load">
-          <PaymentTransactions organizationId={organizationId} refreshTrigger={refreshKey} />
+          <PaymentTransactions
+            organizationId={organizationId}
+            refreshTrigger={refreshKey}
+            onOrderClick={(orderId) => openOrderByIdRef.current?.(orderId)}
+          />
         </div>
       </div>
 

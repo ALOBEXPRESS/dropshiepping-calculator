@@ -73,6 +73,7 @@ interface AffEntry {
 interface PaymentTransactionsProps {
   organizationId: string;
   refreshTrigger?: number;
+  onOrderClick?: (orderId: string) => void;
 }
 
 const TX_PAGE_SIZE = 5;
@@ -85,7 +86,7 @@ const formatName = (name: string | null) => {
   return name.replace(/\s*\(.*?\)\s*$/, '').split(' ').slice(0, 2).join(' ');
 };
 
-export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organizationId, refreshTrigger }) => {
+export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organizationId, refreshTrigger, onOrderClick }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [affEntries, setAffEntries] = useState<AffEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -189,7 +190,11 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
                     const cfg = PAYMENT_CONFIG[tx.payment_method] ?? PAYMENT_CONFIG.other;
                     const positive = tx.status !== 'cancelled';
                     return (
-                      <div key={tx.id} className="flex items-center gap-2.5 py-2 border-b border-zinc-100 dark:border-zinc-800/60 last:border-0">
+                      <div
+                        key={tx.id}
+                        onClick={() => onOrderClick?.(tx.id)}
+                        className={`flex items-center gap-2.5 py-2 border-b border-zinc-100 dark:border-zinc-800/60 last:border-0 ${onOrderClick ? 'cursor-pointer hover:bg-zinc-800/40 rounded-lg px-1 -mx-1 transition-colors' : ''}`}
+                      >
                         {cfg.icon}
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 dark:text-white truncate leading-tight">{cfg.label}</p>
