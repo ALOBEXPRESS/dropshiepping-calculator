@@ -202,6 +202,13 @@ export function useCampaigns(organizationId: string): UseCampaignsReturn {
   };
 
   const deleteCampaign = async (id: string) => {
+    // 1. Clean up campaign_order_costs for orders linked to this campaign
+    await supabase
+      .from('campaign_order_costs')
+      .delete()
+      .eq('campaign_id', id);
+
+    // 2. Delete the campaign (cascades campaign_products + campaign_ad_sets via FK)
     const { error } = await supabase
       .from('campaigns')
       .delete()
