@@ -1269,12 +1269,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const cost = Number(row.marketing_cost ?? 0);
         costMap[`order:${row.order_id}`] = cost;
         manualOverrideIds.add(row.order_id);
-        // GVM PLAY (campaign_id=null): desconta lucro do pedido E Lucro Total
-        // Campanha (campaign_id!=null): só Marketing Total, não desconta lucro
-        if (!row.campaign_id) {
-          manualCostMap[row.order_id] = cost;
-          perOrderCostMap[row.order_id] = cost;
-        }
+        // Todos os campaign_order_costs descontam do lucro do pedido
+        // (existência no coc significa custo explicitamente atribuído ao pedido)
+        manualCostMap[row.order_id] = cost;
+        perOrderCostMap[row.order_id] = cost;
         if (row.campaign_id) seenCampaigns.set(row.campaign_id, cost);
       }
 
@@ -1294,7 +1292,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             if (!seenCampaigns.has(row.campaign_id)) {
               seenCampaigns.set(row.campaign_id, cost);
               costMap[`order:${row.linked_order_id}`] = cost;
-              // Campaign group cost: tracked in Marketing Total only, not deducted from per-order profit
+              // campaign_products without coc entry = group cost, NOT per-order deduction
             } else {
               costMap[`order:${row.linked_order_id}`] = 0;
             }
