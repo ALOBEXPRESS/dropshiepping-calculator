@@ -130,23 +130,23 @@ export function applyThreshold(
   response: GenderizeResponse, 
   threshold: number
 ): Omit<ClassificationResult, 'recordId'> {
-  // Se a API retornou gender null, ambos os campos são null
+  // Se a API retornou gender null
   if (response.gender === null) {
     return {
       gender: null,
-      gender_probability: response.probability
+      gender_probability: response.probability ?? 0
     };
   }
   
-  // Se probability é null, não podemos aplicar threshold
+  // Se probability é null
   if (response.probability === null) {
     return {
       gender: null,
-      gender_probability: null
+      gender_probability: 0
     };
   }
   
-  // Se probability < threshold, gender é null mas preservamos probability
+  // Se probability < threshold, gender é null mas registramos a probabilidade
   if (response.probability < threshold) {
     return {
       gender: null,
@@ -395,12 +395,12 @@ export async function classifySingle(
   // Extrair primeiro nome
   const firstName = extractFirstName(fullName);
   
-  // Se o nome está vazio, retornar resultado não classificado
+  // Se o nome está vazio, retornar resultado não classificado com probabilidade 0 para marcar como avaliado
   if (!firstName) {
     return {
       recordId,
       gender: null,
-      gender_probability: null
+      gender_probability: 0
     };
   }
   
@@ -467,6 +467,7 @@ export async function runClassificationJob(
       .select('id, name')
       .eq('organization_id', organizationId)
       .is('gender', null)
+      .is('gender_probability', null)
       .not('name', 'is', null);
     
     if (queryError) {

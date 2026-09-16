@@ -6,14 +6,16 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
+import { toast } from 'sonner';
 import TimePeriodFilter from './TimePeriodFilter';
 import MarketplaceFilter from './MarketplaceFilter';
-import { GenderClassificationFunnel, GenderClassificationJobButton, CustomersStatistics } from './sales';
+import { GenderClassificationFunnel, CustomersStatistics } from './sales';
 import LeadsTable from './leads/LeadsTable';
 import { LeadsTableErrorBoundary } from './leads/LeadsTableErrorBoundary';
 import { useMarketplaces } from '../hooks/useMarketplaces';
 import { useSettings } from '@/contexts/SettingsContext';
 import { calculatePeriodRanges } from '@/utils/dateRangeCalculator';
+import { runClassificationJob } from '@/services/genderClassificationService';
 import type { TimePeriod } from '../types/dashboard';
 
 /**
@@ -30,6 +32,7 @@ const LeadsDashboard: React.FC<LeadsDashboardProps> = () => {
   const [period, setPeriod] = useState<TimePeriod>('total');
   const [selectedMarketplace, setSelectedMarketplace] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isClassifying, setIsClassifying] = useState(false);
 
   // Fetch marketplaces list
   const { marketplaces, isLoading: isLoadingMarketplaces } = useMarketplaces();
@@ -37,6 +40,41 @@ const LeadsDashboard: React.FC<LeadsDashboardProps> = () => {
   const handleRefresh = useCallback(() => {
     setRefreshKey(Date.now());
   }, []);
+
+  const handleClassifyLeads = async () => {
+    if (!organizationId || isClassifying) return;
+    setIsClassifying(true);
+    try {
+      const summary = await runClassificationJob(organizationId, {}, 'leads');
+      const { total, classified, unclassified, errors } = summary;
+      if (errors > 0) {
+        toast.warning('Classificação concluída com erros', {
+          description: `${classified} leads classificados, ${unclassified} não classificados, ${errors} erros.`,
+          duration: 5000,
+        });
+      } else if (classified === 0 && unclassified === total) {
+        toast.info('Nenhum lead classificado', {
+          description: `${total} leads processados, mas nenhum atingiu o limiar de confiança.`,
+          duration: 4000,
+        });
+      } else {
+        toast.success('Classificação concluída!', {
+          description: `${classified} leads classificados, ${unclassified} não classificados, ${errors} erros.`,
+          duration: 4000,
+        });
+      }
+      handleRefresh();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      console.error('[LeadsDashboard] Erro ao classificar leads:', error);
+      toast.error('Erro ao classificar leads', {
+        description: errorMessage,
+        duration: 5000,
+      });
+    } finally {
+      setIsClassifying(false);
+    }
+  };
 
   // Convert TimePeriod to date range for LeadsTable
   // Requirements: 10.1, 10.2, 10.3
@@ -85,10 +123,8 @@ const LeadsDashboard: React.FC<LeadsDashboardProps> = () => {
                 refreshTrigger={refreshKey}
                 period={period}
                 marketplaceId={selectedMarketplace}
-                onClassifyClick={() => {
-                  const button = document.getElementById('gender-classify-btn') as HTMLButtonElement;
-                  if (button) button.click();
-                }}
+                onClassifyClick={handleClassifyLeads}
+                isClassifying={isClassifying}
               />
               
               {/* Funil de Conversão de Leads */}
@@ -99,20 +135,6 @@ const LeadsDashboard: React.FC<LeadsDashboardProps> = () => {
                 marketplaceId={selectedMarketplace}
               />
             </section>
-          )}
-
-          {/* Botão escondido para classificação em lote */}
-          {organizationId && (
-            <div className="hidden">
-              <GenderClassificationJobButton
-                organizationId={organizationId}
-                onComplete={(summary) => {
-                  console.log('Classificação concluída:', summary);
-                  handleRefresh();
-                }}
-                data-gender-classify-button
-              />
-            </div>
           )}
 
           {/* Leads Table Section - Integrates with dashboard filters */}

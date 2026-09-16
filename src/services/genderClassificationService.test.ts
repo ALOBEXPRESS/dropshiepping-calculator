@@ -93,7 +93,7 @@ describe('genderClassificationService', () => {
       expect(result).toEqual({
         recordId: 'lead-789',
         gender: null,
-        gender_probability: null
+        gender_probability: 0
       });
 
       // Verify fetch was not called for empty name

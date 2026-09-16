@@ -32,6 +32,7 @@ interface GenderStats {
   male: number;
   female: number;
   unclassified: number;
+  pending: number;
   malePercentage: number;
   femalePercentage: number;
   unclassifiedPercentage: number;
@@ -42,6 +43,7 @@ interface GenderClassificationFunnelProps {
   organizationId: string;
   refreshTrigger?: number;
   onClassifyClick?: () => void;
+  isClassifying?: boolean;
   className?: string;
   period?: 'day' | 'week' | 'month' | 'year' | 'total';
   marketplaceId?: string | null;
@@ -51,6 +53,7 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
   organizationId,
   refreshTrigger,
   onClassifyClick,
+  isClassifying = false,
   className,
   period = 'total',
   marketplaceId = null
@@ -60,6 +63,7 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
     male: 0,
     female: 0,
     unclassified: 0,
+    pending: 0,
     malePercentage: 0,
     femalePercentage: 0,
     unclassifiedPercentage: 0,
@@ -109,7 +113,7 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
       // Buscar leads únicos (sem duplicação por múltiplos pedidos)
       const query = supabase
         .from('leads')
-        .select('id, gender, created_at')
+        .select('id, gender, gender_probability, created_at')
         .eq('organization_id', organizationId);
 
       if (startDate) {
@@ -141,6 +145,7 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
       const male = data.filter(l => l.gender === 'male').length;
       const female = data.filter(l => l.gender === 'female').length;
       const unclassified = data.filter(l => l.gender === null).length;
+      const pending = data.filter(l => l.gender === null && (l.gender_probability === null || l.gender_probability === undefined)).length;
 
       const malePercentage = total > 0 ? (male / total) * 100 : 0;
       const femalePercentage = total > 0 ? (female / total) * 100 : 0;
@@ -152,6 +157,7 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
         male,
         female,
         unclassified,
+        pending,
         malePercentage,
         femalePercentage,
         unclassifiedPercentage,
@@ -370,14 +376,24 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
       </div>
 
       {/* CTA Button */}
-      {stats.unclassified > 0 && onClassifyClick && (
+      {stats.pending > 0 && onClassifyClick && (
         <div className="mt-4">
           <Button
             onClick={onClassifyClick}
+            disabled={isClassifying}
             className="w-full bg-gradient-to-r from-[#fe2c55] to-[#ff1744] hover:from-[#ff1744] hover:to-[#fe2c55] text-white font-semibold shadow-lg shadow-[#fe2c55]/30 transition-all duration-200"
           >
-            <Sparkles className="w-4 h-4 mr-2" />
-            Classificar {stats.unclassified} Leads Pendentes
+            {isClassifying ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Classificando Leads...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Classificar {stats.pending} Leads Pendentes
+              </>
+            )}
           </Button>
         </div>
       )}
