@@ -30,7 +30,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -118,6 +117,11 @@ const leadFormSchema = z.object({
     .max(50, 'Origem deve ter no máximo 50 caracteres')
     .optional()
     .or(z.literal('')),
+  
+  gender: z.enum(['male', 'female'] as const)
+    .optional()
+    .nullable()
+    .or(z.literal('')),
 });
 
 type LeadFormValues = z.infer<typeof leadFormSchema>;
@@ -182,6 +186,7 @@ export function LeadFormDialog({
       marketplace_id: undefined,
       lead_status: 'new',
       lead_source: '',
+      gender: null,
     },
   });
   
@@ -204,6 +209,7 @@ export function LeadFormDialog({
           marketplace_id: lead.marketplace_id || undefined,
           lead_status: lead.lead_status || 'new',
           lead_source: lead.lead_source || '',
+          gender: lead.gender || null,
         });
       } else {
         // Create mode - reset to defaults
@@ -219,6 +225,7 @@ export function LeadFormDialog({
           marketplace_id: undefined,
           lead_status: 'new',
           lead_source: '',
+          gender: null,
         });
       }
     }
@@ -244,6 +251,7 @@ export function LeadFormDialog({
         marketplace_id: values.marketplace_id,
         lead_status: values.lead_status,
         lead_source: values.lead_source || undefined,
+        gender: values.gender === '' || values.gender === null ? null : (values.gender as 'male' | 'female'),
       };
       
       if (isEditMode) {
@@ -552,27 +560,53 @@ export function LeadFormDialog({
               />
             </div>
             
-            {/* Lead Source */}
-            <FormField
-              control={form.control}
-              name="lead_source"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Origem do Lead</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Ex: Indicação, Google Ads, Redes Sociais"
-                      {...field}
+            {/* Gender and Lead Source - Side by side */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="gender"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Gênero</FormLabel>
+                    <Select
+                      onValueChange={(val) => field.onChange(val === 'none' ? null : val)}
+                      value={field.value || 'none'}
                       disabled={isSubmitting}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Como este lead chegou até você?
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o gênero" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">Não especificado</SelectItem>
+                        <SelectItem value="male">M - Masculino</SelectItem>
+                        <SelectItem value="female">F - Feminino</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="lead_source"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Origem do Lead</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Ex: Indicação, Google Ads, TikTok"
+                        {...field}
+                        disabled={isSubmitting}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             
             <DialogFooter className="gap-2">
               <Button

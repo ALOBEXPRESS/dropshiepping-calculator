@@ -62,9 +62,9 @@ const DATE_PRESETS = [
 
 // Gender options
 const GENDER_OPTIONS = [
-  { value: 'male', label: 'Masculino' },
-  { value: 'female', label: 'Feminino' },
-  { value: 'unknown', label: 'Desconhecido' },
+  { value: 'male', label: 'M - Masculino' },
+  { value: 'female', label: 'F - Feminino' },
+  { value: 'unknown', label: 'Não Classificado' },
 ];
 
 /**

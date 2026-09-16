@@ -83,6 +83,7 @@ export interface LeadFormData {
   marketplace_id?: string;
   lead_status?: LeadStatus;
   lead_source?: string;
+  gender?: Gender | null;
 }
 
 /**

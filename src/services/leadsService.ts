@@ -66,7 +66,16 @@ export class LeadsService {
 
       // Apply gender filter
       if (filters.gender && filters.gender.length > 0) {
-        query = query.in('gender', filters.gender);
+        const hasNull = filters.gender.includes(null);
+        const validGenders = filters.gender.filter((g): g is 'male' | 'female' => g !== null);
+
+        if (hasNull && validGenders.length > 0) {
+          query = query.or(`gender.in.(${validGenders.join(',')}),gender.is.null`);
+        } else if (hasNull) {
+          query = query.is('gender', null);
+        } else {
+          query = query.in('gender', validGenders);
+        }
       }
 
       // Apply date range filter
@@ -199,6 +208,7 @@ export class LeadsService {
           marketplace_id: formData.marketplace_id || null,
           lead_status: formData.lead_status || 'new',
           lead_source: formData.lead_source || null,
+          gender: formData.gender !== undefined ? formData.gender : null,
         })
         .select()
         .single();
@@ -237,6 +247,7 @@ export class LeadsService {
           marketplace_id: formData.marketplace_id || null,
           lead_status: formData.lead_status || null,
           lead_source: formData.lead_source || null,
+          gender: formData.gender !== undefined ? formData.gender : null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', leadId)
