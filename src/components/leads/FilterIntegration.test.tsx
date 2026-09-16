@@ -40,6 +40,18 @@ vi.mock('@/hooks/useLeads', () => ({
     isLoading: false,
     isError: false,
   })),
+  useCreateLead: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
+  useUpdateLead: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
+  useDeleteLead: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
 }));
 
 // Mock KPICards
