@@ -168,92 +168,103 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
 
       if (fetchError) throw fetchError;
 
-      // Enriquecer pedidos sem custo com o produto registrado correspondente
+      // Enriquecer pedidos com o produto registrado correspondente e atualizar custo/lucro dinamicamente
       const enrichedOrders = await Promise.all(
         (data || []).map(async (order) => {
-          if (order.total_cost > 0 && order.first_product_id) {
-            return order;
-          }
-
           try {
-            const { data: items } = await supabase
-              .from('bling_order_items')
-              .select('id, code, product_bling_id, product_variation_id, quantity')
-              .eq('order_id', order.bling_order_id);
-
-            if (!items || items.length === 0) return order;
-
             let resolvedProduct: any = null;
             let matchedItemId: string | null = null;
 
-            for (const item of items) {
-              const code = item.code;
-              const pBlingId = item.product_bling_id;
-              const pVarId = item.product_variation_id;
-
-              // 1. Direct SKU match in products table
-              if (code) {
-                const { data: pBySku } = await supabase
-                  .from('products')
-                  .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
-                  .eq('sku', code)
-                  .maybeSingle();
-                if (pBySku && Number(pBySku.cost_price ?? 0) > 0) {
-                  resolvedProduct = pBySku;
-                  matchedItemId = item.id;
-                  break;
-                }
+            // 1. Tentar buscar produto vinculado previamente por first_product_id
+            if (order.first_product_id) {
+              const { data: pByFirstId } = await supabase
+                .from('products')
+                .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
+                .eq('id', order.first_product_id)
+                .maybeSingle();
+              if (pByFirstId && Number(pByFirstId.cost_price ?? 0) > 0) {
+                resolvedProduct = pByFirstId;
               }
+            }
 
-              // 2. Match by product_bling_id / parent SKU
-              if (pBlingId) {
-                const { data: pByBlingId } = await supabase
-                  .from('products')
-                  .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
-                  .eq('id', pBlingId)
-                  .maybeSingle();
-                if (pByBlingId && Number(pByBlingId.cost_price ?? 0) > 0) {
-                  resolvedProduct = pByBlingId;
-                  matchedItemId = item.id;
-                  break;
-                }
+            // 2. Se não resolveu ainda, buscar através dos itens do pedido
+            if (!resolvedProduct) {
+              const { data: items } = await supabase
+                .from('bling_order_items')
+                .select('id, code, product_bling_id, product_variation_id, quantity')
+                .eq('order_id', order.bling_order_id);
 
-                const { data: pb } = await supabase
-                  .from('products_bling')
-                  .select('sku')
-                  .eq('id', pBlingId)
-                  .maybeSingle();
-                if (pb?.sku) {
-                  const { data: pByParentSku } = await supabase
-                    .from('products')
-                    .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
-                    .eq('sku', pb.sku)
-                    .maybeSingle();
-                  if (pByParentSku && Number(pByParentSku.cost_price ?? 0) > 0) {
-                    resolvedProduct = pByParentSku;
-                    matchedItemId = item.id;
-                    break;
+              if (items && items.length > 0) {
+                for (const item of items) {
+                  const code = item.code;
+                  const pBlingId = item.product_bling_id;
+                  const pVarId = item.product_variation_id;
+
+                  // 2a. Direct SKU match in products table
+                  if (code) {
+                    const { data: pBySku } = await supabase
+                      .from('products')
+                      .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
+                      .eq('sku', code)
+                      .maybeSingle();
+                    if (pBySku && Number(pBySku.cost_price ?? 0) > 0) {
+                      resolvedProduct = pBySku;
+                      matchedItemId = item.id;
+                      break;
+                    }
                   }
-                }
-              }
 
-              // 3. Match by variation parent
-              if (pVarId) {
-                const { data: pv } = await supabase
-                  .from('products_variations_bling')
-                  .select('product_id')
-                  .eq('id', pVarId)
-                  .maybeSingle();
-                if (pv?.product_id) {
-                  const { data: pByVarParent } = await supabase
-                    .from('products')
-                    .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
-                    .eq('id', pv.product_id)
-                    .maybeSingle();
-                  if (pByVarParent && Number(pByVarParent.cost_price ?? 0) > 0) {
-                    resolvedProduct = pByVarParent;
-                    matchedItemId = item.id;
-                    break;
+                  // 2b. Match by product_bling_id / parent SKU
+                  if (pBlingId) {
+                    const { data: pByBlingId } = await supabase
+                      .from('products')
+                      .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
+                      .eq('id', pBlingId)
+                      .maybeSingle();
+                    if (pByBlingId && Number(pByBlingId.cost_price ?? 0) > 0) {
+                      resolvedProduct = pByBlingId;
+                      matchedItemId = item.id;
+                      break;
+                    }
+
+                    const { data: pb } = await supabase
+                      .from('products_bling')
+                      .select('sku')
+                      .eq('id', pBlingId)
+                      .maybeSingle();
+                    if (pb?.sku) {
+                      const { data: pByParentSku } = await supabase
+                        .from('products')
+                        .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
+                        .eq('sku', pb.sku)
+                        .maybeSingle();
+                      if (pByParentSku && Number(pByParentSku.cost_price ?? 0) > 0) {
+                        resolvedProduct = pByParentSku;
+                        matchedItemId = item.id;
+                        break;
+                      }
+                    }
+                  }
+
+                  // 2c. Match by variation parent
+                  if (pVarId) {
+                    const { data: pv } = await supabase
+                      .from('products_variations_bling')
+                      .select('product_id')
+                      .eq('id', pVarId)
+                      .maybeSingle();
+                    if (pv?.product_id) {
+                      const { data: pByVarParent } = await supabase
+                        .from('products')
+                        .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
+                        .eq('id', pv.product_id)
+                        .maybeSingle();
+                      if (pByVarParent && Number(pByVarParent.cost_price ?? 0) > 0) {
+                        resolvedProduct = pByVarParent;
+                        matchedItemId = item.id;
+                        break;
+                      }
+                    }
                   }
                 }
               }
