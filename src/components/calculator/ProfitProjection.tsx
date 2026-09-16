@@ -269,10 +269,18 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
     }
   })();
   
-  // Use lucro real das vendas se disponível, senão use netRevenue estimado
-  const estimatedProfitPerUnit = salesStats.totalSales > 0 
+  // Use lucro real das vendas se disponível e > 0, senão use netRevenue estimado do produto
+  const estimatedProfitPerUnit = (salesStats.totalSales > 0 && salesStats.totalProfit > 0) 
     ? (salesStats.totalProfit / salesStats.totalSales) 
-    : netRevenue;
+    : (netRevenue > 0 ? netRevenue : Math.max(0, price - cost));
+
+  const displayProfit = salesStats.totalProfit > 0 
+    ? salesStats.totalProfit 
+    : (salesStats.totalSales > 0 ? salesStats.totalSales * estimatedProfitPerUnit : 0);
+
+  const displayCost = salesStats.totalCost > 0 
+    ? salesStats.totalCost 
+    : (salesStats.totalSales > 0 ? Math.max(0, salesStats.totalRevenue - displayProfit) : 0);
 
   const scenarios = [
     { units: 50, label: 'VENDER 50 UN' },
@@ -468,12 +476,12 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
         </div>
         <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
           <p className="text-xs font-bold opacity-70 mb-2 uppercase text-white">Total de lucro</p>
-          <p className="text-2xl font-bold text-white">R$ {formatCompactCurrency(salesStats.totalProfit)}</p>
+          <p className="text-2xl font-bold text-white">R$ {formatCompactCurrency(displayProfit)}</p>
           <p className="text-xs opacity-70 mt-1 text-white">Receita: R$ {formatCompactCurrency(salesStats.totalRevenue)}</p>
         </div>
         <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
           <p className="text-xs font-bold opacity-70 mb-2 uppercase text-white">Total de custo</p>
-          <p className="text-2xl font-bold text-white">R$ {formatCompactCurrency(salesStats.totalCost)}</p>
+          <p className="text-2xl font-bold text-white">R$ {formatCompactCurrency(displayCost)}</p>
           <p className="text-xs opacity-70 mt-1 text-white">Custo real dos produtos vendidos</p>
         </div>
       </div>

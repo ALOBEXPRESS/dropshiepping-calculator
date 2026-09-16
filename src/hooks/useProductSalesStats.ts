@@ -114,12 +114,33 @@ export const useProductSalesStats = (productId?: string) => {
       let totalProf = 0;
       let totalCst = 0;
 
-      // Adicionar itens de bling_order_items
+      // Buscar custo/lucro estimado para pedidos pendentes em bling_order_items
       if (blingItems && blingItems.length > 0) {
+        const blingOrderIds = [...new Set(blingItems.map((i) => i.order_id))];
+        const { data: pendingOrders } = await supabase
+          .from('pending_orders_to_process')
+          .select('bling_order_id, total_cost, estimated_profit')
+          .in('bling_order_id', blingOrderIds);
+
+        const pendingMap = new Map<string, { total_cost: number; estimated_profit: number }>();
+        if (pendingOrders) {
+          pendingOrders.forEach((po) => {
+            pendingMap.set(po.bling_order_id, {
+              total_cost: Number(po.total_cost || 0),
+              estimated_profit: Number(po.estimated_profit || 0),
+            });
+          });
+        }
+
         blingItems.forEach((item) => {
           countedOrderIds.add(item.order_id);
           totalQty += Number(item.quantity || 1);
           totalRev += Number(item.total_value || (Number(item.quantity || 1) * Number(item.unit_value || 0)));
+          const po = pendingMap.get(item.order_id);
+          if (po) {
+            totalCst += po.total_cost;
+            totalProf += po.estimated_profit;
+          }
         });
       }
 
@@ -130,9 +151,9 @@ export const useProductSalesStats = (productId?: string) => {
             countedOrderIds.add(item.order_id);
             totalQty += Number(item.quantity || 1);
             totalRev += Number(item.total_price || 0);
+            totalProf += Number(item.profit || 0);
+            totalCst += Number(item.total_cost || 0);
           }
-          totalProf += Number(item.profit || 0);
-          totalCst += Number(item.total_cost || 0);
         });
       }
 
