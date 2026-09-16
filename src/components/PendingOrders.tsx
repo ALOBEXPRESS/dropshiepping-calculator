@@ -167,11 +167,140 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
         .order('order_date', { ascending: false });
 
       if (fetchError) throw fetchError;
-      const orders = data || [];
-      setPendingOrders(orders);
+
+      // Enriquecer pedidos sem custo com o produto registrado correspondente
+      const enrichedOrders = await Promise.all(
+        (data || []).map(async (order) => {
+          if (order.total_cost > 0 && order.first_product_id) {
+            return order;
+          }
+
+          try {
+            const { data: items } = await supabase
+              .from('bling_order_items')
+              .select('id, code, product_bling_id, product_variation_id, quantity')
+              .eq('order_id', order.bling_order_id);
+
+            if (!items || items.length === 0) return order;
+
+            let resolvedProduct: any = null;
+            let matchedItemId: string | null = null;
+
+            for (const item of items) {
+              const code = item.code;
+              const pBlingId = item.product_bling_id;
+              const pVarId = item.product_variation_id;
+
+              // 1. Direct SKU match in products table
+              if (code) {
+                const { data: pBySku } = await supabase
+                  .from('products')
+                  .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
+                  .eq('sku', code)
+                  .maybeSingle();
+                if (pBySku && Number(pBySku.cost_price ?? 0) > 0) {
+                  resolvedProduct = pBySku;
+                  matchedItemId = item.id;
+                  break;
+                }
+              }
+
+              // 2. Match by product_bling_id / parent SKU
+              if (pBlingId) {
+                const { data: pByBlingId } = await supabase
+                  .from('products')
+                  .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
+                  .eq('id', pBlingId)
+                  .maybeSingle();
+                if (pByBlingId && Number(pByBlingId.cost_price ?? 0) > 0) {
+                  resolvedProduct = pByBlingId;
+                  matchedItemId = item.id;
+                  break;
+                }
+
+                const { data: pb } = await supabase
+                  .from('products_bling')
+                  .select('sku')
+                  .eq('id', pBlingId)
+                  .maybeSingle();
+                if (pb?.sku) {
+                  const { data: pByParentSku } = await supabase
+                    .from('products')
+                    .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
+                    .eq('sku', pb.sku)
+                    .maybeSingle();
+                  if (pByParentSku && Number(pByParentSku.cost_price ?? 0) > 0) {
+                    resolvedProduct = pByParentSku;
+                    matchedItemId = item.id;
+                    break;
+                  }
+                }
+              }
+
+              // 3. Match by variation parent
+              if (pVarId) {
+                const { data: pv } = await supabase
+                  .from('products_variations_bling')
+                  .select('product_id')
+                  .eq('id', pVarId)
+                  .maybeSingle();
+                if (pv?.product_id) {
+                  const { data: pByVarParent } = await supabase
+                    .from('products')
+                    .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
+                    .eq('id', pv.product_id)
+                    .maybeSingle();
+                  if (pByVarParent && Number(pByVarParent.cost_price ?? 0) > 0) {
+                    resolvedProduct = pByVarParent;
+                    matchedItemId = item.id;
+                    break;
+                  }
+                }
+              }
+            }
+
+            if (resolvedProduct) {
+              const costPrice = Number(resolvedProduct.cost_price ?? 0);
+              const suppFeeType = resolvedProduct.supplier_fee_type || 'percent';
+              const suppFeeVal = Number(resolvedProduct.supplier_fee_value ?? 0);
+              const suppFee = suppFeeType === 'percent' ? costPrice * (suppFeeVal / 100) : suppFeeVal;
+              const suppGtwVal = Number(resolvedProduct.supplier_gateway_fee_value ?? 0);
+              const suppGtw = (resolvedProduct.supplier_gateway_fee_type || 'fixed') === 'fixed' ? suppGtwVal : costPrice * (suppGtwVal / 100);
+
+              const totalCost = costPrice + suppFee + suppGtw;
+              const expectedPrice = Number(order.expected_price || order.total_amount || 0);
+              const commissionVal = expectedPrice * (Number(order.commission_rate || 0) / 100);
+              const tiktokFixed = (order.marketplace_name || '').toLowerCase().includes('tiktok') ? 4.00 : 0;
+              const estimatedProfit = expectedPrice - totalCost - commissionVal - tiktokFixed;
+
+              if (matchedItemId) {
+                supabase
+                  .from('bling_order_items')
+                  .update({ product_id: resolvedProduct.id })
+                  .eq('id', matchedItemId)
+                  .then(() => {})
+                  .catch(() => {});
+              }
+
+              return {
+                ...order,
+                first_product_id: resolvedProduct.id,
+                total_cost: parseFloat(totalCost.toFixed(2)),
+                estimated_profit: parseFloat(estimatedProfit.toFixed(2)),
+              };
+            }
+          } catch (e) {
+            console.warn('Error resolving order cost:', e);
+          }
+
+          return order;
+        })
+      );
+
+      setPendingOrders(enrichedOrders);
       // Salvar no cache para próxima visita
       try {
-        sessionStorage.setItem('pendingOrders_cache', JSON.stringify(orders));
+        sessionStorage.setItem('pendingOrders_cache', JSON.stringify(enrichedOrders));
       } catch { /* ignore */ }
     } catch (err) {
       console.error('Error loading pending orders:', err);

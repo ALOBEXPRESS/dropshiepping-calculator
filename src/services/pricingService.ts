@@ -317,6 +317,28 @@ export const calculateMetrics = (
     tiktokPromoProductValue: number = 0,
     tiktokPromoProductType: 'fixed' | 'percent' = 'fixed'
 ): CalculationResult => {
+  const mpRaw = (currentMarketplace || '').trim().toLowerCase();
+  const mpDeaccented = mpRaw.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const mpCompact = mpDeaccented.replace(/\s+/g, '');
+  const marketplaceMap: Record<string, string> = {
+    'mercadolivre': 'mercadolivre',
+    'mercado livre': 'mercadolivre',
+    'ml': 'mercadolivre',
+    'shopee': 'shopee',
+    'tiktok': 'tiktok',
+    'tiktokshop': 'tiktok',
+    'siteproprio': 'wordpress',
+    'site proprio': 'wordpress',
+    'wordpress': 'wordpress',
+    'enjoei': 'enjoei',
+    'amazon': 'amazon',
+    'shein': 'shein',
+    'facebook': 'facebook',
+    'olx': 'olx'
+  };
+  const normalizedMarketplace = marketplaceMap[mpDeaccented] || marketplaceMap[mpCompact] || mpCompact || currentMarketplace;
+  currentMarketplace = normalizedMarketplace;
+
   // Calculate supplier fee (if fixed, add to cost. If percent, it depends on selling price - handled later)
   const supplierFeeCostFixed = supplierFeeType === 'fixed' ? supplierFeeVal : 0;
   const supplierFeeRate = supplierFeeType === 'percent' ? supplierFeeVal : 0;
