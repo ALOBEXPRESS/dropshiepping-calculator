@@ -274,12 +274,14 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
               const estimatedProfit = expectedPrice - totalCost - commissionVal - tiktokFixed;
 
               if (matchedItemId) {
-                supabase
-                  .from('bling_order_items')
-                  .update({ product_id: resolvedProduct.id })
-                  .eq('id', matchedItemId)
-                  .then(() => {})
-                  .catch(() => {});
+                (async () => {
+                  try {
+                    await supabase
+                      .from('bling_order_items')
+                      .update({ product_id: resolvedProduct.id })
+                      .eq('id', matchedItemId);
+                  } catch (e) {}
+                })();
               }
 
               return {
