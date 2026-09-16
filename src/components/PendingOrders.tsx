@@ -175,8 +175,89 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
             let resolvedProduct: any = null;
             let matchedItemId: string | null = null;
 
-            // 1. Tentar buscar produto vinculado previamente por first_product_id
-            if (order.first_product_id) {
+            // 1. Tentar buscar primeiro pelos itens do pedido (SKU/Código direto)
+            const { data: items } = await supabase
+              .from('bling_order_items')
+              .select('id, code, product_bling_id, product_variation_id, quantity')
+              .eq('order_id', order.bling_order_id);
+
+            if (items && items.length > 0) {
+              for (const item of items) {
+                const code = item.code;
+                const pBlingId = item.product_bling_id;
+                const pVarId = item.product_variation_id;
+
+                // 1a. Direct SKU match in products table (Mais preciso)
+                if (code) {
+                  const { data: pBySku } = await supabase
+                    .from('products')
+                    .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
+                    .eq('sku', code)
+                    .maybeSingle();
+                  if (pBySku && Number(pBySku.cost_price ?? 0) > 0) {
+                    resolvedProduct = pBySku;
+                    matchedItemId = item.id;
+                    break;
+                  }
+                }
+
+                // 1b. Match por variação do Bling
+                if (pVarId) {
+                  const { data: pv } = await supabase
+                    .from('products_variations_bling')
+                    .select('product_id')
+                    .eq('id', pVarId)
+                    .maybeSingle();
+                  if (pv?.product_id) {
+                    const { data: pByVarParent } = await supabase
+                      .from('products')
+                      .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
+                      .eq('id', pv.product_id)
+                      .maybeSingle();
+                    if (pByVarParent && Number(pByVarParent.cost_price ?? 0) > 0) {
+                      resolvedProduct = pByVarParent;
+                      matchedItemId = item.id;
+                      break;
+                    }
+                  }
+                }
+
+                // 1c. Match por product_bling_id / parent SKU
+                if (pBlingId) {
+                  const { data: pByBlingId } = await supabase
+                    .from('products')
+                    .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
+                    .eq('id', pBlingId)
+                    .maybeSingle();
+                  if (pByBlingId && Number(pByBlingId.cost_price ?? 0) > 0) {
+                    resolvedProduct = pByBlingId;
+                    matchedItemId = item.id;
+                    break;
+                  }
+
+                  const { data: pb } = await supabase
+                    .from('products_bling')
+                    .select('sku')
+                    .eq('id', pBlingId)
+                    .maybeSingle();
+                  if (pb?.sku) {
+                    const { data: pByParentSku } = await supabase
+                      .from('products')
+                      .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
+                      .eq('sku', pb.sku)
+                      .maybeSingle();
+                    if (pByParentSku && Number(pByParentSku.cost_price ?? 0) > 0) {
+                      resolvedProduct = pByParentSku;
+                      matchedItemId = item.id;
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+
+            // 2. Se ainda não resolveu, tentar pelo first_product_id original do pedido
+            if (!resolvedProduct && order.first_product_id) {
               const { data: pByFirstId } = await supabase
                 .from('products')
                 .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
@@ -184,89 +265,6 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
                 .maybeSingle();
               if (pByFirstId && Number(pByFirstId.cost_price ?? 0) > 0) {
                 resolvedProduct = pByFirstId;
-              }
-            }
-
-            // 2. Se não resolveu ainda, buscar através dos itens do pedido
-            if (!resolvedProduct) {
-              const { data: items } = await supabase
-                .from('bling_order_items')
-                .select('id, code, product_bling_id, product_variation_id, quantity')
-                .eq('order_id', order.bling_order_id);
-
-              if (items && items.length > 0) {
-                for (const item of items) {
-                  const code = item.code;
-                  const pBlingId = item.product_bling_id;
-                  const pVarId = item.product_variation_id;
-
-                  // 2a. Direct SKU match in products table
-                  if (code) {
-                    const { data: pBySku } = await supabase
-                      .from('products')
-                      .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
-                      .eq('sku', code)
-                      .maybeSingle();
-                    if (pBySku && Number(pBySku.cost_price ?? 0) > 0) {
-                      resolvedProduct = pBySku;
-                      matchedItemId = item.id;
-                      break;
-                    }
-                  }
-
-                  // 2b. Match by product_bling_id / parent SKU
-                  if (pBlingId) {
-                    const { data: pByBlingId } = await supabase
-                      .from('products')
-                      .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
-                      .eq('id', pBlingId)
-                      .maybeSingle();
-                    if (pByBlingId && Number(pByBlingId.cost_price ?? 0) > 0) {
-                      resolvedProduct = pByBlingId;
-                      matchedItemId = item.id;
-                      break;
-                    }
-
-                    const { data: pb } = await supabase
-                      .from('products_bling')
-                      .select('sku')
-                      .eq('id', pBlingId)
-                      .maybeSingle();
-                    if (pb?.sku) {
-                      const { data: pByParentSku } = await supabase
-                        .from('products')
-                        .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
-                        .eq('sku', pb.sku)
-                        .maybeSingle();
-                      if (pByParentSku && Number(pByParentSku.cost_price ?? 0) > 0) {
-                        resolvedProduct = pByParentSku;
-                        matchedItemId = item.id;
-                        break;
-                      }
-                    }
-                  }
-
-                  // 2c. Match by variation parent
-                  if (pVarId) {
-                    const { data: pv } = await supabase
-                      .from('products_variations_bling')
-                      .select('product_id')
-                      .eq('id', pVarId)
-                      .maybeSingle();
-                    if (pv?.product_id) {
-                      const { data: pByVarParent } = await supabase
-                        .from('products')
-                        .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
-                        .eq('id', pv.product_id)
-                        .maybeSingle();
-                      if (pByVarParent && Number(pByVarParent.cost_price ?? 0) > 0) {
-                        resolvedProduct = pByVarParent;
-                        matchedItemId = item.id;
-                        break;
-                      }
-                    }
-                  }
-                }
               }
             }
 
