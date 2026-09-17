@@ -1352,8 +1352,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       // 3. Current period campaign cost (by adSet start_date in visible window)
       const now = new Date();
       const windowSize3 = period === 'daily' ? 14 : period === 'weekly' ? 12 : period === 'monthly' ? 3 : 5;
-      const maxOffsetInEffect = Math.max(0, data.length - windowSize3);
-      const isLatestWin = windowOffset >= maxOffsetInEffect;
       // Compute date range from orders in the visible slice
       const slice = data.slice(windowOffset, windowOffset + windowSize3);
       // Collect all order dates in the slice to derive real start/end
@@ -1373,23 +1371,17 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       };
       let windowStartDate: Date;
       let windowEndDate: Date;
-      if (sliceDates.length > 0) {
+      if (period === 'monthly' && firstSliceLabel && MONTH_MAP[firstSliceLabel] !== undefined && lastSliceLabel && MONTH_MAP[lastSliceLabel] !== undefined) {
+        windowStartDate = deriveDateFromLabel(firstSliceLabel, true);
+        windowEndDate = deriveDateFromLabel(lastSliceLabel, false);
+      } else if (sliceDates.length > 0) {
         sliceDates.sort();
         windowStartDate = new Date(sliceDates[0]);
         windowEndDate = new Date(sliceDates[sliceDates.length - 1]);
         windowEndDate.setHours(23, 59, 59);
       } else {
-        // Use period labels
-        if (isLatestWin) {
-          windowStartDate = deriveDateFromLabel(lastSliceLabel, true);
-        } else {
-          windowStartDate = deriveDateFromLabel(firstSliceLabel, true);
-        }
+        windowStartDate = deriveDateFromLabel(firstSliceLabel, true);
         windowEndDate = deriveDateFromLabel(lastSliceLabel, false);
-      }
-      // When at latest window: scope to LAST month only
-      if (isLatestWin && lastSliceLabel) {
-        windowStartDate = deriveDateFromLabel(lastSliceLabel, true);
       }
       const monthStart = windowStartDate.toISOString();
       const monthEnd = windowEndDate.toISOString();
@@ -2105,10 +2097,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
       orders.forEach((order: unknown) => {
         const o = order as OrderDetail;
-        const enrichment = orderEnrichmentById[o.order_id] || {};
-        const mergedOrder = { ...o, ...enrichment };
+        const mergedOrder = mergeOrderForTooltip(o);
+        const cfg = resolveMarketplaceConfig(
+          (o as { marketplace?: string }).marketplace,
+          Number((o as { commission_rate?: number }).commission_rate ?? 0),
+          Number((o as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0)
+        );
 
-        const result = computeOrderRealProfit(mergedOrder, undefined, affiliateByOrderId[o.order_id]);
+        const result = computeOrderRealProfit(mergedOrder, cfg, affiliateByOrderId[o.order_id]);
         const realProfit = typeof result === 'number' ? result : result.realProfit;
         const liquidoFinal = typeof result === 'number' ? Number(o.total_amount ?? 0) : result.precoVendaLiquidoFinal;
         const realCost = liquidoFinal - realProfit;
@@ -2140,7 +2136,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         total_marketing_cost: totalMarketingCost,
       };
     });
-  }, [data, orderEnrichmentById, affiliateByOrderId, computeOrderRealProfit, marketingCostByProductId, manualMarketingCostByOrderId, reembolsoByOrderId]);
+  }, [data, orderEnrichmentById, affiliateByOrderId, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig, marketingCostByProductId, manualMarketingCostByOrderId, reembolsoByOrderId]);
 
   // Window size per period — mensal: 3 meses visíveis com scroll, semanal/diário: parcial com setas
   const windowSize = period === 'daily' ? 14 : period === 'weekly' ? 12 : period === 'monthly' ? 3 : 5;
@@ -2167,6 +2163,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     return acc;
   }, []);
 
+
+
   const useAccumulated = period === 'monthly' || period === 'weekly' || period === 'daily';
 
   const totalRevenue = visibleData.reduce((sum, item) => sum + Number(item.total_revenue), 0);
@@ -2177,15 +2175,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   // Custo/Lucro do PERÍODO ATUAL (label "Jun", "Sem.", etc.) = último item de visibleData
   // Para período mensal/semanal/diário: mostra só o último item (mês/semana/dia atual)
   // Para anual: soma simples dos visíveis (já é por ano)
-  const currentPeriodItem = visibleData[visibleData.length - 1];
-  // When at latest window: show just last period. When scrolled back: sum all visible periods.
-  const isLatestWindowForProfit = windowOffset >= maxOffset;
-  const currentPeriodCost = isLatestWindowForProfit
-    ? (currentPeriodItem ? Number(currentPeriodItem.total_cost ?? 0) : 0)
-    : visibleData.reduce((sum, item) => sum + Number(item.total_cost ?? 0), 0);
-  const currentPeriodProfit = isLatestWindowForProfit
-    ? (currentPeriodItem ? Number(currentPeriodItem.total_profit ?? 0) : 0)
-    : visibleData.reduce((sum, item) => sum + Number(item.total_profit ?? 0), 0);
+  const currentPeriodCost = visibleData.reduce((sum, item) => sum + Number(item.total_cost ?? 0), 0);
+  const currentPeriodProfit = visibleData.reduce((sum, item) => sum + Number(item.total_profit ?? 0), 0);
 
   // Lucro total de TODOS os dados — calculado sobre yearlyData (todos os meses do ano)
   // independente do filtro de período selecionado
@@ -2200,32 +2191,33 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           Number((o as { commission_rate?: number }).commission_rate ?? 0),
           Number((o as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0)
         );
-        const profit = computeOrderRealProfit(mergedOrder, cfg).realProfit;
+        const profit = computeOrderRealProfit(mergedOrder, cfg, affiliateByOrderId[orderId]).realProfit;
         const manualDeduct = manualMarketingCostByOrderId[orderId] ?? 0;
         const reembolsoOv = reembolsoByOrderId[orderId] ?? 0;
         const effectiveProfit = reembolsoOv > 0 ? reembolsoOv : (profit - manualDeduct);
         return s + effectiveProfit;
       }, 0);
     }, 0);
-  }, [yearlyData, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig, manualMarketingCostByOrderId, reembolsoByOrderId]);
+  }, [yearlyData, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig, manualMarketingCostByOrderId, reembolsoByOrderId, affiliateByOrderId]);
 
   // Custo total = receita - lucro (inclui produto + marketplace + frete + supplier)
   const allDataTotalCost = useMemo(() => {
     return yearlyData.reduce((sum, item) => {
       const orders = item.orders_data ?? [];
       return sum + orders.reduce((s, o) => {
+        const orderId = (o as { order_id?: string }).order_id ?? '';
         const mergedOrder = mergeOrderForTooltip(o);
         const cfg = resolveMarketplaceConfig(
           (o as { marketplace?: string }).marketplace,
           Number((o as { commission_rate?: number }).commission_rate ?? 0),
           Number((o as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0)
         );
-        const { realProfit, precoVendaLiquidoFinal } = computeOrderRealProfit(mergedOrder, cfg);
+        const { realProfit, precoVendaLiquidoFinal } = computeOrderRealProfit(mergedOrder, cfg, affiliateByOrderId[orderId]);
         const realCost = precoVendaLiquidoFinal - realProfit;
         return s + realCost;
       }, 0);
     }, 0);
-  }, [yearlyData, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig]);
+  }, [yearlyData, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig, affiliateByOrderId]);
 
   const marketingCostSeriesData = visibleData.map((periodData) => {
     const periodMarketingCost = (periodData.orders_data ?? []).reduce((sum, order) => {
@@ -2269,11 +2261,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         Jun: 'Jun', Jul: 'Jul', Aug: 'Ago', Sep: 'Set', Oct: 'Out', Nov: 'Nov', Dec: 'Dez'
       };
       if (visibleData.length > 0) {
-        const lastLabel = EN_PT[visibleData[visibleData.length - 1].period_label ?? ''] ?? visibleData[visibleData.length - 1].period_label ?? '';
-        const isLatest = windowOffset >= maxOffset;
-        if (isLatest) return `Custo ${lastLabel}`;
         const firstLabel = EN_PT[visibleData[0].period_label ?? ''] ?? visibleData[0].period_label ?? '';
-        return visibleData.length === 1 ? `Custo ${lastLabel}` : `Custo ${firstLabel} a ${lastLabel}`;
+        const lastLabel = EN_PT[visibleData[visibleData.length - 1].period_label ?? ''] ?? visibleData[visibleData.length - 1].period_label ?? '';
+        return visibleData.length === 1 || firstLabel === lastLabel ? `Custo ${lastLabel}` : `Custo ${firstLabel} a ${lastLabel}`;
       }
       const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
       return `Custo ${months[new Date().getMonth()]}`;
@@ -2289,14 +2279,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const periodLabel = (() => {
     // For monthly: use visible window range (first to last visible month)
     if (period === 'monthly' && visibleData.length > 0) {
-      const lastItem = visibleData[visibleData.length - 1];
-      const lastLabel = EN_PT_MONTHS[lastItem.period_label ?? ''] ?? lastItem.period_label ?? '';
-      // If at latest window (windowOffset at max), show just the last month as current period
-      const isLatestWindow = windowOffset >= maxOffset;
-      if (isLatestWindow && visibleData.length > 0) return `Lucro ${lastLabel}`;
       const firstLabel = EN_PT_MONTHS[visibleData[0].period_label ?? ''] ?? visibleData[0].period_label ?? '';
-      if (visibleData.length === 1) return `Lucro ${lastLabel}`;
-      return `Lucro ${firstLabel} a ${lastLabel}`;
+      const lastLabel = EN_PT_MONTHS[visibleData[visibleData.length - 1].period_label ?? ''] ?? visibleData[visibleData.length - 1].period_label ?? '';
+      return visibleData.length === 1 || firstLabel === lastLabel ? `Lucro ${lastLabel}` : `Lucro ${firstLabel} a ${lastLabel}`;
     }
     const now = new Date();
     if (period === 'daily') {
@@ -4493,7 +4478,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           {/* Navigation arrows — outside chart div to avoid ApexCharts SVG intercept */}
           {period !== 'yearly' && (
             <button
-              onClick={() => setWindowOffset(o => Math.max(0, o - windowSize))}
+              onClick={() => setWindowOffset(o => Math.max(0, o - 1))}
               disabled={windowOffset === 0}
               style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', zIndex: 50 }}
               className="w-8 h-16 flex items-center justify-center bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-700/60 rounded-r-lg text-zinc-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all"
@@ -4506,7 +4491,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           )}
           {period !== 'yearly' && (
             <button
-              onClick={() => setWindowOffset(o => Math.min(maxOffset, o + windowSize))}
+              onClick={() => setWindowOffset(o => Math.min(maxOffset, o + 1))}
               disabled={windowOffset >= maxOffset}
               style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', zIndex: 50 }}
               className="w-8 h-16 flex items-center justify-center bg-zinc-900/90 hover:bg-zinc-800 border border-zinc-700/60 rounded-l-lg text-zinc-400 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-all"
