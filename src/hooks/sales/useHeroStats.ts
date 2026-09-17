@@ -63,6 +63,7 @@ function computeProfitFromOrders(orders: Record<string, unknown>[]): number {
       tiktok_sfp_enabled: o.tiktok_sfp_enabled as boolean | string | null | undefined,
       tiktok_reembolso_disabled: Boolean(o.tiktok_reembolso_disabled),
       tiktok_retorno_liquido: o.tiktok_retorno_liquido != null ? Number(o.tiktok_retorno_liquido) : null,
+      reembolso_value: o.reembolso_value != null ? Number(o.reembolso_value) : null,
       marketplace: marketplaceName,
       products: products.map((p) => ({
         quantity: Number(p.quantity ?? 1),

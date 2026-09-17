@@ -18,6 +18,7 @@ export interface OrderProfitInput {
   tiktok_sfp_enabled?: boolean | string | null;
   tiktok_reembolso_disabled?: boolean;
   tiktok_retorno_liquido?: number | null;
+  reembolso_value?: number | null;
   is_free_sample?: boolean | string;
   marketplace?: string;
   products?: {
@@ -143,9 +144,13 @@ export function calcOrderProfit(
 
   const retornoLiquido = Number(order.tiktok_retorno_liquido ?? 0);
   const hasRetornoLiquido = isTikTok && retornoLiquido > 0;
+  const reembolsoValue = Number(order.reembolso_value ?? 0);
+  const hasReembolsoValue = reembolsoValue > 0;
 
   // ── Net price ─────────────────────────────────────────────────────────────
-  const precoVendaLiquidoFinal = hasRetornoLiquido
+  const precoVendaLiquidoFinal = hasReembolsoValue
+    ? reembolsoValue
+    : hasRetornoLiquido
     ? retornoLiquido
     : isTikTok
     ? precoVendaPagoCliente + tiktokReembolso - subtotalMarketplace

@@ -155,7 +155,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   // Uses refs to call mergeOrderForTooltip etc. lazily (they are declared later in component)
   const mergeOrderForTooltipRef = useRef<((order: unknown) => unknown) | null>(null);
   const resolveMarketplaceConfigRef = useRef<((mp: string | null | undefined, rate: number | null | undefined, fee: number | null | undefined) => Marketplace | undefined) | null>(null);
-  const computeOrderRealProfitRef = useRef<((order: unknown, cfg: Marketplace | undefined) => { realProfit: number; isFreeSample: boolean; precoVendaLiquidoFinal: number }) | null>(null);
+  const computeOrderRealProfitRef = useRef<((order: unknown, cfg: Marketplace | undefined) => { realProfit: number; isFreeSample: boolean; totalProductCost: number; precoVendaLiquidoFinal: number }) | null>(null);
 
   const selectedOrderRef = useRef<OrderDetail | null>(null);
   selectedOrderRef.current = selectedOrder;
@@ -346,10 +346,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     const customerName = mergedOrder.customer_name || 'Cliente não identificado';
     const orderNumber = String((order as { order_number?: string | number }).order_number ?? 'S/N');
     const orderRevenue = Number((order as { total_amount?: number }).total_amount ?? 0);
-    const { realProfit, isFreeSample } = compute(mergedOrder, resolvedMarketplaceConfig);
+    const { realProfit, isFreeSample, totalProductCost } = compute(mergedOrder, resolvedMarketplaceConfig);
     const manualMktDeduct = perOrderMarketingCostRef.current[orderId] ?? 0;
     const reembolsoOv = reembolsoByOrderIdRef.current[orderId] ?? 0;
-    const effectiveProfit = reembolsoOv > 0 ? reembolsoOv : (realProfit - manualMktDeduct);
+    const effectiveProfit = reembolsoOv > 0
+      ? (reembolsoOv - totalProductCost - manualMktDeduct)
+      : (realProfit - manualMktDeduct);
 
     const detail: OrderDetail = {
       ...((enrichment ?? {}) as Partial<OrderDetail>),
@@ -1943,10 +1945,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 const mainProductName = mergedOrder.product_name || productNamesFromItems[0] || 'Produto não vinculado';
                 const productCount = productNamesFromItems.length;
                 const productSku = mergedOrder.product_sku || (productsForDisplay[0]?.sku ?? null);
-                const { realProfit: rawRealProfit, isFreeSample } = computeOrderRealProfit(mergedOrder, resolvedMarketplaceConfig);
+                const { realProfit: rawRealProfit, isFreeSample, totalProductCost: tpc1 } = computeOrderRealProfit(mergedOrder, resolvedMarketplaceConfig);
                 const manualMktDeduct1 = perOrderMarketingCostRef.current[(order as { order_id?: string }).order_id ?? ''] ?? 0;
                 const reembolsoOv1 = reembolsoByOrderIdRef.current[(order as { order_id?: string }).order_id ?? ''] ?? 0;
-                const realProfit = reembolsoOv1 > 0 ? reembolsoOv1 : (rawRealProfit - manualMktDeduct1);
+                const realProfit = reembolsoOv1 > 0
+                  ? (reembolsoOv1 - tpc1 - manualMktDeduct1)
+                  : (rawRealProfit - manualMktDeduct1);
                 const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true;
                 const profitLabel = realProfit >= 0 ? 'Lucro:' : 'Prejuízo:';
                 const profitValue = realProfit >= 0
@@ -2280,12 +2284,16 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
         const result = computeOrderRealProfit(mergedOrder, cfg, affiliateByOrderId[o.order_id]);
         const realProfit = typeof result === 'number' ? result : result.realProfit;
+        const totalProductCost = typeof result === 'number' ? 0 : result.totalProductCost;
         const liquidoFinal = typeof result === 'number' ? Number(o.total_amount ?? 0) : result.precoVendaLiquidoFinal;
         const realCost = liquidoFinal - realProfit;
 
-        // Reembolso override: substitui todo cálculo de lucro
+        // Reembolso override: substitui receita pelo valor do reembolso e subtrai custos do produto
         const reembolsoOverride = reembolsoByOrderId[o.order_id] ?? 0;
-        const effectiveProfit = reembolsoOverride > 0 ? reembolsoOverride : realProfit;
+        const manualMktCost = manualMarketingCostByOrderId[o.order_id] ?? 0;
+        const effectiveProfit = reembolsoOverride > 0
+          ? (reembolsoOverride - totalProductCost - manualMktCost)
+          : (realProfit - (manualMktCost > 0 ? manualMktCost : 0));
 
         totalRevenue += liquidoFinal;
         totalCost += realCost;
@@ -2296,10 +2304,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         // Primary: use order_id directly mapped to cost (populated by fetchMarketingCosts below)
         const orderMarketingCost = (marketingCostByProductId as unknown as Record<string, number>)[`order:${o.order_id}`] ?? 0;
         totalMarketingCost += orderMarketingCost;
-
-        // Manual marketing cost (no campaign) deducts from profit
-        const manualMktCost = manualMarketingCostByOrderId[o.order_id] ?? 0;
-        if (manualMktCost > 0 && reembolsoOverride === 0) totalProfit -= manualMktCost;
       });
 
       return {
@@ -2365,10 +2369,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           Number((o as { commission_rate?: number }).commission_rate ?? 0),
           Number((o as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0)
         );
-        const profit = computeOrderRealProfit(mergedOrder, cfg, affiliateByOrderId[orderId]).realProfit;
+        const { realProfit: profit, totalProductCost: tpcYearly } = computeOrderRealProfit(mergedOrder, cfg, affiliateByOrderId[orderId]);
         const manualDeduct = manualMarketingCostByOrderId[orderId] ?? 0;
         const reembolsoOv = reembolsoByOrderId[orderId] ?? 0;
-        const effectiveProfit = reembolsoOv > 0 ? reembolsoOv : (profit - manualDeduct);
+        const effectiveProfit = reembolsoOv > 0
+          ? (reembolsoOv - tpcYearly - manualDeduct)
+          : (profit - manualDeduct);
         return s + effectiveProfit;
       }, 0);
     }, 0);
@@ -2723,10 +2729,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const customerName = mergedOrder.customer_name || 'Cliente não identificado';
           const orderNumber = order.order_number || 'S/N';
 
-          const { realProfit: rawRealProfit2, isFreeSample } = computeOrderRealProfit(mergedOrder, resolvedMarketplaceConfig);
+          const { realProfit: rawRealProfit2, isFreeSample, totalProductCost: tpc2 } = computeOrderRealProfit(mergedOrder, resolvedMarketplaceConfig);
           const manualMktDeduct2 = perOrderMarketingCostRef.current[order.order_id] ?? 0;
           const reembolsoOv2 = reembolsoByOrderIdRef.current[order.order_id] ?? 0;
-          const realProfit = reembolsoOv2 > 0 ? reembolsoOv2 : (rawRealProfit2 - manualMktDeduct2);
+          const realProfit = reembolsoOv2 > 0
+            ? (reembolsoOv2 - tpc2 - manualMktDeduct2)
+            : (rawRealProfit2 - manualMktDeduct2);
           const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true;
           const profitColor = isPersonalPurchase ? '#fed7aa' : isFreeSample ? '#e9d5ff' : (realProfit >= 0 ? '#16a34a' : '#dc2626');
           const profitLabel = realProfit >= 0 ? 'Lucro:' : 'Prejuízo:';
@@ -3119,10 +3127,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               : hasRetornoLiquido
               ? (precoVendaLiquidoFinal - totalProductCost - manualMarketingCostVal)
               : (precoVendaLiquidoFinal - totalProductCost + acrescimoManual - manualMarketingCostVal);
-            // Reembolso override: substitui todo cálculo pelo valor inserido
+            // Reembolso override: substitui receita líquida pelo valor reembolsado, subtraindo custos do produto
             const reembolsoVal = parseFloat(reembolsoValue.replace(',', '.')) || 0;
-            const finalRealProfit = reembolsoVal > 0 ? reembolsoVal : realProfit;
-            const marginBase = Math.abs(precoVendaLiquidoFinal) > 0 ? Math.abs(precoVendaLiquidoFinal) : selectedOrder.total_amount;
+            const finalRealProfit = reembolsoVal > 0
+              ? (reembolsoVal - totalProductCost - manualMarketingCostVal)
+              : realProfit;
+            const marginBase = reembolsoVal > 0
+              ? reembolsoVal
+              : (Math.abs(precoVendaLiquidoFinal) > 0 ? Math.abs(precoVendaLiquidoFinal) : selectedOrder.total_amount);
             const margin = marginBase > 0
               ? ((finalRealProfit / marginBase) * 100).toFixed(1) : '0.0';
             const profitPositive = finalRealProfit >= 0;
@@ -4106,7 +4118,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                     {openReembolso && (
                       <div className="px-4 py-3 space-y-3 bg-zinc-900/40 border-t border-rose-950/20">
                         <p className="text-[11px] text-zinc-500">
-                          Quando preenchido, o valor de reembolso <strong className="text-rose-400">substitui</strong> o cálculo completo de lucro. Custos de marketplace, produto, afiliados, descontos e acréscimos são ignorados.
+                          Quando preenchido, o valor reembolsado entra como receita líquida do pedido, subtraindo o custo do produto e taxas de fornecedor (<strong className="text-rose-400">Lucro = Reembolso - Custo do Produto</strong>). Custos de marketplace, afiliados, descontos e acréscimos são ignorados.
                         </p>
                         <div className="flex items-center gap-3">
                           <label className="text-zinc-400 text-sm whitespace-nowrap">Valor (R$)</label>
@@ -4138,7 +4150,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         </div>
                         {reembolsoVal > 0 && (
                           <p className="text-[11px] text-rose-400/70">
-                            Lucro real = R$ {formatCurrency(reembolsoVal)} (reembolso override)
+                            Lucro real = R$ {formatCurrency(reembolsoVal - totalProductCost - manualMarketingCostVal)} (Reembolso R$ {formatCurrency(reembolsoVal)} - Custo R$ {formatCurrency(totalProductCost)})
                           </p>
                         )}
                         {selectedOrder?.order_id && (
@@ -4149,11 +4161,15 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                               setSavingReembolsoPedido(true);
                               try {
                                 const val = parseFloat((reembolsoValue || '0').replace(',', '.')) || 0;
+                                const calculatedProfit = val > 0
+                                  ? Math.round((val - totalProductCost - manualMarketingCostVal) * 100) / 100
+                                  : null;
                                 await supabase
                                   .from('orders')
                                   .update({
                                     reembolso_value: val > 0 ? val : null,
                                     reembolso_motivo: val > 0 ? (reembolsoMotivo || null) : null,
+                                    ...(calculatedProfit !== null ? { total_profit: calculatedProfit } : {}),
                                   })
                                   .eq('id', selectedOrder.order_id);
                                 // Immediately update reembolsoByOrderId for instant chart refresh
