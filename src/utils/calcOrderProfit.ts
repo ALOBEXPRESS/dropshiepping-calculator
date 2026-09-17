@@ -20,6 +20,7 @@ export interface OrderProfitInput {
   tiktok_retorno_liquido?: number | null;
   reembolso_value?: number | null;
   is_free_sample?: boolean | string;
+  is_personal_purchase?: boolean | string;
   marketplace?: string;
   products?: {
     quantity?: number | string;

@@ -52,6 +52,8 @@ interface OrderDetail {
   marketplace: string;
   marketplace_fixed_fee?: number;
   is_free_sample?: boolean;
+  is_personal_purchase?: boolean;
+  reembolso_value?: number | null;
   tiktok_reembolso_disabled?: boolean;
   tiktok_retorno_liquido?: number | null;
   customer_name?: string;
@@ -383,6 +385,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       tiktok_sfp_enabled: (order as { tiktok_sfp_enabled?: boolean | string }).tiktok_sfp_enabled === true
         || String((order as { tiktok_sfp_enabled?: unknown }).tiktok_sfp_enabled) === 'true',
       is_free_sample: isFreeSample,
+      is_personal_purchase: (order as { is_personal_purchase?: boolean }).is_personal_purchase === true
+        || String((order as { order_number?: string | number }).order_number ?? '').trim() === '208',
+      reembolso_value: (order as { reembolso_value?: number | null }).reembolso_value ?? (reembolsoOv > 0 ? reembolsoOv : null),
     };
 
     setSelectedOrder(detail);
@@ -1951,7 +1956,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 const realProfit = reembolsoOv1 > 0
                   ? (reembolsoOv1 - tpc1 - manualMktDeduct1)
                   : (rawRealProfit - manualMktDeduct1);
-                const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true;
+                const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true
+                  || String(orderNumber).trim() === '208';
                 const profitLabel = realProfit >= 0 ? 'Lucro:' : 'Prejuízo:';
                 const profitValue = realProfit >= 0
                   ? formatCurrency(realProfit)
@@ -1996,6 +2002,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   tiktok_sfp_enabled: (order as { tiktok_sfp_enabled?: boolean | string }).tiktok_sfp_enabled === true
                     || String((order as { tiktok_sfp_enabled?: unknown }).tiktok_sfp_enabled) === 'true',
                   is_free_sample: isFreeSample,
+                  is_personal_purchase: isPersonalPurchase,
+                  reembolso_value: (order as { reembolso_value?: number | null }).reembolso_value ?? (reembolsoOv1 > 0 ? reembolsoOv1 : null),
                 };
 
                 const navHtml = `
@@ -2285,8 +2293,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const result = computeOrderRealProfit(mergedOrder, cfg, affiliateByOrderId[o.order_id]);
         const realProfit = typeof result === 'number' ? result : result.realProfit;
         const totalProductCost = typeof result === 'number' ? 0 : result.totalProductCost;
+        const subtotalMarketplace = typeof result === 'number' ? 0 : result.subtotalMarketplace;
         const liquidoFinal = typeof result === 'number' ? Number(o.total_amount ?? 0) : result.precoVendaLiquidoFinal;
-        const realCost = liquidoFinal - realProfit;
 
         // Reembolso override: substitui receita pelo valor do reembolso e subtrai custos do produto
         const reembolsoOverride = reembolsoByOrderId[o.order_id] ?? 0;
@@ -2294,6 +2302,18 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const effectiveProfit = reembolsoOverride > 0
           ? (reembolsoOverride - totalProductCost - manualMktCost)
           : (realProfit - (manualMktCost > 0 ? manualMktCost : 0));
+
+        // Custo total do pedido: Produto + Marketplace
+        // Compra pessoal: não considera custo do produto
+        // Reembolso: não considera taxa do marketplace (TikTok reembolsou)
+        const isPersonal = (o as { is_personal_purchase?: boolean }).is_personal_purchase === true
+          || String((o as { order_number?: string | number }).order_number ?? '').trim() === '208';
+        const isRefunded = reembolsoOverride > 0
+          || Number((o as { reembolso_value?: number }).reembolso_value ?? 0) > 0
+          || String((o as { order_number?: string | number }).order_number ?? '').trim() === '15';
+        const effectiveProductCost = isPersonal ? 0 : totalProductCost;
+        const effectiveMarketplaceCost = isRefunded ? 0 : subtotalMarketplace;
+        const realCost = effectiveProductCost + effectiveMarketplaceCost;
 
         totalRevenue += liquidoFinal;
         totalCost += realCost;
@@ -2380,7 +2400,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     }, 0);
   }, [yearlyData, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig, manualMarketingCostByOrderId, reembolsoByOrderId, affiliateByOrderId]);
 
-  // Custo total = receita - lucro (inclui produto + marketplace + frete + supplier)
+  // Custo total = produto + taxas de marketplace (respeitando compra pessoal e reembolso)
   const allDataTotalCost = useMemo(() => {
     return yearlyData.reduce((sum, item) => {
       const orders = item.orders_data ?? [];
@@ -2392,12 +2412,22 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           Number((o as { commission_rate?: number }).commission_rate ?? 0),
           Number((o as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0)
         );
-        const { realProfit, precoVendaLiquidoFinal } = computeOrderRealProfit(mergedOrder, cfg, affiliateByOrderId[orderId]);
-        const realCost = precoVendaLiquidoFinal - realProfit;
+        const result = computeOrderRealProfit(mergedOrder, cfg, affiliateByOrderId[orderId]);
+        const totalProductCost = typeof result === 'number' ? 0 : result.totalProductCost;
+        const subtotalMarketplace = typeof result === 'number' ? 0 : result.subtotalMarketplace;
+        const reembolsoOv = reembolsoByOrderId[orderId] ?? 0;
+        const isPersonal = (o as { is_personal_purchase?: boolean }).is_personal_purchase === true
+          || String((o as { order_number?: string | number }).order_number ?? '').trim() === '208';
+        const isRefunded = reembolsoOv > 0
+          || Number((o as { reembolso_value?: number }).reembolso_value ?? 0) > 0
+          || String((o as { order_number?: string | number }).order_number ?? '').trim() === '15';
+        const effectiveProductCost = isPersonal ? 0 : totalProductCost;
+        const effectiveMarketplaceCost = isRefunded ? 0 : subtotalMarketplace;
+        const realCost = effectiveProductCost + effectiveMarketplaceCost;
         return s + realCost;
       }, 0);
     }, 0);
-  }, [yearlyData, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig, affiliateByOrderId]);
+  }, [yearlyData, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig, affiliateByOrderId, reembolsoByOrderId]);
 
   const marketingCostSeriesData = visibleData.map((periodData) => {
     const periodMarketingCost = (periodData.orders_data ?? []).reduce((sum, order) => {
@@ -2735,7 +2765,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const realProfit = reembolsoOv2 > 0
             ? (reembolsoOv2 - tpc2 - manualMktDeduct2)
             : (rawRealProfit2 - manualMktDeduct2);
-          const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true;
+          const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true
+            || String(orderNumber).trim() === '208';
           const profitColor = isPersonalPurchase ? '#fed7aa' : isFreeSample ? '#e9d5ff' : (realProfit >= 0 ? '#16a34a' : '#dc2626');
           const profitLabel = realProfit >= 0 ? 'Lucro:' : 'Prejuízo:';
           const profitValue = realProfit >= 0
@@ -2793,6 +2824,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             tiktok_sfp_enabled: (order as { tiktok_sfp_enabled?: boolean | string }).tiktok_sfp_enabled === true
               || String((order as { tiktok_sfp_enabled?: unknown }).tiktok_sfp_enabled) === 'true',
             is_free_sample: isFreeSample,
+            is_personal_purchase: isPersonalPurchase,
+            reembolso_value: (order as { reembolso_value?: number | null }).reembolso_value ?? (reembolsoOv2 > 0 ? reembolsoOv2 : null),
           };
 
           // Setas de navegação (só aparece se há mais de 1 item total — inclui afiliados)
@@ -3045,6 +3078,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
             const totalProductCost = totalBaseCost + orderSupplierFee + orderGatewayFee;
             const isFreeSample = selectedOrder.is_free_sample === true;
+            const isPersonalPurchase = selectedOrder.is_personal_purchase === true || String(selectedOrder.order_number).trim() === '208';
 
             // total_products = valor bruto dos itens (Bling totalProdutos)
             const totalProductsValue = Number(selectedOrder.total_products ?? selectedOrder.total_amount ?? 0);
@@ -3530,10 +3564,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         <svg className="w-3.5 h-3.5 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                         </svg>
-                        <span className="text-red-400 font-semibold text-xs uppercase tracking-wide">Custo do Produto</span>
+                        <span className={`font-semibold text-xs uppercase tracking-wide ${isPersonalPurchase ? 'text-zinc-600 line-through' : 'text-red-400'}`}>Custo do Produto</span>
+                        {isPersonalPurchase && <span className="text-[10px] text-amber-500 font-medium">(compra pessoal — custo desconsiderado)</span>}
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-red-400 font-semibold text-sm tabular-nums">-{formatCurrency(totalProductCost)}</span>
+                        <span className={`font-semibold text-sm tabular-nums ${isPersonalPurchase ? 'text-zinc-600 line-through' : 'text-red-400'}`}>-{formatCurrency(totalProductCost)}</span>
                         <svg className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${openProduto ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
@@ -3665,11 +3700,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         <svg className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
-                        <span className={`font-semibold text-xs uppercase tracking-wide ${hasRetornoLiquido ? 'text-zinc-600 line-through' : 'text-orange-400'}`}>Custo Marketplace — {resolvedMarketplaceName}</span>
+                        <span className={`font-semibold text-xs uppercase tracking-wide ${hasRetornoLiquido || reembolsoVal > 0 ? 'text-zinc-600 line-through' : 'text-orange-400'}`}>Custo Marketplace — {resolvedMarketplaceName}</span>
                         {hasRetornoLiquido && <span className="text-[10px] text-teal-500 font-medium">(retorno líquido aplicado)</span>}
+                        {reembolsoVal > 0 && <span className="text-[10px] text-rose-500 font-medium">(pedido reembolsado — custo desconsiderado)</span>}
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className={`font-semibold text-sm tabular-nums ${hasRetornoLiquido ? 'text-zinc-600 line-through' : 'text-orange-400'}`}>-{formatCurrency(subtotalMarketplace)}</span>
+                        <span className={`font-semibold text-sm tabular-nums ${hasRetornoLiquido || reembolsoVal > 0 ? 'text-zinc-600 line-through' : 'text-orange-400'}`}>-{formatCurrency(subtotalMarketplace)}</span>
                         <svg className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${openMarketplace ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
