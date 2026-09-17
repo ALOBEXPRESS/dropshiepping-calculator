@@ -158,11 +158,13 @@ export const useHeroStats = (
           is_free_sample?: boolean | string;
           is_personal_purchase?: boolean | string;
           marketplace_id?: string;
+          marketplaces?: DbMarketplace | null;
           order_items?: DbOrderItem[];
         }
 
         let dbOrderMap = new Map<string, DbOrder>();
         let mktMap = new Map<string, DbMarketplace>();
+        let mktByName = new Map<string, DbMarketplace>();
         let mktCostMap = new Map<string, number>();
 
         if (allOrderIds.length > 0) {
@@ -182,6 +184,12 @@ export const useHeroStats = (
                   is_free_sample,
                   is_personal_purchase,
                   marketplace_id,
+                  marketplaces!marketplace_id (
+                    id,
+                    name,
+                    commission_rate,
+                    fixed_fee
+                  ),
                   order_items (
                     quantity,
                     unit_cost,
@@ -200,8 +208,7 @@ export const useHeroStats = (
                 .in('id', allOrderIds),
               supabase
                 .from('marketplaces')
-                .select('id, name, commission_rate, fixed_fee')
-                .eq('organization_id', organizationId),
+                .select('id, name, commission_rate, fixed_fee'),
               supabase
                 .from('campaign_order_costs')
                 .select('order_id, marketing_cost')
@@ -212,7 +219,9 @@ export const useHeroStats = (
               dbOrderMap = new Map((ordersRes.data as unknown as DbOrder[]).map(o => [o.id, o]));
             }
             if (mktsRes.data) {
-              mktMap = new Map((mktsRes.data as unknown as DbMarketplace[]).map(m => [m.id, m]));
+              const mkts = mktsRes.data as unknown as DbMarketplace[];
+              mktMap = new Map(mkts.map(m => [m.id, m]));
+              mktByName = new Map(mkts.map(m => [m.name.toLowerCase().replace(/\s+/g, ''), m]));
             }
             if (mktCostsRes.data) {
               mktCostMap = new Map((mktCostsRes.data as Array<{ order_id: string; marketing_cost?: number }>).map(c => [c.order_id, Number(c.marketing_cost ?? 0)]));
@@ -229,9 +238,20 @@ export const useHeroStats = (
             return computeProfitFromOrders([rawOrder]);
           }
 
-          const mp = dbOrder.marketplace_id ? mktMap.get(dbOrder.marketplace_id) : undefined;
-          const mpName = mp?.name ?? String(rawOrder.marketplace ?? rawOrder.marketplace_name ?? '');
-          const isTikTok = mpName.toLowerCase().includes('tiktok');
+          const joinedMp = dbOrder.marketplaces;
+          const mappedMp = dbOrder.marketplace_id ? mktMap.get(dbOrder.marketplace_id) : undefined;
+          const rawMpName = joinedMp?.name || mappedMp?.name || String(rawOrder.marketplace ?? rawOrder.marketplace_name ?? '');
+          const normalizedMp = rawMpName.toLowerCase().replace(/\s+/g, '');
+          const namedMp = mktByName.get(normalizedMp);
+
+          const isShopee = rawMpName.toLowerCase().includes('shopee');
+          const isTikTok = rawMpName.toLowerCase().includes('tiktok');
+
+          const mp = joinedMp || mappedMp || namedMp;
+          const mpName = mp?.name || (isShopee ? 'Shopee' : isTikTok ? 'TikTok Shop' : rawMpName);
+
+          const commissionRate = mp?.commission_rate ?? (isShopee ? 20 : isTikTok ? 10 : 0);
+          const fixedFee = mp?.fixed_fee ?? (isShopee ? 4 : 0);
 
           const orderProducts = (dbOrder.order_items ?? []).map((it) => ({
             quantity: it.quantity ?? 1,
@@ -255,8 +275,9 @@ export const useHeroStats = (
             shipping_cost: dbOrder.shipping_cost,
             other_expenses: dbOrder.other_expenses,
             marketplace_commission: dbOrder.marketplace_commission,
-            commission_rate: mp?.commission_rate,
-            marketplace_fixed_fee: mp?.fixed_fee,
+            commission_rate: commissionRate,
+            marketplace_fixed_fee: fixedFee,
+            fixed_fee: fixedFee,
             tiktok_sfp_enabled: isTikTok,
             reembolso_value: dbOrder.reembolso_value,
             is_free_sample: dbOrder.is_free_sample,
@@ -265,10 +286,10 @@ export const useHeroStats = (
             products: orderProducts,
           };
 
-          const result = calcOrderProfit(profitInput, mp ? {
-            commission_rate: mp.commission_rate,
-            fixed_fee: mp.fixed_fee,
-          } : undefined);
+          const result = calcOrderProfit(profitInput, {
+            commission_rate: commissionRate,
+            fixed_fee: fixedFee,
+          });
 
           const mktCost = mktCostMap.get(orderId) ?? 0;
           const isPersonal = dbOrder.is_personal_purchase === true
