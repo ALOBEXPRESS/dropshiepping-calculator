@@ -49,7 +49,6 @@ export const RecentOrdersChart: React.FC<RecentOrdersChartProps> = ({ organizati
             order_number,
             order_date,
             total_amount,
-            payment_method,
             bling_order_id,
             order_items (
               product_name,
