@@ -157,15 +157,173 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const resolveMarketplaceConfigRef = useRef<((mp: string | null | undefined, rate: number | null | undefined, fee: number | null | undefined) => Marketplace | undefined) | null>(null);
   const computeOrderRealProfitRef = useRef<((order: unknown, cfg: Marketplace | undefined) => { realProfit: number; isFreeSample: boolean; precoVendaLiquidoFinal: number }) | null>(null);
 
-  const openOrderById = useCallback((orderId: string) => {
+  const selectedOrderRef = useRef<OrderDetail | null>(null);
+  selectedOrderRef.current = selectedOrder;
+  const modalOrderListRef = useRef<string[]>([]);
+  modalOrderListRef.current = modalOrderList;
+  const yearlyDataRef = useRef(yearlyData);
+  yearlyDataRef.current = yearlyData;
+
+  const blingDiscountEnabledRef = useRef(true);
+  const manualDescontoRef = useRef('');
+  const manualAcrescimoRef = useRef('');
+  const tiktokReembolsoEnabledRef = useRef(true);
+  const manualSupplierFeePercentRef = useRef('');
+  const manualGatewayFeeRef = useRef('');
+  const manualCostOverridesRef = useRef<Record<number, string>>({});
+  const manualShippingRef = useRef('');
+  const manualRetornoLiquidoRef = useRef('');
+
+  const saveCurrentOrderModalState = useCallback(() => {
+    const cur = selectedOrderRef.current;
+    if (!cur?.order_id) return;
+    orderModalStateRef.current[cur.order_id] = {
+      blingDiscountEnabled: blingDiscountEnabledRef.current,
+      manualDesconto: manualDescontoRef.current,
+      manualAcrescimo: manualAcrescimoRef.current,
+      tiktokReembolsoEnabled: tiktokReembolsoEnabledRef.current,
+      manualSupplierFeePercent: manualSupplierFeePercentRef.current,
+      manualGatewayFee: manualGatewayFeeRef.current,
+      manualCostOverrides: manualCostOverridesRef.current,
+      manualShipping: manualShippingRef.current,
+      manualRetornoLiquido: manualRetornoLiquidoRef.current,
+    };
+  }, []);
+
+  const openOrderById = useCallback(async (orderId: string, customNavIds?: string[]) => {
     if (!orderId) return;
+
+    // 1. Save state of current order before switching
+    saveCurrentOrderModalState();
+
     const merge = mergeOrderForTooltipRef.current;
     const resolve = resolveMarketplaceConfigRef.current;
     const compute = computeOrderRealProfitRef.current;
     if (!merge || !resolve || !compute) return;
 
-    const allOrders = dataRef.current.flatMap(p => p.orders_data ?? []);
-    const order = allOrders.find(o => (o as { order_id?: string }).order_id === orderId);
+    // 2. Find order in dataRef or yearlyDataRef or fetch from DB
+    const allOrdersMap = new Map<string, Record<string, unknown>>();
+    const allPeriods = [...(dataRef.current ?? []), ...(yearlyDataRef.current ?? [])];
+    for (const p of allPeriods) {
+      for (const o of (p.orders_data ?? [])) {
+        const oid = (o as { order_id?: string })?.order_id;
+        if (oid && !allOrdersMap.has(oid)) {
+          allOrdersMap.set(oid, o as unknown as Record<string, unknown>);
+        }
+      }
+    }
+
+    let order = allOrdersMap.get(orderId);
+
+    if (!order) {
+      try {
+        const { data: dbOrder } = await supabase
+          .from('orders')
+          .select(`
+            id,
+            order_number,
+            order_date,
+            total_amount,
+            total_cost,
+            product_cost_price,
+            shipping_cost,
+            marketplace_commission,
+            other_expenses,
+            discount_value,
+            base_value,
+            total_products,
+            marketplace_id,
+            lead_id,
+            marketplaces!marketplace_id (
+              name,
+              commission_rate,
+              fixed_fee
+            ),
+            leads!lead_id (
+              name
+            ),
+            order_items (
+              id,
+              quantity,
+              unit_cost,
+              unit_price,
+              products (
+                id,
+                name,
+                sku,
+                image_url,
+                cost_price,
+                supplier_fee_value,
+                supplier_fee_type,
+                supplier_gateway_fee_value,
+                supplier_gateway_fee_type
+              )
+            )
+          `)
+          .eq('id', orderId)
+          .maybeSingle();
+
+        if (dbOrder) {
+          const mp = dbOrder.marketplaces as { name?: string; commission_rate?: number; fixed_fee?: number } | null;
+          const lead = dbOrder.leads as { name?: string } | null;
+          const items = (dbOrder.order_items ?? []) as Array<{
+            quantity?: number;
+            unit_cost?: number;
+            unit_price?: number;
+            products?: {
+              id?: string;
+              name?: string;
+              sku?: string;
+              image_url?: string;
+              cost_price?: number;
+              supplier_fee_value?: string;
+              supplier_fee_type?: string;
+              supplier_gateway_fee_value?: string;
+              supplier_gateway_fee_type?: string;
+            } | null;
+          }>;
+
+          const mappedProducts = items.map((it) => ({
+            name: it.products?.name ?? 'Produto',
+            sku: it.products?.sku ?? '',
+            quantity: it.quantity ?? 1,
+            unit_price: it.unit_price ?? 0,
+            unit_cost: it.unit_cost ?? it.products?.cost_price ?? 0,
+            supplier_fee_value: it.products?.supplier_fee_value,
+            supplier_fee_type: it.products?.supplier_fee_type,
+            supplier_gateway_fee_value: it.products?.supplier_gateway_fee_value,
+            supplier_gateway_fee_type: it.products?.supplier_gateway_fee_type,
+          }));
+
+          order = {
+            order_id: dbOrder.id,
+            order_number: dbOrder.order_number,
+            order_date: dbOrder.order_date,
+            total_amount: Number(dbOrder.total_amount ?? 0),
+            total_cost: Number(dbOrder.total_cost ?? 0),
+            product_cost_price: Number(dbOrder.product_cost_price ?? 0),
+            shipping_cost: Number(dbOrder.shipping_cost ?? 0),
+            marketplace_commission: Number(dbOrder.marketplace_commission ?? 0),
+            other_expenses: Number(dbOrder.other_expenses ?? 0),
+            discount_value: Number(dbOrder.discount_value ?? 0),
+            base_value: Number(dbOrder.base_value ?? 0),
+            total_products: Number(dbOrder.total_products ?? dbOrder.total_amount ?? 0),
+            marketplace: mp?.name ?? '',
+            commission_rate: mp?.commission_rate ?? 0,
+            marketplace_fixed_fee: mp?.fixed_fee ?? 0,
+            customer_name: lead?.name ?? 'Cliente não identificado',
+            product_name: mappedProducts[0]?.name ?? 'Produto não vinculado',
+            product_sku: mappedProducts[0]?.sku ?? null,
+            product_image_url: items[0]?.products?.image_url ?? null,
+            products: mappedProducts,
+          };
+          allOrdersMap.set(orderId, order);
+        }
+      } catch (err) {
+        console.error('Error fetching fallback order for modal:', err);
+      }
+    }
+
     if (!order) return;
 
     const mergedOrder = merge(order) as unknown as {
@@ -228,12 +386,121 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     setSelectedOrder(detail);
     setCameFromAffiliate(Boolean(affiliateByOrderIdRef.current?.[orderId]) || Boolean((detail as { affiliate_id?: string }).affiliate_id));
     setOpenProduto(false);
-    // Build nav list from all loaded data
-    const allIds = dataRef.current.flatMap(p => (p.orders_data ?? []).map(o => (o as { order_id?: string }).order_id)).filter(Boolean) as string[];
-    setModalOrderList(allIds);
-    setModalOrderIdx(allIds.indexOf(orderId));
+    setOpenMarketplace(false);
+    setOpenDescontos(false);
+    setOpenAcrescimos(false);
+
+    // Restore persisted state for this specific order, or use clean defaults
+    const saved = orderModalStateRef.current[orderId];
+    setBlingDiscountEnabled(saved?.blingDiscountEnabled ?? true);
+    setManualDesconto(saved?.manualDesconto ?? '');
+    setManualAcrescimo(saved?.manualAcrescimo ?? '');
+    setTiktokReembolsoEnabled(
+      saved?.tiktokReembolsoEnabled ??
+      !(detail.tiktok_reembolso_disabled === true)
+    );
+    setManualSupplierFeePercent(saved?.manualSupplierFeePercent ?? '');
+    setManualGatewayFee(saved?.manualGatewayFee ?? '');
+    setManualCostOverrides(saved?.manualCostOverrides ?? {});
+    setManualShipping(saved?.manualShipping ?? '');
+    setManualRetornoLiquido(
+      saved?.manualRetornoLiquido ??
+      (detail.tiktok_retorno_liquido != null ? String(detail.tiktok_retorno_liquido).replace('.', ',') : '')
+    );
+    setManualOrderDate(detail.order_date ?? '');
+    setManualMarketingCost('');
+    setManualCostEnabled(false);
+    setManualCoupon('');
+    setManualCouponType('fixed');
+    setSavingCoupon(false);
+    setLinkedCampaignId(null);
+    setAvailableCampaigns([]);
+    setReembolsoValue('');
+    setReembolsoMotivo('');
+    setOpenReembolso(false);
+
+    // Update navigation list
+    if (customNavIds && customNavIds.length > 0) {
+      setModalOrderList(customNavIds);
+      setModalOrderIdx(customNavIds.indexOf(orderId));
+    } else if (modalOrderListRef.current.length > 0 && modalOrderListRef.current.includes(orderId)) {
+      setModalOrderIdx(modalOrderListRef.current.indexOf(orderId));
+    } else {
+      const sortedOrders = Array.from(allOrdersMap.values()).sort((a, b) => {
+        const dateA = new Date(String(a.order_date ?? 0)).getTime();
+        const dateB = new Date(String(b.order_date ?? 0)).getTime();
+        if (dateB !== dateA) return dateB - dateA;
+        const numA = Number(a.order_number ?? 0);
+        const numB = Number(b.order_number ?? 0);
+        return numB - numA;
+      });
+      const allNavIds = sortedOrders.map(o => (o.order_id ?? o.id) as string).filter(Boolean);
+      setModalOrderList(allNavIds);
+      setModalOrderIdx(allNavIds.indexOf(orderId));
+    }
+
     setDetailDialogOpen(true);
-  }, []);
+
+    // Load order database values (campaigns, order_costs, coupon, acrescimo, reembolso)
+    (async () => {
+      try {
+        const { data: campRows } = await supabase
+          .from('campaigns')
+          .select('id, name, campaign_products(marketing_cost_override)')
+          .eq('organization_id', organizationId)
+          .order('created_at', { ascending: false });
+        const camps = (campRows ?? []).map((c: Record<string, unknown>) => ({
+          id: c.id as string,
+          name: c.name as string,
+          marketing_cost: ((c.campaign_products as Array<{ marketing_cost_override: number | null }>)?.[0]?.marketing_cost_override ?? null),
+        }));
+        setAvailableCampaigns(camps);
+
+        const { data: existingCost } = await supabase
+          .from('campaign_order_costs')
+          .select('campaign_id, marketing_cost')
+          .eq('order_id', orderId)
+          .maybeSingle();
+        if (existingCost) {
+          const ec = existingCost as { campaign_id: string | null; marketing_cost: number };
+          setLinkedCampaignId(ec.campaign_id);
+          setManualMarketingCost(
+            new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(ec.marketing_cost)
+          );
+          setManualCostEnabled(true);
+        }
+
+        const { data: orderRow } = await supabase
+          .from('orders')
+          .select('coupon_value, coupon_type, manual_acrescimo, reembolso_value, reembolso_motivo, order_date')
+          .eq('id', orderId)
+          .maybeSingle();
+        if (orderRow) {
+          const or = orderRow as { coupon_value: number | null; coupon_type: string | null; manual_acrescimo: number | null; reembolso_value: number | null; reembolso_motivo: string | null; order_date: string | null };
+          if (or.coupon_value != null) {
+            setManualCoupon(
+              new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(or.coupon_value)
+            );
+            setManualCouponType((or.coupon_type ?? 'fixed') as 'percent' | 'fixed');
+          }
+          if (!saved?.manualAcrescimo && or.manual_acrescimo != null && or.manual_acrescimo > 0) {
+            setManualAcrescimo(
+              new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(or.manual_acrescimo)
+            );
+          }
+          if (or.reembolso_value != null && or.reembolso_value > 0) {
+            setReembolsoValue(
+              new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(or.reembolso_value)
+            );
+            setReembolsoMotivo(or.reembolso_motivo ?? '');
+          }
+          if (or.order_date) {
+            setManualOrderDate(or.order_date);
+          }
+        }
+      } catch { /* graceful */ }
+    })();
+  }, [organizationId, saveCurrentOrderModalState]);
 
   // Register openOrderById with parent via callback
   useEffect(() => {
@@ -371,6 +638,17 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [manualShipping, setManualShipping] = useState<string>('');
   const [manualMarketingCost, setManualMarketingCost] = useState<string>('');
   const [manualCostEnabled, setManualCostEnabled] = useState(false);
+
+  // Keep state refs in sync for saveCurrentOrderModalState
+  blingDiscountEnabledRef.current = blingDiscountEnabled;
+  manualDescontoRef.current = manualDesconto;
+  manualAcrescimoRef.current = manualAcrescimo;
+  tiktokReembolsoEnabledRef.current = tiktokReembolsoEnabled;
+  manualSupplierFeePercentRef.current = manualSupplierFeePercent;
+  manualGatewayFeeRef.current = manualGatewayFee;
+  manualCostOverridesRef.current = manualCostOverrides;
+  manualShippingRef.current = manualShipping;
+  manualRetornoLiquidoRef.current = manualRetornoLiquido;
   const [openMarketingCost, setOpenMarketingCost] = useState(false);
   const [marketingCostByProductId, setMarketingCostByProductId] = useState<Record<string, number>>({});
   const [manualMarketingCostByOrderId, setManualMarketingCostByOrderId] = useState<Record<string, number>>({});
@@ -1788,113 +2066,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         if (orderDataStr) {
           try {
             const orderData = JSON.parse(orderDataStr) as OrderDetail;
-            const enrichment = orderEnrichmentByIdRef.current[orderData.order_id];
-            const merged: OrderDetail = {
-              ...orderData,
-              ...(enrichment ?? {}),
-              products: (enrichment?.products?.length ? enrichment.products : orderData.products),
-              // Always preserve these from orderData — enrichment doesn't carry them
-              bling_order_id: orderData.bling_order_id,
-              tiktok_reembolso_disabled: orderData.tiktok_reembolso_disabled,
-            };
-            setSelectedOrder(merged);
-            setCameFromAffiliate(Boolean(affiliateByOrderIdRef.current?.[merged.order_id]) || Boolean(merged.affiliate_id));
-            setOpenProduto(false);
-            setOpenMarketplace(false);
-            setOpenDescontos(false);
-            setOpenAcrescimos(false);
-            // Restore persisted state for this order, or use defaults
-            const saved = orderModalStateRef.current[merged.order_id];
-            setBlingDiscountEnabled(saved?.blingDiscountEnabled ?? true);
-            setManualDesconto(saved?.manualDesconto ?? '');
-            setManualAcrescimo(saved?.manualAcrescimo ?? '');
-            setTiktokReembolsoEnabled(
-              saved?.tiktokReembolsoEnabled ??
-              !(merged.tiktok_reembolso_disabled === true)
-            );
-            setManualSupplierFeePercent(saved?.manualSupplierFeePercent ?? '');
-            setManualGatewayFee(saved?.manualGatewayFee ?? '');
-            setManualCostOverrides(saved?.manualCostOverrides ?? {});
-            setManualShipping(saved?.manualShipping ?? '');
-            setManualRetornoLiquido(
-              saved?.manualRetornoLiquido ??
-              (merged.tiktok_retorno_liquido != null ? String(merged.tiktok_retorno_liquido).replace('.', ',') : '')
-            );
-            setManualOrderDate(merged.order_date ?? '');
-            setManualMarketingCost('');
-            setManualCostEnabled(false);
-            setManualCoupon('');
-            setManualCouponType('fixed');
-            setSavingCoupon(false);
-            setLinkedCampaignId(null);
-            setAvailableCampaigns([]);
-            setReembolsoValue('');
-            setReembolsoMotivo('');
-            setOpenReembolso(false);
-            // Auto-load campaigns and pre-fill marketing cost
-            (async () => {
-              try {
-                const { data: campRows } = await supabase
-                  .from('campaigns')
-                  .select('id, name, campaign_products(marketing_cost_override)')
-                  .eq('organization_id', organizationId)
-                  .order('created_at', { ascending: false });
-                const camps = (campRows ?? []).map((c: Record<string, unknown>) => ({
-                  id: c.id as string,
-                  name: c.name as string,
-                  marketing_cost: ((c.campaign_products as Array<{ marketing_cost_override: number | null }>)?.[0]?.marketing_cost_override ?? null),
-                }));
-                setAvailableCampaigns(camps);
-                // Auto-fill: find campaign linked to this order via campaign_order_costs
-                const { data: existingCost } = await supabase
-                  .from('campaign_order_costs')
-                  .select('campaign_id, marketing_cost')
-                  .eq('order_id', merged.order_id)
-                  .maybeSingle();
-                if (existingCost) {
-                  const ec = existingCost as { campaign_id: string | null; marketing_cost: number };
-                  setLinkedCampaignId(ec.campaign_id);
-                  setManualMarketingCost(
-                    new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(ec.marketing_cost)
-                  );
-                  // Enable checkbox for both GVM PLAY (no campaign) and linked campaign costs
-                  setManualCostEnabled(true);
-                }
-                // Auto-fill coupon from orders.coupon_value
-                const { data: orderRow } = await supabase
-                  .from('orders')
-                  .select('coupon_value, coupon_type, manual_acrescimo, reembolso_value, reembolso_motivo')
-                  .eq('id', merged.order_id)
-                  .maybeSingle();
-                if (orderRow) {
-                  const or = orderRow as { coupon_value: number | null; coupon_type: string | null; manual_acrescimo: number | null; reembolso_value: number | null; reembolso_motivo: string | null };
-                  if (or.coupon_value != null) {
-                    setManualCoupon(
-                      new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(or.coupon_value)
-                    );
-                    setManualCouponType((or.coupon_type ?? 'fixed') as 'percent' | 'fixed');
-                  }
-                  // Load saved acrescimo if not in memory
-                  if (!saved?.manualAcrescimo && or.manual_acrescimo != null && or.manual_acrescimo > 0) {
-                    setManualAcrescimo(
-                      new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(or.manual_acrescimo)
-                    );
-                  }
-                  // Load reembolso
-                  if (or.reembolso_value != null && or.reembolso_value > 0) {
-                    setReembolsoValue(
-                      new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(or.reembolso_value)
-                    );
-                    setReembolsoMotivo(or.reembolso_motivo ?? '');
-                  }
-                }
-              } catch { /* graceful */ }
-            })();
-            // Build nav list from all loaded data
-            const allNavIds = dataRef.current.flatMap(p => (p.orders_data ?? []).map(o => (o as { order_id?: string }).order_id)).filter(Boolean) as string[];
-            setModalOrderList(allNavIds);
-            setModalOrderIdx(allNavIds.indexOf(merged.order_id));
-            setDetailDialogOpen(true);
+            if (orderData?.order_id) {
+              openOrderById(orderData.order_id);
+            }
           } catch (err) {
             console.error('Error parsing order data:', err);
           }
@@ -1908,7 +2082,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     return () => {
       document.removeEventListener('click', handleTooltipClick, true);
     };
-  }, [computeOrderRealProfit, mergeOrderForTooltip, normalizeMarketplace, resolveMarketplaceConfig]);
+  }, [computeOrderRealProfit, mergeOrderForTooltip, normalizeMarketplace, openOrderById, resolveMarketplaceConfig]);
 
   // Refetch quando refreshTrigger mudar (apenas se for > 0)
   React.useEffect(() => {
@@ -2786,19 +2960,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     <>
       {/* Dialog de detalhes do pedido — Dark Premium */}
       <Dialog open={detailDialogOpen} onOpenChange={(open) => {
-          if (!open && selectedOrder) {
-            // Persist modal state for this order
-            orderModalStateRef.current[selectedOrder.order_id] = {
-              blingDiscountEnabled,
-              manualDesconto,
-              manualAcrescimo,
-              tiktokReembolsoEnabled,
-              manualSupplierFeePercent,
-              manualGatewayFee,
-              manualCostOverrides,
-              manualShipping,
-              manualRetornoLiquido,
-            };
+          if (!open) {
+            saveCurrentOrderModalState();
           }
           setDetailDialogOpen(open);
         }}>
