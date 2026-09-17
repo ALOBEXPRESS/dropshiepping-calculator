@@ -58,6 +58,7 @@ interface Transaction {
   customer_name: string | null;
   payment_method: string;
   total_amount: number;
+  total_profit: number;
   status: string;
   order_date: string;
 }
@@ -101,39 +102,52 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
     const doFetch = async () => {
       setLoading(true);
       const startDate = new Date();
-    if (period === 'this_week') {
-      // Start of current week (Monday)
-      const day = startDate.getDay(); // 0=Sun,1=Mon,...
-      const diff = day === 0 ? 6 : day - 1; // days since Monday
-      startDate.setDate(startDate.getDate() - diff);
-      startDate.setHours(0, 0, 0, 0);
-    } else if (period === 'this_month') {
-      // Start of current month
-      startDate.setDate(1);
-      startDate.setHours(0, 0, 0, 0);
-    } else {
-      // this_quarter: last 3 months
-      startDate.setMonth(startDate.getMonth() - 3);
-      startDate.setHours(0, 0, 0, 0);
-    }
-    const start = startDate.toISOString().split('T')[0];
+      let start: string | null = null;
+      if (period === 'this_week') {
+        // Start of current week (Monday)
+        const day = startDate.getDay(); // 0=Sun,1=Mon,...
+        const diff = day === 0 ? 6 : day - 1; // days since Monday
+        startDate.setDate(startDate.getDate() - diff);
+        startDate.setHours(0, 0, 0, 0);
+        start = startDate.toISOString().split('T')[0];
+      } else if (period === 'this_month') {
+        // Start of current month
+        startDate.setDate(1);
+        startDate.setHours(0, 0, 0, 0);
+        start = startDate.toISOString().split('T')[0];
+      } else if (period === 'this_quarter') {
+        // this_quarter: last 3 months
+        startDate.setMonth(startDate.getMonth() - 3);
+        startDate.setHours(0, 0, 0, 0);
+        start = startDate.toISOString().split('T')[0];
+      } else if (period === 'all') {
+        start = null;
+      }
 
-      const [txRes, affRes] = await Promise.all([
-        supabase
-          .from('orders_with_payment')
-          .select('id, order_number, customer_name, payment_method, total_amount, status, order_date')
-          .eq('organization_id', organizationId)
-          .gte('order_date', start)
-          .order('order_date', { ascending: false })
-          .limit(200),
-        supabase
-          .from('manual_entries')
-          .select('id, name, value, order_reference, created_at')
-          .eq('organization_id', organizationId)
-          .eq('entry_type', 'pedido_afiliacao')
-          .gte('created_at', startDate.toISOString())
-          .order('created_at', { ascending: false }),
-      ]);
+      let txQuery = supabase
+        .from('orders_with_payment')
+        .select('id, order_number, customer_name, payment_method, total_amount, total_profit, status, order_date')
+        .eq('organization_id', organizationId);
+
+      if (start) {
+        txQuery = txQuery.gte('order_date', start);
+      }
+
+      txQuery = txQuery.order('order_date', { ascending: false }).limit(200);
+
+      let affQuery = supabase
+        .from('manual_entries')
+        .select('id, name, value, order_reference, created_at')
+        .eq('organization_id', organizationId)
+        .eq('entry_type', 'pedido_afiliacao');
+
+      if (period !== 'all') {
+        affQuery = affQuery.gte('created_at', startDate.toISOString());
+      }
+
+      affQuery = affQuery.order('created_at', { ascending: false });
+
+      const [txRes, affRes] = await Promise.all([txQuery, affQuery]);
 
       if (!txRes.error && txRes.data) setTransactions(txRes.data as Transaction[]);
       if (!affRes.error && affRes.data) setAffEntries(affRes.data as AffEntry[]);
@@ -176,6 +190,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="this_week">Esta Semana</SelectItem>
             <SelectItem value="this_month">Este Mês</SelectItem>
             <SelectItem value="this_quarter">Trimestre</SelectItem>
@@ -201,7 +216,8 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
                 <div className="flex-1 space-y-0 overflow-hidden">
                   {visibleTx.map((tx) => {
                     const cfg = PAYMENT_CONFIG[tx.payment_method] ?? PAYMENT_CONFIG.other;
-                    const positive = tx.status !== 'cancelled';
+                    const profit = Number(tx.total_profit ?? tx.total_amount ?? 0);
+                    const positive = profit >= 0 && tx.status !== 'cancelled';
                     return (
                       <div
                         key={tx.id}
@@ -215,7 +231,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className={`text-sm font-semibold ${positive ? 'text-green-500' : 'text-red-500'}`}>
-                            {positive ? '+' : '-'}{formatCurrency(tx.total_amount)}
+                            {positive ? '+' : '-'}{formatCurrency(Math.abs(profit))}
                           </p>
                           <Badge variant="outline" className="text-[9px] px-1 py-0 mt-0.5">#{tx.order_number}</Badge>
                         </div>

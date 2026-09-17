@@ -16,6 +16,7 @@ interface Transaction {
   id: string;
   order_date: string;
   total_amount: number;
+  total_profit: number;
   marketplace_name: string;
   customer_name: string;
   status: string;
@@ -57,8 +58,12 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
 
       try {
         const startDate = new Date();
+        let filterDate = true;
         
         switch (period) {
+          case 'all':
+            filterDate = false;
+            break;
           case 'this_week':
             startDate.setDate(startDate.getDate() - 7);
             break;
@@ -72,12 +77,13 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
             startDate.setMonth(startDate.getMonth() - 1);
         }
 
-        const { data: ordersData, error: fetchError } = await supabase
+        let query = supabase
           .from('orders')
           .select(`
             id,
             order_date,
             total_amount,
+            total_profit,
             status,
             lead_id,
             marketplace_id,
@@ -88,8 +94,13 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
               name
             )
           `)
-          .eq('organization_id', organizationId)
-          .gte('order_date', startDate.toISOString())
+          .eq('organization_id', organizationId);
+
+        if (filterDate) {
+          query = query.gte('order_date', startDate.toISOString());
+        }
+
+        const { data: ordersData, error: fetchError } = await query
           .order('order_date', { ascending: false })
           .limit(10);
 
@@ -99,6 +110,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
           id: order.id,
           order_date: order.order_date,
           total_amount: Number(order.total_amount),
+          total_profit: Number(order.total_profit ?? order.total_amount),
           marketplace_name: (order.marketplaces as { name?: string })?.name || 'N/A',
           customer_name: (order.leads as { name?: string })?.name || 'Cliente',
           status: order.status,
@@ -134,19 +146,6 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
       return format(new Date(dateString), "dd 'de' MMM, HH:mm", { locale: ptBR });
     } catch {
       return 'Data inválida';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'text-green-600 dark:text-green-400';
-      case 'pending':
-        return 'text-yellow-600 dark:text-yellow-400';
-      case 'cancelled':
-        return 'text-red-600 dark:text-red-400';
-      default:
-        return 'text-blue-600 dark:text-blue-400';
     }
   };
 
@@ -187,6 +186,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="this_week">Esta Semana</SelectItem>
             <SelectItem value="this_month">Este Mês</SelectItem>
             <SelectItem value="this_quarter">Este Trimestre</SelectItem>
@@ -197,7 +197,8 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
       {transactions.length > 0 ? (
         <div className="space-y-4">
           {transactions.map((transaction) => {
-            const isPositive = transaction.status === 'completed';
+            const profit = Number(transaction.total_profit ?? transaction.total_amount ?? 0);
+            const isPositive = profit >= 0 && transaction.status !== 'cancelled';
 
             return (
               <div
@@ -226,8 +227,8 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
                 </div>
 
                 <div className="text-right">
-                  <p className={`text-sm font-bold ${getStatusColor(transaction.status)}`}>
-                    {isPositive ? '+' : ''}{formatCurrency(transaction.total_amount)}
+                  <p className={`text-sm font-bold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                    {isPositive ? '+' : '-'}{formatCurrency(Math.abs(profit))}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     {getStatusLabel(transaction.status)}
