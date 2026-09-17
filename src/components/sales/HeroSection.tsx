@@ -125,19 +125,34 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     }).format(value);
   };
 
-  // Função para obter o label do período anterior
-  const getPreviousPeriodLabel = () => {
+  // Função para obter o texto de comparação do período anterior: "Vs {x} do mês passado"
+  const getPreviousPeriodComparisonText = (value?: number) => {
+    if (value === undefined) {
+      switch (period) {
+        case 'daily':
+          return 'Vs ontem';
+        case 'weekly':
+          return 'Vs semana passada';
+        case 'monthly':
+          return 'Vs mês passado';
+        case 'yearly':
+          return 'Vs ano passado';
+        default:
+          return 'Vs período anterior';
+      }
+    }
+    const formatted = formatCurrency(value);
     switch (period) {
       case 'daily':
-        return 'vs. ontem';
+        return `Vs ${formatted} de ontem`;
       case 'weekly':
-        return 'vs. semana passada';
+        return `Vs ${formatted} da semana passada`;
       case 'monthly':
-        return 'vs. mês passado';
+        return `Vs ${formatted} do mês passado`;
       case 'yearly':
-        return 'vs. ano passado';
+        return `Vs ${formatted} do ano passado`;
       default:
-        return 'vs. período anterior';
+        return `Vs ${formatted} do período anterior`;
     }
   };
 
@@ -157,7 +172,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     }
   };
 
-  const previousPeriodLabel = getPreviousPeriodLabel();
   const currentPeriodLabel = getCurrentPeriodLabel();
 
   return (
@@ -220,7 +234,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           label={`Lucro ${currentPeriodLabel.charAt(0).toUpperCase() + currentPeriodLabel.slice(1)}`}
           value={formatCurrency(stats.totalRevenue)}
           trend={stats.revenueChange}
-          trendLabel={stats.previousRevenue !== undefined ? `vs. ${formatCurrency(stats.previousRevenue)} ${previousPeriodLabel}` : previousPeriodLabel}
+          trendLabel={getPreviousPeriodComparisonText(stats.previousRevenue)}
           icon={<DollarSign className="w-6 h-6 text-white" />}
           iconColor="from-green-500 to-green-600"
         />

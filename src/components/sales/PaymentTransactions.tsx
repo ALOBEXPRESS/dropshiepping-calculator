@@ -6,9 +6,15 @@ import { supabase } from '@/lib/supabase';
 import { Loader2, ChevronLeft, ChevronRight, Handshake } from 'lucide-react';
 import { calcOrderProfit, type OrderProfitInput } from '@/utils/calcOrderProfit';
 
+import shopeeImg from '@/imgs/18790-256x256x32.png';
 import tiktokImg from '@/imgs/tiktok-shop-seller-cent-icon-filled-256.png';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
+const ShopeeIcon = () => (
+  <div className="w-6 h-6 rounded-md overflow-hidden flex items-center justify-center flex-shrink-0 bg-[#EE4D2D] p-0.5 shadow-sm border border-orange-600/40">
+    <img src={shopeeImg} alt="Shopee" className="w-full h-full object-contain" />
+  </div>
+);
 const TikTokIcon = () => (
   <div className="w-6 h-6 rounded-md overflow-hidden flex items-center justify-center flex-shrink-0 bg-black border border-zinc-700/80 shadow-sm">
     <img src={tiktokImg} alt="TikTok Shop" className="w-full h-full object-contain p-0.5" />
@@ -53,6 +59,7 @@ interface Transaction {
   order_number: string;
   customer_name: string | null;
   payment_method: string;
+  marketplace_name?: string | null;
   total_amount: number;
   total_profit: number;
   status: string;
@@ -122,7 +129,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
 
       let txQuery = supabase
         .from('orders_with_payment')
-        .select('id, order_number, customer_name, payment_method, total_amount, total_profit, status, order_date')
+        .select('id, order_number, customer_name, payment_method, total_amount, total_profit, status, order_date, marketplace_id, marketplaces:marketplace_id(name)')
         .eq('organization_id', organizationId);
 
       if (start) {
@@ -293,6 +300,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
 
             return {
               ...tx,
+              marketplace_name: mpName || (tx as unknown as { marketplaces?: { name?: string } }).marketplaces?.name || null,
               total_profit: Math.round(computedProfit * 100) / 100,
             };
           });
@@ -300,6 +308,11 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
           console.error('Error enriching transactions with real profit:', enrichErr);
         }
       }
+
+      finalTxList = finalTxList.map(tx => ({
+        ...tx,
+        marketplace_name: tx.marketplace_name ?? (tx as unknown as { marketplaces?: { name?: string } }).marketplaces?.name ?? null,
+      }));
 
       setTransactions(finalTxList);
       if (!affRes.error && affRes.data) setAffEntries(affRes.data as AffEntry[]);
@@ -367,7 +380,11 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
               <>
                 <div className="flex-1 space-y-0 overflow-hidden">
                   {visibleTx.map((tx) => {
-                    const cfg = PAYMENT_CONFIG[tx.payment_method] ?? PAYMENT_CONFIG.other;
+                    const mpLower = String(tx.marketplace_name ?? '').toLowerCase();
+                    const isShopee = mpLower.includes('shopee');
+                    const cfg = isShopee
+                      ? { label: 'Shopee', icon: <ShopeeIcon /> }
+                      : (PAYMENT_CONFIG[tx.payment_method] ?? PAYMENT_CONFIG.other);
                     const profit = Number(tx.total_profit ?? tx.total_amount ?? 0);
                     const positive = profit >= 0 && tx.status !== 'cancelled';
                     return (
