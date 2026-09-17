@@ -162,15 +162,10 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
                 id,
                 order_number,
                 total_amount,
-                total_products,
-                base_value,
                 discount_value,
                 shipping_cost,
                 other_expenses,
                 marketplace_commission,
-                tiktok_sfp_enabled,
-                tiktok_reembolso_disabled,
-                tiktok_retorno_liquido,
                 reembolso_value,
                 is_free_sample,
                 is_personal_purchase,
@@ -201,6 +196,10 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
               .in('order_id', orderIds),
           ]);
 
+          if (ordersRes.error) {
+            console.error('Erro ao buscar orders para enriquecimento:', ordersRes.error);
+          }
+
           interface DbMarketplace {
             id: string;
             name: string;
@@ -224,15 +223,10 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             id: string;
             order_number?: string | number;
             total_amount?: number;
-            total_products?: number;
-            base_value?: number;
             discount_value?: number;
             shipping_cost?: number;
             other_expenses?: number;
             marketplace_commission?: number;
-            tiktok_sfp_enabled?: boolean | string;
-            tiktok_reembolso_disabled?: boolean;
-            tiktok_retorno_liquido?: number | null;
             reembolso_value?: number | null;
             is_free_sample?: boolean | string;
             is_personal_purchase?: boolean | string;
@@ -262,20 +256,21 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
               supplier_gateway_fee_type: it.products?.supplier_gateway_fee_type,
             }));
 
+            const calculatedTotalProducts = orderProducts.reduce((s, p) => s + (p.unit_price * p.quantity), 0);
+            const totalProductsVal = calculatedTotalProducts > 0 ? calculatedTotalProducts : Number(dbOrder.total_amount ?? 0);
+
             const profitInput: OrderProfitInput = {
               order_id: dbOrder.id,
               total_amount: dbOrder.total_amount,
-              total_products: dbOrder.total_products ?? dbOrder.total_amount,
-              base_value: dbOrder.base_value,
+              total_products: totalProductsVal,
+              base_value: Number(dbOrder.total_amount ?? 0) - Number(dbOrder.discount_value ?? 0),
               discount_value: dbOrder.discount_value,
               shipping_cost: dbOrder.shipping_cost,
               other_expenses: dbOrder.other_expenses,
               marketplace_commission: dbOrder.marketplace_commission,
               commission_rate: mp?.commission_rate,
               marketplace_fixed_fee: mp?.fixed_fee,
-              tiktok_sfp_enabled: dbOrder.tiktok_sfp_enabled ?? isTikTok,
-              tiktok_reembolso_disabled: dbOrder.tiktok_reembolso_disabled,
-              tiktok_retorno_liquido: dbOrder.tiktok_retorno_liquido,
+              tiktok_sfp_enabled: isTikTok,
               reembolso_value: dbOrder.reembolso_value,
               is_free_sample: dbOrder.is_free_sample,
               is_personal_purchase: dbOrder.is_personal_purchase,
