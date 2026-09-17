@@ -6,12 +6,13 @@ import { supabase } from '@/lib/supabase';
 import { Loader2, ChevronLeft, ChevronRight, Handshake } from 'lucide-react';
 import { calcOrderProfit, type OrderProfitInput } from '@/utils/calcOrderProfit';
 
+import tiktokImg from '@/imgs/tiktok-shop-seller-cent-icon-filled-256.png';
+
 // ── Icons ─────────────────────────────────────────────────────────────────────
-const PixIcon = () => (
-  <svg viewBox="0 0 24 24" className="w-5 h-5 flex-shrink-0" fill="none">
-    <rect width="24" height="24" rx="6" fill="#32BCAD" />
-    <path d="M12 5.5l3.18 3.18-1.41 1.41L12 8.32l-1.77 1.77-1.41-1.41L12 5.5zm0 13l-3.18-3.18 1.41-1.41L12 15.68l1.77-1.77 1.41 1.41L12 18.5zm-6.5-6.5l3.18-3.18 1.41 1.41L8.32 12l1.77 1.77-1.41 1.41L5.5 12zm13 0l-3.18 3.18-1.41-1.41L15.68 12l-1.77-1.77 1.41-1.41L18.5 12z" fill="white" />
-  </svg>
+const TikTokIcon = () => (
+  <div className="w-6 h-6 rounded-md overflow-hidden flex items-center justify-center flex-shrink-0 bg-black border border-zinc-700/80 shadow-sm">
+    <img src={tiktokImg} alt="TikTok Shop" className="w-full h-full object-contain p-0.5" />
+  </div>
 );
 const BoletoIcon = () => (
   <svg viewBox="0 0 24 24" className="w-5 h-5 flex-shrink-0" fill="none">
@@ -38,19 +39,13 @@ const DebitCardIcon = () => (
     <rect x="12" y="14" width="6" height="1.5" rx="0.5" fill="white" />
   </svg>
 );
-const OtherIcon = () => (
-  <svg viewBox="0 0 24 24" className="w-5 h-5 flex-shrink-0" fill="none">
-    <rect width="24" height="24" rx="6" fill="#94A3B8" />
-    <circle cx="12" cy="12" r="4" stroke="white" strokeWidth="1.5" />
-  </svg>
-);
 
 const PAYMENT_CONFIG: Record<string, { label: string; icon: React.ReactNode }> = {
-  pix:         { label: 'Pix',            icon: <PixIcon /> },
+  pix:         { label: 'TikTok Shop',    icon: <TikTokIcon /> },
   boleto:      { label: 'Boleto',         icon: <BoletoIcon /> },
   credit_card: { label: 'Cartão Crédito', icon: <CreditCardIcon /> },
   debit_card:  { label: 'Cartão Débito',  icon: <DebitCardIcon /> },
-  other:       { label: 'Outro',          icon: <OtherIcon /> },
+  other:       { label: 'TikTok Shop',    icon: <TikTokIcon /> },
 };
 
 interface Transaction {
