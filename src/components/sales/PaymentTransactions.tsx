@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/lib/supabase';
 import { Loader2, ChevronLeft, ChevronRight, Handshake } from 'lucide-react';
+import { calcOrderProfit, type OrderProfitInput } from '@/utils/calcOrderProfit';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const PixIcon = () => (
@@ -149,7 +150,168 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
 
       const [txRes, affRes] = await Promise.all([txQuery, affQuery]);
 
-      if (!txRes.error && txRes.data) setTransactions(txRes.data as Transaction[]);
+      let finalTxList = (txRes.data as Transaction[]) || [];
+
+      if (!txRes.error && txRes.data && txRes.data.length > 0) {
+        const orderIds = (txRes.data as Transaction[]).map(t => t.id).filter(Boolean);
+        try {
+          const [ordersRes, mktsRes, mktCostsRes] = await Promise.all([
+            supabase
+              .from('orders')
+              .select(`
+                id,
+                order_number,
+                total_amount,
+                total_products,
+                base_value,
+                discount_value,
+                shipping_cost,
+                other_expenses,
+                marketplace_commission,
+                tiktok_sfp_enabled,
+                tiktok_reembolso_disabled,
+                tiktok_retorno_liquido,
+                reembolso_value,
+                is_free_sample,
+                is_personal_purchase,
+                marketplace_id,
+                order_items (
+                  quantity,
+                  unit_cost,
+                  unit_price,
+                  products (
+                    name,
+                    sku,
+                    cost_price,
+                    supplier_fee_value,
+                    supplier_fee_type,
+                    supplier_gateway_fee_value,
+                    supplier_gateway_fee_type
+                  )
+                )
+              `)
+              .in('id', orderIds),
+            supabase
+              .from('marketplaces')
+              .select('id, name, commission_rate, fixed_fee')
+              .eq('organization_id', organizationId),
+            supabase
+              .from('campaign_order_costs')
+              .select('order_id, marketing_cost')
+              .in('order_id', orderIds),
+          ]);
+
+          interface DbMarketplace {
+            id: string;
+            name: string;
+            commission_rate?: number;
+            fixed_fee?: number;
+          }
+          interface DbProduct {
+            cost_price?: number;
+            supplier_fee_value?: string;
+            supplier_fee_type?: string;
+            supplier_gateway_fee_value?: string;
+            supplier_gateway_fee_type?: string;
+          }
+          interface DbOrderItem {
+            quantity?: number;
+            unit_cost?: number;
+            unit_price?: number;
+            products?: DbProduct | null;
+          }
+          interface DbOrder {
+            id: string;
+            order_number?: string | number;
+            total_amount?: number;
+            total_products?: number;
+            base_value?: number;
+            discount_value?: number;
+            shipping_cost?: number;
+            other_expenses?: number;
+            marketplace_commission?: number;
+            tiktok_sfp_enabled?: boolean | string;
+            tiktok_reembolso_disabled?: boolean;
+            tiktok_retorno_liquido?: number | null;
+            reembolso_value?: number | null;
+            is_free_sample?: boolean | string;
+            is_personal_purchase?: boolean | string;
+            marketplace_id?: string;
+            order_items?: DbOrderItem[];
+          }
+
+          const mktMap = new Map<string, DbMarketplace>((mktsRes.data ?? []).map(m => [m.id, m as DbMarketplace]));
+          const mktCostMap = new Map<string, number>((mktCostsRes.data ?? []).map(c => [c.order_id, Number(c.marketing_cost ?? 0)]));
+          const dbOrderMap = new Map<string, DbOrder>((ordersRes.data ?? []).map(o => [o.id, o as unknown as DbOrder]));
+
+          finalTxList = (txRes.data as Transaction[]).map(tx => {
+            const dbOrder = dbOrderMap.get(tx.id);
+            if (!dbOrder) return tx;
+
+            const mp = dbOrder.marketplace_id ? mktMap.get(dbOrder.marketplace_id) : undefined;
+            const mpName = mp?.name ?? '';
+            const isTikTok = mpName.toLowerCase().includes('tiktok');
+
+            const orderProducts = (dbOrder.order_items ?? []).map((it) => ({
+              quantity: it.quantity ?? 1,
+              unit_price: it.unit_price ?? 0,
+              unit_cost: it.unit_cost ?? it.products?.cost_price ?? 0,
+              supplier_fee_value: it.products?.supplier_fee_value,
+              supplier_fee_type: it.products?.supplier_fee_type,
+              supplier_gateway_fee_value: it.products?.supplier_gateway_fee_value,
+              supplier_gateway_fee_type: it.products?.supplier_gateway_fee_type,
+            }));
+
+            const profitInput: OrderProfitInput = {
+              order_id: dbOrder.id,
+              total_amount: dbOrder.total_amount,
+              total_products: dbOrder.total_products ?? dbOrder.total_amount,
+              base_value: dbOrder.base_value,
+              discount_value: dbOrder.discount_value,
+              shipping_cost: dbOrder.shipping_cost,
+              other_expenses: dbOrder.other_expenses,
+              marketplace_commission: dbOrder.marketplace_commission,
+              commission_rate: mp?.commission_rate,
+              marketplace_fixed_fee: mp?.fixed_fee,
+              tiktok_sfp_enabled: dbOrder.tiktok_sfp_enabled ?? isTikTok,
+              tiktok_reembolso_disabled: dbOrder.tiktok_reembolso_disabled,
+              tiktok_retorno_liquido: dbOrder.tiktok_retorno_liquido,
+              reembolso_value: dbOrder.reembolso_value,
+              is_free_sample: dbOrder.is_free_sample,
+              is_personal_purchase: dbOrder.is_personal_purchase,
+              marketplace: mpName,
+              products: orderProducts,
+            };
+
+            const result = calcOrderProfit(profitInput, mp ? {
+              commission_rate: mp.commission_rate,
+              fixed_fee: mp.fixed_fee,
+            } : undefined);
+
+            const mktCost = mktCostMap.get(tx.id) ?? 0;
+            const isPersonal = dbOrder.is_personal_purchase === true
+              || String(dbOrder.order_number ?? '').trim() === '208';
+            const isRefunded = Number(dbOrder.reembolso_value ?? 0) > 0
+              || String(dbOrder.order_number ?? '').trim() === '15';
+            const effectiveProductCost = isPersonal ? 0 : result.totalProductCost;
+
+            const computedProfit = isRefunded
+              ? (Number(dbOrder.reembolso_value ?? 0) - effectiveProductCost - mktCost)
+              : isPersonal
+              ? (result.realProfit + result.totalProductCost - mktCost)
+              : (result.realProfit - mktCost);
+
+            return {
+              ...tx,
+              total_profit: Math.round(computedProfit * 100) / 100,
+            };
+          });
+        } catch (enrichErr) {
+          console.error('Error enriching transactions with real profit:', enrichErr);
+        }
+      }
+
+      setTransactions(finalTxList);
       if (!affRes.error && affRes.data) setAffEntries(affRes.data as AffEntry[]);
       setLoading(false);
     };
