@@ -279,8 +279,25 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
               const totalCost = costPrice + suppFee + suppGtw;
               const expectedPrice = Number(order.expected_price || order.total_amount || 0);
               const commissionVal = expectedPrice * (Number(order.commission_rate || 0) / 100);
-              const tiktokFixed = (order.marketplace_name || '').toLowerCase().includes('tiktok') ? 4.00 : 0;
-              const estimatedProfit = expectedPrice - totalCost - commissionVal - tiktokFixed;
+              // Calcular taxa fixa do marketplace baseado no preço real (Shopee, TikTok, etc.)
+              const marketplaceNameLower = (order.marketplace_name || '').toLowerCase();
+              const getMarketplaceFixedFee = (price: number): number => {
+                if (marketplaceNameLower.includes('shopee')) {
+                  // Regras Shopee 2025: faixas de taxa fixa por preço
+                  if (price <= 79.99) return 4.00;
+                  if (price <= 99.99) return 16.00;
+                  if (price <= 199.99) return 20.00;
+                  if (price <= 499.99) return 26.00;
+                  return 26.00;
+                }
+                if (marketplaceNameLower.includes('tiktok')) {
+                  // TikTok Shop: R$4 para < R$50, R$6 para >= R$50
+                  return price < 50 ? 4.00 : 6.00;
+                }
+                return 0;
+              };
+              const marketplaceFixedFee = getMarketplaceFixedFee(expectedPrice);
+              const estimatedProfit = expectedPrice - totalCost - commissionVal - marketplaceFixedFee;
 
               if (matchedItemId) {
                 (async () => {

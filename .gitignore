@@ -206,7 +206,4 @@ tools/lightrag/**/*.pyc
 # Obsidian vault markdown - VERSIONED (keep in Git)
 # docs/knowledge-graph/ is intentionally NOT ignored
 
-# Scratch and temp files
-scratch/
-nul
-
+scratch/*
