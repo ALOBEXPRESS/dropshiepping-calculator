@@ -113,6 +113,7 @@ src/test/
 # Documentation files (keep local only)
 AGENTS.md
 CLAUDE.md
+USER.md
 ORGANIZACAO_RAIZ_COMPLETA.md
 CSS_PACK_CATALOGO_COMPLETO.md
 GEMINI.md

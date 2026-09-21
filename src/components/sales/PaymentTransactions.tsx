@@ -172,6 +172,16 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
                 is_free_sample,
                 is_personal_purchase,
                 marketplace_id,
+                bling_order_id,
+                bling_orders!bling_order_id (
+                  id,
+                  total_products,
+                  base_value,
+                  commission_tax,
+                  shipping_cost,
+                  tiktok_reembolso_disabled,
+                  tiktok_retorno_liquido
+                ),
                 marketplaces!marketplace_id (
                   id,
                   name,
@@ -226,6 +236,15 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             unit_price?: number;
             products?: DbProduct | null;
           }
+          interface DbBlingOrder {
+            id?: string;
+            total_products?: number | string | null;
+            base_value?: number | string | null;
+            commission_tax?: number | string | null;
+            shipping_cost?: number | string | null;
+            tiktok_reembolso_disabled?: boolean | null;
+            tiktok_retorno_liquido?: number | null;
+          }
           interface DbOrder {
             id: string;
             order_number?: string | number;
@@ -238,6 +257,8 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             is_free_sample?: boolean | string;
             is_personal_purchase?: boolean | string;
             marketplace_id?: string;
+            bling_order_id?: string;
+            bling_orders?: DbBlingOrder | null;
             marketplaces?: DbMarketplace | null;
             order_items?: DbOrderItem[];
           }
@@ -279,13 +300,26 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             }));
 
             const calculatedTotalProducts = orderProducts.reduce((s, p) => s + (p.unit_price * p.quantity), 0);
-            const totalProductsVal = calculatedTotalProducts > 0 ? calculatedTotalProducts : Number(dbOrder.total_amount ?? 0);
+            const boBaseValue = Number(dbOrder.bling_orders?.base_value ?? 0);
+            const boTotalProducts = Number(dbOrder.bling_orders?.total_products ?? 0);
+
+            const effectiveTotalProducts = boTotalProducts > 0
+              ? boTotalProducts
+              : calculatedTotalProducts > 0
+              ? calculatedTotalProducts
+              : Number(dbOrder.total_amount ?? 0);
+
+            const effectiveBaseValue = boBaseValue > 0
+              ? boBaseValue
+              : calculatedTotalProducts > 0
+              ? calculatedTotalProducts
+              : Number(dbOrder.total_amount ?? 0) - Number(dbOrder.discount_value ?? 0);
 
             const profitInput: OrderProfitInput = {
               order_id: dbOrder.id,
               total_amount: dbOrder.total_amount,
-              total_products: totalProductsVal,
-              base_value: Number(dbOrder.total_amount ?? 0) - Number(dbOrder.discount_value ?? 0),
+              total_products: effectiveTotalProducts,
+              base_value: effectiveBaseValue,
               discount_value: dbOrder.discount_value,
               shipping_cost: dbOrder.shipping_cost,
               other_expenses: dbOrder.other_expenses,
@@ -294,6 +328,8 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
               marketplace_fixed_fee: fixedFee,
               fixed_fee: fixedFee,
               tiktok_sfp_enabled: isTikTok,
+              tiktok_reembolso_disabled: dbOrder.bling_orders?.tiktok_reembolso_disabled === true,
+              tiktok_retorno_liquido: dbOrder.bling_orders?.tiktok_retorno_liquido,
               reembolso_value: dbOrder.reembolso_value,
               is_free_sample: dbOrder.is_free_sample,
               is_personal_purchase: dbOrder.is_personal_purchase,
