@@ -19,6 +19,7 @@ const RepasePage = lazy(() => import('./pages/RepasePage'));
 const DropshippingCalculator = lazy(() => import('./components/DropshippingCalculator'));
 const LoginPremium = lazy(() => import('./components/LoginPremium'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Sales = lazy(() => import('./pages/Sales'));
 const Leads = lazy(() => import('./pages/Leads'));
 const Campaigns = lazy(() => import('./pages/CampaignsPage'));
 

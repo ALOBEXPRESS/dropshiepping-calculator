@@ -16,7 +16,6 @@ import {
   Mail,
   X,
   BarChart3,
-  ArrowLeftRight,
 } from 'lucide-react';
 import { 
   DropdownMenu, 
