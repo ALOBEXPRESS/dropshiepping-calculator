@@ -1,11 +1,12 @@
 /**
  * useMarketplaces Hook
- * 
- * Custom React Query hook for fetching available marketplaces.
+ *
+ * Fetches available marketplaces for the current user's organization.
  */
 
 import { useQuery } from '@tanstack/react-query';
 import { DashboardService } from '../services/dashboardService';
+import { useSettings } from '@/contexts/SettingsContext';
 
 export interface Marketplace {
   id: string;
@@ -19,20 +20,18 @@ export interface UseMarketplacesReturn {
   error: Error | null;
 }
 
-/**
- * Custom hook for fetching marketplaces list
- * 
- * @returns Object containing marketplaces array, loading state, and error state
- */
 export function useMarketplaces(): UseMarketplacesReturn {
+  const { organizationId } = useSettings();
+
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['marketplaces'],
-    queryFn: () => DashboardService.fetchMarketplaces(),
-    staleTime: 10 * 60 * 1000, // 10 minutes - marketplaces don't change often
+    queryKey: ['marketplaces', organizationId],
+    enabled: !!organizationId,
+    staleTime: 10 * 60 * 1000,
+    queryFn: () => DashboardService.fetchMarketplaces(organizationId!),
   });
 
   return {
-    marketplaces: data || [],
+    marketplaces: data ?? [],
     isLoading,
     isError,
     error: error as Error | null,
