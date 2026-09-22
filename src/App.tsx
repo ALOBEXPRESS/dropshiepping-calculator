@@ -4,18 +4,21 @@ import { lazy, Suspense } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import Layout from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { AdminRoute } from './components/AdminRoute';
 import { ThemeProvider } from './components/ThemeProvider';
 import { SettingsProvider } from './contexts/SettingsContext';
+import { UserProvider } from './contexts/UserContext';
 import { DateRangeProvider } from './contexts/DateRangeContext';
 import { queryClient } from './lib/react-query';
 import { Toaster } from 'sonner';
 import { LoadingState } from './components/ui/LoadingState';
 
 // Lazy load components for code splitting
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const RepasePage = lazy(() => import('./pages/RepasePage'));
 const DropshippingCalculator = lazy(() => import('./components/DropshippingCalculator'));
 const LoginPremium = lazy(() => import('./components/LoginPremium'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
-const Sales = lazy(() => import('./pages/Sales'));
 const Leads = lazy(() => import('./pages/Leads'));
 const Campaigns = lazy(() => import('./pages/CampaignsPage'));
 
@@ -31,11 +34,13 @@ const ProductsPage = () => (
 
 const SalesPage = () => (
   <ProtectedRoute>
+    <AdminRoute>
     <Layout>
       <Suspense fallback={<LoadingState />}>
         <Sales />
       </Suspense>
     </Layout>
+    </AdminRoute>
   </ProtectedRoute>
 );
 
@@ -61,11 +66,13 @@ const LeadsPage = () => (
 
 const CampaignsPage = () => (
   <ProtectedRoute>
+    <AdminRoute>
     <Layout>
       <Suspense fallback={<LoadingState />}>
         <Campaigns />
       </Suspense>
     </Layout>
+    </AdminRoute>
   </ProtectedRoute>
 );
 
@@ -74,6 +81,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <SettingsProvider>
+          <UserProvider>
           <DateRangeProvider>
             <BrowserRouter>
           <Toaster 
@@ -106,10 +114,31 @@ function App() {
               <Route path="/vendas" element={<SalesPage />} />
               <Route path="/leads" element={<LeadsPage />} />
               <Route path="/campanhas" element={<CampaignsPage />} />
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Suspense fallback={<LoadingState />}>
+                      <ProfilePage />
+                    </Suspense>
+                  </Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/repasse" element={
+                <ProtectedRoute>
+                  <AdminRoute>
+                    <Layout>
+                      <Suspense fallback={<LoadingState />}>
+                        <RepasePage />
+                      </Suspense>
+                    </Layout>
+                  </AdminRoute>
+                </ProtectedRoute>
+              } />
             </Routes>
           </Suspense>
             </BrowserRouter>
           </DateRangeProvider>
+          </UserProvider>
         </SettingsProvider>
       </ThemeProvider>
     </QueryClientProvider>

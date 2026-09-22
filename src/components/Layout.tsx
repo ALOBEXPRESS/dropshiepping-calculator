@@ -15,7 +15,8 @@ import {
   Bell,
   Mail,
   X,
-  BarChart3
+  BarChart3,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { 
   DropdownMenu, 
@@ -31,6 +32,7 @@ import { useTheme } from './ThemeProvider';
 import { SettingsDialog } from './SettingsDialog';
 import logo from '@/assets/logo.png';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useUser } from '@/contexts/UserContext';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -41,6 +43,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { theme, setTheme } = useTheme();
   const { organizationId } = useSettings();
+  const { isAdmin, profile } = useUser();
   const e2eSearch = new URLSearchParams(location.search).get('e2e') === 'true' ? '?e2e=true' : '';
 
   useEffect(() => {
@@ -181,7 +184,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                           ${location.pathname === '/vendas'
                             ? 'bg-green-500/10 text-green-400 font-semibold'
                             : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white'
-                          }`}
+                          }${!isAdmin ? ' hidden' : ''}`}
                       >
                           <span className={`w-1.5 h-1.5 mr-2.5 rounded-full flex-shrink-0 ${location.pathname === '/vendas' ? 'bg-green-400' : 'bg-green-500/60'}`} />
                           Vendas
@@ -207,12 +210,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                           ${location.pathname === '/campanhas'
                             ? 'bg-orange-500/10 text-orange-400 font-semibold'
                             : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white'
-                          }`}
+                          }${!isAdmin ? ' hidden' : ''}`}
                       >
                           <span className={`w-1.5 h-1.5 mr-2.5 rounded-full flex-shrink-0 ${location.pathname === '/campanhas' ? 'bg-orange-400' : 'bg-orange-500/60'}`} />
                           Campanhas
                       </Link>
                   </li>
+                  {isAdmin && (
+                  <li>
+                      <Link
+                        to={{ pathname: '/repasse', search: e2eSearch }}
+                        className={`flex items-center w-full p-2 text-sm transition-all duration-150 rounded-lg pl-4 group no-underline
+                          ${location.pathname === '/repasse'
+                            ? 'bg-teal-500/10 text-teal-400 font-semibold'
+                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white'
+                          }`}
+                      >
+                          <span className={`w-1.5 h-1.5 mr-2.5 rounded-full flex-shrink-0 ${location.pathname === '/repasse' ? 'bg-teal-400' : 'bg-teal-500/60'}`} />
+                          Repasse
+                      </Link>
+                  </li>
+                  )}
               </ul>
             </li>
           </ul>
@@ -283,19 +301,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <DropdownMenuTrigger asChild>
                         <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 p-1 rounded-full pr-3 transition-colors">
                             <Avatar>
-                                <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-                                <AvatarFallback>CN</AvatarFallback>
+                                <AvatarImage src={profile?.avatar_url || 'https://github.com/shadcn.png'} alt="avatar" />
+                                <AvatarFallback>{profile?.first_name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
                             </Avatar>
                             <div className="hidden md:block text-left">
-                                <p className="text-sm font-medium text-gray-900 dark:text-white">Admin User</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Admin</p>
+                                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Usuário' : 'Usuário'}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{isAdmin ? 'Admin' : 'Membro'}</p>
                             </div>
                         </div>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
                         <DropdownMenuLabel>My Account</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="cursor-pointer">
+                        <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/profile')}>
                             <User className="mr-2 h-4 w-4" />
                             <span>My Profile</span>
                         </DropdownMenuItem>
@@ -303,10 +323,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             <Mail className="mr-2 h-4 w-4" />
                             <span>Inbox</span>
                         </DropdownMenuItem>
+                        {isAdmin && (
                         <DropdownMenuItem className="cursor-pointer" onClick={() => setSettingsOpen(true)}>
                             <Settings className="mr-2 h-4 w-4" />
                             <span>Settings</span>
                         </DropdownMenuItem>
+                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="cursor-pointer text-red-600 focus:text-red-600" onClick={handleLogout}>
                             <LogOut className="mr-2 h-4 w-4" />
