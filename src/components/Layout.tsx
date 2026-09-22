@@ -15,7 +15,7 @@ import {
   Bell,
   Mail,
   X,
-  BarChart3,
+  ShoppingCart,
 } from 'lucide-react';
 import { 
   DropdownMenu, 
@@ -36,6 +36,8 @@ import { useUser } from '@/contexts/UserContext';
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [ecommerceOpen, setEcommerceOpen] = useState(true);
+  const [painelOpen, setPainelOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [blingNotifications, setBlingNotifications] = useState(0);
   const navigate = useNavigate();
@@ -125,113 +127,98 @@ export default function Layout({ children }: { children: React.ReactNode }) {
              )}
           </div>
           
-          <ul className="space-y-2 font-medium">
+          <ul className="space-y-1 font-medium">
+            {/* ── E-Commerce group ── */}
             <li>
-              <Link
-                to={{ pathname: '/dashboard', search: e2eSearch }}
-                className={`flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-zinc-800 group no-underline
-                  ${location.pathname === '/dashboard'
-                    ? 'bg-gradient-to-r from-blue-500/10 to-purple-500/10 text-blue-400 font-semibold'
-                    : 'text-gray-500 dark:text-gray-400'
-                  }`}
+              <button
+                type="button"
+                onClick={() => setEcommerceOpen(v => !v)}
+                className="w-full flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-zinc-800 group cursor-pointer"
               >
-                <BarChart3 className={`w-5 h-5 transition duration-75 ${
-                  location.pathname === '/dashboard'
-                    ? 'text-blue-400'
-                    : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white'
-                }`} />
-                <span className="ml-3">Dashboard</span>
-              </Link>
-            </li>
-            <li>
-              <div className="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-zinc-800 group cursor-pointer">
-                <LayoutDashboard className="w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" />
-                <span className="ml-3">Painel</span>
-                <ChevronDown className="w-4 h-4 ml-auto" />
-              </div>
-              <ul className="py-2 space-y-1 pl-8">
-                  <li>
-                      <Link
-                        to={{ pathname: '/', search: e2eSearch }}
-                        className={`flex items-center w-full p-2 text-sm transition-all duration-150 rounded-lg pl-4 group no-underline
-                          ${location.pathname === '/'
-                            ? 'bg-blue-500/10 text-blue-400 font-semibold'
-                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white'
-                          }`}
-                      >
-                          <span className={`w-1.5 h-1.5 mr-2.5 rounded-full flex-shrink-0 ${location.pathname === '/' ? 'bg-blue-400' : 'bg-blue-500/60'}`} />
-                          Calculadora
-                      </Link>
-                  </li>
-                  <li>
-                      <Link
-                        to={{ pathname: '/produtos', search: e2eSearch }}
-                        className={`flex items-center w-full p-2 text-sm transition-all duration-150 rounded-lg pl-4 group no-underline
-                          ${location.pathname === '/produtos'
-                            ? 'bg-pink-500/10 text-pink-400 font-semibold'
-                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white'
-                          }`}
-                      >
-                          <span className={`w-1.5 h-1.5 mr-2.5 rounded-full flex-shrink-0 ${location.pathname === '/produtos' ? 'bg-pink-400' : 'bg-pink-500/60'}`} />
-                          Produtos
-                      </Link>
-                  </li>
-                  <li>
-                      <Link
-                        to={{ pathname: '/vendas', search: e2eSearch }}
-                        className={`flex items-center w-full p-2 text-sm transition-all duration-150 rounded-lg pl-4 group no-underline
-                          ${location.pathname === '/vendas'
-                            ? 'bg-green-500/10 text-green-400 font-semibold'
-                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white'
-                          }${!isAdmin ? ' hidden' : ''}`}
-                      >
-                          <span className={`w-1.5 h-1.5 mr-2.5 rounded-full flex-shrink-0 ${location.pathname === '/vendas' ? 'bg-green-400' : 'bg-green-500/60'}`} />
-                          Vendas
-                      </Link>
-                  </li>
-                  <li>
-                      <Link
-                        to={{ pathname: '/leads', search: e2eSearch }}
-                        className={`flex items-center w-full p-2 text-sm transition-all duration-150 rounded-lg pl-4 group no-underline
-                          ${location.pathname === '/leads'
-                            ? 'bg-purple-500/10 text-purple-400 font-semibold'
-                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white'
-                          }`}
-                      >
-                          <span className={`w-1.5 h-1.5 mr-2.5 rounded-full flex-shrink-0 ${location.pathname === '/leads' ? 'bg-purple-400' : 'bg-purple-500/60'}`} />
-                          Leads
-                      </Link>
-                  </li>
-                  <li>
-                      <Link
-                        to={{ pathname: '/campanhas', search: e2eSearch }}
-                        className={`flex items-center w-full p-2 text-sm transition-all duration-150 rounded-lg pl-4 group no-underline
-                          ${location.pathname === '/campanhas'
-                            ? 'bg-orange-500/10 text-orange-400 font-semibold'
-                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white'
-                          }${!isAdmin ? ' hidden' : ''}`}
-                      >
-                          <span className={`w-1.5 h-1.5 mr-2.5 rounded-full flex-shrink-0 ${location.pathname === '/campanhas' ? 'bg-orange-400' : 'bg-orange-500/60'}`} />
-                          Campanhas
-                      </Link>
-                  </li>
-                  {isAdmin && (
-                  <li>
-                      <Link
-                        to={{ pathname: '/repasse', search: e2eSearch }}
-                        className={`flex items-center w-full p-2 text-sm transition-all duration-150 rounded-lg pl-4 group no-underline
-                          ${location.pathname === '/repasse'
-                            ? 'bg-teal-500/10 text-teal-400 font-semibold'
-                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-white'
-                          }`}
-                      >
-                          <span className={`w-1.5 h-1.5 mr-2.5 rounded-full flex-shrink-0 ${location.pathname === '/repasse' ? 'bg-teal-400' : 'bg-teal-500/60'}`} />
-                          Repasse
-                      </Link>
-                  </li>
-                  )}
+                <ShoppingCart className="w-5 h-5 text-orange-400 flex-shrink-0" />
+                <span className="ml-3 flex-1 text-left text-sm font-semibold text-zinc-300 uppercase tracking-widest text-[11px]">E-Commerce</span>
+                <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${ecommerceOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {ecommerceOpen && (
+              <ul className="mt-1 space-y-0.5 pl-8">
+                <li>
+                  <Link to={{ pathname: '/dashboard', search: e2eSearch }}
+                    className={`flex items-center w-full p-2 text-sm transition-all duration-150 rounded-lg pl-4 no-underline
+                      ${location.pathname === '/dashboard' ? 'bg-blue-500/10 text-blue-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'}`}>
+                    <span className={`w-1.5 h-1.5 mr-2.5 rounded-full flex-shrink-0 ${location.pathname === '/dashboard' ? 'bg-blue-400' : 'bg-blue-500/50'}`} />
+                    Dashboard
+                  </Link>
+                </li>
+                <li>
+                  <Link to={{ pathname: '/', search: e2eSearch }}
+                    className={`flex items-center w-full p-2 text-sm transition-all duration-150 rounded-lg pl-4 no-underline
+                      ${location.pathname === '/' ? 'bg-blue-500/10 text-blue-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'}`}>
+                    <span className={`w-1.5 h-1.5 mr-2.5 rounded-full flex-shrink-0 ${location.pathname === '/' ? 'bg-blue-400' : 'bg-blue-500/50'}`} />
+                    Calculadora
+                  </Link>
+                </li>
+                <li>
+                  <Link to={{ pathname: '/produtos', search: e2eSearch }}
+                    className={`flex items-center w-full p-2 text-sm transition-all duration-150 rounded-lg pl-4 no-underline
+                      ${location.pathname === '/produtos' ? 'bg-pink-500/10 text-pink-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'}`}>
+                    <span className={`w-1.5 h-1.5 mr-2.5 rounded-full flex-shrink-0 ${location.pathname === '/produtos' ? 'bg-pink-400' : 'bg-pink-500/50'}`} />
+                    Produtos
+                  </Link>
+                </li>
+                <li>
+                  <Link to={{ pathname: '/leads', search: e2eSearch }}
+                    className={`flex items-center w-full p-2 text-sm transition-all duration-150 rounded-lg pl-4 no-underline
+                      ${location.pathname === '/leads' ? 'bg-purple-500/10 text-purple-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'}`}>
+                    <span className={`w-1.5 h-1.5 mr-2.5 rounded-full flex-shrink-0 ${location.pathname === '/leads' ? 'bg-purple-400' : 'bg-purple-500/50'}`} />
+                    Leads
+                  </Link>
+                </li>
               </ul>
+              )}
             </li>
+
+            {/* ── Painel group (admin-only items) ── */}
+            {isAdmin && (
+            <li className="pt-1">
+              <button
+                type="button"
+                onClick={() => setPainelOpen(v => !v)}
+                className="w-full flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-zinc-800 group cursor-pointer"
+              >
+                <LayoutDashboard className="w-5 h-5 text-orange-400 flex-shrink-0" />
+                <span className="ml-3 flex-1 text-left text-sm font-semibold text-zinc-300 uppercase tracking-widest text-[11px]">Painel</span>
+                <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${painelOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {painelOpen && (
+              <ul className="mt-1 space-y-0.5 pl-8">
+                <li>
+                  <Link to={{ pathname: '/vendas', search: e2eSearch }}
+                    className={`flex items-center w-full p-2 text-sm transition-all duration-150 rounded-lg pl-4 no-underline
+                      ${location.pathname === '/vendas' ? 'bg-green-500/10 text-green-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'}`}>
+                    <span className={`w-1.5 h-1.5 mr-2.5 rounded-full flex-shrink-0 ${location.pathname === '/vendas' ? 'bg-green-400' : 'bg-green-500/50'}`} />
+                    Vendas
+                  </Link>
+                </li>
+                <li>
+                  <Link to={{ pathname: '/campanhas', search: e2eSearch }}
+                    className={`flex items-center w-full p-2 text-sm transition-all duration-150 rounded-lg pl-4 no-underline
+                      ${location.pathname === '/campanhas' ? 'bg-orange-500/10 text-orange-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'}`}>
+                    <span className={`w-1.5 h-1.5 mr-2.5 rounded-full flex-shrink-0 ${location.pathname === '/campanhas' ? 'bg-orange-400' : 'bg-orange-500/50'}`} />
+                    Campanhas
+                  </Link>
+                </li>
+                <li>
+                  <Link to={{ pathname: '/repasse', search: e2eSearch }}
+                    className={`flex items-center w-full p-2 text-sm transition-all duration-150 rounded-lg pl-4 no-underline
+                      ${location.pathname === '/repasse' ? 'bg-teal-500/10 text-teal-400 font-semibold' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'}`}>
+                    <span className={`w-1.5 h-1.5 mr-2.5 rounded-full flex-shrink-0 ${location.pathname === '/repasse' ? 'bg-teal-400' : 'bg-teal-500/50'}`} />
+                    Repasse
+                  </Link>
+                </li>
+              </ul>
+              )}
+            </li>
+            )}
           </ul>
         </div>
       </aside>
