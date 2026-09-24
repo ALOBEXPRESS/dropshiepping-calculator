@@ -27,6 +27,7 @@ export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBli
   };
   
   const [searchInput, setSearchInput] = useState(getInitialSearch);
+  const [onlyBling, setOnlyBling] = useState(true);
   const debouncedSearch = useDebounce(searchInput, 300);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
@@ -390,9 +391,19 @@ export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBli
             </SelectContent>
           </Select>
           <div className="flex items-center justify-end">
-            <div className="rounded-full border border-border bg-muted/60 px-3 py-2 text-[11px] font-semibold uppercase text-muted-foreground">
+            <button
+              type="button"
+              onClick={() => setOnlyBling(prev => !prev)}
+              className={`rounded-full px-3 py-1.5 text-[11px] font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer border ${
+                onlyBling
+                  ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/25 shadow-sm shadow-emerald-500/10'
+                  : 'bg-muted/60 border-border text-muted-foreground hover:bg-muted'
+              }`}
+              title="Filtrar produtos integrados ao Bling"
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${onlyBling ? 'bg-emerald-400 animate-pulse' : 'bg-muted-foreground'}`} />
               INTEGRAÇÃO BLING
-            </div>
+            </button>
           </div>
         </div>
       </div>
@@ -403,7 +414,7 @@ export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBli
         </div>
       )}
 
-      <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-4 grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
         {isLoading && Array.from({ length: 6 }).map((_, index) => (
           <div key={`skeleton-${index}`} className="animate-pulse rounded-2xl border border-border bg-card">
             <div className="aspect-[4/3] w-full bg-muted" />

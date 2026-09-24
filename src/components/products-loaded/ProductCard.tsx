@@ -211,7 +211,7 @@ export const ProductCard = ({
       </div>
       <div className="p-3">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="min-h-[40px] line-clamp-2 text-sm font-semibold text-foreground">
+          <h3 className="min-h-[36px] line-clamp-2 text-xs font-bold text-foreground">
             {displayName}
           </h3>
         </div>
@@ -221,45 +221,45 @@ export const ProductCard = ({
           </p>
         ) : null}
 
-        <div className="mt-3 grid min-w-0 grid-cols-2 gap-2 text-xs">
-          <div className="min-w-0 rounded-lg border border-border bg-muted/40 p-2">
-            <p className="text-[10px] uppercase text-muted-foreground">Preço</p>
+        <div className="mt-2.5 grid min-w-0 grid-cols-2 gap-1.5 text-xs">
+          <div className="min-w-0 rounded-lg border border-border bg-muted/40 p-1.5">
+            <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Preço</p>
             <p className="truncate text-xs font-semibold text-foreground tabular-nums" title={salePriceText}>
               {salePriceText}
             </p>
           </div>
-          <div className="min-w-0 rounded-lg border border-border bg-muted/40 p-2">
-            <p className="text-[10px] uppercase text-muted-foreground">Custo</p>
+          <div className="min-w-0 rounded-lg border border-border bg-muted/40 p-1.5">
+            <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Custo</p>
             <p className="truncate text-xs font-semibold text-foreground tabular-nums" title={costPriceText}>
               {costPriceText}
             </p>
           </div>
-          <div className="min-w-0 rounded-lg border border-border bg-muted/40 p-2">
-            <p className="text-[10px] uppercase text-muted-foreground">Vendas</p>
+          <div className="min-w-0 rounded-lg border border-border bg-muted/40 p-1.5">
+            <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Vendas</p>
             <p className="truncate text-xs font-semibold text-emerald-600 dark:text-emerald-400" title={String(currentProduct.salesCount)}>
               {currentProduct.salesCount}
             </p>
           </div>
-          <div className="min-w-0 rounded-lg border border-border bg-muted/40 p-2">
-            <p className="text-[10px] uppercase text-muted-foreground">Estoque</p>
+          <div className="min-w-0 rounded-lg border border-border bg-muted/40 p-1.5">
+            <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Estoque</p>
             <p className="truncate text-xs font-semibold text-foreground tabular-nums" title={stockText}>
               {stockText}
             </p>
           </div>
-          <div className="min-w-0 col-span-2 rounded-lg border border-border bg-muted/40 p-2 flex flex-col items-center text-center">
-            <p className="text-[10px] uppercase text-muted-foreground">SKU</p>
+          <div className="min-w-0 col-span-2 rounded-lg border border-border bg-muted/40 p-1.5 flex flex-col items-center text-center">
+            <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">SKU</p>
             <p className="truncate text-xs font-semibold text-foreground tabular-nums" title={skuText}>
               {skuText}
             </p>
           </div>
         </div>
 
-        <div className="mt-3 flex flex-col gap-2">
+        <div className="mt-3 flex flex-col gap-1.5">
           <Button
             type="button"
             className={isButtonActive
-              ? "h-9 bg-[#16A34A] px-4 text-xs font-semibold text-white hover:bg-[#15803D]"
-              : "h-9 bg-[#25f4ee] px-4 text-xs font-semibold text-gray-900 hover:bg-emerald-100 hover:text-emerald-700"}
+              ? "h-8 bg-[#16A34A] px-4 text-xs font-semibold text-white hover:bg-[#15803D]"
+              : "h-8 bg-[#25f4ee] px-4 text-xs font-semibold text-gray-900 hover:bg-emerald-100 hover:text-emerald-700"}
             onClick={() => onFill(product, variations)}
             onMouseEnter={() => setIsHovering(true)}
             onMouseLeave={() => setIsHovering(false)}
@@ -270,7 +270,7 @@ export const ProductCard = ({
             <Button
               type="button"
               variant="outline"
-              className="h-9 border-[#fe2c55] bg-[#fe2c55] px-4 text-xs font-semibold text-white hover:bg-[#e5194a] dark:border-[#fe2c55] dark:bg-[#fe2c55] dark:text-white dark:hover:bg-[#e5194a]"
+              className="h-8 border-[#fe2c55] bg-[#fe2c55] px-4 text-xs font-semibold text-white hover:bg-[#e5194a] dark:border-[#fe2c55] dark:bg-[#fe2c55] dark:text-white dark:hover:bg-[#e5194a]"
               onClick={() => onUpdate(product, variations)}
             >
               Atualizar

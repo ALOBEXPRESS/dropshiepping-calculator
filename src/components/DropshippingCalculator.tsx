@@ -2619,16 +2619,16 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
             <CardContent className="p-4 sm:p-6" style={{ opacity: 1, visibility: 'visible' }}>
               <Tabs value={formSection} onValueChange={(val) => setFormSection(val as 'basic' | 'pricing' | 'marketplace' | 'costs')} className="w-full">
                 <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full h-auto p-1 bg-muted/60 rounded-xl gap-1 mb-6">
-                  <TabsTrigger value="basic" className="text-xs font-semibold py-2 px-1">
+                  <TabsTrigger value="basic" className="text-[11px] sm:text-xs font-medium py-1.5 px-1 truncate text-center">
                     1. Básico
                   </TabsTrigger>
-                  <TabsTrigger value="pricing" className="text-xs font-semibold py-2 px-1">
+                  <TabsTrigger value="pricing" className="text-[11px] sm:text-xs font-medium py-1.5 px-1 truncate text-center">
                     2. Precificação
                   </TabsTrigger>
-                  <TabsTrigger value="marketplace" className="text-xs font-semibold py-2 px-1">
+                  <TabsTrigger value="marketplace" className="text-[11px] sm:text-xs font-medium py-1.5 px-1 truncate text-center">
                     3. Marketplace
                   </TabsTrigger>
-                  <TabsTrigger value="costs" className="text-xs font-semibold py-2 px-1">
+                  <TabsTrigger value="costs" className="text-[11px] sm:text-xs font-medium py-1.5 px-1 truncate text-center" title="4. Custos & Tráfego">
                     4. Custos & Tráfego
                   </TabsTrigger>
                 </TabsList>
@@ -4622,10 +4622,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 </div>
               </CollapsibleSection>
               )}
-          <footer className="mt-12 pt-8 border-t border-white/10 dark:border-zinc-800/50 text-center pb-4">
-            <p className="text-gray-400 text-sm font-medium font-iceland tracking-wide">Desenvolvido por: Jonatan Renan</p>
-            <p className="text-gray-600 text-xs mt-1">Alob Express © todos os direitos reservados</p>
-          </footer>
+
         </div>
       </div>
       <BulkEditModal
