@@ -423,6 +423,20 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
     setDeleting(blingOrderId);
     setError(null);
     try {
+      // 1. Limpeza defensiva caso exista pedido registrado na tabela orders
+      const { data: linkedOrders } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('bling_order_id', blingOrderId);
+
+      if (linkedOrders && linkedOrders.length > 0) {
+        for (const lo of linkedOrders) {
+          await supabase.from('order_items').delete().eq('order_id', lo.id);
+          await supabase.from('orders').delete().eq('id', lo.id);
+        }
+      }
+
+      // 2. Excluir pedido da tabela bling_orders
       const { error: deleteError } = await supabase
         .from('bling_orders')
         .delete()
@@ -435,9 +449,14 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
         try { sessionStorage.setItem('pendingOrders_cache', JSON.stringify(updated)); } catch { /* ignore */ }
         return updated;
       });
+
+      // Notificar componente pai para atualizar contadores
+      onOrderProcessed?.();
     } catch (err) {
+      console.error('Erro ao excluir pedido:', err);
       const msg = err instanceof Error ? err.message : 'Erro ao excluir pedido';
       setError(msg);
+      alert(`❌ Erro ao excluir pedido:\n\n${msg}`);
     } finally {
       setDeleting(null);
     }

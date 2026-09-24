@@ -145,8 +145,8 @@ export function calcOrderProfit(
 
   const retornoLiquido = Number(order.tiktok_retorno_liquido ?? 0);
   const hasRetornoLiquido = isTikTok && retornoLiquido > 0;
-  const reembolsoValue = Number(order.reembolso_value ?? 0);
-  const hasReembolsoValue = reembolsoValue > 0;
+  const reembolsoValue = order.reembolso_value != null ? Number(order.reembolso_value) : null;
+  const hasReembolsoValue = reembolsoValue !== null && !isNaN(reembolsoValue);
 
   // ── Net price ─────────────────────────────────────────────────────────────
   const precoVendaLiquidoFinal = hasReembolsoValue

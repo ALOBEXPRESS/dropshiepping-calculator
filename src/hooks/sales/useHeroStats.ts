@@ -329,7 +329,7 @@ export const useHeroStats = (
           const mktCost = mktCostMap.get(orderId) ?? 0;
           const isPersonal = dbOrder.is_personal_purchase === true
             || String(dbOrder.order_number ?? '').trim() === '208';
-          const isRefunded = Number(dbOrder.reembolso_value ?? 0) > 0
+          const isRefunded = dbOrder.reembolso_value != null
             || String(dbOrder.order_number ?? '').trim() === '15';
           const effectiveProductCost = isPersonal ? 0 : result.totalProductCost;
 

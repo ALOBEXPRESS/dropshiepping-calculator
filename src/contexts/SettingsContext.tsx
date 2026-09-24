@@ -62,12 +62,16 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       // 1. Try to find an organization for this user
       let orgId = null;
+      const currentUid = user?.id ?? explicitUserId ?? null;
+      if (currentUid) {
+        currentUserIdRef.current = currentUid;
+      }
       
-      if (user) {
+      if (currentUid) {
         const { data: members } = await supabase
           .from('organization_members')
           .select('organization_id')
-          .eq('user_id', user.id)
+          .eq('user_id', currentUid)
           .limit(1);
 
         if (members && members.length > 0) {
@@ -76,11 +80,12 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
 
       if (!orgId) {
-        // If no organization, fetch "Empresa Alob" (fallback/dev mode)
+        // If no organization, fetch active "Empresa Alob" (fallback/dev mode)
         const { data: orgs } = await supabase
           .from('organizations')
           .select('id')
           .eq('name', 'Empresa Alob')
+          .order('created_at', { ascending: false })
           .limit(1);
         if (orgs && orgs.length > 0) {
           orgId = orgs[0].id;
@@ -89,6 +94,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           const { data: fallbackOrgs } = await supabase
             .from('organizations')
             .select('id')
+            .order('created_at', { ascending: false })
             .limit(1);
           if (fallbackOrgs && fallbackOrgs.length > 0) orgId = fallbackOrgs[0].id;
         }
@@ -132,27 +138,21 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     fetchSettings();
   }, [fetchSettings]);
 
-  const initialLoadDoneRef = useRef(false);
+  const currentUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    fetchSettings().then(() => {
-      initialLoadDoneRef.current = true;
-    });
+    fetchSettings();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN') {
-        // Supabase v2 dispara SIGNED_IN em todo refresh de token ao voltar de aba.
-        // Só re-buscar se ainda não carregou (ex: login inicial).
-        if (!initialLoadDoneRef.current) {
-          fetchSettings().then(() => {
-            initialLoadDoneRef.current = true;
-          });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      const newUserId = session?.user?.id ?? null;
+
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        if (newUserId && (newUserId !== currentUserIdRef.current || !organizationId)) {
+          currentUserIdRef.current = newUserId;
+          fetchSettings(newUserId);
         }
-      } else if (event === 'TOKEN_REFRESHED') {
-        // Token refresh não precisa re-buscar settings
-        // Supabase dispara TOKEN_REFRESHED ao focar na aba — ignorar
       } else if (event === 'SIGNED_OUT') {
-        initialLoadDoneRef.current = false;
+        currentUserIdRef.current = null;
         setOrganizationId(null);
         setWorkingCapital('0');
         setEmergencyReserve('0');
@@ -164,7 +164,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return () => {
       subscription.unsubscribe();
     };
-  }, [fetchSettings]);
+  }, [fetchSettings, organizationId]);
 
   return (
     <SettingsContext.Provider value={{ 
