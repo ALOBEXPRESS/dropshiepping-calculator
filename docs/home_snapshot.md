@@ -1,0 +1,856 @@
+- generic [ref=e2]:
+  - region "Notifications alt+T"
+  - generic [ref=e9]:
+    - complementary [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - img "Logo" [ref=e13]
+          - button [ref=e14] [cursor=pointer]:
+            - img
+        - list [ref=e15]:
+          - listitem [ref=e16]:
+            - generic [ref=e17] [cursor=pointer]:
+              - img
+              - generic [ref=e18]: Painel
+              - img
+            - list [ref=e19]:
+              - listitem [ref=e20]:
+                - link "Calculadora" [ref=e21] [cursor=pointer]:
+                  - /url: /
+                  - text: Calculadora
+              - listitem [ref=e23]:
+                - link "Produtos" [ref=e24] [cursor=pointer]:
+                  - /url: /produtos
+                  - text: Produtos
+              - listitem [ref=e26]:
+                - link "Vendas" [ref=e27] [cursor=pointer]:
+                  - /url: /vendas
+                  - text: Vendas
+              - listitem [ref=e29]:
+                - link "Leads" [ref=e30] [cursor=pointer]:
+                  - /url: /leads
+                  - text: Leads
+    - generic [ref=e32]:
+      - banner [ref=e33]:
+        - search [ref=e35]:
+          - generic:
+            - img
+          - textbox "Pesquisar produtos" [ref=e36]:
+            - /placeholder: Pesquisar produtos...
+        - generic [ref=e37]:
+          - button [ref=e38] [cursor=pointer]:
+            - img
+          - button [ref=e39] [cursor=pointer]:
+            - img
+          - button "Notificações" [ref=e40] [cursor=pointer]:
+            - img
+          - generic [ref=e41] [cursor=pointer]:
+            - img "@shadcn" [ref=e43]
+            - generic [ref=e44]:
+              - paragraph [ref=e45]: Admin User
+              - paragraph [ref=e46]: Admin
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - img "Alob Express" [ref=e52] [cursor=pointer]
+          - generic [ref=e53]:
+            - paragraph [ref=e54]: Calculadora de Precificação Dropshipping Nacional v3.0.0
+            - paragraph [ref=e55]: Taxas reais atualizadas de Marketplaces 2026
+        - button "Resumo Financeiro Geral" [ref=e57] [cursor=pointer]
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - generic [ref=e60]:
+              - generic [ref=e61]:
+                - img
+                - generic [ref=e62]: Dados do Produto
+              - generic [ref=e63]:
+                - button "Resetar" [ref=e64] [cursor=pointer]
+                - button "Adicionar" [disabled]:
+                  - img
+                  - text: Adicionar
+            - generic [ref=e65]:
+              - generic [ref=e66]:
+                - generic [ref=e67]:
+                  - generic [ref=e68]: Nome do Produto *
+                  - textbox "Nome do Produto *" [ref=e69]:
+                    - /placeholder: "Ex: Fone Bluetooth"
+                - generic [ref=e70]:
+                  - generic [ref=e71]: SKU do Produto *
+                  - textbox "SKU do Produto *" [ref=e72]:
+                    - /placeholder: "Ex: SKU-001"
+                - generic [ref=e73]:
+                  - generic [ref=e74]: Fornecedor *
+                  - combobox [ref=e75] [cursor=pointer]:
+                    - generic: Dogama
+                    - img
+                - generic [ref=e76]:
+                  - generic [ref=e77]: Tipo de Conta
+                  - combobox [ref=e78] [cursor=pointer]:
+                    - generic: CNPJ
+                    - img
+                - generic [ref=e79]:
+                  - generic [ref=e80]: Titular
+                  - combobox [ref=e81] [cursor=pointer]:
+                    - generic: Alyson
+                    - img
+                - generic [ref=e82]:
+                  - generic [ref=e83]: Quantidade em estoque
+                  - spinbutton "Quantidade em estoque" [ref=e84]
+                - generic [ref=e85]:
+                  - generic [ref=e86]: Dimensões (kg/g/cm/m)
+                  - generic [ref=e87]:
+                    - textbox "Peso (kg)" [ref=e88]
+                    - textbox "Largura (cm)" [ref=e89]
+                    - textbox "Altura (cm)" [ref=e90]
+                    - textbox "Profundidade (cm)" [ref=e91]
+                - generic [ref=e92]:
+                  - generic [ref=e93]: Imagem do Produto (URL)
+                  - textbox "Imagem do Produto (URL)" [ref=e94]:
+                    - /placeholder: https://exemplo.com/imagem.jpg
+                  - paragraph [ref=e95]: Se não informar, usamos a imagem padrão do marketplace
+                - generic [ref=e96]:
+                  - generic [ref=e97]: Descrição
+                  - textbox "Descrição" [ref=e98]:
+                    - /placeholder: Digite a descrição do produto
+                - generic [ref=e99]:
+                  - generic [ref=e100]: Modalidade
+                  - combobox [ref=e101] [cursor=pointer]:
+                    - generic: Dropshipping
+                    - img
+                - generic [ref=e102]:
+                  - generic [ref=e103]: Chance de devolução (%)
+                  - textbox "Chance de devolução (%)" [ref=e105]:
+                    - /placeholder: 33,33
+                    - text: 33,33
+              - generic [ref=e106]:
+                - generic [ref=e107]: Marketplace
+                - combobox [ref=e108] [cursor=pointer]:
+                  - generic: Tiktok Shop
+                  - img
+              - generic [ref=e109]:
+                - generic [ref=e110]: Preço de Custo do Fornecedor
+                - generic [ref=e111]:
+                  - generic [ref=e112]: R$
+                  - textbox "Preço de Custo do Fornecedor" [ref=e113]:
+                    - /placeholder: 0,00
+              - generic [ref=e114]:
+                - generic [ref=e115]: Preço de venda
+                - generic [ref=e116]:
+                  - generic [ref=e117]: R$
+                  - textbox "Preço de venda" [ref=e118]:
+                    - /placeholder: 0,00
+                    - text: 29,00
+              - generic [ref=e119]:
+                - generic [ref=e120]: Markup
+                - combobox [ref=e121] [cursor=pointer]:
+                  - generic: 0 (Automático / Margem Recomendada)
+                  - img
+                - paragraph [ref=e122]: Define o preço sugerido multiplicando o custo.
+              - generic [ref=e123]:
+                - checkbox "É produto com variação?" [checked] [ref=e124] [cursor=pointer]:
+                  - generic:
+                    - img
+                - generic [ref=e125] [cursor=pointer]: É produto com variação?
+              - generic [ref=e126]:
+                - generic [ref=e127]:
+                  - combobox [ref=e128] [cursor=pointer]:
+                    - generic: Tamanho
+                    - img
+                  - 'textbox "Tamanho (ex: P)" [ref=e129]'
+                  - textbox "Markup global" [ref=e130]: 1,5
+                - button "Adicionar Variação" [ref=e131] [cursor=pointer]:
+                  - img
+                  - text: Adicionar Variação
+              - generic [ref=e132]:
+                - generic [ref=e133]: Preço Mínimo Concorrente (Tiktok Shop)
+                - generic [ref=e134]:
+                  - generic [ref=e135]: R$
+                  - textbox "Preço Mínimo Concorrente (Tiktok Shop)" [ref=e136]:
+                    - /placeholder: 0,00
+              - generic [ref=e137]:
+                - generic [ref=e138]: Configuração de Pagamento
+                - generic [ref=e139]:
+                  - button "Mercado Pago" [ref=e140] [cursor=pointer]:
+                    - img "Mercado Pago" [ref=e141]
+                    - generic [ref=e142]: Mercado Pago
+                  - button "Nubank" [ref=e143] [cursor=pointer]:
+                    - img "Nubank" [ref=e144]
+                    - generic [ref=e145]: Nubank
+                  - button "PicPay" [ref=e146] [cursor=pointer]:
+                    - img "PicPay" [ref=e147]
+                    - generic [ref=e148]: PicPay
+                  - button "PayPal" [ref=e149] [cursor=pointer]:
+                    - img "PayPal" [ref=e150]
+                    - generic [ref=e151]: PayPal
+                  - button "Stripe" [ref=e152] [cursor=pointer]:
+                    - img "Stripe" [ref=e153]
+                    - generic [ref=e154]: Stripe
+                  - button "Bradesco" [ref=e155] [cursor=pointer]:
+                    - img "Bradesco" [ref=e156]
+                    - generic [ref=e157]: Bradesco
+                - generic [ref=e158]:
+                  - button "💠 PIX (0%)" [ref=e159] [cursor=pointer]
+                  - button "Pix com crédito (4,29% a 20,86%)" [ref=e160] [cursor=pointer]
+              - generic [ref=e161]:
+                - generic [ref=e162]:
+                  - generic [ref=e163]: Taxa de Gateway
+                  - generic [ref=e164]:
+                    - button "%" [ref=e165] [cursor=pointer]
+                    - button "R$" [ref=e166] [cursor=pointer]
+                - generic [ref=e167]:
+                  - generic [ref=e168]:
+                    - generic [ref=e169]: R$
+                    - textbox "Taxa de Gateway" [ref=e170]:
+                      - /placeholder: 0,00
+                      - text: "0"
+                  - generic [ref=e172]: R$ 0,00
+              - generic [ref=e174]:
+                - button "Tráfego Pago" [ref=e175] [cursor=pointer]
+                - button "Tráfego Orgânico" [ref=e176] [cursor=pointer]
+              - generic [ref=e177]:
+                - generic [ref=e179] [cursor=pointer]:
+                  - generic [ref=e180]:
+                    - img
+                    - text: Configuração de Tráfego Orgânico
+                  - img
+                - generic [ref=e182]:
+                  - generic [ref=e183]:
+                    - button "Forma Manual (MindVideo + n8n)" [ref=e184] [cursor=pointer]
+                    - button "Forma Automatizada (Kie.ai + n8n)" [ref=e185] [cursor=pointer]
+                  - generic [ref=e186]:
+                    - heading "Marketing de Influencer" [level=4] [ref=e187]
+                    - generic [ref=e188]:
+                      - generic [ref=e190]:
+                        - checkbox "Afiliado Fulano" [ref=e191] [cursor=pointer]
+                        - generic [ref=e192]:
+                          - text: Afiliado Fulano
+                          - generic [ref=e194]:
+                            - img
+                            - text: afiliado01
+                      - generic [ref=e196]:
+                        - checkbox "Bazar do tik tok" [ref=e197] [cursor=pointer]
+                        - generic [ref=e198]:
+                          - text: Bazar do tik tok
+                          - generic [ref=e200]:
+                            - img
+                            - text: bazardotiktok1
+                      - generic [ref=e202]:
+                        - checkbox "BRUNA ROMERO WASSERMANN" [ref=e203] [cursor=pointer]
+                        - generic [ref=e204]: BRUNA ROMERO WASSERMANN
+                      - generic [ref=e206]:
+                        - checkbox "Dicas da Valéria" [ref=e207] [cursor=pointer]
+                        - generic [ref=e208]:
+                          - text: Dicas da Valéria
+                          - generic [ref=e210]:
+                            - img
+                            - text: dicasquefacilitam
+                      - generic [ref=e212]:
+                        - checkbox "Inês França" [ref=e213] [cursor=pointer]
+                        - generic [ref=e214]:
+                          - text: Inês França
+                          - generic [ref=e216]:
+                            - img
+                            - text: ines78398
+                      - generic [ref=e218]:
+                        - checkbox "Leonice Rheinheim" [ref=e219] [cursor=pointer]
+                        - generic [ref=e220]:
+                          - text: Leonice Rheinheim
+                          - generic [ref=e222]:
+                            - img
+                            - text: leonice.rheinheim
+                      - generic [ref=e224]:
+                        - checkbox "Letícia Mota" [ref=e225] [cursor=pointer]
+                        - generic [ref=e226]:
+                          - text: Letícia Mota
+                          - generic [ref=e228]:
+                            - img
+                            - text: leticiamota02_
+                      - generic [ref=e230]:
+                        - checkbox "Mãe querida" [ref=e231] [cursor=pointer]
+                        - generic [ref=e232]:
+                          - text: Mãe querida
+                          - generic [ref=e234]:
+                            - img
+                            - text: elizangelamagal
+                      - generic [ref=e236]:
+                        - checkbox "Nilda" [ref=e237] [cursor=pointer]
+                        - generic [ref=e238]:
+                          - text: Nilda
+                          - generic [ref=e240]:
+                            - img
+                            - text: nildasanttoos
+                      - generic [ref=e242]:
+                        - checkbox "Olivia quenãoépau" [ref=e243] [cursor=pointer]
+                        - generic [ref=e244]:
+                          - text: Olivia quenãoépau
+                          - generic [ref=e246]:
+                            - img
+                            - text: olivia.soares37
+                      - generic [ref=e248]:
+                        - checkbox "Rêh" [ref=e249] [cursor=pointer]
+                        - generic [ref=e250]:
+                          - text: Rêh
+                          - generic [ref=e252]:
+                            - img
+                            - text: reeeeehtata
+                      - generic [ref=e254]:
+                        - checkbox "Teste Playwright" [ref=e255] [cursor=pointer]
+                        - generic [ref=e256]:
+                          - text: Teste Playwright
+                          - generic [ref=e257]:
+                            - generic [ref=e258]:
+                              - img
+                              - text: teste_insta
+                            - generic [ref=e259]:
+                              - img
+                              - text: teste_tiktok
+                      - generic [ref=e261]:
+                        - checkbox "Vitrine da Danny" [ref=e262] [cursor=pointer]
+                        - generic [ref=e263]:
+                          - text: Vitrine da Danny
+                          - generic [ref=e265]:
+                            - img
+                            - text: daniele.leal012
+                      - generic [ref=e267]:
+                        - checkbox "Werika Ponciano" [ref=e268] [cursor=pointer]
+                        - generic [ref=e269]:
+                          - text: Werika Ponciano
+                          - generic [ref=e271]:
+                            - img
+                            - text: werikaprado
+                  - generic [ref=e272]:
+                    - heading "Marketing de Afiliado" [level=4] [ref=e273]
+                    - generic [ref=e274]:
+                      - generic [ref=e276]:
+                        - checkbox [ref=e277] [cursor=pointer]
+                        - button "Shopee — Comissão 10% 0/1" [ref=e278] [cursor=pointer]:
+                          - img
+                          - generic [ref=e279]: Shopee — Comissão 10%
+                          - generic [ref=e280]: 0/1
+                          - img [ref=e281]
+                      - generic [ref=e284]:
+                        - checkbox [ref=e285] [cursor=pointer]
+                        - button "TikTok — Comissão 10.5% 0/11" [ref=e286] [cursor=pointer]:
+                          - img
+                          - generic [ref=e287]: TikTok — Comissão 10.5%
+                          - generic [ref=e288]: 0/11
+                          - img [ref=e289]
+                  - generic [ref=e291]:
+                    - generic [ref=e292]:
+                      - generic [ref=e293]: API de Inteligência Artificial
+                      - generic [ref=e294]:
+                        - button "Gemini (Grátis)" [ref=e295] [cursor=pointer]
+                        - button "ChatGPT (Pago)" [ref=e296] [cursor=pointer]
+                      - paragraph [ref=e297]:
+                        - text: "Inclui: Gemini Pro, Gemini Flash, etc."
+                        - link "Ver limitações" [ref=e298] [cursor=pointer]:
+                          - /url: https://ai.google.dev/pricing
+                    - generic [ref=e299]:
+                      - generic [ref=e300]: Canais
+                      - generic [ref=e301]:
+                        - button "Youtube Shorts" [ref=e302] [cursor=pointer]
+                        - button "Kaway Video" [ref=e303] [cursor=pointer]
+                        - button "Tiktok" [ref=e304] [cursor=pointer]
+                        - button "Instagram Reels" [ref=e305] [cursor=pointer]
+                        - button "WhatsApp" [ref=e306] [cursor=pointer]
+                        - button "Grupo Facebook" [ref=e307] [cursor=pointer]
+                        - button "Shopee Vídeo" [ref=e308] [cursor=pointer]
+                    - generic [ref=e309]:
+                      - text: Impressão
+                      - generic [ref=e310]:
+                        - img
+                        - generic: Total de visualizações/impressões
+                      - textbox "0" [ref=e311]
+                    - generic [ref=e312]:
+                      - text: Cliques
+                      - generic [ref=e313]:
+                        - img
+                        - generic: Total de cliques no link
+                      - textbox "0" [ref=e314]
+                    - generic [ref=e315]:
+                      - text: CTR (Automático %)
+                      - textbox [ref=e316]: "0.00"
+                    - generic [ref=e317]:
+                      - text: Vendas (Total)
+                      - textbox "0" [ref=e318]
+                    - generic [ref=e319]:
+                      - text: Frequência de postagem (vídeos/dia)
+                      - textbox "1" [ref=e320]
+                    - generic [ref=e322]:
+                      - generic [ref=e324] [cursor=pointer]:
+                        - generic [ref=e325]: Influencer para Vídeo
+                        - img
+                      - generic [ref=e329]:
+                        - text: Selecione o Influencer
+                        - combobox [ref=e330] [cursor=pointer]:
+                          - generic: Selecione um influencer
+                          - img
+                    - generic [ref=e332]:
+                      - generic [ref=e334] [cursor=pointer]:
+                        - generic [ref=e335]: Video Model
+                        - img
+                      - generic [ref=e338]:
+                        - generic [ref=e339]:
+                          - button "Veo3" [ref=e340] [cursor=pointer]
+                          - button "Grok" [ref=e341] [cursor=pointer]
+                          - button "Sora2" [ref=e342] [cursor=pointer]
+                          - button "Wan 2" [ref=e343] [cursor=pointer]
+                        - generic [ref=e344]:
+                          - button "Cópia" [ref=e345] [cursor=pointer]
+                          - button "Kling" [ref=e346] [cursor=pointer]
+                          - button "Runway" [ref=e347] [cursor=pointer]
+                          - button "Luma" [ref=e348] [cursor=pointer]
+                          - button "Pika 2.5" [ref=e349] [cursor=pointer]
+                          - button "Seedance" [ref=e350] [cursor=pointer]
+                        - generic [ref=e351]:
+                          - text: Modelo de Vídeo
+                          - combobox [ref=e352] [cursor=pointer]:
+                            - generic: Sora2
+                            - img
+                        - generic [ref=e353]:
+                          - generic [ref=e354]:
+                            - checkbox "Plano Gratuito" [checked] [ref=e355] [cursor=pointer]:
+                              - generic:
+                                - img
+                            - generic [ref=e356] [cursor=pointer]: Plano Gratuito
+                          - generic [ref=e357]:
+                            - checkbox "Plano Pago" [ref=e358] [cursor=pointer]
+                            - generic [ref=e359] [cursor=pointer]: Plano Pago
+              - generic [ref=e360]:
+                - generic [ref=e361]:
+                  - generic [ref=e362]: Taxa de Gateway do Fornecedor
+                  - generic [ref=e363]:
+                    - button "%" [ref=e364] [cursor=pointer]
+                    - button "R$" [ref=e365] [cursor=pointer]
+                - generic [ref=e366]:
+                  - generic [ref=e367]: R$
+                  - textbox "Taxa de Gateway do Fornecedor" [ref=e368]:
+                    - /placeholder: 0,00
+                    - text: "2"
+              - generic [ref=e369]:
+                - generic [ref=e370]:
+                  - generic [ref=e371]: Taxa do fornecedor
+                  - generic [ref=e372]:
+                    - button "%" [ref=e373] [cursor=pointer]
+                    - button "R$" [ref=e374] [cursor=pointer]
+                - generic [ref=e375]:
+                  - textbox "Taxa do fornecedor" [ref=e376]:
+                    - /placeholder: 0,00
+                    - text: "6"
+                  - generic [ref=e377]: "%"
+              - generic [ref=e378]:
+                - generic [ref=e379]: Taxa de Comissão Tiktok (%)
+                - textbox "Taxa de Comissão Tiktok (%)" [ref=e381]:
+                  - /placeholder: "Ex: 6"
+                  - text: "6"
+              - generic [ref=e382]:
+                - generic [ref=e383]: Valor do Frete (R$)
+                - generic [ref=e384]:
+                  - textbox "Valor do Frete (R$)" [disabled]:
+                    - /placeholder: 0,00
+                    - text: "0"
+              - generic [ref=e385]:
+                - checkbox "Programa de Frete Grátis (SFP)" [checked] [ref=e386] [cursor=pointer]:
+                  - generic:
+                    - img
+                - generic [ref=e387]:
+                  - generic [ref=e388] [cursor=pointer]: Programa de Frete Grátis (SFP)
+                  - generic [ref=e389]: Taxa de serviço adicional de 6% sobre o preço de venda
+              - generic [ref=e390]:
+                - checkbox "Calcular Tiktokshop Ads" [ref=e391] [cursor=pointer]
+                - generic [ref=e392] [cursor=pointer]: Calcular Tiktokshop Ads
+          - generic [ref=e395]:
+            - generic [ref=e396]:
+              - generic [ref=e397]:
+                - heading "Produtos integrados" [level=3] [ref=e398]
+                - paragraph [ref=e399]: 240 produtos encontrados
+              - button "Atualizar" [ref=e401] [cursor=pointer]:
+                - img
+                - text: Atualizar
+            - generic [ref=e402]:
+              - generic [ref=e403]:
+                - textbox "Buscar por nome ou SKU" [ref=e404]
+                - generic [ref=e405]:
+                  - button "Não categorizado" [ref=e406] [cursor=pointer]
+                  - generic [ref=e407]:
+                    - textbox "Preço mínimo" [ref=e408]
+                    - textbox "Preço máximo" [ref=e409]
+              - combobox [ref=e411] [cursor=pointer]:
+                - generic: Todos
+                - img
+              - generic [ref=e412]:
+                - combobox [ref=e413] [cursor=pointer]:
+                  - generic: Todos
+                  - img
+                - generic [ref=e415]: INTEGRAÇÃO BLING
+            - generic [ref=e416]:
+              - generic [ref=e417]:
+                - generic [ref=e418]:
+                  - generic [ref=e419]:
+                    - img "Camisa Feminina Baby Cherry Vibes" [ref=e420]
+                    - button "Variação anterior" [ref=e421] [cursor=pointer]:
+                      - img
+                    - generic [ref=e422]: 1/9
+                    - button "Próxima variação" [ref=e423] [cursor=pointer]:
+                      - img
+                  - img "Bling" [ref=e426]
+                  - img "Dogama" [ref=e428]
+                - generic [ref=e429]:
+                  - heading "Camisa Feminina Baby Cherry Vibes" [level=3] [ref=e431]
+                  - generic [ref=e432]:
+                    - generic [ref=e433]:
+                      - paragraph [ref=e434]: Preço
+                      - paragraph [ref=e435]: R$ 39,90
+                    - generic [ref=e436]:
+                      - paragraph [ref=e437]: Custo
+                      - paragraph [ref=e438]: R$ 29,90
+                    - generic [ref=e439]:
+                      - paragraph [ref=e440]: Vendas
+                      - paragraph [ref=e441]: "0"
+                    - generic [ref=e442]:
+                      - paragraph [ref=e443]: Estoque
+                      - paragraph [ref=e444]: "-"
+                    - generic [ref=e445]:
+                      - paragraph [ref=e446]: SKU
+                      - paragraph [ref=e447]: C1181
+                  - generic [ref=e448]:
+                    - button "Cadastrado" [ref=e449] [cursor=pointer]
+                    - button "Atualizar" [ref=e450] [cursor=pointer]
+              - generic [ref=e451]:
+                - generic [ref=e452]:
+                  - generic [ref=e453]:
+                    - img "Camiseta Baby Look Florzinha Fio 30.1 Sustentavel Corte Feminino Valorizado" [ref=e454]
+                    - button "Variação anterior" [ref=e455] [cursor=pointer]:
+                      - img
+                    - generic [ref=e456]: 1/29
+                    - button "Próxima variação" [ref=e457] [cursor=pointer]:
+                      - img
+                  - img "Bling" [ref=e460]
+                  - img "Dogama" [ref=e462]
+                - generic [ref=e463]:
+                  - heading "Camiseta Baby Look Florzinha Fio 30.1 Sustentavel Corte Feminino Valorizado" [level=3] [ref=e465]
+                  - generic [ref=e466]:
+                    - generic [ref=e467]:
+                      - paragraph [ref=e468]: Preço
+                      - paragraph [ref=e469]: R$ 44,50
+                    - generic [ref=e470]:
+                      - paragraph [ref=e471]: Custo
+                      - paragraph [ref=e472]: R$ 32,90
+                    - generic [ref=e473]:
+                      - paragraph [ref=e474]: Vendas
+                      - paragraph [ref=e475]: "0"
+                    - generic [ref=e476]:
+                      - paragraph [ref=e477]: Estoque
+                      - paragraph [ref=e478]: "-"
+                    - generic [ref=e479]:
+                      - paragraph [ref=e480]: SKU
+                      - paragraph [ref=e481]: C1245
+                  - generic [ref=e482]:
+                    - button "Cadastrado" [ref=e483] [cursor=pointer]
+                    - button "Atualizar" [ref=e484] [cursor=pointer]
+              - generic [ref=e485]:
+                - generic [ref=e486]:
+                  - generic [ref=e487]:
+                    - img "Baby Look Feminina Arte Pop Mona Lisa Look Moderno Irreverente Casual" [ref=e488]
+                    - button "Variação anterior" [ref=e489] [cursor=pointer]:
+                      - img
+                    - generic [ref=e490]: 1/13
+                    - button "Próxima variação" [ref=e491] [cursor=pointer]:
+                      - img
+                  - img "Bling" [ref=e494]
+                  - img "Dogama" [ref=e496]
+                - generic [ref=e497]:
+                  - heading "Baby Look Feminina Arte Pop Mona Lisa Look Moderno Irreverente Casual" [level=3] [ref=e499]
+                  - generic [ref=e500]:
+                    - generic [ref=e501]:
+                      - paragraph [ref=e502]: Preço
+                      - paragraph [ref=e503]: R$ 39,00
+                    - generic [ref=e504]:
+                      - paragraph [ref=e505]: Custo
+                      - paragraph [ref=e506]: R$ 29,90
+                    - generic [ref=e507]:
+                      - paragraph [ref=e508]: Vendas
+                      - paragraph [ref=e509]: "0"
+                    - generic [ref=e510]:
+                      - paragraph [ref=e511]: Estoque
+                      - paragraph [ref=e512]: "-"
+                    - generic [ref=e513]:
+                      - paragraph [ref=e514]: SKU
+                      - paragraph [ref=e515]: C1233
+                  - generic [ref=e516]:
+                    - button "Cadastrado" [ref=e517] [cursor=pointer]
+                    - button "Atualizar" [ref=e518] [cursor=pointer]
+              - generic [ref=e519]:
+                - generic [ref=e520]:
+                  - img "Fita Cabelo Brilhante Extensao para Tranca Estilo Festival Moda Hair" [ref=e522]
+                  - img "Bling" [ref=e525]
+                  - img "Dogama" [ref=e527]
+                - generic [ref=e528]:
+                  - heading "Fita Cabelo Brilhante Extensao para Tranca Estilo Festival Moda Hair" [level=3] [ref=e530]
+                  - generic [ref=e531]:
+                    - generic [ref=e532]:
+                      - paragraph [ref=e533]: Preço
+                      - paragraph [ref=e534]: R$ 12,99
+                    - generic [ref=e535]:
+                      - paragraph [ref=e536]: Custo
+                      - paragraph [ref=e537]: R$ 4,99
+                    - generic [ref=e538]:
+                      - paragraph [ref=e539]: Vendas
+                      - paragraph [ref=e540]: "0"
+                    - generic [ref=e541]:
+                      - paragraph [ref=e542]: Estoque
+                      - paragraph [ref=e543]: "10"
+                    - generic [ref=e544]:
+                      - paragraph [ref=e545]: SKU
+                      - paragraph [ref=e546]: "2023514980"
+                  - generic [ref=e547]:
+                    - button "Cadastrado" [ref=e548] [cursor=pointer]
+                    - button "Atualizar" [ref=e549] [cursor=pointer]
+              - generic [ref=e550]:
+                - generic [ref=e551]:
+                  - img "Aspirador de Pó Portátil para Carro Sofá e Cantos Difíceis Sem Fio" [ref=e553]
+                  - img "Bling" [ref=e556]
+                  - img "Tyr" [ref=e558]
+                - generic [ref=e559]:
+                  - heading "Aspirador de Pó Portátil para Carro Sofá e Cantos Difíceis Sem Fio" [level=3] [ref=e561]
+                  - generic [ref=e562]:
+                    - generic [ref=e563]:
+                      - paragraph [ref=e564]: Preço
+                      - paragraph [ref=e565]: R$ 43,90
+                    - generic [ref=e566]:
+                      - paragraph [ref=e567]: Custo
+                      - paragraph [ref=e568]: R$ 26,90
+                    - generic [ref=e569]:
+                      - paragraph [ref=e570]: Vendas
+                      - paragraph [ref=e571]: "0"
+                    - generic [ref=e572]:
+                      - paragraph [ref=e573]: Estoque
+                      - paragraph [ref=e574]: "200"
+                    - generic [ref=e575]:
+                      - paragraph [ref=e576]: SKU
+                      - paragraph [ref=e577]: FB_AMD_004_DROP_01
+                  - generic [ref=e578]:
+                    - button "Cadastrado" [ref=e579] [cursor=pointer]
+                    - button "Atualizar" [ref=e580] [cursor=pointer]
+              - generic [ref=e581]:
+                - generic [ref=e582]:
+                  - img "Headset Gamer com Microfone P2 Homologado Anatel para PC Notebook e Smartphone" [ref=e584]
+                  - img "Bling" [ref=e587]
+                  - img "Tyr" [ref=e589]
+                - generic [ref=e590]:
+                  - heading "Headset Gamer com Microfone P2 Homologado Anatel para PC Notebook e Smartphone" [level=3] [ref=e592]
+                  - generic [ref=e593]:
+                    - generic [ref=e594]:
+                      - paragraph [ref=e595]: Preço
+                      - paragraph [ref=e596]: R$ 62,90
+                    - generic [ref=e597]:
+                      - paragraph [ref=e598]: Custo
+                      - paragraph [ref=e599]: R$ 39,90
+                    - generic [ref=e600]:
+                      - paragraph [ref=e601]: Vendas
+                      - paragraph [ref=e602]: "0"
+                    - generic [ref=e603]:
+                      - paragraph [ref=e604]: Estoque
+                      - paragraph [ref=e605]: "204"
+                    - generic [ref=e606]:
+                      - paragraph [ref=e607]: SKU
+                      - paragraph [ref=e608]: FB_AMD_002_DROP_01
+                  - generic [ref=e609]:
+                    - button "Cadastrado" [ref=e610] [cursor=pointer]
+                    - button "Atualizar" [ref=e611] [cursor=pointer]
+              - generic [ref=e612]:
+                - generic [ref=e613]:
+                  - img "Fone Sem Fio P9 Air Bluetooth 5.0 Para Esporte e Música À Prova D'água com Microfone" [ref=e615]
+                  - img "Bling" [ref=e618]
+                  - img "Tyr" [ref=e620]
+                - generic [ref=e621]:
+                  - heading "Fone Sem Fio P9 Air Bluetooth 5.0 Para Esporte e Música À Prova D'água com Microfone" [level=3] [ref=e623]
+                  - generic [ref=e624]:
+                    - generic [ref=e625]:
+                      - paragraph [ref=e626]: Preço
+                      - paragraph [ref=e627]: R$ 69,90
+                    - generic [ref=e628]:
+                      - paragraph [ref=e629]: Custo
+                      - paragraph [ref=e630]: R$ 37,00
+                    - generic [ref=e631]:
+                      - paragraph [ref=e632]: Vendas
+                      - paragraph [ref=e633]: "0"
+                    - generic [ref=e634]:
+                      - paragraph [ref=e635]: Estoque
+                      - paragraph [ref=e636]: "275"
+                    - generic [ref=e637]:
+                      - paragraph [ref=e638]: SKU
+                      - paragraph [ref=e639]: FB_AMD_007_DROP_01
+                  - generic [ref=e640]:
+                    - button "Cadastrado" [ref=e641] [cursor=pointer]
+                    - button "Atualizar" [ref=e642] [cursor=pointer]
+              - generic [ref=e643]:
+                - generic [ref=e644]:
+                  - img "Carregador de celular 2 USB KA373-VB" [ref=e646]
+                  - img "Bling" [ref=e649]
+                  - img "Tyr" [ref=e651]
+                - generic [ref=e652]:
+                  - heading "Carregador de celular 2 USB KA373-VB" [level=3] [ref=e654]
+                  - generic [ref=e655]:
+                    - generic [ref=e656]:
+                      - paragraph [ref=e657]: Preço
+                      - paragraph [ref=e658]: R$ 27,90
+                    - generic [ref=e659]:
+                      - paragraph [ref=e660]: Custo
+                      - paragraph [ref=e661]: R$ 12,00
+                    - generic [ref=e662]:
+                      - paragraph [ref=e663]: Vendas
+                      - paragraph [ref=e664]: "0"
+                    - generic [ref=e665]:
+                      - paragraph [ref=e666]: Estoque
+                      - paragraph [ref=e667]: "231"
+                    - generic [ref=e668]:
+                      - paragraph [ref=e669]: SKU
+                      - paragraph [ref=e670]: FB_AMD_012_DROP_01
+                  - generic [ref=e671]:
+                    - button "Cadastrado" [ref=e672] [cursor=pointer]
+                    - button "Atualizar" [ref=e673] [cursor=pointer]
+              - generic [ref=e674]:
+                - generic [ref=e675]:
+                  - img "Escova Alisadora Rápida para Cabelo Cacheado Crespo e Grosso sem Prender Mecha" [ref=e677]
+                  - img "Bling" [ref=e680]
+                  - img "Tyr" [ref=e682]
+                - generic [ref=e683]:
+                  - heading "Escova Alisadora Rápida para Cabelo Cacheado Crespo e Grosso sem Prender Mecha" [level=3] [ref=e685]
+                  - generic [ref=e686]:
+                    - generic [ref=e687]:
+                      - paragraph [ref=e688]: Preço
+                      - paragraph [ref=e689]: R$ 39,90
+                    - generic [ref=e690]:
+                      - paragraph [ref=e691]: Custo
+                      - paragraph [ref=e692]: R$ 24,00
+                    - generic [ref=e693]:
+                      - paragraph [ref=e694]: Vendas
+                      - paragraph [ref=e695]: "0"
+                    - generic [ref=e696]:
+                      - paragraph [ref=e697]: Estoque
+                      - paragraph [ref=e698]: "232"
+                    - generic [ref=e699]:
+                      - paragraph [ref=e700]: SKU
+                      - paragraph [ref=e701]: FB_AMD_015_DROP_01
+                  - generic [ref=e702]:
+                    - button "Cadastrado" [ref=e703] [cursor=pointer]
+                    - button "Atualizar" [ref=e704] [cursor=pointer]
+            - generic [ref=e705]:
+              - button [disabled]:
+                - img
+              - generic [ref=e706]: Página 1 de 27
+              - button [ref=e707] [cursor=pointer]:
+                - img
+        - generic [ref=e708]:
+          - generic [ref=e710] [cursor=pointer]:
+            - generic [ref=e711]:
+              - img
+              - text: Taxas dos Marketplaces (Referência)
+            - img
+          - generic [ref=e713]:
+            - generic [ref=e714]:
+              - heading "📦 Mercado Livre Clássico" [level=5] [ref=e715]
+              - list [ref=e716]:
+                - listitem [ref=e717]:
+                  - text: •
+                  - strong [ref=e718]: "Comissão:"
+                  - text: 10% a 14% sobre o valor da venda (varia por categoria)
+                - listitem [ref=e719]:
+                  - text: •
+                  - strong [ref=e720]: "Custo Fixo:"
+                  - text: Hoje varia por faixa de preço.
+                - listitem [ref=e721]:
+                  - text: •
+                  - strong [ref=e722]: "Frete Grátis:"
+                  - text: Políticas de frete grátis mudaram e agora são mais flexíveis.
+                - listitem [ref=e723]:
+                  - text: •
+                  - strong [ref=e724]: "Visibilidade:"
+                  - text: Alta
+                - listitem [ref=e725]:
+                  - text: •
+                  - strong [ref=e726]: "Parcelamento:"
+                  - text: Não inclui parcelamento sem juros
+            - generic [ref=e727]:
+              - heading "⭐ Anúncio Premium (Mercado Livre)" [level=5] [ref=e728]
+              - list [ref=e729]:
+                - listitem [ref=e730]:
+                  - text: •
+                  - strong [ref=e731]: "Comissão:"
+                  - text: 15% a 19% sobre o valor da venda (varia por categoria)
+                - listitem [ref=e732]:
+                  - text: •
+                  - strong [ref=e733]: "Custo Fixo:"
+                  - text: Hoje varia por faixa de preço.
+                - listitem [ref=e734]:
+                  - text: •
+                  - strong [ref=e735]: "Visibilidade:"
+                  - text: Máxima - destaque e prioridade nas buscas
+                - listitem [ref=e736]:
+                  - text: •
+                  - strong [ref=e737]: "Parcelamento:"
+                  - text: Até 12x sem juros para o comprador
+                - listitem [ref=e738]:
+                  - text: •
+                  - strong [ref=e739]: "Benefício:"
+                  - text: Maior conversão de vendas pela visibilidade
+            - generic [ref=e740]:
+              - heading "📦 Amazon" [level=5] [ref=e741]
+              - list [ref=e742]:
+                - listitem [ref=e743]:
+                  - text: •
+                  - strong [ref=e744]: "1. Comissão de Venda (Taxa de Referência):"
+                  - text: A Amazon cobra uma comissão sobre o valor total da venda (preço do item + frete + embalagem para presente).
+                  - list [ref=e745]:
+                    - listitem [ref=e746]:
+                      - strong [ref=e747]: "Porcentagem:"
+                      - text: Geralmente entre 10% e 15% para a maioria das categorias.
+                    - listitem [ref=e748]:
+                      - strong [ref=e749]: "Comissão mínima:"
+                      - text: Se o valor calculado da comissão for muito baixo, aplica-se uma comissão mínima de R$ 1,00 por item.
+                - listitem [ref=e750]:
+                  - text: •
+                  - strong [ref=e751]: "2. Taxa Fixa por Item (Plano Individual):"
+                  - text: "A taxa fixa depende do seu plano de vendedor:"
+                  - list [ref=e752]:
+                    - listitem [ref=e753]:
+                      - strong [ref=e754]: "Plano Individual:"
+                      - text: R$ 2,00 por item vendido (além da comissão de 10-15%).
+                    - listitem [ref=e755]:
+                      - strong [ref=e756]: "Plano Profissional:"
+                      - text: Não tem taxa fixa por item (apenas a comissão de 10-15%). Em vez disso, paga-se uma mensalidade de R$ 19,00.
+                - listitem [ref=e757]:
+                  - text: •
+                  - strong [ref=e758]: "3. Outras Taxas Possíveis:"
+                  - list [ref=e759]:
+                    - listitem [ref=e760]:
+                      - strong [ref=e761]: "Logística (FBA/DBA):"
+                      - text: Se você utilizar a logística da Amazon para enviar os produtos, haverá taxas de manuseio e frete, que variam conforme o peso e tamanho do produto.
+                    - listitem [ref=e762]:
+                      - strong [ref=e763]: "Parcelamento:"
+                      - text: Se o vendedor oferecer parcelamento sem juros, pode haver uma taxa adicional de 1,5% sobre o valor total da venda.
+            - generic [ref=e764]:
+              - heading "🛍️ Shopee" [level=5] [ref=e765]
+              - list [ref=e766]:
+                - listitem [ref=e767]:
+                  - text: •
+                  - strong [ref=e768]: "Com Frete Grátis:"
+                  - text: 14% comissão + 6% frete + R$ 4 fixo*
+                - listitem [ref=e769]:
+                  - text: •
+                  - strong [ref=e770]: "Sem Frete Grátis:"
+                  - text: 12% comissão + 2% transação + R$ 4 fixo*
+                - listitem [ref=e771]:
+                  - text: •
+                  - strong [ref=e772]: "*Produtos abaixo de R$ 8:"
+                  - text: Taxa fixa é 50% do valor do item (não R$ 4)
+            - generic [ref=e773]:
+              - paragraph [ref=e774]: "💡 Dicas Importantes:"
+              - list [ref=e775]:
+                - listitem [ref=e776]: "• O custo fixo varia conforme o preço: R$ 6,00 (até R$ 40), R$ 6,50 (R$ 40-60), R$ 6,75 (R$ 60-79)"
+                - listitem [ref=e777]: • A margem recomendada já considera custos operacionais e embalagem
+                - listitem [ref=e778]: • No Mercado Livre, o Premium tem maior custo mas gera mais vendas pela visibilidade
+                - listitem [ref=e779]: • Valores atualizados conforme políticas de 2024 dos marketplaces
+        - contentinfo [ref=e780]:
+          - paragraph [ref=e781]: "Desenvolvido por: Jonatan Renan"
+          - paragraph [ref=e782]: Alob Express © todos os direitos reservados

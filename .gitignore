@@ -107,8 +107,8 @@ desktop.ini
 # N8N Workflows (contain hardcoded secrets)
 src/hooks/n8n/
 
-# Test files (keep local only)
-src/test/
+# Test files — E2E specs are now tracked (needed for redesign safety net)
+# src/test/  ← UNBLOCKED for redesign-ui branch
 
 # Documentation files (keep local only)
 .agents/
@@ -138,8 +138,8 @@ scripts/
 .claude/
 tools/
 
-# Documentation (internal only - never public)
-docs/
+# Documentation — docs/ tracked for audit and phase docs
+# docs/  ← UNBLOCKED for redesign-ui branch
 
 # Scripts (contain sensitive operations)
 python-scripts/
