@@ -37,14 +37,14 @@ const MARKETPLACE_LOGOS: Record<string, string> = {
 const statusConfig: Record<CampaignStatus, { label: string; className: string }> = {
   active:  { label: 'Ativo',     className: 'bg-green-500/15 text-green-400 border-green-500/30' },
   paused:  { label: 'Pausado',   className: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30' },
-  ended:   { label: 'Encerrado', className: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30' },
+  ended:   { label: 'Encerrado', className: 'bg-muted text-muted-foreground border-border' },
 };
 
 const SkeletonCard = () => (
-  <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5 animate-pulse space-y-3">
-    <div className="h-4 bg-zinc-800 rounded w-2/3" />
-    <div className="h-3 bg-zinc-800 rounded w-1/2" />
-    <div className="h-3 bg-zinc-800 rounded w-1/3" />
+  <div className="rounded-xl border border-border bg-card/40 p-5 animate-pulse space-y-3">
+    <div className="h-4 bg-background rounded w-2/3" />
+    <div className="h-3 bg-background rounded w-1/2" />
+    <div className="h-3 bg-background rounded w-1/3" />
   </div>
 );
 
@@ -98,11 +98,11 @@ const GroupSection: React.FC<{
       <button
         type="button"
         onClick={toggle}
-        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-zinc-900/40 border ${borderColor} hover:bg-zinc-900/70 transition-colors cursor-pointer`}
+        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card/40 border ${borderColor} hover:bg-card/70 transition-colors cursor-pointer`}
       >
         <span className="text-base">{icon}</span>
         <span className={`text-xs font-semibold uppercase tracking-widest ${color}`}>{label}</span>
-        <span className="text-[10px] bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded-full">{count}</span>
+        <span className="text-[10px] bg-background text-muted-foreground px-1.5 py-0.5 rounded-full">{count}</span>
         {custo > 0 && (
           <span className="text-[10px] text-orange-400/70 ml-auto mr-2">
             Custo: R$ {formatBRL(custo)}
@@ -110,7 +110,7 @@ const GroupSection: React.FC<{
         )}
         <ChevronDown
           ref={chevronRef}
-          className={`w-4 h-4 text-zinc-500 ${custo > 0 ? '' : 'ml-auto'}`}
+          className={`w-4 h-4 text-muted-foreground ${custo > 0 ? '' : 'ml-auto'}`}
           style={{ transform: 'rotate(0deg)' }}
         />
       </button>
@@ -208,23 +208,23 @@ const AdCreativeAccordion: React.FC<{
   const isImage = mediaType === 'imagem';
 
   return (
-    <div className="mt-2 rounded-lg border border-zinc-800 overflow-hidden">
+    <div className="mt-2 rounded-lg border border-border overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-3 py-2 bg-zinc-900/60 hover:bg-zinc-800/60 transition-colors text-left"
+        className="w-full flex items-center justify-between px-3 py-2 bg-card/60 hover:bg-background/60 transition-colors text-left"
       >
-        <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-widest">Ad / Criativo</span>
-        <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Ad / Criativo</span>
+        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="px-4 py-4 bg-zinc-950/40">
+        <div className="px-4 py-4 bg-background/40">
           <div className="flex gap-5 items-start">
             {/* ── LEFT: vídeo / imagem ── */}
             <div className="flex-shrink-0">
               <div style={{ width: '140px', height: '248px', borderRadius: 10, overflow: 'hidden', position: 'relative', background: '#000' }}>
                 {isImage ? (
-                  <img src={resolvedUrl} alt="Criativo" className="w-full h-full object-contain bg-white" loading="lazy" />
+                  <img src={resolvedUrl} alt="Criativo" className="w-full h-full object-contain bg-card" loading="lazy" />
                 ) : isEmbed ? (
                   <iframe
                     src={resolvedUrl}
@@ -241,8 +241,8 @@ const AdCreativeAccordion: React.FC<{
               {/* Ad copy below video */}
               {(adTitle || adText || adCta) && (
                 <div className="mt-2 space-y-1 max-w-[140px]">
-                  {adTitle && <p className="text-[11px] font-semibold text-zinc-200 truncate">{adTitle}</p>}
-                  {adText && <p className="text-[10px] text-zinc-400 leading-relaxed line-clamp-2">{adText}</p>}
+                  {adTitle && <p className="text-[11px] font-semibold text-foreground truncate">{adTitle}</p>}
+                  {adText && <p className="text-[10px] text-muted-foreground leading-relaxed line-clamp-2">{adText}</p>}
                   {adCta && <span className="inline-block text-[10px] bg-orange-500/20 text-orange-300 border border-orange-500/30 px-2 py-0.5 rounded">{adCta}</span>}
                 </div>
               )}
@@ -263,13 +263,13 @@ const AdCreativeAccordion: React.FC<{
                         onChange={e => setForm(prev => ({ ...prev, [key]: e.target.value }))}
                         onBlur={handleSave}
                         placeholder={saved[key] ? String(saved[key]) : '0'}
-                        className="w-full rounded-lg px-2 py-1.5 text-[12px] font-bold bg-zinc-900/80 border border-orange-500/25 text-orange-200 focus:outline-none focus:border-orange-500 placeholder:text-zinc-600 transition-colors"
+                        className="w-full rounded-lg px-2 py-1.5 text-[12px] font-bold bg-card/80 border border-orange-500/25 text-orange-200 focus:outline-none focus:border-orange-500 placeholder:text-muted-foreground transition-colors"
                       />
                     </div>
                   ))}
                 </div>
                 <div className="mt-3 flex items-center justify-between">
-                  <p className="text-[9px] text-zinc-600">Salva automaticamente ao sair do campo</p>
+                  <p className="text-[9px] text-muted-foreground">Salva automaticamente ao sair do campo</p>
                   {saving && <span className="text-[9px] text-orange-400 animate-pulse">Salvando…</span>}
                 </div>
               </div>
@@ -318,22 +318,22 @@ const AdSetsSection: React.FC<{
       <button
         type="button"
         onClick={toggle}
-        className="w-full flex items-center justify-between px-4 py-2.5 bg-zinc-900/30 hover:bg-zinc-800/40 transition-colors text-left border-t border-zinc-800"
+        className="w-full flex items-center justify-between px-4 py-2.5 bg-card/30 hover:bg-background/40 transition-colors text-left border-t border-border"
       >
-        <span className="text-xs font-medium text-zinc-500">
+        <span className="text-xs font-medium text-muted-foreground">
           Grupos de Anúncios
           {adSets.length > 0 && (
-            <span className="ml-1.5 bg-zinc-800 text-zinc-400 text-[10px] px-1.5 py-0.5 rounded-full">{adSets.length}</span>
+            <span className="ml-1.5 bg-background text-muted-foreground text-[10px] px-1.5 py-0.5 rounded-full">{adSets.length}</span>
           )}
         </span>
-        <ChevronDown ref={chevronRef} className="w-3.5 h-3.5 text-zinc-600" style={{ transform: 'rotate(0deg)' }} />
+        <ChevronDown ref={chevronRef} className="w-3.5 h-3.5 text-muted-foreground" style={{ transform: 'rotate(0deg)' }} />
       </button>
 
       <div ref={bodyRef} style={{ overflow: 'hidden' }}>
         {open && (
           <div className="divide-y divide-zinc-800/60">
             {adSets.length === 0 ? (
-              <p className="px-5 py-3 text-xs text-zinc-600 italic">Nenhum grupo configurado.</p>
+              <p className="px-5 py-3 text-xs text-muted-foreground italic">Nenhum grupo configurado.</p>
             ) : adSets.map((adSet, i) => {
               const ext = adSet as typeof adSet & {
                 traffic_destination?: string | null;
@@ -346,24 +346,24 @@ const AdSetsSection: React.FC<{
                 ad_cta?: string | null;
               };
               return (
-                <div key={adSet.id ?? i} className="px-4 py-3 space-y-1.5 bg-zinc-950/30">
+                <div key={adSet.id ?? i} className="px-4 py-3 space-y-1.5 bg-background/30">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-zinc-300">{adSet.name ?? `Grupo ${i + 1}`}</span>
+                    <span className="text-xs font-semibold text-foreground">{adSet.name ?? `Grupo ${i + 1}`}</span>
                     {adSet.audience_mode && (
-                      <span className="text-[10px] bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded">
+                      <span className="text-[10px] bg-background text-muted-foreground px-1.5 py-0.5 rounded">
                         {audienceModeLabel[adSet.audience_mode] ?? adSet.audience_mode}
                       </span>
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                    {adSet.start_date && <p className="text-[11px] text-zinc-500">Início: <span className="text-zinc-300">{new Intl.DateTimeFormat('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }).format(new Date(adSet.start_date))}</span></p>}
-                    {adSet.end_date && <p className="text-[11px] text-zinc-500">Fim: <span className="text-zinc-300">{new Intl.DateTimeFormat('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }).format(new Date(adSet.end_date))}</span></p>}
-                    {c.budget_amount != null && <p className="text-[11px] text-zinc-500">Orçamento: <span className="text-zinc-300">R$ {formatBRL(Number(c.budget_amount))}</span></p>}
-                    {ext.traffic_destination && <p className="text-[11px] text-zinc-500">Destino: <span className="text-zinc-300">{destinationLabel[ext.traffic_destination] ?? ext.traffic_destination}</span></p>}
-                    {ext.optimization_goal && <p className="text-[11px] text-zinc-500">Objetivo: <span className="text-zinc-300">{goalLabel[ext.optimization_goal] ?? ext.optimization_goal}</span></p>}
-                    {adSet.audience_location && <p className="text-[11px] text-zinc-500">Localização: <span className="text-zinc-300">{adSet.audience_location}</span></p>}
-                    {adSet.audience_interests && <p className="text-[11px] text-zinc-500">Interesses: <span className="text-zinc-300">{adSet.audience_interests}</span></p>}
-                    {ext.target_cost_per_result != null && <p className="text-[11px] text-zinc-500">CPA Alvo: <span className="text-zinc-300">R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(ext.target_cost_per_result)}</span></p>}
+                    {adSet.start_date && <p className="text-[11px] text-muted-foreground">Início: <span className="text-foreground">{new Intl.DateTimeFormat('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }).format(new Date(adSet.start_date))}</span></p>}
+                    {adSet.end_date && <p className="text-[11px] text-muted-foreground">Fim: <span className="text-foreground">{new Intl.DateTimeFormat('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }).format(new Date(adSet.end_date))}</span></p>}
+                    {c.budget_amount != null && <p className="text-[11px] text-muted-foreground">Orçamento: <span className="text-foreground">R$ {formatBRL(Number(c.budget_amount))}</span></p>}
+                    {ext.traffic_destination && <p className="text-[11px] text-muted-foreground">Destino: <span className="text-foreground">{destinationLabel[ext.traffic_destination] ?? ext.traffic_destination}</span></p>}
+                    {ext.optimization_goal && <p className="text-[11px] text-muted-foreground">Objetivo: <span className="text-foreground">{goalLabel[ext.optimization_goal] ?? ext.optimization_goal}</span></p>}
+                    {adSet.audience_location && <p className="text-[11px] text-muted-foreground">Localização: <span className="text-foreground">{adSet.audience_location}</span></p>}
+                    {adSet.audience_interests && <p className="text-[11px] text-muted-foreground">Interesses: <span className="text-foreground">{adSet.audience_interests}</span></p>}
+                    {ext.target_cost_per_result != null && <p className="text-[11px] text-muted-foreground">CPA Alvo: <span className="text-foreground">R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(ext.target_cost_per_result)}</span></p>}
                   </div>
                   {ext.ad_media_url && (
                     <AdCreativeAccordion
@@ -452,7 +452,7 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSe
   }, []);
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 overflow-hidden transition-colors hover:border-zinc-700/70">
+    <div className="rounded-xl border border-border bg-card/40 overflow-hidden transition-colors hover:border-input/70">
       {/* ── Collapsed header (always visible) ── */}
       <button
         type="button"
@@ -462,10 +462,10 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSe
       >
         <div className="flex items-center gap-3 px-4 py-3.5">
           {/* Marketplace logo */}
-          <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center flex-shrink-0 overflow-hidden p-1 shadow-sm">
+          <div className="w-9 h-9 rounded-lg bg-card flex items-center justify-center flex-shrink-0 overflow-hidden p-1 shadow-sm">
             {logo
               ? <img src={logo} alt={c.marketplace} className="w-full h-full object-contain" />
-              : <Megaphone className="w-4 h-4 text-zinc-400" />}
+              : <Megaphone className="w-4 h-4 text-muted-foreground" />}
           </div>
 
           {/* Title + badges */}
@@ -485,7 +485,7 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSe
               type="button"
               aria-label="Editar"
               onClick={onEdit}
-              className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors"
+              className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-background transition-colors"
             >
               <Pencil className="w-3.5 h-3.5" />
             </button>
@@ -493,7 +493,7 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSe
               type="button"
               aria-label="Excluir"
               onClick={onDelete}
-              className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-red-400 hover:bg-zinc-800 transition-colors"
+              className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-danger hover:bg-background transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -501,7 +501,7 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSe
 
           <ChevronDown
             ref={chevronRef}
-            className="w-4 h-4 text-zinc-500 flex-shrink-0"
+            className="w-4 h-4 text-muted-foreground flex-shrink-0"
             style={{ transform: 'rotate(0deg)' }}
           />
         </div>
@@ -510,13 +510,13 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSe
       {/* ── Expanded body (GSAP-animated) ── */}
       <div ref={bodyRef} style={{ overflow: 'hidden' }}>
         {expanded && (
-          <div className="border-t border-zinc-800">
+          <div className="border-t border-border">
             {/* Details row */}
             <div className="px-4 py-3 space-y-1.5">
-              <p className="text-xs text-zinc-400">
-                Objetivo: <span className="text-zinc-200">{getObjectiveLabel(c.objective)}</span>
+              <p className="text-xs text-muted-foreground">
+                Objetivo: <span className="text-foreground">{getObjectiveLabel(c.objective)}</span>
                 {' · '}
-                Orçamento: <span className="text-zinc-200">
+                Orçamento: <span className="text-foreground">
                   {c.budget_type === 'daily' ? 'Diário' : 'Vitalício'}
                   {c.budget_amount != null ? ` · R$ ${formatBRL(Number(c.budget_amount))}` : ''}
                 </span>
@@ -525,7 +525,7 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSe
                 )}
               </p>
               {periodStr && (
-                <p className="text-xs text-zinc-500 flex items-center gap-1.5">
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                   <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
@@ -533,7 +533,7 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSe
                 </p>
               )}
               {c.campaign_products.length > 0 && (
-                <p className="text-xs text-zinc-500">{c.campaign_products.length} produto(s) vinculado(s)</p>
+                <p className="text-xs text-muted-foreground">{c.campaign_products.length} produto(s) vinculado(s)</p>
               )}
             </div>
 
@@ -610,14 +610,14 @@ const CampaignsPage: React.FC = () => {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-white">Campanhas</h1>
-          <p className="text-sm text-zinc-400 mt-0.5">Gerencie suas campanhas de tráfego pago</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Gerencie suas campanhas de tráfego pago</p>
         </div>
         <div className="flex items-center gap-2">
           <Select value={sortKey} onValueChange={(v) => setSortKey(v as typeof sortKey)}>
-            <SelectTrigger className="w-48 bg-zinc-900 border-zinc-700 text-zinc-300 text-xs h-9">
+            <SelectTrigger className="w-48 bg-card border-input text-foreground text-xs h-9">
               <SelectValue placeholder="Ordenar por" />
             </SelectTrigger>
-            <SelectContent className="bg-zinc-900 border-zinc-700 text-zinc-200">
+            <SelectContent className="bg-card border-input text-foreground">
               <SelectItem value="date_desc">Data ↓ (mais recente)</SelectItem>
               <SelectItem value="date_asc">Data ↑ (mais antigo)</SelectItem>
               <SelectItem value="name_asc">Nome A → Z</SelectItem>
@@ -651,12 +651,12 @@ const CampaignsPage: React.FC = () => {
       {/* Empty */}
       {!isLoading && !isError && campaigns.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center">
-            <Megaphone className="w-8 h-8 text-zinc-500" />
+          <div className="w-16 h-16 rounded-full bg-background flex items-center justify-center">
+            <Megaphone className="w-8 h-8 text-muted-foreground" />
           </div>
           <div className="text-center">
             <p className="text-white font-semibold">Nenhuma campanha encontrada</p>
-            <p className="text-zinc-400 text-sm mt-1">Crie sua primeira campanha de tráfego pago.</p>
+            <p className="text-muted-foreground text-sm mt-1">Crie sua primeira campanha de tráfego pago.</p>
           </div>
           <Button onClick={handleNew} className="bg-orange-500 hover:bg-orange-600 text-white gap-2">
             <Plus className="w-4 h-4" />
@@ -697,19 +697,19 @@ const CampaignsPage: React.FC = () => {
         return (
           <div className="space-y-6">
             {/* Total cost summary */}
-            <div className="flex items-center gap-4 px-4 py-3 rounded-xl bg-zinc-900/60 border border-zinc-800">
+            <div className="flex items-center gap-4 px-4 py-3 rounded-xl bg-card/60 border border-border">
               <div className="flex-1 flex items-center gap-6 flex-wrap">
                 <div>
-                  <p className="text-[11px] text-zinc-500 uppercase tracking-wide">Total de Campanhas</p>
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Total de Campanhas</p>
                   <p className="text-sm font-semibold text-white">{campaigns.length}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-zinc-500 uppercase tracking-wide">Custo Total</p>
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Custo Total</p>
                   <p className="text-sm font-semibold text-orange-400">R$ {formatBRL(totalCusto)}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-zinc-500 uppercase tracking-wide">Orçamento Total</p>
-                  <p className="text-sm font-semibold text-zinc-200">
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Orçamento Total</p>
+                  <p className="text-sm font-semibold text-foreground">
                     R$ {formatBRL(campaigns.reduce((s, c) => s + Number(c.budget_amount ?? 0), 0))}
                   </p>
                 </div>
@@ -778,15 +778,15 @@ const CampaignsPage: React.FC = () => {
 
       {/* Delete confirm */}
       <AlertDialog open={!!deleteId} onOpenChange={(o) => { if (!o) setDeleteId(null); }}>
-        <AlertDialogContent className="bg-zinc-900 border-zinc-800 text-white">
+        <AlertDialogContent className="bg-card border-border text-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir campanha?</AlertDialogTitle>
-            <AlertDialogDescription className="text-zinc-400">
+            <AlertDialogDescription className="text-muted-foreground">
               Essa ação é irreversível. A campanha e todos os vínculos de produtos serão excluídos permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700">
+            <AlertDialogCancel className="bg-background border-input text-foreground hover:bg-accent">
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
@@ -804,3 +804,4 @@ const CampaignsPage: React.FC = () => {
 };
 
 export default CampaignsPage;
+
