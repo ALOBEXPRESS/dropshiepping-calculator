@@ -293,19 +293,19 @@ export default function RepasePage() {
                     <p className="text-sm font-medium text-white">{m ? getName(m) : p.recipient_user_id.slice(0, 8)}</p>
                     <p className="text-xs text-zinc-500">
                       {p.period_start} → {p.period_end}
-                      {p.notes && <span className="ml-2 text-zinc-600">· {p.notes}</span>}
+                      {p.notes && <span className="ml-2 text-muted-foreground">· {p.notes}</span>}
                     </p>
                   </div>
                   <div className="text-right space-y-0.5">
-                    <p className="text-sm font-bold text-teal-400">{fmt(Number(p.amount))}</p>
-                    <p className="text-[11px] text-zinc-500">{p.percentage}% de {fmt(Number(p.gross_profit))}</p>
+                    <p className="text-sm font-bold text-[hsl(var(--chart-6))]">{fmt(Number(p.amount))}</p>
+                    <p className="text-[11px] text-muted-foreground">{p.percentage}% de {fmt(Number(p.gross_profit))}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge className={p.status === 'paid' ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-orange-500/20 text-orange-400 border-orange-500/30'}>
+                    <Badge className={p.status === 'paid' ? 'bg-success-muted text-success border-success/30' : 'bg-warning-muted text-warning border-warning/30'}>
                       {p.status === 'paid' ? 'Pago' : 'Pendente'}
                     </Badge>
                     {p.status === 'pending' && (
-                      <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700 text-white" onClick={() => markPaid(p.id)}>
+                      <Button size="sm" className="h-7 text-xs bg-success hover:bg-success/90 text-success-foreground" onClick={() => markPaid(p.id)}>
                         Marcar pago
                       </Button>
                     )}
@@ -319,18 +319,18 @@ export default function RepasePage() {
 
       {/* Register modal */}
       <Dialog open={registerOpen} onOpenChange={setRegisterOpen}>
-        <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+        <DialogContent className="bg-card border-border text-foreground">
           <DialogHeader>
             <DialogTitle>Registrar Repasse</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleRegister} className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label className="text-zinc-300 text-sm">Membro <span className="text-red-400">*</span></Label>
+              <Label className="text-foreground text-sm">Membro <span className="text-danger">*</span></Label>
               <Select value={regForm.recipient_user_id} onValueChange={v => setRegForm(f => ({ ...f, recipient_user_id: v }))}>
-                <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                <SelectTrigger className="bg-background border-input text-foreground">
                   <SelectValue placeholder="Selecione o membro" />
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-700">
+                <SelectContent className="bg-card border-border">
                   {members.map(m => (
                     <SelectItem key={m.user_id} value={m.user_id}>{getName(m)} ({getPct(m.user_id)}%)</SelectItem>
                   ))}
@@ -339,43 +339,43 @@ export default function RepasePage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-zinc-300 text-sm">Período início</Label>
-                <Input type="date" value={regForm.period_start} onChange={e => setRegForm(f => ({ ...f, period_start: e.target.value }))} className="bg-zinc-800 border-zinc-700 text-white" />
+                <Label className="text-foreground text-sm">Período início</Label>
+                <Input type="date" value={regForm.period_start} onChange={e => setRegForm(f => ({ ...f, period_start: e.target.value }))} className="bg-background border-input text-foreground" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-zinc-300 text-sm">Período fim</Label>
-                <Input type="date" value={regForm.period_end} onChange={e => setRegForm(f => ({ ...f, period_end: e.target.value }))} className="bg-zinc-800 border-zinc-700 text-white" />
+                <Label className="text-foreground text-sm">Período fim</Label>
+                <Input type="date" value={regForm.period_end} onChange={e => setRegForm(f => ({ ...f, period_end: e.target.value }))} className="bg-background border-input text-foreground" />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-zinc-300 text-sm">Lucro de Referência (R$)</Label>
+              <Label className="text-foreground text-sm">Lucro de Referência (R$)</Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">R$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">R$</span>
                 <Input
-                  className="pl-9 bg-zinc-800 border-zinc-700 text-white"
+                  className="pl-9 bg-background border-input text-foreground"
                   placeholder={grossProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   value={regForm.gross_profit}
                   onChange={e => setRegForm(f => ({ ...f, gross_profit: e.target.value.replace(/[^0-9,.]/g, '') }))}
                 />
               </div>
-              <p className="text-[11px] text-zinc-600">Deixe vazio para usar o lucro acumulado atual ({fmt(grossProfit)})</p>
+              <p className="text-[11px] text-muted-foreground">Deixe vazio para usar o lucro acumulado atual ({fmt(grossProfit)})</p>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-zinc-300 text-sm">Observações</Label>
-              <Input value={regForm.notes} onChange={e => setRegForm(f => ({ ...f, notes: e.target.value }))} placeholder="Ex: Repasse referente a julho/2026" className="bg-zinc-800 border-zinc-700 text-white" />
+              <Label className="text-foreground text-sm">Observações</Label>
+              <Input value={regForm.notes} onChange={e => setRegForm(f => ({ ...f, notes: e.target.value }))} placeholder="Ex: Repasse referente a julho/2026" className="bg-background border-input text-foreground" />
             </div>
             {regForm.recipient_user_id && (
-              <div className="rounded-lg bg-teal-500/10 border border-teal-500/25 p-3">
-                <p className="text-xs text-zinc-400">Valor calculado:</p>
-                <p className="text-xl font-bold text-teal-400 mt-0.5">
+              <div className="rounded-lg bg-[hsl(var(--chart-6)/0.1)] border border-[hsl(var(--chart-6)/0.25)] p-3">
+                <p className="text-xs text-muted-foreground">Valor calculado:</p>
+                <p className="text-xl font-bold text-[hsl(var(--chart-6))] mt-0.5 tabular-nums">
                   {fmt(((parseFloat(regForm.gross_profit.replace(',', '.')) || grossProfit) * getPct(regForm.recipient_user_id)) / 100)}
                 </p>
-                <p className="text-[11px] text-zinc-600">{getPct(regForm.recipient_user_id)}% do lucro</p>
+                <p className="text-[11px] text-muted-foreground">{getPct(regForm.recipient_user_id)}% do lucro</p>
               </div>
             )}
             <DialogFooter>
-              <Button type="button" variant="outline" className="border-zinc-700 text-zinc-300" onClick={() => setRegisterOpen(false)}>Cancelar</Button>
-              <Button type="submit" disabled={registering || !regForm.recipient_user_id} className="bg-teal-500 hover:bg-teal-600 text-white">
+              <Button type="button" variant="outline" onClick={() => setRegisterOpen(false)}>Cancelar</Button>
+              <Button type="submit" disabled={registering || !regForm.recipient_user_id} className="bg-[hsl(var(--chart-6))] hover:bg-[hsl(var(--chart-6)/0.85)] text-white">
                 {registering ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Salvando...</> : 'Registrar'}
               </Button>
             </DialogFooter>
