@@ -98,7 +98,11 @@ export function BulkEditModal({ open, onClose, products, onSave }: BulkEditModal
   const toggleOne = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
@@ -205,7 +209,7 @@ export function BulkEditModal({ open, onClose, products, onSave }: BulkEditModal
                       inputMode="decimal"
                       placeholder={discountType === 'percent' ? 'Ex: 20' : 'Ex: 15,00'}
                       value={discountValue}
-                      onChange={(e) => setDiscountValue(e.target.value.replace(/[^\d,\.]/g, ''))}
+                      onChange={(e) => setDiscountValue(e.target.value.replace(/[^\d,.]/g, ''))}
                       className="pr-8"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
@@ -239,7 +243,7 @@ export function BulkEditModal({ open, onClose, products, onSave }: BulkEditModal
                       inputMode="decimal"
                       placeholder={priceMode.includes('pct') ? 'Ex: 10' : 'Ex: 99,90'}
                       value={priceValue}
-                      onChange={(e) => setPriceValue(e.target.value.replace(/[^\d,\.]/g, ''))}
+                      onChange={(e) => setPriceValue(e.target.value.replace(/[^\d,.]/g, ''))}
                       className="pr-8"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
@@ -270,7 +274,7 @@ export function BulkEditModal({ open, onClose, products, onSave }: BulkEditModal
                       inputMode="decimal"
                       placeholder={costMode.includes('pct') ? 'Ex: 5' : 'Ex: 39,90'}
                       value={costValue}
-                      onChange={(e) => setCostValue(e.target.value.replace(/[^\d,\.]/g, ''))}
+                      onChange={(e) => setCostValue(e.target.value.replace(/[^\d,.]/g, ''))}
                       className="pr-8"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">

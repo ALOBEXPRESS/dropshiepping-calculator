@@ -2616,7 +2616,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
               </div>
             </CardHeader>
             <CardContent className="p-4 sm:p-6" style={{ opacity: 1, visibility: 'visible' }}>
-              <Tabs value={formSection} onValueChange={(val) => setFormSection(val as any)} className="w-full">
+              <Tabs value={formSection} onValueChange={(val) => setFormSection(val as 'basic' | 'pricing' | 'marketplace' | 'costs')} className="w-full">
                 <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full h-auto p-1 bg-muted/60 rounded-xl gap-1 mb-6">
                   <TabsTrigger value="basic" className="text-xs font-semibold py-2 px-1">
                     1. Básico

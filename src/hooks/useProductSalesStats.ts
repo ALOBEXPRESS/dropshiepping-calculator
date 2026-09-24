@@ -69,7 +69,7 @@ export const useProductSalesStats = (productId?: string) => {
       varIds = [...new Set(varIds.filter(Boolean))];
 
       // 2. Buscar vendas em bling_order_items (pedidos importados/entrando)
-      let blingQuery = supabase
+      const blingQuery = supabase
         .from('bling_order_items')
         .select('id, order_id, quantity, unit_value, total_value');
 
@@ -92,7 +92,7 @@ export const useProductSalesStats = (productId?: string) => {
       }
 
       // 3. Buscar vendas na tabela order_items (pedidos processados)
-      let orderItemsQuery = supabase
+      const orderItemsQuery = supabase
         .from('order_items')
         .select('id, order_id, quantity, total_price, profit, unit_cost, total_cost');
 

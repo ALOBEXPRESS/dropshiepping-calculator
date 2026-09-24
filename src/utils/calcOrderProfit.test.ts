@@ -37,7 +37,7 @@ describe('calcOrderProfit — basic cases', () => {
 
   it('result is rounded to 2 decimal places', () => {
     const r = calcOrderProfit(baseOrder({ total_amount: 100.005, products: [{ unit_cost: 33.333, quantity: 1 }] }));
-    expect(String(r.realProfit)).toMatch(/^\-?\d+(\.\d{1,2})?$/);
+    expect(String(r.realProfit)).toMatch(/^-?\d+(\.\d{1,2})?$/);
   });
 });
 

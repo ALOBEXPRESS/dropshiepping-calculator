@@ -25,13 +25,16 @@ export default defineConfig([
         argsIgnorePattern: '^_',
         caughtErrorsIgnorePattern: '^_',
       }],
+      'react-hooks/set-state-in-effect': 'warn',
     },
   },
   {
     files: [
       'src/components/ThemeProvider.tsx',
       'src/contexts/SettingsContext.tsx',
+      'src/contexts/UserContext.tsx',
       'src/components/ui/form.tsx',
+      'src/components/ui/ElectricBorder.tsx',
     ],
     rules: {
       'react-refresh/only-export-components': 'off',

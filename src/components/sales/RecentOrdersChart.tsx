@@ -70,7 +70,7 @@ export const RecentOrdersChart: React.FC<RecentOrdersChartProps> = ({ organizati
 
         // Buscar descrições com variações do bling_order_items
         const blingIds = (ordersData || [])
-          .map((o: any) => o.bling_order_id)
+          .map((o: { bling_order_id?: string | null }) => o.bling_order_id)
           .filter(Boolean);
 
         let blingDescMap: Record<string, string> = {};
@@ -81,7 +81,7 @@ export const RecentOrdersChart: React.FC<RecentOrdersChartProps> = ({ organizati
             .in('order_id', blingIds);
 
           if (blingItems) {
-            blingDescMap = blingItems.reduce((acc: Record<string, string>, item: any) => {
+            blingDescMap = blingItems.reduce((acc: Record<string, string>, item: { order_id?: string | null; description?: string | null }) => {
               if (item.order_id && item.description) {
                 acc[item.order_id] = item.description;
               }

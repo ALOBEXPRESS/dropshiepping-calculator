@@ -91,6 +91,23 @@ const formatName = (name: string | null) => {
   return name.replace(/\s*\(.*?\)\s*$/, '').split(' ').slice(0, 2).join(' ');
 };
 
+const Paginator: React.FC<{ page: number; total: number; onChange: (n: number) => void }> = ({ page, total, onChange }) =>
+  total <= 1 ? null : (
+    <div className="flex items-center justify-between pt-2 mt-auto flex-shrink-0">
+      <button
+        onClick={() => onChange(Math.max(0, page - 1))}
+        disabled={page === 0}
+        className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-white hover:bg-zinc-700 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+      ><ChevronLeft className="w-4 h-4" /></button>
+      <span className="text-[10px] text-muted-foreground tabular-nums">{page + 1} / {total}</span>
+      <button
+        onClick={() => onChange(Math.min(total - 1, page + 1))}
+        disabled={page >= total - 1}
+        className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-white hover:bg-zinc-700 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+      ><ChevronRight className="w-4 h-4" /></button>
+    </div>
+  );
+
 export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organizationId, refreshTrigger, onOrderClick, onAffClick }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [affEntries, setAffEntries] = useState<AffEntry[]>([]);
@@ -382,24 +399,6 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
   const affTotalPages = Math.max(1, Math.ceil(affEntries.length / AFF_PAGE_SIZE));
   const visibleTx = transactions.slice(txPage * TX_PAGE_SIZE, (txPage + 1) * TX_PAGE_SIZE);
   const visibleAff = affEntries.slice(affPage * AFF_PAGE_SIZE, (affPage + 1) * AFF_PAGE_SIZE);
-
-  // ── Pagination control ────────────────────────────────────────────────────
-  const Paginator = ({ page, total, onChange }: { page: number; total: number; onChange: (n: number) => void }) =>
-    total <= 1 ? null : (
-      <div className="flex items-center justify-between pt-2 mt-auto flex-shrink-0">
-        <button
-          onClick={() => onChange(Math.max(0, page - 1))}
-          disabled={page === 0}
-          className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-white hover:bg-zinc-700 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
-        ><ChevronLeft className="w-4 h-4" /></button>
-        <span className="text-[10px] text-muted-foreground tabular-nums">{page + 1} / {total}</span>
-        <button
-          onClick={() => onChange(Math.min(total - 1, page + 1))}
-          disabled={page >= total - 1}
-          className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-white hover:bg-zinc-700 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
-        ><ChevronRight className="w-4 h-4" /></button>
-      </div>
-    );
 
   return (
     <Card className="p-5 border-border flex flex-col h-full">

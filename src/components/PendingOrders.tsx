@@ -172,7 +172,7 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
       const enrichedOrders = await Promise.all(
         (data || []).map(async (order) => {
           try {
-            let resolvedProduct: any = null;
+            let resolvedProduct: { id: string; cost_price?: number | null; [key: string]: unknown } | null = null;
             let matchedItemId: string | null = null;
 
             // 1. Tentar buscar primeiro pelos itens do pedido (SKU/Código direto)
@@ -306,7 +306,9 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
                       .from('bling_order_items')
                       .update({ product_id: resolvedProduct.id })
                       .eq('id', matchedItemId);
-                  } catch (e) {}
+                  } catch (_e) {
+                    // Silently ignore background association error
+                  }
                 })();
               }
 
