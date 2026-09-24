@@ -209,3 +209,5 @@ tools/lightrag/**/*.pyc
 # docs/knowledge-graph/ is intentionally NOT ignored
 
 scratch/*
+.agents/
+.agents
