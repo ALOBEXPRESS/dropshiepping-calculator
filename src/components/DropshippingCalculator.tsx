@@ -3478,11 +3478,11 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 {/* Detalhamento */}
                 <div className="space-y-3 mt-4">
                   <div className={`flex justify-between items-center py-2 border-b ${
-                      ['low', 'excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'
+                      'border-border/60'
                   }`}>
-                    <span className={['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>Custos Embalagem</span>
+                    <span className={'text-muted-foreground'}>Custos Embalagem</span>
                     <span className={`font-semibold ${
-                        ['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'
+                        'text-red-400'
                     }`}>
                         {parseFloat(calculations.packagingCost) > 0 
                             ? `- R$ ${formatMoney(calculations.packagingCost)}` 
@@ -3492,15 +3492,15 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                   </div>
 
                   <div className={`flex justify-between items-center py-2 border-b ${
-                      ['low', 'excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'
+                      'border-border/60'
                   }`}>
-                    <span className={['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>
+                    <span className={'text-muted-foreground'}>
                       {supplierFeeType === 'percent'
                         ? `Taxa do Fornecedor (${formatPercent(parseFloat(supplierFeePercent) || 0, 1)}%)`
                         : 'Taxa do Fornecedor'}
                     </span>
                     <span className={`font-semibold ${
-                        ['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'
+                        'text-red-400'
                     }`}>
                         {parseFloat(calculations.supplierFeeCost) > 0 
                             ? `- R$ ${formatMoney(calculations.supplierFeeCost)}` 
@@ -3512,13 +3512,13 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                   {/* Marketing de Influencer */}
                   {influencers && influencers.length > 0 && parseFloat(calculations.influencerCost || '0') > 0 && (
                     <div className={`flex justify-between items-center py-2 border-b ${
-                        ['low', 'excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'
+                        'border-border/60'
                     }`}>
-                      <span className={['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>
+                      <span className={'text-muted-foreground'}>
                         Marketing Influencer ({formatPercent(calculations.totalInfluencerPercent || 0, 1)}%)
                       </span>
                       <span className={`font-semibold ${
-                          ['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'
+                          'text-red-400'
                       }`}>- R$ {formatMoney(calculations.influencerCost)}</span>
                     </div>
                   )}
@@ -3526,51 +3526,51 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                   {/* Marketing de Afiliado */}
                   {affiliates && affiliates.length > 0 && parseFloat(calculations.affiliateCost || '0') > 0 && (
                     <div className={`flex justify-between items-center py-2 border-b ${
-                        ['low', 'excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'
+                        'border-border/60'
                     }`}>
-                      <span className={['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>
+                      <span className={'text-muted-foreground'}>
                         Marketing Afiliado ({formatPercent(calculations.totalAffiliatePercent || 0, 1)}%)
                       </span>
                       <span className={`font-semibold ${
-                          ['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'
+                          'text-red-400'
                       }`}>- R$ {formatMoney(calculations.affiliateCost)}</span>
                     </div>
                   )}
 
                   <div className={`flex justify-between items-center py-2 border-b ${
-                      ['low', 'excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'
+                      'border-border/60'
                   }`}>
-                    <span className={['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>Taxa Marketplace ({formatPercent(calculations.marketplaceFee, 0)}%)</span>
+                    <span className={'text-muted-foreground'}>Taxa Marketplace ({formatPercent(calculations.marketplaceFee, 0)}%)</span>
                     <span className={`font-semibold ${
-                        ['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'
+                        'text-red-400'
                     }`}>- R$ {formatMoney(calculations.marketplaceCost)}</span>
                   </div>
 
                   <div className={`flex justify-between items-center py-2 border-b ${
-                      ['low', 'excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'
+                      'border-border/60'
                   }`}>
-                    <span className={['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>Taxa de Gateway - Compra</span>
+                    <span className={'text-muted-foreground'}>Taxa de Gateway - Compra</span>
                     <span className={`font-semibold ${
-                        ['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'
+                        'text-red-400'
                     }`}>- R$ {formatMoney(calculations.gatewayCost)}</span>
                   </div>
 
                   <div className={`flex justify-between items-center py-2 border-b ${
-                      ['low', 'excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'
+                      'border-border/60'
                   }`}>
-                    <span className={['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>Taxa de Gateway - Fornecedor</span>
+                    <span className={'text-muted-foreground'}>Taxa de Gateway - Fornecedor</span>
                     <span className={`font-semibold ${
-                        ['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'
+                        'text-red-400'
                     }`}>- R$ {formatMoney(calculations.supplierGatewayCost)}</span>
                   </div>
 
                   {marketplace === 'tiktok' && tiktokSfpEnabled && calculations.tiktokSfpFee && parseFloat(calculations.tiktokSfpFee) > 0 && (
                     <div className={`flex justify-between items-center py-2 border-b ${
-                        ['low', 'excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'
+                        'border-border/60'
                     }`}>
-                      <span className={['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>Taxa de serviço do SFP (6%)</span>
+                      <span className={'text-muted-foreground'}>Taxa de serviço do SFP (6%)</span>
                       <span className={`font-semibold ${
-                          ['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'
+                          'text-red-400'
                       }`}>- R$ {formatMoney(calculations.tiktokSfpFee)}</span>
                     </div>
                   )}
@@ -3581,9 +3581,9 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                       ? base * (parseCurrency(tiktokPromoProductValue) / 100)
                       : parseCurrency(tiktokPromoProductValue);
                     return discount > 0 ? (
-                      <div className={`flex justify-between items-center py-2 border-b ${['low','excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'}`}>
-                        <span className={['low','excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>Desconto Produto ({tiktokPromoProductType === 'percent' ? `${tiktokPromoProductValue}%` : `R$ ${tiktokPromoProductValue}`})</span>
-                        <span className={`font-semibold ${['low','excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'}`}>- R$ {formatMoney(discount)}</span>
+                      <div className={`flex justify-between items-center py-2 border-b ${'border-border/60'}`}>
+                        <span className={'text-muted-foreground'}>Desconto Produto ({tiktokPromoProductType === 'percent' ? `${tiktokPromoProductValue}%` : `R$ ${tiktokPromoProductValue}`})</span>
+                        <span className={`font-semibold ${'text-red-400'}`}>- R$ {formatMoney(discount)}</span>
                       </div>
                     ) : null;
                   })()}
@@ -3594,9 +3594,9 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                       ? base * (parseCurrency(tiktokPromoNewCustomerValue) / 100)
                       : parseCurrency(tiktokPromoNewCustomerValue);
                     return discount > 0 ? (
-                      <div className={`flex justify-between items-center py-2 border-b ${['low','excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'}`}>
-                        <span className={['low','excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>Cupom Novos Clientes ({tiktokPromoNewCustomerType === 'percent' ? `${tiktokPromoNewCustomerValue}%` : `R$ ${tiktokPromoNewCustomerValue}`})</span>
-                        <span className={`font-semibold ${['low','excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'}`}>- R$ {formatMoney(discount)}</span>
+                      <div className={`flex justify-between items-center py-2 border-b ${'border-border/60'}`}>
+                        <span className={'text-muted-foreground'}>Cupom Novos Clientes ({tiktokPromoNewCustomerType === 'percent' ? `${tiktokPromoNewCustomerValue}%` : `R$ ${tiktokPromoNewCustomerValue}`})</span>
+                        <span className={`font-semibold ${'text-red-400'}`}>- R$ {formatMoney(discount)}</span>
                       </div>
                     ) : null;
                   })()}
@@ -3604,86 +3604,86 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                   {marketplace === 'tiktok' && parseCurrency(tiktokPromoShippingValue) > 0 && (() => {
                     const discount = parseCurrency(tiktokPromoShippingValue);
                     return discount > 0 ? (
-                      <div className={`flex justify-between items-center py-2 border-b ${['low','excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'}`}>
-                        <span className={['low','excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>Desconto Frete</span>
-                        <span className={`font-semibold ${['low','excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'}`}>- R$ {formatMoney(discount)}</span>
+                      <div className={`flex justify-between items-center py-2 border-b ${'border-border/60'}`}>
+                        <span className={'text-muted-foreground'}>Desconto Frete</span>
+                        <span className={`font-semibold ${'text-red-400'}`}>- R$ {formatMoney(discount)}</span>
                       </div>
                     ) : null;
                   })()}
 
                   {parseFloat(calculations.paidTrafficCost) > 0 && (
                      <div className={`flex justify-between items-center py-2 border-b ${
-                        ['low', 'excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'
+                        'border-border/60'
                     }`}>
-                        <span className={['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>Investimento Tráfego</span>
+                        <span className={'text-muted-foreground'}>Investimento Tráfego</span>
                         <span className={`font-semibold ${
-                            ['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'
+                            'text-red-400'
                         }`}>- R$ {formatMoney(calculations.paidTrafficCost)}</span>
                     </div>
                   )}
 
                   {parseFloat(calculations.paidTrafficGatewayCost) > 0 && (
                      <div className={`flex justify-between items-center py-2 border-b ${
-                        ['low', 'excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'
+                        'border-border/60'
                     }`}>
-                        <span className={['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>Taxa de Gateway -&gt; Tráfego Pago</span>
+                        <span className={'text-muted-foreground'}>Taxa de Gateway -&gt; Tráfego Pago</span>
                         <span className={`font-semibold ${
-                            ['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'
+                            'text-red-400'
                         }`}>- R$ {formatMoney(calculations.paidTrafficGatewayCost)}</span>
                     </div>
                   )}
 
                   {parseFloat(calculations.fixedFee) > 0 && (
                     <div className={`flex justify-between items-center py-2 border-b ${
-                        ['low', 'excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'
+                        'border-border/60'
                     }`}>
-                      <span className={['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>Taxa Fixa</span>
+                      <span className={'text-muted-foreground'}>Taxa Fixa</span>
                       <span className={`font-semibold ${
-                          ['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'
+                          'text-red-400'
                       }`}>- R$ {formatMoney(calculations.fixedFee)}</span>
                     </div>
                   )}
 
                   {parseFloat(calculations.shopeeStoreCoupon) > 0 && (
                     <div className={`flex justify-between items-center py-2 border-b ${
-                        ['low', 'excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'
+                        'border-border/60'
                     }`}>
-                      <span className={['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>Cupom de Loja</span>
+                      <span className={'text-muted-foreground'}>Cupom de Loja</span>
                       <span className={`font-semibold ${
-                          ['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'
+                          'text-red-400'
                       }`}>- R$ {formatMoney(calculations.shopeeStoreCoupon)}</span>
                     </div>
                   )}
 
                   {parseFloat(calculations.shopeeProductCoupon) > 0 && (
                     <div className={`flex justify-between items-center py-2 border-b ${
-                        ['low', 'excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'
+                        'border-border/60'
                     }`}>
-                      <span className={['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>Cupom de Produto</span>
+                      <span className={'text-muted-foreground'}>Cupom de Produto</span>
                       <span className={`font-semibold ${
-                          ['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'
+                          'text-red-400'
                       }`}>- R$ {formatMoney(calculations.shopeeProductCoupon)}</span>
                     </div>
                   )}
 
                   {parseFloat(calculations.shopeeFollowerCoupon) > 0 && (
                     <div className={`flex justify-between items-center py-2 border-b ${
-                        ['low', 'excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'
+                        'border-border/60'
                     }`}>
-                      <span className={['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>Cupom de Seguidor</span>
+                      <span className={'text-muted-foreground'}>Cupom de Seguidor</span>
                       <span className={`font-semibold ${
-                          ['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'
+                          'text-red-400'
                       }`}>- R$ {formatMoney(calculations.shopeeFollowerCoupon)}</span>
                     </div>
                   )}
 
                   {parseFloat(calculations.shopeeSellerVoucher) > 0 && (
                     <div className={`flex justify-between items-center py-2 border-b ${
-                        ['low', 'excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'
+                        'border-border/60'
                     }`}>
-                      <span className={['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>Voucher de Vendedor</span>
+                      <span className={'text-muted-foreground'}>Voucher de Vendedor</span>
                       <span className={`font-semibold ${
-                          ['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'
+                          'text-red-400'
                       }`}>- R$ {formatMoney(calculations.shopeeSellerVoucher)}</span>
                     </div>
                   )}
@@ -3691,13 +3691,13 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                   {((marketplace === 'mercadolivre' && parseCurrency(mlShippingCost) > 0)
                     || (['wordpress', 'tiktok', 'enjoei', 'amazon', 'shein'].includes(marketplace) && parseCurrency(wordpressShipping) > 0)) && (
                     <div className={`flex justify-between items-center py-2 border-b ${
-                        ['low', 'excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'
+                        'border-border/60'
                     }`}>
-                      <span className={['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>
+                      <span className={'text-muted-foreground'}>
                         Frete ({getMarketplaceName(marketplace)})
                       </span>
                       <span className={`font-semibold ${
-                          ['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'
+                          'text-red-400'
                       }`}>- R$ {formatMoney(marketplace === 'mercadolivre' ? parseCurrency(mlShippingCost) : parseCurrency(wordpressShipping))}</span>
                     </div>
                   )}
@@ -3705,9 +3705,9 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                   {parseFloat(calculations.adsCostPerSale) > 0 && (
                     <>
                       <div className={`flex justify-between items-center py-2 border-b ${
-                          ['low', 'excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'
+                          'border-border/60'
                       }`}>
-                        <span className={['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>
+                        <span className={'text-muted-foreground'}>
                           {marketplace === 'mercadolivre'
                             ? 'Custo Mercado Ads (Est.)'
                             : marketplace === 'tiktok'
@@ -3717,7 +3717,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                                 : `Custo Ads (${getMarketplaceName(marketplace)})`}
                         </span>
                         <span className={`font-semibold ${
-                            ['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'
+                            'text-red-400'
                         }`}>- R$ {formatMoney(calculations.adsCostPerSale)}</span>
                       </div>
                       <div className="flex justify-between items-center py-2 border-b border-white/20 dark:border-zinc-800/60 bg-white/5 px-2 rounded">
@@ -3728,29 +3728,26 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                   )}
 
                   <div className={`flex justify-between items-center py-2 border-b ${
-                      ['low', 'excellent'].includes(calculations.marginStatus) ? 'border-black/10' : 'border-white/20 dark:border-zinc-800/60'
+                      'border-border/60'
                   }`}>
-                    <span className={['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-white/80'}>Total de Taxas e Custos</span>
+                    <span className={'text-muted-foreground'}>Total de Taxas e Custos</span>
                     <span className={`font-semibold ${
-                        ['low', 'excellent'].includes(calculations.marginStatus) ? 'text-black' : 'text-red-200'
+                        'text-red-400'
                     }`}>- R$ {formatMoney(calculations.totalFees)}</span>
                   </div>
 
-                  <div className={`flex justify-between items-center py-4 rounded-lg px-4 mt-2 border shadow-lg ${
-                     calculations.marginStatus === 'negative' ? 'bg-red-600 border-red-500' :
-                     calculations.marginStatus === 'excellent' ? 'bg-brand/15 border-brand/30 text-brand' : 'bg-success/15 border-success/30 text-success'
-                   }`} style={{ opacity: 1, visibility: 'visible' }}>
-                     <span className={`font-bold font-iceland text-xl ${
-                         calculations.marginStatus === 'negative' || calculations.marginStatus === 'excellent' ? 'text-white' : 'text-black'
-                     }`}>Lucro Líquido</span>
-                     <span className={`text-4xl font-bold ${
-                         calculations.marginStatus === 'negative' || calculations.marginStatus === 'excellent' ? 'text-white' : 'text-black'
-                     }`}>R$ {formatMoney(calculations.netRevenue)}</span>
+                  <div className={`flex justify-between items-center py-3.5 rounded-xl px-4 mt-3 border shadow-md ${
+                     calculations.marginStatus === 'negative' ? 'bg-red-950/60 border-red-500/40 text-red-400' :
+                     calculations.marginStatus === 'low' ? 'bg-amber-950/50 border-amber-500/40 text-amber-300' :
+                     'bg-emerald-950/50 border-emerald-500/40 text-emerald-300'
+                   }`}>
+                     <span className="font-bold font-iceland text-lg text-zinc-100">Lucro Líquido</span>
+                     <span className="text-3xl font-black tabular-nums tracking-tight">R$ {formatMoney(calculations.netRevenue)}</span>
                    </div>
                   <p className={`text-xs mt-1 font-semibold ${
                      ['negative', 'low', 'excellent'].includes(calculations.marginStatus)
                        ? 'text-white'
-                       : 'text-green-800'
+                       : 'text-zinc-300'
                    }`}>
                      {calculations.marginStatus === 'negative'
                         ? 'Resultado negativo. Ajuste preço ou custos.'
@@ -3761,21 +3758,18 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                             : 'Lucro dentro do recomendado.'}
                    </p>
 
-                   <div className={`flex justify-between items-center py-4 rounded-lg px-4 border shadow-lg ${
-                     calculations.marginStatus === 'negative' ? 'bg-red-600 border-red-500' :
-                     calculations.marginStatus === 'excellent' ? 'bg-brand/15 border-brand/30 text-brand' : 'bg-success/15 border-success/30 text-success'
-                   }`} style={{ opacity: 1, visibility: 'visible' }}>
-                     <span className={`font-bold font-iceland text-xl ${
-                         calculations.marginStatus === 'negative' || calculations.marginStatus === 'excellent' ? 'text-white' : 'text-black'
-                     }`}>Margem de Lucro</span>
-                     <span className={`text-4xl font-bold ${
-                         calculations.marginStatus === 'negative' || calculations.marginStatus === 'excellent' ? 'text-white' : 'text-black'
-                     }`}>{formatPercent(calculations.actualMargin, 1)}%</span>
+                   <div className={`flex justify-between items-center py-3.5 rounded-xl px-4 border shadow-md ${
+                     calculations.marginStatus === 'negative' ? 'bg-red-950/60 border-red-500/40 text-red-400' :
+                     calculations.marginStatus === 'low' ? 'bg-amber-950/50 border-amber-500/40 text-amber-300' :
+                     'bg-emerald-950/50 border-emerald-500/40 text-emerald-300'
+                   }`}>
+                     <span className="font-bold font-iceland text-lg text-zinc-100">Margem de Lucro</span>
+                     <span className="text-3xl font-black tabular-nums tracking-tight">{formatPercent(calculations.actualMargin, 1)}%</span>
                    </div>
                   <p className={`text-xs mt-1 font-semibold ${
                      ['negative', 'low', 'excellent'].includes(calculations.marginStatus)
                        ? 'text-white'
-                       : 'text-green-800'
+                       : 'text-zinc-300'
                    }`}>
                      {calculations.marginStatus === 'negative'
                         ? 'Margem negativa. Reavalie a precificação.'
@@ -3789,34 +3783,35 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
 
                 {/* Resultado das Variações - Logo abaixo de Lucro e Margem */}
                 {variationCalculations.length > 0 && (
-                  <div className="mt-4">
-                    <h3 className="text-lg font-bold text-white mb-3">Variações do Produto ({variationCalculations.length})</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fadeIn max-h-[600px] overflow-y-auto pr-2">
+                  <div className="mt-5">
+                    <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+                      <Package className="w-4 h-4 text-brand" />
+                      Variações do Produto ({variationCalculations.length})
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 animate-fadeIn max-h-[500px] overflow-y-auto pr-1">
                         {variationCalculations.map((v) => {
                           const manualPriceValue = parseCurrency(v.manualPrice || 0);
                           const hasManualPrice = manualPriceValue > 0;
 
                           return (
-                             <Card key={v.id} className="bg-gradient-to-r from-gray-700 to-gray-800 border-none shadow-xl text-white">
-                                <CardHeader className="pb-2">
-                                    <CardTitle className="text-lg font-bold">{v.name}</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-2 text-sm">
-                                        <div className="flex justify-between py-1">
-                                            <span className="text-white/80">{hasManualPrice ? 'Preço de Venda' : 'Preço Sugerido'}</span>
-                                            <span className="font-bold">R$ {formatMoney(hasManualPrice ? manualPriceValue : v.metrics.suggestedPrice)}</span>
-                                        </div>
-                                        <div className="flex justify-between py-1 font-bold border-t border-white/20 dark:border-zinc-800/60 pt-2">
-                                            <span>Lucro Líquido</span>
-                                            <span className="text-green-300">R$ {formatMoney(v.metrics.netRevenue)}</span>
-                                        </div>
-                                        <div className="flex justify-between py-1 font-bold">
-                                            <span>Margem</span>
-                                            <span className="text-green-300">{formatPercent(v.metrics.actualMargin, 1)}%</span>
-                                        </div>
-                                    </div>
-                                </CardContent>
+                             <Card key={v.id} className="bg-card border border-border/80 rounded-xl p-2.5 shadow-sm text-card-foreground">
+                                <div className="font-bold text-xs text-foreground truncate mb-2 border-b border-border/50 pb-1.5" title={v.name}>
+                                  {v.name}
+                                </div>
+                                <div className="space-y-1 text-xs">
+                                  <div className="flex justify-between items-center text-[11px]">
+                                    <span className="text-muted-foreground">{hasManualPrice ? 'Preço Venda' : 'Preço Sug.'}</span>
+                                    <span className="font-semibold text-foreground tabular-nums">R$ {formatMoney(hasManualPrice ? manualPriceValue : v.metrics.suggestedPrice)}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-[11px] pt-1 border-t border-border/40">
+                                    <span className="text-muted-foreground">Lucro Líq.</span>
+                                    <span className="font-bold text-emerald-400 tabular-nums">R$ {formatMoney(v.metrics.netRevenue)}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-[11px]">
+                                    <span className="text-muted-foreground">Margem</span>
+                                    <span className="font-bold text-emerald-400 tabular-nums">{formatPercent(v.metrics.actualMargin, 1)}%</span>
+                                  </div>
+                                </div>
                              </Card>
                           );
                         })}
@@ -3944,8 +3939,8 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                     <Table>
                         <TableHeader>
                             <TableRow className="bg-green-100 hover:bg-green-100 border-b border-green-200">
-                                <TableHead className="text-center font-bold text-green-800 h-8">Unidades Vendidas</TableHead>
-                                <TableHead className="text-center font-bold text-green-800 h-8">Lucro Estimado</TableHead>
+                                <TableHead className="text-center font-bold text-zinc-300 h-8">Unidades Vendidas</TableHead>
+                                <TableHead className="text-center font-bold text-zinc-300 h-8">Lucro Estimado</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>

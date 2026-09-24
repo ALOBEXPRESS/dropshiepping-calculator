@@ -10,7 +10,6 @@ import {
   Sun, 
   Moon, 
   LayoutDashboard, 
-  Search,
   Menu,
   Bell,
   Mail,
@@ -73,7 +72,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [ecommerceOpen, setEcommerceOpen] = useState(true);
   const [painelOpen, setPainelOpen] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
   const [blingNotifications, setBlingNotifications] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
@@ -82,27 +80,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { isAdmin, profile } = useUser();
   const e2eSearch = new URLSearchParams(location.search).get('e2e') === 'true' ? '?e2e=true' : '';
 
-  // Sync search term from URL
-  useEffect(() => {
-    const nextSearch = new URLSearchParams(location.search);
-    setSearchTerm(nextSearch.get('q') || '');
-  }, [location.search]);
-
-  // Live URL update on search
-  useEffect(() => {
-    const trimmed = searchTerm.trim();
-    const nextParams = new URLSearchParams(location.search);
-    if (trimmed) {
-      nextParams.set('q', trimmed);
-    } else {
-      nextParams.delete('q');
-    }
-    if (!nextParams.get('e2e') && e2eSearch) nextParams.set('e2e', 'true');
-    const newSearch = nextParams.toString() ? `?${nextParams.toString()}` : '';
-    if (newSearch !== location.search) {
-      navigate({ pathname: location.pathname, search: newSearch }, { replace: true });
-    }
-  }, [searchTerm, navigate, location.pathname, location.search, e2eSearch]);
 
   // Bling real-time notifications
   useEffect(() => {
@@ -229,25 +206,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </button>
             )}
 
-            {/* Search */}
-            <div className="relative hidden md:block w-64" role="search">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                <Search className="w-4 h-4 text-muted-foreground" />
-              </div>
-              <input
-                type="text"
-                id="search-navbar"
-                className="w-full pl-9 pr-3 py-1.5 text-sm rounded-lg
-                  bg-background border border-input
-                  text-foreground placeholder:text-muted-foreground
-                  focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent
-                  transition-colors"
-                placeholder="Pesquisar produtos..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                aria-label="Pesquisar produtos"
-              />
-            </div>
+
           </div>
 
           {/* Right — actions + avatar */}
