@@ -128,7 +128,7 @@ export const BrazilStatesDistribution: React.FC<BrazilStatesDistributionProps> =
 
   if (loading) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800">
+      <Card className="p-6 border-border">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
         </div>
@@ -138,7 +138,7 @@ export const BrazilStatesDistribution: React.FC<BrazilStatesDistributionProps> =
 
   if (error) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800">
+      <Card className="p-6 border-border">
         <div className="text-center text-red-500 py-8">{error}</div>
       </Card>
     );
@@ -158,9 +158,9 @@ export const BrazilStatesDistribution: React.FC<BrazilStatesDistributionProps> =
   const selectedStateData = selectedState ? statesData.find(s => s.state_code === selectedState) : null;
 
   return (
-    <Card className="p-6 border-gray-100 dark:border-zinc-800">
+    <Card className="p-6 border-border">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+        <h3 className="text-lg font-semibold text-foreground">
           Distribuição por Estado
         </h3>
         <MapPin className="w-5 h-5 text-gray-400" />
@@ -169,7 +169,7 @@ export const BrazilStatesDistribution: React.FC<BrazilStatesDistributionProps> =
       {statesData.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Mapa */}
-          <div className="relative bg-gray-50 dark:bg-zinc-900 rounded-lg p-4">
+          <div className="relative bg-gray-50 dark:bg-card rounded-lg p-4">
             <ComposableMap
               projection="geoMercator"
               projectionConfig={{
@@ -217,12 +217,12 @@ export const BrazilStatesDistribution: React.FC<BrazilStatesDistributionProps> =
 
             {/* Tooltip */}
             {hoveredState && (
-              <div className="absolute top-4 left-4 bg-white dark:bg-zinc-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-zinc-700 z-10">
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">
+              <div className="absolute top-4 left-4 bg-white dark:bg-muted p-3 rounded-lg shadow-lg border border-gray-200 dark:border-border z-10">
+                <p className="text-sm font-semibold text-foreground">
                   {brazilianStates.find(s => s.code === hoveredState)?.name || hoveredState}
                 </p>
                 {statesData.find(s => s.state_code === hoveredState) && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-xs text-muted-foreground">
                     {statesData.find(s => s.state_code === hoveredState)?.total_customers} pedidos (
                     {statesData.find(s => s.state_code === hoveredState)?.percentage.toFixed(1)}%)
                   </p>
@@ -236,7 +236,7 @@ export const BrazilStatesDistribution: React.FC<BrazilStatesDistributionProps> =
             {selectedStateData ? (
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-20 h-14 rounded border border-gray-200 dark:border-zinc-700 overflow-hidden flex items-center justify-center bg-white dark:bg-zinc-800">
+                  <div className="w-20 h-14 rounded border border-gray-200 dark:border-border overflow-hidden flex items-center justify-center bg-white dark:bg-muted">
                     <img 
                       src={`/flags/br/${selectedStateData.state_code.toLowerCase()}.svg`} 
                       width={80} 
@@ -245,10 +245,10 @@ export const BrazilStatesDistribution: React.FC<BrazilStatesDistributionProps> =
                     />
                   </div>
                   <div>
-                    <h4 className="text-xl font-bold text-gray-900 dark:text-white">
+                    <h4 className="text-xl font-bold text-foreground">
                       {selectedStateData.state}
                     </h4>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-sm text-muted-foreground">
                       {selectedStateData.state_code}
                     </p>
                   </div>
@@ -276,7 +276,7 @@ export const BrazilStatesDistribution: React.FC<BrazilStatesDistributionProps> =
 
                 <button
                   onClick={() => setSelectedState(null)}
-                  className="w-full py-2 px-4 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors text-sm"
+                  className="w-full py-2 px-4 bg-muted text-foreground rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors text-sm"
                 >
                   Limpar Seleção
                 </button>
@@ -290,10 +290,10 @@ export const BrazilStatesDistribution: React.FC<BrazilStatesDistributionProps> =
                   return (
                     <div 
                       key={state.state_code} 
-                      className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800/50 p-2 rounded-lg transition-colors"
+                      className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-muted p-2 rounded-lg transition-colors"
                       onClick={() => setSelectedState(state.state_code)}
                     >
-                      <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 shadow-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800">
+                      <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 shadow-md border border-gray-200 dark:border-border bg-white dark:bg-muted">
                         <img 
                           src={`/flags/br/${state.state_code.toLowerCase()}.svg`} 
                           width={48} 
@@ -303,21 +303,21 @@ export const BrazilStatesDistribution: React.FC<BrazilStatesDistributionProps> =
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                          <p className="text-sm font-semibold text-foreground">
                             {state.state}
                           </p>
-                          <span className="text-sm font-bold text-gray-900 dark:text-white">
+                          <span className="text-sm font-bold text-foreground">
                             {state.percentage.toFixed(1)}%
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 h-2 bg-gray-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                          <div className="flex-1 h-2 bg-gray-200 dark:bg-muted rounded-full overflow-hidden">
                             <div
                               className={`h-full bg-gradient-to-r ${colors.primary} ${colors.secondary} transition-all duration-500`}
                               style={{ width: `${state.percentage}%` }}
                             />
                           </div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                          <p className="text-xs text-muted-foreground whitespace-nowrap">
                             {state.total_customers} {state.total_customers === 1 ? 'pedido' : 'pedidos'}
                           </p>
                         </div>
@@ -332,7 +332,7 @@ export const BrazilStatesDistribution: React.FC<BrazilStatesDistributionProps> =
       ) : (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <MapPin className="w-12 h-12 text-gray-400 mb-3" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-muted-foreground">
             Nenhum dado de localização disponível
           </p>
         </div>

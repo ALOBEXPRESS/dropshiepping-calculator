@@ -38,7 +38,7 @@ export const CustomersStatistics: React.FC<CustomersStatisticsProps> = ({
 
   if (loading) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800 h-full flex items-center justify-center">
+      <Card className="p-6 border-border h-full flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </Card>
     );
@@ -46,20 +46,20 @@ export const CustomersStatistics: React.FC<CustomersStatisticsProps> = ({
 
   if (error) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800 h-full flex items-center justify-center">
+      <Card className="p-6 border-border h-full flex items-center justify-center">
         <div className="text-center text-red-500">{error}</div>
       </Card>
     );
   }
 
   return (
-    <Card className="p-6 border-gray-100 dark:border-zinc-800 h-full flex flex-col">
+    <Card className="p-6 border-border h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-lg font-semibold text-foreground">
             Funil de Leads
           </h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             Classificação por estágio de conversão
           </p>
         </div>
@@ -99,10 +99,10 @@ export const CustomersStatistics: React.FC<CustomersStatisticsProps> = ({
 
             {/* Centro do donut */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <p className="text-3xl font-bold text-gray-900 dark:text-white leading-none">
+              <p className="text-3xl font-bold text-foreground leading-none">
                 {data.totalLeads}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Total de Leads
               </p>
             </div>
@@ -113,22 +113,22 @@ export const CustomersStatistics: React.FC<CustomersStatisticsProps> = ({
             {data.stages.map((stage) => (
               <div
                 key={stage.stage}
-                className="flex items-center justify-between py-1 border-b border-gray-100 dark:border-zinc-800 last:border-0"
+                className="flex items-center justify-between py-1 border-b border-border last:border-0"
               >
                 <div className="flex items-center gap-2.5">
                   <div
                     className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                     style={{ backgroundColor: STAGE_COLORS[stage.stage] ?? '#487FFF' }}
                   />
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  <span className="text-sm font-medium text-foreground">
                     {stage.stage}
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                  <span className="text-sm text-muted-foreground">
                     {stage.count} leads
                   </span>
-                  <span className="text-sm font-semibold text-gray-900 dark:text-white w-12 text-right">
+                  <span className="text-sm font-semibold text-foreground w-12 text-right">
                     {stage.percentage.toFixed(1)}%
                   </span>
                 </div>
@@ -137,8 +137,8 @@ export const CustomersStatistics: React.FC<CustomersStatisticsProps> = ({
           </div>
 
           {/* Taxa de conversão */}
-          <div className="pt-2 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-between">
-            <span className="text-xs text-gray-500 dark:text-gray-400">Taxa de Conversão</span>
+          <div className="pt-2 border-t border-border flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Taxa de Conversão</span>
             <span className="text-sm font-bold text-green-600 dark:text-green-400">
               {data.conversionRate.toFixed(1)}%
             </span>
@@ -147,7 +147,7 @@ export const CustomersStatistics: React.FC<CustomersStatisticsProps> = ({
       ) : (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <Users className="w-12 h-12 text-gray-400 mb-3" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-muted-foreground">
             Nenhum lead encontrado
           </p>
         </div>

@@ -36,9 +36,9 @@ export const StatisticsCards: React.FC<StatisticsCardsProps> = ({ organizationId
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="p-6 border-gray-100 dark:border-zinc-800">
+          <Card key={i} className="p-6 border-border bg-card">
             <div className="flex items-center justify-center h-24">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           </Card>
         ))}
@@ -48,7 +48,7 @@ export const StatisticsCards: React.FC<StatisticsCardsProps> = ({ organizationId
 
   if (error || !stats) {
     return (
-      <div className="text-center text-red-500 py-8">
+      <div className="text-center text-destructive py-8">
         {error || 'Erro ao carregar estatísticas'}
       </div>
     );
@@ -100,35 +100,35 @@ export const StatisticsCards: React.FC<StatisticsCardsProps> = ({ organizationId
         return (
           <Card
             key={index}
-            className="p-6 hover:shadow-lg transition-shadow duration-200 cursor-pointer border-gray-100 dark:border-zinc-800"
+            className="p-6 hover:shadow-lg transition-shadow duration-200 cursor-pointer border-border bg-card"
           >
             <div className="flex items-start justify-between h-full">
               <div className="flex-1 flex flex-col justify-between h-full">
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  <p className="text-sm text-muted-foreground mb-2">
                     {card.title}
                   </p>
-                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  <h3 className="text-2xl font-bold text-foreground tabular-nums mb-2">
                     {card.value}
                   </h3>
                 </div>
                 <div className="flex items-center gap-1 mt-auto">
                   {isPositive ? (
                     <>
-                      <ArrowUpRight className="w-4 h-4 text-green-500" />
-                      <span className="text-sm font-medium text-green-500">
+                      <ArrowUpRight className="w-4 h-4 text-emerald-500" />
+                      <span className="text-sm font-medium text-emerald-500">
                         +{changeValue}
                       </span>
                     </>
                   ) : (
                     <>
-                      <ArrowDownRight className="w-4 h-4 text-red-500" />
-                      <span className="text-sm font-medium text-red-500">
+                      <ArrowDownRight className="w-4 h-4 text-destructive" />
+                      <span className="text-sm font-medium text-destructive">
                         {changeValue}
                       </span>
                     </>
                   )}
-                  <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
+                  <span className="text-xs text-muted-foreground ml-1">
                     {card.changeLabel}
                   </span>
                 </div>

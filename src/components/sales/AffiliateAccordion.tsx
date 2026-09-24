@@ -251,7 +251,7 @@ export const AffiliateAccordion: React.FC<AffiliateAccordionProps> = ({
                     value={selectedInfluencerId}
                     onValueChange={handleSelectChange}
                   >
-                    <SelectTrigger className="bg-zinc-900/50 border-violet-800/50 text-white">
+                    <SelectTrigger className="bg-card border-violet-800/50 text-white">
                       <SelectValue placeholder="Sem influenciador" />
                     </SelectTrigger>
                     <SelectContent>
@@ -302,7 +302,7 @@ export const AffiliateAccordion: React.FC<AffiliateAccordionProps> = ({
                       value={form.name}
                       onChange={(e) => setField('name', e.target.value)}
                       disabled={saving}
-                      className="h-8 text-sm bg-zinc-900/50 border-violet-800/50 text-white"
+                      className="h-8 text-sm bg-card border-violet-800/50 text-white"
                     />
                   </div>
 
@@ -319,7 +319,7 @@ export const AffiliateAccordion: React.FC<AffiliateAccordionProps> = ({
                           value={form.instagram}
                           onChange={(e) => setField('instagram', e.target.value.replace(/^@/, ''))}
                           disabled={saving}
-                          className="h-8 text-sm pl-6 bg-zinc-900/50 border-violet-800/50 text-white"
+                          className="h-8 text-sm pl-6 bg-card border-violet-800/50 text-white"
                         />
                       </div>
                     </div>
@@ -334,7 +334,7 @@ export const AffiliateAccordion: React.FC<AffiliateAccordionProps> = ({
                           value={form.tiktok}
                           onChange={(e) => setField('tiktok', e.target.value.replace(/^@/, ''))}
                           disabled={saving}
-                          className="h-8 text-sm pl-6 bg-zinc-900/50 border-violet-800/50 text-white"
+                          className="h-8 text-sm pl-6 bg-card border-violet-800/50 text-white"
                         />
                       </div>
                     </div>
@@ -349,7 +349,7 @@ export const AffiliateAccordion: React.FC<AffiliateAccordionProps> = ({
                           value={form.twitter}
                           onChange={(e) => setField('twitter', e.target.value.replace(/^@/, ''))}
                           disabled={saving}
-                          className="h-8 text-sm pl-6 bg-zinc-900/50 border-violet-800/50 text-white"
+                          className="h-8 text-sm pl-6 bg-card border-violet-800/50 text-white"
                         />
                       </div>
                     </div>
@@ -370,7 +370,7 @@ export const AffiliateAccordion: React.FC<AffiliateAccordionProps> = ({
                         value={form.percentage}
                         onChange={(e) => setField('percentage', e.target.value)}
                         disabled={saving}
-                        className="h-8 text-sm pr-8 bg-zinc-900/50 border-violet-800/50 text-white"
+                        className="h-8 text-sm pr-8 bg-card border-violet-800/50 text-white"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-violet-400">%</span>
                     </div>

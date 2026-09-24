@@ -49,7 +49,7 @@ export const ProfitAnalysisCard: React.FC<ProfitAnalysisCardProps> = ({
           <div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-green-600" aria-hidden="true">
             <DollarSign className="w-5 h-5 text-white" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-lg font-semibold text-foreground">
             Análise de Lucro
           </h3>
         </div>
@@ -69,8 +69,8 @@ export const ProfitAnalysisCard: React.FC<ProfitAnalysisCardProps> = ({
         {/* Lucro Total */}
         <div className="flex items-center justify-between" role="region" aria-label="Lucro total e margem">
           <div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Lucro Total</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white" aria-label={`Lucro total: ${formatCurrency(data.totalProfit)}`}>
+            <p className="text-sm text-muted-foreground">Lucro Total</p>
+            <p className="text-2xl font-bold text-foreground" aria-label={`Lucro total: ${formatCurrency(data.totalProfit)}`}>
               {formatCurrency(data.totalProfit)}
             </p>
           </div>
@@ -94,7 +94,7 @@ export const ProfitAnalysisCard: React.FC<ProfitAnalysisCardProps> = ({
 
         {/* Breakdown de Custos */}
         <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <p className="text-sm font-medium text-foreground">
             Breakdown de Custos:
           </p>
 
@@ -151,30 +151,30 @@ export const ProfitAnalysisCard: React.FC<ProfitAnalysisCardProps> = ({
           <div className="flex items-center justify-center gap-4 text-xs">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-blue-600"></div>
-              <span className="text-gray-600 dark:text-gray-400">Custo ({formatPercentage(data.costPercentage)})</span>
+              <span className="text-muted-foreground">Custo ({formatPercentage(data.costPercentage)})</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-full bg-gradient-to-r from-orange-500 to-orange-600"></div>
-              <span className="text-gray-600 dark:text-gray-400">Comissão ({formatPercentage(data.commissionPercentage)})</span>
+              <span className="text-muted-foreground">Comissão ({formatPercentage(data.commissionPercentage)})</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-green-600"></div>
-              <span className="text-gray-600 dark:text-gray-400">Lucro ({formatPercentage(data.profitPercentage)})</span>
+              <span className="text-muted-foreground">Lucro ({formatPercentage(data.profitPercentage)})</span>
             </div>
           </div>
 
           {/* Detalhes em texto */}
           <div className="grid grid-cols-3 gap-2 mt-3 text-xs">
             <div className="text-center p-2 rounded bg-blue-50 dark:bg-blue-900/10">
-              <p className="text-gray-600 dark:text-gray-400">Custo</p>
-              <p className="font-semibold text-gray-900 dark:text-white">{formatCurrency(data.totalCost)}</p>
+              <p className="text-muted-foreground">Custo</p>
+              <p className="font-semibold text-foreground">{formatCurrency(data.totalCost)}</p>
             </div>
             <div className="text-center p-2 rounded bg-orange-50 dark:bg-orange-900/10">
-              <p className="text-gray-600 dark:text-gray-400">Comissão</p>
-              <p className="font-semibold text-gray-900 dark:text-white">{formatCurrency(data.totalCommissions)}</p>
+              <p className="text-muted-foreground">Comissão</p>
+              <p className="font-semibold text-foreground">{formatCurrency(data.totalCommissions)}</p>
             </div>
             <div className="text-center p-2 rounded bg-green-50 dark:bg-green-900/10">
-              <p className="text-gray-600 dark:text-gray-400">Lucro</p>
+              <p className="text-muted-foreground">Lucro</p>
               <p className="font-semibold text-green-600 dark:text-green-400">{formatCurrency(data.totalProfit)}</p>
             </div>
           </div>
@@ -226,14 +226,14 @@ export const ProfitAnalysisCard: React.FC<ProfitAnalysisCardProps> = ({
         {/* Métricas Adicionais */}
         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Frete Total</p>
-            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+            <p className="text-xs text-muted-foreground">Frete Total</p>
+            <p className="text-sm font-semibold text-foreground">
               {formatCurrency(data.totalShipping)}
             </p>
           </div>
           <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Outras Despesas</p>
-            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+            <p className="text-xs text-muted-foreground">Outras Despesas</p>
+            <p className="text-sm font-semibold text-foreground">
               {formatCurrency(data.totalExpenses)}
             </p>
           </div>

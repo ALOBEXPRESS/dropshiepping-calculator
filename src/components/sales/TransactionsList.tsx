@@ -161,7 +161,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
 
   if (loading) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800">
+      <Card className="p-6 border-border">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
         </div>
@@ -171,18 +171,18 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
 
   if (error) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800">
+      <Card className="p-6 border-border">
         <div className="text-center text-red-500 py-8">{error}</div>
       </Card>
     );
   }
 
   return (
-    <Card className="p-6 border-gray-100 dark:border-zinc-800">
+    <Card className="p-6 border-border">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Transações</h3>
+        <h3 className="text-lg font-semibold text-foreground">Transações</h3>
         <Select value={period} onValueChange={setPeriod}>
-          <SelectTrigger className="w-[140px] border-gray-200 dark:border-zinc-800">
+          <SelectTrigger className="w-[140px] border-border">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -203,7 +203,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
             return (
               <div
                 key={transaction.id}
-                className="flex items-center gap-4 py-3 border-b border-gray-100 dark:border-zinc-800 last:border-0"
+                className="flex items-center gap-4 py-3 border-b border-border last:border-0"
               >
                 <Avatar
                   name={transaction.customer_name}
@@ -215,13 +215,13 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
                 />
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                  <p className="text-sm font-medium text-foreground truncate">
                     {transaction.marketplace_name}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  <p className="text-xs text-muted-foreground truncate">
                     {transaction.customer_name}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-xs text-muted-foreground">
                     {formatDate(transaction.order_date)}
                   </p>
                 </div>
@@ -230,7 +230,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
                   <p className={`text-sm font-bold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
                     {isPositive ? '+' : '-'}{formatCurrency(Math.abs(profit))}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-xs text-muted-foreground">
                     {getStatusLabel(transaction.status)}
                   </p>
                 </div>
@@ -240,10 +240,10 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-zinc-800 flex items-center justify-center mb-3">
+          <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-muted flex items-center justify-center mb-3">
             <span className="text-2xl text-gray-400">💳</span>
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-muted-foreground">
             Nenhuma transação encontrada
           </p>
         </div>

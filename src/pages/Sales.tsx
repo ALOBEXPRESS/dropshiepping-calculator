@@ -179,7 +179,7 @@ const Sales: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <p className="text-gray-500 dark:text-gray-400">Carregando...</p>
+        <p className="text-muted-foreground">Carregando...</p>
       </div>
     );
   }
@@ -187,12 +187,12 @@ const Sales: React.FC = () => {
   if (settingsError || !organizationId) {
     return (
       <div className="flex flex-col items-center justify-center h-screen gap-4">
-        <p className="text-red-500 dark:text-red-400">
+        <p className="text-destructive">
           {settingsError ?? 'Organização não encontrada.'}
         </p>
         <button
           onClick={retrySettings}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
         >
           Tentar novamente
         </button>
@@ -201,14 +201,14 @@ const Sales: React.FC = () => {
   }
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-gray-50 dark:bg-zinc-950 p-4 sm:p-6">
+    <div ref={containerRef} className="min-h-screen bg-background p-4 sm:p-6">
       {/* Header do Dashboard */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 animate-on-load">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-foreground">
             Dashboard de Vendas
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             Visão completa do desempenho
           </p>
         </div>

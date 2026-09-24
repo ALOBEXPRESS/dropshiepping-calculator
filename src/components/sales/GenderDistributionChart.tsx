@@ -34,7 +34,7 @@ export const GenderDistributionChart: React.FC<GenderDistributionChartProps> = (
   // Estado de loading: Skeleton com dimensões fixas (evita layout shift)
   if (loading) {
     return (
-      <Card className="gcp-card p-6 border-gray-100 dark:border-zinc-800 h-full">
+      <Card className="gcp-card p-6 border-border h-full">
         <div className="flex items-center justify-center h-[340px]">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
         </div>
@@ -44,7 +44,7 @@ export const GenderDistributionChart: React.FC<GenderDistributionChartProps> = (
 
   if (error) {
     return (
-      <Card className="gcp-card p-6 border-gray-100 dark:border-zinc-800 h-full">
+      <Card className="gcp-card p-6 border-border h-full">
         <div className="text-center text-red-500 py-8">{error}</div>
       </Card>
     );
@@ -53,10 +53,10 @@ export const GenderDistributionChart: React.FC<GenderDistributionChartProps> = (
   // Estado vazio: mensagem quando não há classificações
   if (data.total === 0 || totalClassified === 0) {
     return (
-      <Card className="gcp-card p-6 border-gray-100 dark:border-zinc-800 h-full">
+      <Card className="gcp-card p-6 border-border h-full">
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <Users className="w-12 h-12 text-gray-400 mb-3" />
-          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
+          <p className="text-sm text-muted-foreground max-w-xs">
             Nenhuma classificação disponível ainda. Execute a classificação em lote para enriquecer seus leads.
           </p>
         </div>
@@ -65,13 +65,13 @@ export const GenderDistributionChart: React.FC<GenderDistributionChartProps> = (
   }
 
   return (
-    <Card className="gcp-card p-6 border-gray-100 dark:border-zinc-800 h-full transition-all duration-150 hover:shadow-lg hover:border-orange-500/20">
+    <Card className="gcp-card p-6 border-border h-full transition-all duration-150 hover:shadow-lg hover:border-orange-500/20">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-lg font-semibold text-foreground">
             Distribuição de Gênero
           </h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             Classificação por gênero dos leads
           </p>
         </div>
@@ -110,10 +110,10 @@ export const GenderDistributionChart: React.FC<GenderDistributionChartProps> = (
 
           {/* Centro do donut: total classificado */}
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <p className="text-3xl font-bold text-gray-900 dark:text-white leading-none">
+            <p className="text-3xl font-bold text-foreground leading-none">
               {totalClassified}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Classificados
             </p>
           </div>
@@ -123,13 +123,13 @@ export const GenderDistributionChart: React.FC<GenderDistributionChartProps> = (
         <div className="space-y-2.5">
           {/* Masculino */}
           {data.male > 0 && (
-            <div className="flex items-center justify-between py-1.5 border-b border-gray-100 dark:border-zinc-800">
+            <div className="flex items-center justify-between py-1.5 border-b border-border">
               <div className="flex items-center gap-2.5">
                 <div
                   className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                   style={{ backgroundColor: GENDER_COLORS.male }}
                 />
-                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                <span className="text-sm font-medium text-foreground">
                   ♂ Masculino
                 </span>
               </div>
@@ -137,7 +137,7 @@ export const GenderDistributionChart: React.FC<GenderDistributionChartProps> = (
                 <Badge variant="secondary" className="text-xs">
                   {data.malePercent.toFixed(1)}%
                 </Badge>
-                <span className="text-sm text-gray-500 dark:text-gray-400 w-16 text-right">
+                <span className="text-sm text-muted-foreground w-16 text-right">
                   {data.male} leads
                 </span>
               </div>
@@ -146,13 +146,13 @@ export const GenderDistributionChart: React.FC<GenderDistributionChartProps> = (
 
           {/* Feminino */}
           {data.female > 0 && (
-            <div className="flex items-center justify-between py-1.5 border-b border-gray-100 dark:border-zinc-800">
+            <div className="flex items-center justify-between py-1.5 border-b border-border">
               <div className="flex items-center gap-2.5">
                 <div
                   className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                   style={{ backgroundColor: GENDER_COLORS.female }}
                 />
-                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                <span className="text-sm font-medium text-foreground">
                   ♀ Feminino
                 </span>
               </div>
@@ -160,7 +160,7 @@ export const GenderDistributionChart: React.FC<GenderDistributionChartProps> = (
                 <Badge variant="secondary" className="text-xs">
                   {data.femalePercent.toFixed(1)}%
                 </Badge>
-                <span className="text-sm text-gray-500 dark:text-gray-400 w-16 text-right">
+                <span className="text-sm text-muted-foreground w-16 text-right">
                   {data.female} leads
                 </span>
               </div>
@@ -175,7 +175,7 @@ export const GenderDistributionChart: React.FC<GenderDistributionChartProps> = (
                   className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                   style={{ backgroundColor: GENDER_COLORS.unclassified }}
                 />
-                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                <span className="text-sm font-medium text-foreground">
                   — Não classificado
                 </span>
               </div>
@@ -183,7 +183,7 @@ export const GenderDistributionChart: React.FC<GenderDistributionChartProps> = (
                 <Badge variant="secondary" className="text-xs">
                   {data.unclassifiedPercent.toFixed(1)}%
                 </Badge>
-                <span className="text-sm text-gray-500 dark:text-gray-400 w-16 text-right">
+                <span className="text-sm text-muted-foreground w-16 text-right">
                   {data.unclassified} leads
                 </span>
               </div>
@@ -192,9 +192,9 @@ export const GenderDistributionChart: React.FC<GenderDistributionChartProps> = (
         </div>
 
         {/* Total de leads */}
-        <div className="pt-2 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-between">
-          <span className="text-xs text-gray-500 dark:text-gray-400">Total de Leads</span>
-          <span className="text-sm font-bold text-gray-900 dark:text-white">
+        <div className="pt-2 border-t border-border flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">Total de Leads</span>
+          <span className="text-sm font-bold text-foreground">
             {data.total}
           </span>
         </div>

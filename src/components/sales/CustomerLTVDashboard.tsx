@@ -64,10 +64,10 @@ export const CustomerLTVDashboard: React.FC<CustomerLTVDashboardProps> = ({
           <Users className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-lg font-semibold text-foreground">
             Customer Lifetime Value
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-muted-foreground">
             Análise de valor dos clientes
           </p>
         </div>
@@ -83,9 +83,9 @@ export const CustomerLTVDashboard: React.FC<CustomerLTVDashboardProps> = ({
         >
           <div className="flex items-center gap-2 mb-2">
             <DollarSign className="w-4 h-4 text-blue-600 dark:text-blue-400" aria-hidden="true" />
-            <p className="text-xs text-gray-600 dark:text-gray-400">LTV Médio</p>
+            <p className="text-xs text-muted-foreground">LTV Médio</p>
           </div>
-          <p className="text-xl font-bold text-gray-900 dark:text-white">
+          <p className="text-xl font-bold text-foreground">
             {formatCurrency(data.avgLifetimeValue)}
           </p>
         </div>
@@ -98,9 +98,9 @@ export const CustomerLTVDashboard: React.FC<CustomerLTVDashboardProps> = ({
         >
           <div className="flex items-center gap-2 mb-2">
             <ShoppingCart className="w-4 h-4 text-green-600 dark:text-green-400" aria-hidden="true" />
-            <p className="text-xs text-gray-600 dark:text-gray-400">Ticket Médio</p>
+            <p className="text-xs text-muted-foreground">Ticket Médio</p>
           </div>
-          <p className="text-xl font-bold text-gray-900 dark:text-white">
+          <p className="text-xl font-bold text-foreground">
             {formatCurrency(data.avgOrderValue)}
           </p>
         </div>
@@ -113,9 +113,9 @@ export const CustomerLTVDashboard: React.FC<CustomerLTVDashboardProps> = ({
         >
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="w-4 h-4 text-purple-600 dark:text-purple-400" aria-hidden="true" />
-            <p className="text-xs text-gray-600 dark:text-gray-400">Pedidos/Cliente</p>
+            <p className="text-xs text-muted-foreground">Pedidos/Cliente</p>
           </div>
-          <p className="text-xl font-bold text-gray-900 dark:text-white">
+          <p className="text-xl font-bold text-foreground">
             {data.avgOrdersPerCustomer.toFixed(1)}
           </p>
         </div>
@@ -128,9 +128,9 @@ export const CustomerLTVDashboard: React.FC<CustomerLTVDashboardProps> = ({
         >
           <div className="flex items-center gap-2 mb-2">
             <Users className="w-4 h-4 text-orange-600 dark:text-orange-400" aria-hidden="true" />
-            <p className="text-xs text-gray-600 dark:text-gray-400">Taxa Recompra</p>
+            <p className="text-xs text-muted-foreground">Taxa Recompra</p>
           </div>
-          <p className="text-xl font-bold text-gray-900 dark:text-white">
+          <p className="text-xl font-bold text-foreground">
             {formatPercentage(data.repeatCustomerRate)}
           </p>
         </div>
@@ -138,7 +138,7 @@ export const CustomerLTVDashboard: React.FC<CustomerLTVDashboardProps> = ({
 
       {/* Top Customers */}
       <div>
-        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
+        <h4 className="text-sm font-semibold text-foreground mb-4">
           Top 10 Clientes VIP
         </h4>
         <div className="space-y-3" role="list" aria-label="Lista de clientes VIP">
@@ -159,10 +159,10 @@ export const CustomerLTVDashboard: React.FC<CustomerLTVDashboardProps> = ({
               </div>
 
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900 dark:text-white truncate">
+                <p className="font-medium text-foreground truncate">
                   {customer.name}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                <p className="text-xs text-muted-foreground truncate">
                   {customer.email}
                 </p>
               </div>
@@ -179,7 +179,7 @@ export const CustomerLTVDashboard: React.FC<CustomerLTVDashboardProps> = ({
                   >
                     {customer.totalOrders} pedidos
                   </Badge>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                  <span className="text-xs text-muted-foreground">
                     {formatDate(customer.lastOrderDate)}
                   </span>
                 </div>

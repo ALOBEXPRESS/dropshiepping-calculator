@@ -108,7 +108,7 @@ export function GenderClassificationJobButton({
           !isRunning && 'bg-gradient-to-r from-orange-500 to-pink-500 text-white',
           !isRunning && 'hover:shadow-lg hover:shadow-orange-500/50',
           // Loading state: solid background, no border animation
-          isRunning && 'bg-gray-200 dark:bg-zinc-800 text-gray-700 dark:text-gray-300',
+          isRunning && 'bg-gray-200 dark:bg-muted text-foreground',
           className
         )}
       >

@@ -46,18 +46,18 @@ const Pagination: React.FC<PaginationProps> = ({ page, totalPages, onPrev, onNex
     <button
       onClick={onPrev}
       disabled={page === 0}
-      className="p-1 rounded hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+      className="p-1 rounded hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
       aria-label="Página anterior"
     >
       <ChevronLeft className="w-4 h-4 text-gray-400" />
     </button>
-    <span className="text-xs text-gray-500 dark:text-gray-400 min-w-[40px] text-center">
+    <span className="text-xs text-muted-foreground min-w-[40px] text-center">
       {page + 1}/{totalPages || 1}
     </span>
     <button
       onClick={onNext}
       disabled={page >= totalPages - 1}
-      className="p-1 rounded hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+      className="p-1 rounded hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
       aria-label="Próxima página"
     >
       <ChevronRight className="w-4 h-4 text-gray-400" />
@@ -76,23 +76,23 @@ interface RowProps {
   rightBottom?: string;
 }
 const Row: React.FC<RowProps> = ({ initial, colorIndex, name, subtitle, rightTop, rightMid, rightBottom }) => (
-  <div className="flex items-center gap-3 py-2.5 border-b border-gray-100 dark:border-zinc-800 last:border-0">
+  <div className="flex items-center gap-3 py-2.5 border-b border-border last:border-0">
     <div
       className={`w-9 h-9 rounded-full bg-gradient-to-br ${avatarColors[colorIndex % avatarColors.length]} flex items-center justify-center flex-shrink-0`}
     >
       <span className="text-sm font-bold text-white">{initial}</span>
     </div>
     <div className="flex-1 min-w-0">
-      <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{name}</p>
+      <p className="text-sm font-semibold text-foreground truncate">{name}</p>
       {subtitle && (
-        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{subtitle}</p>
+        <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
       )}
     </div>
     <div className="text-right flex-shrink-0">
-      <p className="text-xs font-bold text-gray-900 dark:text-white">{rightTop}</p>
+      <p className="text-xs font-bold text-foreground">{rightTop}</p>
       <p className="text-xs text-green-600 dark:text-green-400 font-medium">{rightMid}</p>
       {rightBottom && (
-        <p className="text-xs text-gray-500 dark:text-gray-400">{rightBottom}</p>
+        <p className="text-xs text-muted-foreground">{rightBottom}</p>
       )}
     </div>
   </div>
@@ -126,7 +126,7 @@ export const TopCustomersList: React.FC<TopCustomersListProps> = ({
 
   if (loading) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800">
+      <Card className="p-6 border-border">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
         </div>
@@ -136,19 +136,19 @@ export const TopCustomersList: React.FC<TopCustomersListProps> = ({
 
   if (errorC || errorL) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800">
+      <Card className="p-6 border-border">
         <div className="text-center text-red-500 py-8">{errorC || errorL}</div>
       </Card>
     );
   }
 
   return (
-    <Card className="p-6 border-gray-100 dark:border-zinc-800 space-y-6">
+    <Card className="p-6 border-border space-y-6">
 
       {/* ── Top Clientes ── */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-base font-semibold text-foreground">
             Top Clientes
           </h3>
           {customerPages > 1 && (
@@ -179,7 +179,7 @@ export const TopCustomersList: React.FC<TopCustomersListProps> = ({
         ) : (
           <div className="flex flex-col items-center justify-center py-6 text-center">
             <User className="w-8 h-8 text-gray-400 mb-2" />
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-muted-foreground">
               Nenhum cliente com lucro processado
             </p>
           </div>
@@ -187,12 +187,12 @@ export const TopCustomersList: React.FC<TopCustomersListProps> = ({
       </div>
 
       {/* Divider */}
-      <div className="border-t border-gray-100 dark:border-zinc-800" />
+      <div className="border-t border-border" />
 
       {/* ── Top Leads ── */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-base font-semibold text-foreground">
             Top Leads
           </h3>
           {leadPages > 1 && (
@@ -223,7 +223,7 @@ export const TopCustomersList: React.FC<TopCustomersListProps> = ({
         ) : (
           <div className="flex flex-col items-center justify-center py-6 text-center">
             <Users className="w-8 h-8 text-gray-400 mb-2" />
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-muted-foreground">
               Nenhum lead sem processamento
             </p>
           </div>

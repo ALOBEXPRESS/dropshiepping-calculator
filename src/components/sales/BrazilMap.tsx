@@ -110,7 +110,7 @@ export const BrazilMap: React.FC<BrazilMapProps> = ({ organizationId }) => {
 
   if (loading) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800">
+      <Card className="p-6 border-border">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
         </div>
@@ -120,7 +120,7 @@ export const BrazilMap: React.FC<BrazilMapProps> = ({ organizationId }) => {
 
   if (error) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800">
+      <Card className="p-6 border-border">
         <div className="text-center text-red-500 py-8">{error}</div>
       </Card>
     );
@@ -129,12 +129,12 @@ export const BrazilMap: React.FC<BrazilMapProps> = ({ organizationId }) => {
   const selectedStateData = selectedState ? getStateInfo(selectedState) : null;
 
   return (
-    <Card className="p-6 border-gray-100 dark:border-zinc-800">
+    <Card className="p-6 border-border">
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+        <h3 className="text-lg font-semibold text-foreground mb-2">
           Mapa de Vendas por Estado
         </h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400">
+        <p className="text-xs text-muted-foreground">
           Clique em um estado para ver detalhes
         </p>
       </div>
@@ -187,12 +187,12 @@ export const BrazilMap: React.FC<BrazilMapProps> = ({ organizationId }) => {
 
           {/* Tooltip */}
           {hoveredState && (
-            <div className="absolute top-4 left-4 bg-white dark:bg-zinc-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-zinc-700">
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+            <div className="absolute top-4 left-4 bg-white dark:bg-muted p-3 rounded-lg shadow-lg border border-gray-200 dark:border-border">
+              <p className="text-sm font-semibold text-foreground">
                 {stateNames[hoveredState] || hoveredState}
               </p>
               {getStateInfo(hoveredState) && (
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-muted-foreground">
                   {getStateInfo(hoveredState)?.order_count} pedidos (
                   {getStateInfo(hoveredState)?.percentage.toFixed(1)}%)
                 </p>
@@ -209,17 +209,17 @@ export const BrazilMap: React.FC<BrazilMapProps> = ({ organizationId }) => {
                 <img
                   src={getStateFlagUrl(selectedStateData.state_code)}
                   alt={`Bandeira ${selectedStateData.state_name}`}
-                  className="w-20 h-14 object-cover rounded border border-gray-200 dark:border-zinc-700"
+                  className="w-20 h-14 object-cover rounded border border-gray-200 dark:border-border"
                   onError={(e) => {
                     // Fallback para emoji se a bandeira não carregar
                     e.currentTarget.style.display = 'none';
                   }}
                 />
                 <div>
-                  <h4 className="text-xl font-bold text-gray-900 dark:text-white">
+                  <h4 className="text-xl font-bold text-foreground">
                     {selectedStateData.state_name}
                   </h4>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-muted-foreground">
                     {selectedStateData.state_code}
                   </p>
                 </div>
@@ -247,17 +247,17 @@ export const BrazilMap: React.FC<BrazilMapProps> = ({ organizationId }) => {
 
               <button
                 onClick={() => setSelectedState(null)}
-                className="w-full py-2 px-4 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors text-sm"
+                className="w-full py-2 px-4 bg-muted text-foreground rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors text-sm"
               >
                 Limpar Seleção
               </button>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className="w-16 h-16 bg-gray-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
                 <span className="text-3xl">🗺️</span>
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-muted-foreground">
                 Clique em um estado no mapa para ver detalhes
               </p>
             </div>
@@ -266,24 +266,24 @@ export const BrazilMap: React.FC<BrazilMapProps> = ({ organizationId }) => {
       </div>
 
       {/* Legenda */}
-      <div className="mt-6 pt-4 border-t border-gray-200 dark:border-zinc-800">
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Legenda:</p>
+      <div className="mt-6 pt-4 border-t border-border">
+        <p className="text-xs text-muted-foreground mb-2">Legenda:</p>
         <div className="flex flex-wrap gap-4">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-green-500 rounded"></div>
-            <span className="text-xs text-gray-600 dark:text-gray-400">≥ 50%</span>
+            <span className="text-xs text-muted-foreground">≥ 50%</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-blue-500 rounded"></div>
-            <span className="text-xs text-gray-600 dark:text-gray-400">30-49%</span>
+            <span className="text-xs text-muted-foreground">30-49%</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-orange-500 rounded"></div>
-            <span className="text-xs text-gray-600 dark:text-gray-400">15-29%</span>
+            <span className="text-xs text-muted-foreground">15-29%</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-red-500 rounded"></div>
-            <span className="text-xs text-gray-600 dark:text-gray-400">{'< 15%'}</span>
+            <span className="text-xs text-muted-foreground">{'< 15%'}</span>
           </div>
         </div>
       </div>

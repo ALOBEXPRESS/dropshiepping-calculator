@@ -60,7 +60,7 @@ export const StockReportTable: React.FC<StockReportTableProps> = ({ organization
 
   if (loading) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800">
+      <Card className="p-6 border-border">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
         </div>
@@ -70,7 +70,7 @@ export const StockReportTable: React.FC<StockReportTableProps> = ({ organization
 
   if (error) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800">
+      <Card className="p-6 border-border">
         <div className="text-center text-red-500 py-8">{error}</div>
       </Card>
     );
@@ -91,13 +91,13 @@ export const StockReportTable: React.FC<StockReportTableProps> = ({ organization
   };
 
   return (
-    <Card className="p-6 border-gray-100 dark:border-zinc-800 flex flex-col h-full w-full overflow-hidden">
+    <Card className="p-6 border-border flex flex-col h-full w-full overflow-hidden">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+        <h3 className="text-lg font-semibold text-foreground">
           Relatório de Estoque
         </h3>
         {sortedStock.length > itemsPerPage && (
-          <span className="text-xs text-gray-500 dark:text-gray-400">
+          <span className="text-xs text-muted-foreground">
             Página {currentPage} de {totalPages}
           </span>
         )}
@@ -113,7 +113,7 @@ export const StockReportTable: React.FC<StockReportTableProps> = ({ organization
               return (
                 <div
                   key={index}
-                  className="flex flex-col gap-4 p-5 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                  className="flex flex-col gap-4 p-5 rounded-lg bg-gray-50 dark:bg-card hover:bg-gray-100 dark:hover:bg-muted transition-colors"
                 >
                   <div className="flex items-start justify-between gap-4">
                     {/* Imagem do produto */}
@@ -122,7 +122,7 @@ export const StockReportTable: React.FC<StockReportTableProps> = ({ organization
                         <img
                           src={item.product_image}
                           alt={item.product_name}
-                          className="w-16 h-16 rounded-lg object-cover bg-gray-200 dark:bg-zinc-800"
+                          className="w-16 h-16 rounded-lg object-cover bg-gray-200 dark:bg-muted"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
                             target.style.display = 'none';
@@ -142,10 +142,10 @@ export const StockReportTable: React.FC<StockReportTableProps> = ({ organization
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <p className="text-base font-semibold text-gray-900 dark:text-white line-clamp-2 mb-2">
+                      <p className="text-base font-semibold text-foreground line-clamp-2 mb-2">
                         {item.product_name}
                       </p>
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                      <p className="text-sm font-medium text-muted-foreground">
                         {formatCurrency(item.price)}
                       </p>
                     </div>
@@ -158,10 +158,10 @@ export const StockReportTable: React.FC<StockReportTableProps> = ({ organization
 
                   <div className="w-full">
                     <div className="flex items-center justify-between mb-2.5">
-                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      <span className="text-sm font-semibold text-foreground">
                         {item.stock_quantity} un.
                       </span>
-                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      <span className="text-sm font-semibold text-foreground">
                         {item.stock_percentage}%
                       </span>
                     </div>
@@ -179,7 +179,7 @@ export const StockReportTable: React.FC<StockReportTableProps> = ({ organization
 
           {/* Paginação */}
           {sortedStock.length > itemsPerPage && (
-            <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200 dark:border-zinc-800">
+            <div className="flex items-center justify-between mt-6 pt-4 border-t border-border">
               <Button
                 onClick={goToPreviousPage}
                 disabled={currentPage === 1}
@@ -190,7 +190,7 @@ export const StockReportTable: React.FC<StockReportTableProps> = ({ organization
                 <ChevronLeft className="w-4 h-4" />
                 Anterior
               </Button>
-              <span className="text-sm text-gray-600 dark:text-gray-400">
+              <span className="text-sm text-muted-foreground">
                 {startIndex + 1}-{Math.min(endIndex, sortedStock.length)} de {sortedStock.length}
               </span>
               <Button
@@ -209,7 +209,7 @@ export const StockReportTable: React.FC<StockReportTableProps> = ({ organization
       ) : (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <AlertTriangle className="w-12 h-12 text-gray-400 mb-3" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-muted-foreground">
             Nenhum produto cadastrado
           </p>
         </div>

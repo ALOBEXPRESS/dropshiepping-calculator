@@ -55,7 +55,7 @@ export const TopSellingProductsTable: React.FC<TopSellingProductsTableProps> = (
 
   if (loading) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800">
+      <Card className="p-6 border-border">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
         </div>
@@ -65,25 +65,25 @@ export const TopSellingProductsTable: React.FC<TopSellingProductsTableProps> = (
 
   if (error) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800">
+      <Card className="p-6 border-border">
         <div className="text-center text-red-500 py-8">{error}</div>
       </Card>
     );
   }
 
   return (
-    <Card className="p-6 border-gray-100 dark:border-zinc-800 flex flex-col h-full">
+    <Card className="p-6 border-border flex flex-col h-full">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
             <TrendingUp className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <h3 className="text-lg font-semibold text-foreground">
               Produtos Mais Vendidos
             </h3>
             {sortedProducts.length > 0 && (
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-muted-foreground">
                 {totalSales} unidades vendidas no total
               </p>
             )}
@@ -99,23 +99,23 @@ export const TopSellingProductsTable: React.FC<TopSellingProductsTableProps> = (
           <div className="overflow-x-auto flex-1">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-zinc-800">
-                  <th className="text-left py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                <tr className="border-b border-border">
+                  <th className="text-left py-3 px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Ranking
                   </th>
-                  <th className="text-left py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="text-left py-3 px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Produto
                   </th>
-                  <th className="text-right py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="text-right py-3 px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Preço
                   </th>
-                  <th className="text-right py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="text-right py-3 px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Vendidos
                   </th>
-                  <th className="text-right py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="text-right py-3 px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Pedidos
                   </th>
-                  <th className="text-right py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="text-right py-3 px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Receita
                   </th>
                 </tr>
@@ -131,13 +131,13 @@ export const TopSellingProductsTable: React.FC<TopSellingProductsTableProps> = (
                     if (globalIndex === 0) return 'bg-gradient-to-br from-yellow-400 to-yellow-500 text-white shadow-lg shadow-yellow-500/30';
                     if (globalIndex === 1) return 'bg-gradient-to-br from-gray-300 to-gray-400 text-gray-900 shadow-lg shadow-gray-400/30';
                     if (globalIndex === 2) return 'bg-gradient-to-br from-orange-400 to-orange-500 text-white shadow-lg shadow-orange-500/30';
-                    return 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400';
+                    return 'bg-muted text-muted-foreground';
                   };
                   
                   return (
                   <tr
                     key={product.product_id}
-                    className={`border-b border-gray-100 dark:border-zinc-800 last:border-0 hover:bg-gray-50 dark:hover:bg-zinc-900/50 transition-colors group ${
+                    className={`border-b border-border last:border-0 hover:bg-gray-50 dark:hover:bg-card transition-colors group ${
                       isTop3 ? 'bg-gradient-to-r from-blue-50/50 to-transparent dark:from-blue-900/10 dark:to-transparent' : ''
                     }`}
                   >
@@ -148,7 +148,7 @@ export const TopSellingProductsTable: React.FC<TopSellingProductsTableProps> = (
                     </td>
                     <td className="py-4 px-2">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-zinc-800 flex-shrink-0 ring-2 ring-gray-200 dark:ring-zinc-700 group-hover:ring-blue-500 dark:group-hover:ring-blue-400 transition-all">
+                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0 ring-2 ring-border group-hover:ring-blue-500 dark:group-hover:ring-blue-400 transition-all">
                           {product.product_image ? (
                             <img
                               src={product.product_image}
@@ -165,11 +165,11 @@ export const TopSellingProductsTable: React.FC<TopSellingProductsTableProps> = (
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                          <p className="text-sm font-medium text-foreground truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                             {product.product_name}
                           </p>
                           {product.category && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            <p className="text-xs text-muted-foreground truncate">
                               {product.category}
                             </p>
                           )}
@@ -177,7 +177,7 @@ export const TopSellingProductsTable: React.FC<TopSellingProductsTableProps> = (
                       </div>
                     </td>
                     <td className="py-4 px-2 text-right">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      <p className="text-sm font-medium text-foreground">
                         {formatCurrency(product.price)}
                       </p>
                     </td>
@@ -187,7 +187,7 @@ export const TopSellingProductsTable: React.FC<TopSellingProductsTableProps> = (
                           isTop3 ? 'bg-gradient-to-r from-blue-500 to-blue-600' : 'bg-gray-300 dark:bg-zinc-700'
                         }`} style={{ width: `${Math.min((product.quantity_sold / (sortedProducts[0]?.quantity_sold || 1)) * 60, 60)}px` }} />
                         <p className={`text-sm font-bold min-w-[3ch] ${
-                          isTop3 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
+                          isTop3 ? 'text-blue-600 dark:text-blue-400' : 'text-foreground'
                         }`}>
                           {product.quantity_sold}
                         </p>
@@ -212,8 +212,8 @@ export const TopSellingProductsTable: React.FC<TopSellingProductsTableProps> = (
 
           {/* Paginação */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200 dark:border-zinc-800">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+            <div className="flex items-center justify-between mt-6 pt-4 border-t border-border">
+              <p className="text-sm text-muted-foreground">
                 Página {currentPage} de {totalPages}
               </p>
               <div className="flex items-center gap-2">
@@ -243,13 +243,13 @@ export const TopSellingProductsTable: React.FC<TopSellingProductsTableProps> = (
         </>
       ) : (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="p-4 bg-gray-100 dark:bg-zinc-800 rounded-full mb-4">
+          <div className="p-4 bg-muted rounded-full mb-4">
             <Package className="w-8 h-8 text-gray-400" />
           </div>
-          <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+          <p className="text-sm font-medium text-foreground mb-1">
             Nenhum produto vendido
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-xs text-muted-foreground">
             Os produtos aparecerão aqui após as primeiras vendas
           </p>
         </div>

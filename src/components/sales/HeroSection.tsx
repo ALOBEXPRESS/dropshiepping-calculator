@@ -37,7 +37,7 @@ const KPICard: React.FC<KPICardProps> = ({
   
   return (
     <div 
-      className="group relative overflow-hidden rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+      className="group relative overflow-hidden rounded-lg border border-border bg-card p-4 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
       role="article"
       aria-label={`${label}: ${value}${trend !== undefined ? `, ${trendText}` : ''}`}
       tabIndex={0}
@@ -75,15 +75,15 @@ const KPICard: React.FC<KPICardProps> = ({
         )}
       </div>
       
-      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1 font-medium uppercase tracking-wide">
+      <p className="text-xs text-muted-foreground mb-1 font-medium uppercase tracking-wide">
         {label}
       </p>
-      <p className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+      <p className="text-2xl font-bold text-foreground tabular-nums mb-2">
         {value}
       </p>
       
       {trendLabel && (
-        <p className="text-xs text-gray-500 dark:text-gray-400">
+        <p className="text-xs text-muted-foreground">
           {trendLabel}
         </p>
       )}
@@ -180,11 +180,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       {!compact && (
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            <h1 className="text-3xl font-bold text-foreground mb-2">
               Dashboard de Vendas
             </h1>
             <div className="flex items-center gap-3">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-muted-foreground">
                 Visão completa do desempenho
               </p>
               {!hasPendingOrders && (

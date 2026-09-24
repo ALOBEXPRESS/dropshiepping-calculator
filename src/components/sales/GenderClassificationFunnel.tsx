@@ -208,7 +208,7 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
 
   if (loading) {
     return (
-      <Card className={cn("p-6 border-gray-200 dark:border-zinc-800 h-full flex items-center justify-center", className)}>
+      <Card className={cn("p-6 border-border h-full flex items-center justify-center", className)}>
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </Card>
     );
@@ -216,21 +216,21 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
 
   if (error) {
     return (
-      <Card className={cn("p-6 border-gray-200 dark:border-zinc-800 h-full flex items-center justify-center", className)}>
+      <Card className={cn("p-6 border-border h-full flex items-center justify-center", className)}>
         <div className="text-center text-red-500">{error}</div>
       </Card>
     );
   }
 
   return (
-    <Card className={cn("p-6 border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col", className)}>
+    <Card className={cn("p-6 border-border bg-card flex flex-col", className)}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1" style={{ fontFamily: "'Fira Sans', sans-serif" }}>
+          <h3 className="text-lg font-semibold text-foreground mb-1" style={{ fontFamily: "'Fira Sans', sans-serif" }}>
             Funil de Leads
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-muted-foreground">
             Classificação por gênero via Genderize.io
           </p>
         </div>
@@ -280,10 +280,10 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
             </svg>
             {/* Center text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <p className="text-3xl font-bold text-gray-900 dark:text-white" style={{ fontFamily: "'Fira Code', monospace" }}>
+              <p className="text-3xl font-bold text-foreground" style={{ fontFamily: "'Fira Code', monospace" }}>
                 {stats.total}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">
                 Total de Leads
               </p>
             </div>
@@ -339,7 +339,7 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
                 <UserX className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wide font-medium">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
                   Não Classificados
                 </p>
                 <p className="text-lg font-bold text-gray-900 dark:text-gray-100" style={{ fontFamily: "'Fira Code', monospace" }}>
@@ -347,7 +347,7 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
                 </p>
               </div>
             </div>
-            <Badge variant="outline" className="border-gray-400 text-gray-600 dark:text-gray-400">
+            <Badge variant="outline" className="border-gray-400 text-muted-foreground">
               {stats.unclassifiedPercentage.toFixed(1)}%
             </Badge>
           </div>
@@ -359,7 +359,7 @@ export const GenderClassificationFunnel: React.FC<GenderClassificationFunnelProp
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <p className="text-sm font-medium text-foreground">
               Taxa de Classificação
             </p>
           </div>

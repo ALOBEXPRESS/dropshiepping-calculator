@@ -20,12 +20,12 @@ export const SalesFiltersBar: React.FC<SalesFiltersBarProps> = ({
 
   return (
     <div
-      className="flex flex-wrap items-end gap-3 p-3 rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"
+      className="flex flex-wrap items-end gap-3 p-3 rounded-lg border border-border bg-card"
       role="search"
       aria-label="Filtros de vendas"
     >
       <div className="flex flex-col gap-1">
-        <Label htmlFor="filter-start" className="text-xs text-gray-500 dark:text-gray-400">
+        <Label htmlFor="filter-start" className="text-xs text-muted-foreground">
           Data inicial
         </Label>
         <Input
@@ -39,7 +39,7 @@ export const SalesFiltersBar: React.FC<SalesFiltersBarProps> = ({
       </div>
 
       <div className="flex flex-col gap-1">
-        <Label htmlFor="filter-end" className="text-xs text-gray-500 dark:text-gray-400">
+        <Label htmlFor="filter-end" className="text-xs text-muted-foreground">
           Data final
         </Label>
         <Input
@@ -53,7 +53,7 @@ export const SalesFiltersBar: React.FC<SalesFiltersBarProps> = ({
       </div>
 
       <div className="flex flex-col gap-1">
-        <Label htmlFor="filter-marketplace" className="text-xs text-gray-500 dark:text-gray-400">
+        <Label htmlFor="filter-marketplace" className="text-xs text-muted-foreground">
           Marketplace
         </Label>
         <Input

@@ -39,7 +39,7 @@ export const GenderLeadsList: React.FC<GenderLeadsListProps> = ({
   const getGenderColor = (gender: 'male' | 'female' | null) => {
     if (gender === 'male') return 'text-blue-600 dark:text-blue-400';
     if (gender === 'female') return 'text-pink-600 dark:text-pink-400';
-    return 'text-gray-600 dark:text-gray-400';
+    return 'text-muted-foreground';
   };
 
   const getInitials = (name: string) => {
@@ -98,10 +98,10 @@ export const GenderLeadsList: React.FC<GenderLeadsListProps> = ({
           <Users className="w-4 h-4 text-white" />
         </div>
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-lg font-semibold text-foreground">
             {getFilterTitle()}
           </h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-xs text-muted-foreground">
             {leads.length} {leads.length === 1 ? 'lead encontrado' : 'leads encontrados'}
           </p>
         </div>
@@ -110,7 +110,7 @@ export const GenderLeadsList: React.FC<GenderLeadsListProps> = ({
       {leads.length === 0 ? (
         <div className="text-center py-8">
           <Users className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-muted-foreground">
             Nenhum lead encontrado com este filtro
           </p>
         </div>
@@ -138,7 +138,7 @@ export const GenderLeadsList: React.FC<GenderLeadsListProps> = ({
               {/* Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2 mb-1">
-                  <p className="font-medium text-sm text-gray-900 dark:text-white truncate">
+                  <p className="font-medium text-sm text-foreground truncate">
                     {lead.lead_name}
                   </p>
                   {lead.gender_probability !== null && (
@@ -153,7 +153,7 @@ export const GenderLeadsList: React.FC<GenderLeadsListProps> = ({
                 </div>
 
                 {/* Stats */}
-                <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <ShoppingBag className="w-3 h-3" />
                     <span>

@@ -62,10 +62,10 @@ export const TopProfitableProductsTable: React.FC<TopProfitableProductsTableProp
             <TrendingUp className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <h3 className="text-lg font-semibold text-foreground">
               Produtos Mais Lucrativos
             </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-muted-foreground">
               Ranking por lucro total gerado
             </p>
           </div>
@@ -107,7 +107,7 @@ export const TopProfitableProductsTable: React.FC<TopProfitableProductsTableProp
                         ? 'bg-gradient-to-br from-gray-300 to-gray-500 text-white shadow-md'
                         : index === 2
                         ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-md'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                        : 'bg-gray-100 dark:bg-gray-800 text-muted-foreground'
                     }`}
                   >
                     {index + 1}
@@ -134,7 +134,7 @@ export const TopProfitableProductsTable: React.FC<TopProfitableProductsTableProp
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <p className="font-medium text-gray-900 dark:text-white truncate cursor-help">
+                          <p className="font-medium text-foreground truncate cursor-help">
                             {product.productName}
                           </p>
                         </TooltipTrigger>
@@ -165,7 +165,7 @@ export const TopProfitableProductsTable: React.FC<TopProfitableProductsTableProp
                     <p className="text-lg font-bold text-green-600 dark:text-green-400">
                       {formatCurrency(product.totalProfit)}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-muted-foreground">
                       Receita: {formatCurrency(product.totalRevenue)}
                     </p>
                   </div>

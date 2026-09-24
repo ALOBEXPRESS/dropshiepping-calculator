@@ -130,7 +130,7 @@ export const RecentOrdersTable: React.FC<RecentOrdersTableProps> = ({
 
   if (loading) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800">
+      <Card className="p-6 border-border">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
         </div>
@@ -140,16 +140,16 @@ export const RecentOrdersTable: React.FC<RecentOrdersTableProps> = ({
 
   if (error) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800">
+      <Card className="p-6 border-border">
         <div className="text-center text-red-500 py-8">{error}</div>
       </Card>
     );
   }
 
   return (
-    <Card className="p-6 border-gray-100 dark:border-zinc-800">
+    <Card className="p-6 border-border">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+        <h3 className="text-lg font-semibold text-foreground">
           Pedidos Recentes
         </h3>
         <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
@@ -161,20 +161,20 @@ export const RecentOrdersTable: React.FC<RecentOrdersTableProps> = ({
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-zinc-800">
-                <th className="text-left py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400">
+              <tr className="border-b border-border">
+                <th className="text-left py-3 px-2 text-xs font-semibold text-muted-foreground">
                   Cliente
                 </th>
-                <th className="text-left py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                <th className="text-left py-3 px-2 text-xs font-semibold text-muted-foreground">
                   Pedido
                 </th>
-                <th className="text-center py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                <th className="text-center py-3 px-2 text-xs font-semibold text-muted-foreground">
                   Itens
                 </th>
-                <th className="text-right py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                <th className="text-right py-3 px-2 text-xs font-semibold text-muted-foreground">
                   Valor
                 </th>
-                <th className="text-center py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                <th className="text-center py-3 px-2 text-xs font-semibold text-muted-foreground">
                   Status
                 </th>
               </tr>
@@ -186,7 +186,7 @@ export const RecentOrdersTable: React.FC<RecentOrdersTableProps> = ({
                 return (
                   <tr
                     key={order.id}
-                    className="border-b border-gray-100 dark:border-zinc-800 last:border-0 hover:bg-gray-50 dark:hover:bg-zinc-900/50 transition-colors"
+                    className="border-b border-border last:border-0 hover:bg-gray-50 dark:hover:bg-card transition-colors"
                   >
                     <td className="py-3 px-2">
                       <div className="flex items-center gap-3">
@@ -196,11 +196,11 @@ export const RecentOrdersTable: React.FC<RecentOrdersTableProps> = ({
                           </span>
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          <p className="text-sm font-medium text-foreground truncate">
                             {order.customer_name}
                           </p>
                           {order.customer_email && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            <p className="text-xs text-muted-foreground truncate">
                               {order.customer_email}
                             </p>
                           )}
@@ -208,20 +208,20 @@ export const RecentOrdersTable: React.FC<RecentOrdersTableProps> = ({
                       </div>
                     </td>
                     <td className="py-3 px-2">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      <p className="text-sm font-medium text-foreground">
                         #{order.order_number}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <p className="text-xs text-muted-foreground">
                         {formatDate(order.order_date)}
                       </p>
                     </td>
                     <td className="py-3 px-2 text-center">
-                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-zinc-800 text-sm font-medium text-gray-900 dark:text-white">
+                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-muted text-sm font-medium text-foreground">
                         {order.items_count}
                       </span>
                     </td>
                     <td className="py-3 px-2 text-right">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      <p className="text-sm font-semibold text-foreground">
                         {formatCurrency(order.total_amount)}
                       </p>
                     </td>
@@ -239,7 +239,7 @@ export const RecentOrdersTable: React.FC<RecentOrdersTableProps> = ({
       ) : (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <Package className="w-12 h-12 text-gray-400 mb-3" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-muted-foreground">
             Nenhum pedido encontrado
           </p>
         </div>

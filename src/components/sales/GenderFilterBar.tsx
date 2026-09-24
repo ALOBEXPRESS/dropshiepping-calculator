@@ -17,7 +17,7 @@ export const GenderFilterBar: React.FC<GenderFilterBarProps> = ({
 }) => {
   return (
     <div
-      className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"
+      className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card"
       role="group"
       aria-label="Filtro de gênero"
     >

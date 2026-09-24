@@ -241,7 +241,7 @@ export const AffiliateCommissionChart: React.FC<AffiliateCommissionChartProps> =
 
   if (loading) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800">
+      <Card className="p-6 border-border">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
         </div>
@@ -251,7 +251,7 @@ export const AffiliateCommissionChart: React.FC<AffiliateCommissionChartProps> =
 
   if (error) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800">
+      <Card className="p-6 border-border">
         <div className="text-center text-red-500 py-8">{error}</div>
       </Card>
     );
@@ -259,8 +259,8 @@ export const AffiliateCommissionChart: React.FC<AffiliateCommissionChartProps> =
 
   if (marketplaces.length === 0) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800">
-        <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+      <Card className="p-6 border-border">
+        <div className="text-center text-muted-foreground py-8">
           <p className="text-lg font-semibold mb-2">Nenhum marketplace com comissão de afiliado</p>
           <p className="text-sm">Configure a comissão de afiliado nos marketplaces para visualizar este relatório.</p>
         </div>
@@ -269,19 +269,19 @@ export const AffiliateCommissionChart: React.FC<AffiliateCommissionChartProps> =
   }
 
   return (
-    <Card className="p-6 border-gray-100 dark:border-zinc-800">
+    <Card className="p-6 border-border">
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+          <h3 className="text-lg font-semibold text-foreground mb-2">
             Relatório de Comissão de Afiliado
           </h3>
           <div className="flex items-center gap-4">
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Total de Produtos</p>
+              <p className="text-xs text-muted-foreground">Total de Produtos</p>
               <p className="text-xl font-bold text-purple-600">{filteredData.length}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Comissão Média</p>
+              <p className="text-xs text-muted-foreground">Comissão Média</p>
               <p className="text-xl font-bold text-purple-600">
                 {filteredData.length > 0
                   ? formatPercentage(
@@ -291,7 +291,7 @@ export const AffiliateCommissionChart: React.FC<AffiliateCommissionChartProps> =
               </p>
             </div>
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Estoque Total</p>
+              <p className="text-xs text-muted-foreground">Estoque Total</p>
               <p className="text-xl font-bold text-purple-600">
                 {filteredData.reduce((sum, p) => sum + p.stock_quantity, 0)}
               </p>
@@ -300,7 +300,7 @@ export const AffiliateCommissionChart: React.FC<AffiliateCommissionChartProps> =
         </div>
         <div className="flex flex-col gap-2">
           <Select value={selectedMarketplace} onValueChange={setSelectedMarketplace}>
-            <SelectTrigger className="w-[200px] border-gray-200 dark:border-zinc-800">
+            <SelectTrigger className="w-[200px] border-border">
               <SelectValue placeholder="Selecione o marketplace" />
             </SelectTrigger>
             <SelectContent>
@@ -314,7 +314,7 @@ export const AffiliateCommissionChart: React.FC<AffiliateCommissionChartProps> =
           </Select>
           
           <Select value={selectedAffiliate} onValueChange={setSelectedAffiliate}>
-            <SelectTrigger className="w-[200px] border-gray-200 dark:border-zinc-800">
+            <SelectTrigger className="w-[200px] border-border">
               <SelectValue placeholder="Filtrar por afiliado" />
             </SelectTrigger>
             <SelectContent>
@@ -338,7 +338,7 @@ export const AffiliateCommissionChart: React.FC<AffiliateCommissionChartProps> =
                 size="icon"
                 variant="ghost"
                 onClick={handleScrollLeft}
-                className="h-10 w-10 rounded-full bg-white dark:bg-zinc-800 shadow-lg hover:shadow-xl transition-all hover:scale-110"
+                className="h-10 w-10 rounded-full bg-white dark:bg-muted shadow-lg hover:shadow-xl transition-all hover:scale-110"
                 aria-label="Rolar para esquerda"
               >
                 <ChevronLeft className="w-6 h-6" />
@@ -352,7 +352,7 @@ export const AffiliateCommissionChart: React.FC<AffiliateCommissionChartProps> =
                 size="icon"
                 variant="ghost"
                 onClick={handleScrollRight}
-                className="h-10 w-10 rounded-full bg-white dark:bg-zinc-800 shadow-lg hover:shadow-xl transition-all hover:scale-110"
+                className="h-10 w-10 rounded-full bg-white dark:bg-muted shadow-lg hover:shadow-xl transition-all hover:scale-110"
                 aria-label="Rolar para direita"
               >
                 <ChevronRight className="w-6 h-6" />
@@ -379,7 +379,7 @@ export const AffiliateCommissionChart: React.FC<AffiliateCommissionChartProps> =
           </div>
         </div>
       ) : (
-        <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+        <div className="flex items-center justify-center h-64 text-muted-foreground">
           <div className="text-center">
             <p className="text-lg font-semibold mb-2">Nenhum produto com afiliado</p>
             <p className="text-sm">

@@ -176,7 +176,7 @@ export const RecentOrdersChart: React.FC<RecentOrdersChartProps> = ({ organizati
 
   if (loading) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800">
+      <Card className="p-6 border-border">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
         </div>
@@ -186,23 +186,23 @@ export const RecentOrdersChart: React.FC<RecentOrdersChartProps> = ({ organizati
 
   if (error) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800">
+      <Card className="p-6 border-border">
         <div className="text-center text-red-500 py-8">{error}</div>
       </Card>
     );
   }
 
   return (
-    <Card className="p-6 border-gray-100 dark:border-zinc-800">
+    <Card className="p-6 border-border">
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+        <h3 className="text-lg font-semibold text-foreground mb-2">
           Pedidos Recentes
         </h3>
         <div>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+          <p className="text-2xl font-bold text-foreground">
             {formatCurrency(totalRevenue)}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Últimos {data.length} pedidos</p>
+          <p className="text-xs text-muted-foreground">Últimos {data.length} pedidos</p>
         </div>
       </div>
 
@@ -211,10 +211,10 @@ export const RecentOrdersChart: React.FC<RecentOrdersChartProps> = ({ organizati
           {data.map((order) => (
             <div
               key={order.id}
-              className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-zinc-900 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+              className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-card hover:bg-gray-100 dark:hover:bg-muted transition-colors"
             >
               {/* Imagem do Produto */}
-              <div className="w-12 h-12 rounded-lg bg-white dark:bg-zinc-800 flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-200 dark:border-zinc-700">
+              <div className="w-12 h-12 rounded-lg bg-white dark:bg-muted flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-200 dark:border-border">
                 {order.product_image ? (
                   <img
                     src={order.product_image}
@@ -234,7 +234,7 @@ export const RecentOrdersChart: React.FC<RecentOrdersChartProps> = ({ organizati
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <div className="flex items-center gap-2 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                    <p className="text-sm font-semibold text-foreground truncate">
                       Pedido #{order.order_number}
                     </p>
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-[#32BCAD]/12 text-[#32BCAD] border border-[#32BCAD]/25 flex-shrink-0">
@@ -247,7 +247,7 @@ export const RecentOrdersChart: React.FC<RecentOrdersChartProps> = ({ organizati
                   </p>
                 </div>
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  <p className="text-xs text-muted-foreground truncate">
                     {order.product_name || 'Produto sem nome'}
                   </p>
                   <p className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
@@ -259,7 +259,7 @@ export const RecentOrdersChart: React.FC<RecentOrdersChartProps> = ({ organizati
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center h-48 text-gray-500 dark:text-gray-400">
+        <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
           <Package className="w-12 h-12 mb-2 opacity-50" />
           <p>Nenhum pedido recente</p>
         </div>

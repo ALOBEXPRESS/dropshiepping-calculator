@@ -164,7 +164,7 @@ export const NovaEntradaDialog: React.FC<Props> = ({ open, onOpenChange, organiz
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[520px] bg-white dark:bg-zinc-900 dark:text-white">
+      <DialogContent className="sm:max-w-[520px] bg-card dark:text-white">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plus className="w-4 h-4 text-orange-500" />
@@ -173,7 +173,7 @@ export const NovaEntradaDialog: React.FC<Props> = ({ open, onOpenChange, organiz
         </DialogHeader>
 
         {/* ── Tabs ── */}
-        <div className="flex flex-wrap gap-1 border-b border-zinc-200 dark:border-zinc-700 pb-2 mt-1">
+        <div className="flex flex-wrap gap-1 border-b border-zinc-200 dark:border-border pb-2 mt-1">
           {TABS.map((tab) => {
             const active = isParentActive(tab.id);
             return (
@@ -184,7 +184,7 @@ export const NovaEntradaDialog: React.FC<Props> = ({ open, onOpenChange, organiz
                 className={`px-3 py-1.5 text-xs rounded-md font-medium transition-colors ${
                   active
                     ? 'bg-orange-500 text-white'
-                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                    : 'bg-zinc-100 dark:bg-muted text-muted-foreground dark:text-foreground hover:bg-zinc-200 dark:hover:bg-zinc-700'
                 }`}
               >
                 {tab.label}
@@ -204,7 +204,7 @@ export const NovaEntradaDialog: React.FC<Props> = ({ open, onOpenChange, organiz
                 className={`px-3 py-1 text-xs rounded font-medium transition-colors ${
                   et === sub
                     ? 'bg-zinc-700 text-white'
-                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                    : 'bg-zinc-100 dark:bg-muted text-muted-foreground dark:text-muted-foreground hover:bg-zinc-200 dark:hover:bg-zinc-700'
                 }`}
               >
                 {sub === 'balanco_shopee_acrescimo' ? 'Acréscimo' : 'Desconto'}
@@ -222,7 +222,7 @@ export const NovaEntradaDialog: React.FC<Props> = ({ open, onOpenChange, organiz
                 className={`px-3 py-1 text-xs rounded font-medium transition-colors ${
                   et === sub
                     ? 'bg-zinc-700 text-white'
-                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                    : 'bg-zinc-100 dark:bg-muted text-muted-foreground dark:text-muted-foreground hover:bg-zinc-200 dark:hover:bg-zinc-700'
                 }`}
               >
                 {sub === 'balanco_tiktok_acrescimo' ? 'Acréscimo' : 'Desconto'}
@@ -237,13 +237,13 @@ export const NovaEntradaDialog: React.FC<Props> = ({ open, onOpenChange, organiz
           {/* Afiliado picker (pedido_afiliacao only) */}
           {et === 'pedido_afiliacao' && (
             <div className="space-y-1.5">
-              <Label className="text-sm text-zinc-700 dark:text-zinc-300">Afiliado</Label>
+              <Label className="text-sm text-zinc-700 dark:text-foreground">Afiliado</Label>
               {affiliates.length > 0 ? (
                 <Select value={affiliateId || 'none'} onValueChange={(v) => setAffiliateId(v === 'none' ? '' : v)}>
-                  <SelectTrigger className="bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white">
+                  <SelectTrigger className="bg-zinc-50 dark:bg-muted border-zinc-300 dark:border-border text-zinc-900 dark:text-white">
                     <SelectValue placeholder="Selecione um afiliado (opcional)" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700">
+                  <SelectContent className="bg-card border-zinc-200 dark:border-border">
                     <SelectItem value="none">— Nenhum —</SelectItem>
                     {affiliates.map((a) => (
                       <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
@@ -251,21 +251,21 @@ export const NovaEntradaDialog: React.FC<Props> = ({ open, onOpenChange, organiz
                   </SelectContent>
                 </Select>
               ) : (
-                <p className="text-xs text-zinc-500">Nenhum afiliado cadastrado.</p>
+                <p className="text-xs text-muted-foreground">Nenhum afiliado cadastrado.</p>
               )}
             </div>
           )}
 
           {/* Nome */}
           <div className="space-y-1.5">
-            <Label className="text-sm text-zinc-700 dark:text-zinc-300">
+            <Label className="text-sm text-zinc-700 dark:text-foreground">
               {nameLabel[et]} <span className="text-red-500">*</span>
             </Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={et === 'pedido_afiliacao' ? 'Ex: Tênis Nike Air Max' : 'Ex: Bônus de vendedor'}
-              className="bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white"
+              className="bg-zinc-50 dark:bg-muted border-zinc-300 dark:border-border text-zinc-900 dark:text-white"
               required
             />
           </div>
@@ -273,25 +273,25 @@ export const NovaEntradaDialog: React.FC<Props> = ({ open, onOpenChange, organiz
           {/* Pedido / produto ref (pedido_afiliacao) */}
           {et === 'pedido_afiliacao' && (
             <div className="space-y-1.5">
-              <Label className="text-sm text-zinc-700 dark:text-zinc-300">
-                Marketplace / Nº do Pedido <span className="text-xs text-zinc-400">(opcional)</span>
+              <Label className="text-sm text-zinc-700 dark:text-foreground">
+                Marketplace / Nº do Pedido <span className="text-xs text-muted-foreground">(opcional)</span>
               </Label>
               <Input
                 value={orderRef}
                 onChange={(e) => setOrderRef(e.target.value)}
                 placeholder="Ex: Shopee #123456 ou TikTok Shop"
-                className="bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white"
+                className="bg-zinc-50 dark:bg-muted border-zinc-300 dark:border-border text-zinc-900 dark:text-white"
               />
             </div>
           )}
 
           {/* Valor */}
           <div className="space-y-1.5">
-            <Label className="text-sm text-zinc-700 dark:text-zinc-300">
+            <Label className="text-sm text-zinc-700 dark:text-foreground">
               {valueLabel[et]} <span className="text-red-500">*</span>
             </Label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm pointer-events-none">R$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none">R$</span>
               <Input
                 type="text"
                 inputMode="decimal"
@@ -302,7 +302,7 @@ export const NovaEntradaDialog: React.FC<Props> = ({ open, onOpenChange, organiz
                   if (!isNaN(n)) setValue(n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
                 }}
                 placeholder="0,00"
-                className="pl-9 bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white"
+                className="pl-9 bg-zinc-50 dark:bg-muted border-zinc-300 dark:border-border text-zinc-900 dark:text-white"
                 required
               />
             </div>
@@ -310,7 +310,7 @@ export const NovaEntradaDialog: React.FC<Props> = ({ open, onOpenChange, organiz
 
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={handleClose} className="dark:border-zinc-700 dark:text-zinc-300">
+            <Button type="button" variant="outline" onClick={handleClose} className="dark:border-border dark:text-foreground">
               Cancelar
             </Button>
             <Button type="submit" disabled={saving} className="bg-orange-500 hover:bg-orange-600 text-white">

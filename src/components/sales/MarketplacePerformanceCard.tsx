@@ -61,7 +61,7 @@ export function MarketplacePerformanceCard({ organizationId, refreshTrigger }: M
 
   if (loading) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800">
+      <Card className="p-6 border-border">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
         </div>
@@ -71,16 +71,16 @@ export function MarketplacePerformanceCard({ organizationId, refreshTrigger }: M
 
   if (data.length === 0) {
     return (
-      <Card className="p-6 border-gray-100 dark:border-zinc-800">
+      <Card className="p-6 border-border">
         <div className="flex items-center gap-2 mb-4">
           <Store className="w-5 h-5 text-gray-400" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-lg font-semibold text-foreground">
             Performance por Marketplace
           </h3>
         </div>
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <Store className="w-12 h-12 text-gray-400 mb-3" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-muted-foreground">
             Nenhum dado de marketplace disponível
           </p>
         </div>
@@ -92,15 +92,15 @@ export function MarketplacePerformanceCard({ organizationId, refreshTrigger }: M
   const logo = getMarketplaceLogo(currentMarketplace.marketplace_id, currentMarketplace.marketplace);
 
   return (
-    <Card className="p-6 border-gray-100 dark:border-zinc-800 hover:shadow-lg transition-shadow duration-200">
+    <Card className="p-6 border-border hover:shadow-lg transition-shadow duration-200">
       <div className="flex items-center gap-2 mb-6">
         <Store className="w-5 h-5 text-gray-400" />
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+        <h3 className="text-lg font-semibold text-foreground">
           Performance por Marketplace
         </h3>
       </div>
 
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+      <p className="text-sm text-muted-foreground mb-6">
         Comparação de desempenho entre plataformas
       </p>
 
@@ -109,7 +109,7 @@ export function MarketplacePerformanceCard({ organizationId, refreshTrigger }: M
         {/* Logo e Nome do Marketplace */}
         <div className="flex flex-col items-center mb-6">
           {logo ? (
-            <div className="w-24 h-24 rounded-lg overflow-hidden flex items-center justify-center bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 shadow-md mb-4">
+            <div className="w-24 h-24 rounded-lg overflow-hidden flex items-center justify-center bg-white dark:bg-muted border border-gray-200 dark:border-border shadow-md mb-4">
               <img 
                 src={logo} 
                 alt={currentMarketplace.marketplace}
@@ -121,27 +121,27 @@ export function MarketplacePerformanceCard({ organizationId, refreshTrigger }: M
               <Store className="w-12 h-12 text-white" />
             </div>
           )}
-          <h4 className="text-xl font-bold text-gray-900 dark:text-white text-center">
+          <h4 className="text-xl font-bold text-foreground text-center">
             {currentMarketplace.marketplace}
           </h4>
         </div>
 
         {/* Estatísticas */}
-        <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg mb-6">
+        <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-card rounded-lg mb-6">
           <div className="text-center">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Pedidos</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            <p className="text-xs text-muted-foreground mb-1">Total Pedidos</p>
+            <p className="text-2xl font-bold text-foreground">
               {currentMarketplace.orders_count}
             </p>
           </div>
           <div className="text-center">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Receita Total</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            <p className="text-xs text-muted-foreground mb-1">Receita Total</p>
+            <p className="text-2xl font-bold text-foreground">
               {formatCurrency(currentMarketplace.revenue)}
             </p>
           </div>
           <div className="text-center">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Lucro Total</p>
+            <p className="text-xs text-muted-foreground mb-1">Lucro Total</p>
             <p className="text-2xl font-bold text-green-600 dark:text-green-400">
               {formatCurrency(currentMarketplace.profit)}
             </p>

@@ -390,25 +390,25 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
         <button
           onClick={() => onChange(Math.max(0, page - 1))}
           disabled={page === 0}
-          className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-white hover:bg-zinc-700 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+          className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-white hover:bg-zinc-700 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
         ><ChevronLeft className="w-4 h-4" /></button>
-        <span className="text-[10px] text-zinc-500 tabular-nums">{page + 1} / {total}</span>
+        <span className="text-[10px] text-muted-foreground tabular-nums">{page + 1} / {total}</span>
         <button
           onClick={() => onChange(Math.min(total - 1, page + 1))}
           disabled={page >= total - 1}
-          className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-white hover:bg-zinc-700 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+          className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-white hover:bg-zinc-700 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
         ><ChevronRight className="w-4 h-4" /></button>
       </div>
     );
 
   return (
-    <Card className="p-5 border-gray-100 dark:border-zinc-800 flex flex-col h-full">
+    <Card className="p-5 border-border flex flex-col h-full">
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
-        <h3 className="text-base font-semibold text-gray-900 dark:text-white">Transações</h3>
+        <h3 className="text-base font-semibold text-foreground">Transações</h3>
         <Select value={period} onValueChange={v => { setPeriod(v); }}>
-          <SelectTrigger className="w-[130px] h-8 text-xs border-gray-200 dark:border-zinc-700">
+          <SelectTrigger className="w-[130px] h-8 text-xs border-gray-200 dark:border-border">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -431,7 +431,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
           <div className="flex flex-col" style={{ flex: '3 1 0', minHeight: 0 }}>
             {transactions.length === 0 ? (
               <div className="flex-1 flex items-center justify-center">
-                <p className="text-sm text-zinc-500">Nenhuma transação</p>
+                <p className="text-sm text-muted-foreground">Nenhuma transação</p>
               </div>
             ) : (
               <>
@@ -448,12 +448,12 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
                       <div
                         key={tx.id}
                         onClick={() => onOrderClick?.(tx.id)}
-                        className={`flex items-center gap-2.5 py-2 border-b border-zinc-100 dark:border-zinc-800/60 last:border-0 ${onOrderClick ? 'cursor-pointer hover:bg-zinc-800/40 rounded-lg px-1 -mx-1 transition-colors' : ''}`}
+                        className={`flex items-center gap-2.5 py-2 border-b border-zinc-100 dark:border-border last:border-0 ${onOrderClick ? 'cursor-pointer hover:bg-muted rounded-lg px-1 -mx-1 transition-colors' : ''}`}
                       >
                         {cfg.icon}
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate leading-tight">{cfg.label}</p>
-                          <p className="text-[11px] text-zinc-400 truncate">{formatName(tx.customer_name)}</p>
+                          <p className="text-sm font-medium text-foreground truncate leading-tight">{cfg.label}</p>
+                          <p className="text-[11px] text-muted-foreground truncate">{formatName(tx.customer_name)}</p>
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className={`text-sm font-semibold ${positive ? 'text-green-500' : 'text-red-500'}`}>
@@ -472,19 +472,19 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
 
           {/* ── Divider ── */}
           <div className="flex items-center gap-2 my-3 flex-shrink-0">
-            <div className="flex-1 h-px bg-zinc-100 dark:bg-zinc-800" />
+            <div className="flex-1 h-px bg-zinc-100 dark:bg-muted" />
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
               <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest whitespace-nowrap">Comissões Afiliação</span>
             </div>
-            <div className="flex-1 h-px bg-zinc-100 dark:bg-zinc-800" />
+            <div className="flex-1 h-px bg-zinc-100 dark:bg-muted" />
           </div>
 
           {/* ── Section 2: Afiliações ── */}
           <div className="flex flex-col" style={{ flex: '2 1 0', minHeight: 0 }}>
             {affEntries.length === 0 ? (
               <div className="flex-1 flex items-center justify-center">
-                <p className="text-xs text-zinc-600">Nenhuma comissão no período</p>
+                <p className="text-xs text-muted-foreground">Nenhuma comissão no período</p>
               </div>
             ) : (
               <>
@@ -499,8 +499,8 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
                         <Handshake className="w-4 h-4 text-emerald-400" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-zinc-200 truncate leading-tight">{aff.name}</p>
-                        <p className="text-[11px] text-zinc-500 truncate">{aff.order_reference || 'TikTok Shop'}</p>
+                        <p className="text-sm font-medium text-foreground truncate leading-tight">{aff.name}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{aff.order_reference || 'TikTok Shop'}</p>
                       </div>
                       <span className="text-sm font-bold text-emerald-400 flex-shrink-0">
                         +{formatCurrency(Number(aff.value))}
