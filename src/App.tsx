@@ -87,11 +87,12 @@ function App() {
             <BrowserRouter>
           <Toaster 
             position="top-right"
+            theme="system"
             toastOptions={{
               style: {
-                background: 'white',
-                color: '#0F172A',
-                border: '1px solid #E2E8F0',
+                background: 'hsl(var(--card))',
+                color: 'hsl(var(--card-foreground))',
+                border: '1px solid hsl(var(--border))',
               },
               className: 'sonner-toast',
               duration: 3000,
