@@ -153,26 +153,30 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               {/* E-Commerce group */}
               <li>
                 <GroupHeader icon={ShoppingCart} label="E-Commerce" open={ecommerceOpen} onToggle={() => setEcommerceOpen(v => !v)} />
-                {ecommerceOpen && (
-                  <ul className="mt-0.5 space-y-0.5 pl-3">
-                    {NAV_ROUTES.ecommerce.map(r => (
-                      <NavLink key={r.to} route={r} pathname={location.pathname} e2eSearch={e2eSearch} />
-                    ))}
-                  </ul>
-                )}
+                <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${ecommerceOpen ? 'grid-rows-[1fr] opacity-100 mt-0.5' : 'grid-rows-[0fr] opacity-0 pointer-events-none'}`}>
+                  <div className="overflow-hidden">
+                    <ul className="space-y-0.5 pl-3 pb-1">
+                      {NAV_ROUTES.ecommerce.map(r => (
+                        <NavLink key={r.to} route={r} pathname={location.pathname} e2eSearch={e2eSearch} />
+                      ))}
+                    </ul>
+                  </div>
+                </div>
               </li>
 
               {/* Painel group (admin only) */}
               {isAdmin && (
                 <li className="pt-1">
                   <GroupHeader icon={LayoutDashboard} label="Painel" open={painelOpen} onToggle={() => setPainelOpen(v => !v)} />
-                  {painelOpen && (
-                    <ul className="mt-0.5 space-y-0.5 pl-3">
-                      {NAV_ROUTES.painel.map(r => (
-                        <NavLink key={r.to} route={r} pathname={location.pathname} e2eSearch={e2eSearch} />
-                      ))}
-                    </ul>
-                  )}
+                  <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${painelOpen ? 'grid-rows-[1fr] opacity-100 mt-0.5' : 'grid-rows-[0fr] opacity-0 pointer-events-none'}`}>
+                    <div className="overflow-hidden">
+                      <ul className="space-y-0.5 pl-3 pb-1">
+                        {NAV_ROUTES.painel.map(r => (
+                          <NavLink key={r.to} route={r} pathname={location.pathname} e2eSearch={e2eSearch} />
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
                 </li>
               )}
             </ul>
@@ -301,6 +305,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <main className="flex-1 p-4 md:p-6">
           {children}
         </main>
+
+        {/* Global Footer */}
+        <footer className="py-6 px-4 border-t border-border/40 text-center mt-auto bg-card/30">
+          <p className="text-gray-400 text-sm font-medium font-iceland tracking-wide">Desenvolvido por: Jonatan Renan</p>
+          <p className="text-gray-600 text-xs mt-1">Alob Express © todos os direitos reservados</p>
+        </footer>
       </div>
     </div>
   );

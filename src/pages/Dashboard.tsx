@@ -4,7 +4,9 @@
  * KPIs, gráfico de Conversão e gráfico de Leads com dados reais do Supabase.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
 import KPICard from '@/components/KPICard';
 import WeeklyConversionChart from '@/components/WeeklyConversionChart';
 import LeadStatusChart from '@/components/LeadStatusChart';
@@ -61,8 +63,30 @@ const Dashboard: React.FC = () => {
   const mostProfitableDay = chartsData?.mostProfitableDay ?? '—';
   const recentSignups = leadsData.reduce((s, l) => s + l.count, 0);
 
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    if (!isLoading && data) {
+      gsap.fromTo(
+        '.dashboard-kpi-card',
+        { opacity: 0, y: 15, scale: 0.98 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.45, stagger: 0.06, ease: 'power2.out' }
+      );
+    }
+  }, { scope: containerRef, dependencies: [isLoading, Boolean(data)] });
+
+  useGSAP(() => {
+    if (!chartsLoading && chartsData) {
+      gsap.fromTo(
+        '.dashboard-chart-card',
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out' }
+      );
+    }
+  }, { scope: containerRef, dependencies: [chartsLoading, Boolean(chartsData)] });
+
   return (
-    <div className="space-y-4">
+    <div ref={containerRef} className="space-y-4">
       {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
@@ -103,11 +127,11 @@ const Dashboard: React.FC = () => {
           </>
         ) : (
           <>
-            <KPICard {...kpiProps!.revenue} />
-            <KPICard {...kpiProps!.fees} />
-            <KPICard {...kpiProps!.profit} />
-            <KPICard {...kpiProps!.products} />
-            <KPICard {...kpiProps!.customers} />
+            <div className="dashboard-kpi-card"><KPICard {...kpiProps!.revenue} /></div>
+            <div className="dashboard-kpi-card"><KPICard {...kpiProps!.fees} /></div>
+            <div className="dashboard-kpi-card"><KPICard {...kpiProps!.profit} /></div>
+            <div className="dashboard-kpi-card"><KPICard {...kpiProps!.products} /></div>
+            <div className="dashboard-kpi-card"><KPICard {...kpiProps!.customers} /></div>
           </>
         )}
       </section>
@@ -130,14 +154,18 @@ const Dashboard: React.FC = () => {
           </>
         ) : (
           <>
-            <WeeklyConversionChart
-              data={conversionData}
-              mostProfitableDay={mostProfitableDay}
-            />
-            <LeadStatusChart
-              data={leadsData}
-              recentSignups={recentSignups}
-            />
+            <div className="dashboard-chart-card h-full">
+              <WeeklyConversionChart
+                data={conversionData}
+                mostProfitableDay={mostProfitableDay}
+              />
+            </div>
+            <div className="dashboard-chart-card h-full">
+              <LeadStatusChart
+                data={leadsData}
+                recentSignups={recentSignups}
+              />
+            </div>
           </>
         )}
       </section>
