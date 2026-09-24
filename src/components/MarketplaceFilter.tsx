@@ -48,22 +48,23 @@ const MarketplaceFilter: React.FC<MarketplaceFilterProps> = ({
         disabled={disabled}
         className="
           appearance-none
-          bg-[#1c1c1c] 
-          text-white 
+          bg-card 
+          text-foreground 
           px-4 
           py-2 
           pr-10
           rounded-lg 
           border 
-          border-gray-700
-          hover:border-gray-600
+          border-input
+          hover:border-border
           focus:outline-none 
           focus:ring-2 
-          focus:ring-[#FF4D00]
+          focus:ring-ring
           disabled:opacity-50
           disabled:cursor-not-allowed
           cursor-pointer
           transition-colors
+          text-sm
         "
         aria-label="Selecionar marketplace"
       >
@@ -77,7 +78,7 @@ const MarketplaceFilter: React.FC<MarketplaceFilterProps> = ({
       
       {/* Custom dropdown icon */}
       <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-        <ChevronDown className="w-4 h-4 text-gray-400" />
+        <ChevronDown className="w-4 h-4 text-muted-foreground" />
       </div>
     </div>
   );

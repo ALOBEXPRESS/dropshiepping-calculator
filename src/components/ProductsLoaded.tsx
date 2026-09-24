@@ -203,27 +203,27 @@ export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBli
   };
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
 
       {/* Modal de confirmação bulk update */}
       {showBulkModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-700 dark:bg-zinc-900">
+          <div className="mx-4 w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl">
             <div className="mb-4 flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/40">
                 <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Atualizar todos os produtos?</h3>
-                <p className="text-xs text-gray-500 dark:text-zinc-400">{groupedItems.length} produto{groupedItems.length !== 1 ? 's' : ''} serão atualizados</p>
+                <h3 className="text-base font-semibold text-foreground">Atualizar todos os produtos?</h3>
+                <p className="text-xs text-muted-foreground">{groupedItems.length} produto{groupedItems.length !== 1 ? 's' : ''} serão atualizados</p>
               </div>
             </div>
-            <p className="mb-2 text-sm text-gray-700 dark:text-zinc-300">
+            <p className="mb-2 text-sm text-foreground">
               Você irá atualizar os dados do Bling (nome, custo, estoque, dimensões) de{' '}
               <span className="font-semibold text-blue-600 dark:text-blue-400">{groupedItems.length} produto{groupedItems.length !== 1 ? 's' : ''}</span>{' '}
               com os seguintes critérios:
             </p>
-            <div className="mb-5 rounded-lg border border-zinc-100 bg-zinc-50 px-4 py-3 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+            <div className="mb-5 rounded-lg border border-border bg-muted/50 px-4 py-3 text-xs text-muted-foreground">
               {activeFiltersDescription}
             </div>
             <div className="flex gap-3">
@@ -271,7 +271,7 @@ export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBli
       )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Produtos integrados</h3>
+          <h3 className="text-lg font-semibold text-foreground">Produtos integrados</h3>
           <p className="text-xs text-gray-500 dark:text-zinc-400">
             {totalCount} produto{totalCount === 1 ? '' : 's'} encontrado{totalCount === 1 ? '' : 's'}
           </p>
@@ -300,7 +300,7 @@ export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBli
           <Button
             type="button"
             variant="outline"
-            className="h-9 border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            className="h-9 border-input text-xs font-semibold text-foreground hover:bg-muted"
             onClick={() => fetchProducts(page, filters)}
           >
             <RefreshCw className="mr-2 h-3.5 w-3.5" />
@@ -315,7 +315,7 @@ export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBli
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder="Buscar por nome ou SKU"
-            className="h-9 text-xs dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-400"
+            className="h-9 text-xs border-input bg-background text-foreground placeholder:text-muted-foreground"
           />
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -323,7 +323,7 @@ export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBli
               variant="outline"
               className={filters.supplierSku === 'uncategorized'
                 ? 'h-9 border-[#fe2c55] bg-[#fe2c55] text-xs font-semibold text-white hover:bg-[#fe2c55]'
-                : 'h-9 border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800'}
+                : 'h-9 border-input text-xs font-semibold text-foreground hover:bg-muted'}
               onClick={() => {
                 const newValue = filters.supplierSku === 'uncategorized' ? 'all' : 'uncategorized';
                 updateFilters({ supplierSku: newValue });
@@ -338,14 +338,14 @@ export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBli
                 onChange={handlePriceFilterChange('minPrice')}
                 placeholder="Preço mínimo"
                 inputMode="decimal"
-                className="h-9 text-xs dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-400"
+                className="h-9 text-xs border-input bg-background text-foreground placeholder:text-muted-foreground"
               />
               <Input
                 value={filters.maxPrice}
                 onChange={handlePriceFilterChange('maxPrice')}
                 placeholder="Preço máximo"
                 inputMode="decimal"
-                className="h-9 text-xs dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-400"
+                className="h-9 text-xs border-input bg-background text-foreground placeholder:text-muted-foreground"
               />
             </div>
           </div>
@@ -358,7 +358,7 @@ export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBli
               setPage(1); // Reset to page 1 when changing ticket filter
             }}
           >
-            <SelectTrigger className="h-9 text-xs dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
+            <SelectTrigger className="h-9 text-xs border-input bg-background text-foreground">
               <SelectValue placeholder="Ticket médio" />
             </SelectTrigger>
             <SelectContent>
@@ -378,7 +378,7 @@ export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBli
               setPage(1); // Reset to page 1 when changing supplier filter
             }}
           >
-            <SelectTrigger className="h-9 text-xs dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
+            <SelectTrigger className="h-9 text-xs border-input bg-background text-foreground">
               <SelectValue placeholder="Fornecedor" />
             </SelectTrigger>
             <SelectContent>
@@ -390,7 +390,7 @@ export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBli
             </SelectContent>
           </Select>
           <div className="flex items-center justify-end">
-            <div className="rounded-full border border-gray-200 bg-gray-50 px-3 py-2 text-[11px] font-semibold uppercase text-gray-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+            <div className="rounded-full border border-border bg-muted/60 px-3 py-2 text-[11px] font-semibold uppercase text-muted-foreground">
               INTEGRAÇÃO BLING
             </div>
           </div>
@@ -405,22 +405,22 @@ export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBli
 
       <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {isLoading && Array.from({ length: 6 }).map((_, index) => (
-          <div key={`skeleton-${index}`} className="animate-pulse rounded-2xl border border-gray-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-            <div className="aspect-[4/3] w-full bg-gray-100 dark:bg-zinc-800" />
+          <div key={`skeleton-${index}`} className="animate-pulse rounded-2xl border border-border bg-card">
+            <div className="aspect-[4/3] w-full bg-muted" />
             <div className="space-y-3 p-4">
-              <div className="h-4 w-2/3 rounded bg-gray-100 dark:bg-zinc-800" />
+              <div className="h-4 w-2/3 rounded bg-muted" />
               <div className="grid grid-cols-2 gap-2">
-                <div className="h-12 rounded bg-gray-100 dark:bg-zinc-800" />
-                <div className="h-12 rounded bg-gray-100 dark:bg-zinc-800" />
-                <div className="h-12 rounded bg-gray-100 dark:bg-zinc-800" />
-                <div className="h-12 rounded bg-gray-100 dark:bg-zinc-800" />
+                <div className="h-12 rounded bg-muted" />
+                <div className="h-12 rounded bg-muted" />
+                <div className="h-12 rounded bg-muted" />
+                <div className="h-12 rounded bg-muted" />
               </div>
-              <div className="h-8 rounded bg-gray-100 dark:bg-zinc-800" />
+              <div className="h-8 rounded bg-muted" />
             </div>
           </div>
         ))}
         {!isLoading && items.length === 0 && (
-          <div className="col-span-full rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-6 py-10 text-center text-sm text-gray-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+          <div className="col-span-full rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-10 text-center text-sm text-muted-foreground">
             Nenhum produto do Bling encontrado.
           </div>
         )}
@@ -457,14 +457,14 @@ export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBli
             type="button"
             variant="outline"
             size="icon"
-            className="h-8 w-8 border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="h-8 w-8 border-input text-muted-foreground hover:bg-muted"
             disabled={page === 1}
             onClick={() => setPage(Math.max(1, page - 1))}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-600 dark:text-zinc-400">Página</span>
+            <span className="text-xs text-muted-foreground">Página</span>
             <Input
               type="number"
               min={1}
@@ -484,15 +484,15 @@ export const ProductsLoaded = ({ organizationId, onFill, onUpdate, registeredBli
                   setPage(totalPages);
                 }
               }}
-              className="h-8 w-16 text-center text-xs dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+              className="h-8 w-16 text-center text-xs border-input bg-background text-foreground"
             />
-            <span className="text-xs text-gray-600 dark:text-zinc-400">de {totalPages}</span>
+            <span className="text-xs text-muted-foreground">de {totalPages}</span>
           </div>
           <Button
             type="button"
             variant="outline"
             size="icon"
-            className="h-8 w-8 border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="h-8 w-8 border-input text-muted-foreground hover:bg-muted"
             disabled={page === totalPages}
             onClick={() => setPage(Math.min(totalPages, page + 1))}
           >

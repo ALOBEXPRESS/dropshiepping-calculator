@@ -121,7 +121,7 @@ export const ProductCard = ({
               <button
                 type="button"
                 aria-label="Variação anterior"
-                className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-1 text-gray-700 shadow-sm transition-opacity dark:bg-zinc-900/90 dark:text-zinc-200"
+                className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/90 p-1 text-gray-700 shadow-sm transition-opacity dark:bg-zinc-900/90 dark:text-zinc-200"
                 onClick={() => {
                   setImgVisible(false);
                   setTimeout(() => {
@@ -138,7 +138,7 @@ export const ProductCard = ({
               <button
                 type="button"
                 aria-label="Próxima variação"
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-1 text-gray-700 shadow-sm transition-opacity dark:bg-zinc-900/90 dark:text-zinc-200"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-background/90 p-1 text-gray-700 shadow-sm transition-opacity dark:bg-zinc-900/90 dark:text-zinc-200"
                 onClick={() => {
                   setImgVisible(false);
                   setTimeout(() => {
@@ -153,9 +153,9 @@ export const ProductCard = ({
           )}
         </div>
         <div className="absolute left-3 top-3">
-          <div className="rounded-full bg-white/90 px-2 py-1 shadow-sm dark:bg-zinc-900/90">
+          <div className="rounded-full bg-background/90 px-2 py-1 shadow-sm border border-border/50">
             {badgeErrors.bling ? (
-              <span className="text-[10px] font-semibold text-gray-700 dark:text-zinc-200">Bling</span>
+              <span className="text-[10px] font-semibold text-foreground">Bling</span>
             ) : (
               <img
                 src={blingLogo}
@@ -167,9 +167,9 @@ export const ProductCard = ({
           </div>
         </div>
         {currentProduct.supplierSku === 'ALOBEXPRESS_01' ? (
-          <div className="absolute right-3 top-3 rounded-full bg-white/90 px-2 py-1 shadow-sm dark:bg-zinc-900/90">
+          <div className="absolute right-3 top-3 rounded-full bg-background/90 px-2 py-1 shadow-sm dark:bg-zinc-900/90">
             {badgeErrors.ALOBEXPRESS_01 ? (
-              <span className="text-[10px] font-semibold text-gray-700 dark:text-zinc-200">ALOBEXPRESS</span>
+              <span className="text-[10px] font-semibold text-foreground">ALOBEXPRESS</span>
             ) : (
               <img
                 src={alobExpressLogo}
@@ -181,9 +181,9 @@ export const ProductCard = ({
           </div>
         ) : null}
         {currentProduct.supplierSku === 'ALOBFOR_DROP_01' ? (
-          <div className="absolute right-3 top-3 rounded-full bg-white/90 px-2 py-1 shadow-sm dark:bg-zinc-900/90">
+          <div className="absolute right-3 top-3 rounded-full bg-background/90 px-2 py-1 shadow-sm dark:bg-zinc-900/90">
             {badgeErrors.ALOBFOR_DROP_01 ? (
-              <span className="text-[10px] font-semibold text-gray-700 dark:text-zinc-200">Tyr</span>
+              <span className="text-[10px] font-semibold text-foreground">Tyr</span>
             ) : (
               <img
                 src={yeiziDropLogo}
@@ -195,9 +195,9 @@ export const ProductCard = ({
           </div>
         ) : null}
         {currentProduct.supplierSku === 'ALOBFOR_DROP_02' ? (
-          <div className="absolute right-3 top-3 rounded-full bg-white/90 p-0.5 shadow-sm dark:bg-zinc-900/90 overflow-hidden">
+          <div className="absolute right-3 top-3 rounded-full bg-background/90 p-0.5 shadow-sm dark:bg-zinc-900/90 overflow-hidden">
             {badgeErrors.ALOBFOR_DROP_02 ? (
-              <span className="text-[10px] font-semibold text-gray-700 dark:text-zinc-200 px-1">Dogama</span>
+              <span className="text-[10px] font-semibold text-foreground px-1">Dogama</span>
             ) : (
               <img
                 src={dogamaLogo}
@@ -211,44 +211,44 @@ export const ProductCard = ({
       </div>
       <div className="p-3">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="min-h-[40px] line-clamp-2 text-sm font-semibold text-gray-900 dark:text-zinc-100">
+          <h3 className="min-h-[40px] line-clamp-2 text-sm font-semibold text-foreground">
             {displayName}
           </h3>
         </div>
         {variationLabel ? (
-          <p className="mt-1 text-xs font-medium text-gray-600 dark:text-zinc-300">
+          <p className="mt-1 text-xs font-medium text-muted-foreground">
             {variationLabel}
           </p>
         ) : null}
 
         <div className="mt-3 grid min-w-0 grid-cols-2 gap-2 text-xs">
-          <div className="min-w-0 rounded-lg border border-gray-100 bg-gray-50 p-2 dark:border-zinc-800 dark:bg-zinc-800/60">
-            <p className="text-[10px] uppercase text-gray-500 dark:text-zinc-400">Preço</p>
-            <p className="truncate text-xs font-semibold text-gray-900 dark:text-zinc-100" title={salePriceText}>
+          <div className="min-w-0 rounded-lg border border-border bg-muted/40 p-2">
+            <p className="text-[10px] uppercase text-muted-foreground">Preço</p>
+            <p className="truncate text-xs font-semibold text-foreground tabular-nums" title={salePriceText}>
               {salePriceText}
             </p>
           </div>
-          <div className="min-w-0 rounded-lg border border-gray-100 bg-gray-50 p-2 dark:border-zinc-800 dark:bg-zinc-800/60">
-            <p className="text-[10px] uppercase text-gray-500 dark:text-zinc-400">Custo</p>
-            <p className="truncate text-xs font-semibold text-gray-900 dark:text-zinc-100" title={costPriceText}>
+          <div className="min-w-0 rounded-lg border border-border bg-muted/40 p-2">
+            <p className="text-[10px] uppercase text-muted-foreground">Custo</p>
+            <p className="truncate text-xs font-semibold text-foreground tabular-nums" title={costPriceText}>
               {costPriceText}
             </p>
           </div>
-          <div className="min-w-0 rounded-lg border border-gray-100 bg-gray-50 p-2 dark:border-zinc-800 dark:bg-zinc-800/60">
-            <p className="text-[10px] uppercase text-gray-500 dark:text-zinc-400">Vendas</p>
+          <div className="min-w-0 rounded-lg border border-border bg-muted/40 p-2">
+            <p className="text-[10px] uppercase text-muted-foreground">Vendas</p>
             <p className="truncate text-xs font-semibold text-emerald-600 dark:text-emerald-400" title={String(currentProduct.salesCount)}>
               {currentProduct.salesCount}
             </p>
           </div>
-          <div className="min-w-0 rounded-lg border border-gray-100 bg-gray-50 p-2 dark:border-zinc-800 dark:bg-zinc-800/60">
-            <p className="text-[10px] uppercase text-gray-500 dark:text-zinc-400">Estoque</p>
-            <p className="truncate text-xs font-semibold text-gray-900 dark:text-zinc-100" title={stockText}>
+          <div className="min-w-0 rounded-lg border border-border bg-muted/40 p-2">
+            <p className="text-[10px] uppercase text-muted-foreground">Estoque</p>
+            <p className="truncate text-xs font-semibold text-foreground tabular-nums" title={stockText}>
               {stockText}
             </p>
           </div>
-          <div className="min-w-0 col-span-2 rounded-lg border border-gray-100 bg-gray-50 p-2 dark:border-zinc-800 dark:bg-zinc-800/60 flex flex-col items-center text-center">
-            <p className="text-[10px] uppercase text-gray-500 dark:text-zinc-400">SKU</p>
-            <p className="truncate text-xs font-semibold text-gray-900 dark:text-zinc-100" title={skuText}>
+          <div className="min-w-0 col-span-2 rounded-lg border border-border bg-muted/40 p-2 flex flex-col items-center text-center">
+            <p className="text-[10px] uppercase text-muted-foreground">SKU</p>
+            <p className="truncate text-xs font-semibold text-foreground tabular-nums" title={skuText}>
               {skuText}
             </p>
           </div>

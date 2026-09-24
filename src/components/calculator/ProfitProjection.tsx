@@ -371,17 +371,17 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
   const marketingTitle = product.name ? `Marketing - ${product.name}` : 'Marketing';
 
   return (
-    <div ref={containerRef} className="h-full rounded-b-2xl rounded-t-none bg-[#FF3366] p-6 text-white shadow-lg">
+    <div ref={containerRef} className="h-full rounded-2xl border border-border bg-card p-6 text-foreground shadow-sm">
       <div className="flex items-center justify-between mb-6">
-        <span className="text-xs font-bold uppercase tracking-wider opacity-90">PROJEÇÃO DE LUCROS</span>
+        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">PROJEÇÃO DE LUCROS</span>
         <div className="flex items-center gap-2">
-           <button onClick={handlePrev} className="p-1 hover:bg-white/20 rounded-full transition-colors">
+           <button onClick={handlePrev} className="p-1 hover:bg-muted rounded-full transition-colors">
               <ChevronLeft className="w-4 h-4" />
            </button>
-           <span className="text-xs font-medium truncate max-w-[200px] bg-black/20 px-3 py-1 rounded-full">
+           <span className="text-xs font-medium truncate max-w-[200px] bg-muted border border-border px-3 py-1 rounded-full">
              {product.name}
            </span>
-           <button onClick={handleNext} className="p-1 hover:bg-white/20 rounded-full transition-colors">
+           <button onClick={handleNext} className="p-1 hover:bg-muted rounded-full transition-colors">
               <ChevronRight className="w-4 h-4" />
            </button>
         </div>
@@ -392,19 +392,19 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
       </h2>
       
       <div className="flex items-center gap-3 mb-6">
-        <div className="inline-flex items-center gap-2 rounded-lg bg-black/20 px-3 py-1.5 backdrop-blur-sm">
-          <span className="text-xs font-medium text-white/90">Vendas:</span>
-          <span className="text-sm font-bold text-white">{salesStats.totalSales}</span>
+        <div className="inline-flex items-center gap-2 rounded-lg bg-muted border border-border px-3 py-1.5 backdrop-blur-sm">
+          <span className="text-xs font-medium text-muted-foreground">Vendas:</span>
+          <span className="text-sm font-bold text-foreground tabular-nums">{salesStats.totalSales}</span>
         </div>
         {adsChannels.length > 0 ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-black/20 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white/90">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-muted border border-border px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-foreground">
             {adsChannels[0].label}
           </span>
         ) : null}
       </div>
 
       <div className="flex flex-col md:flex-row gap-6 mb-8">
-        <div className="relative w-full max-w-[250px] md:max-w-none mx-auto md:mx-0 md:w-1/3 aspect-square rounded-xl overflow-hidden bg-white flex-shrink-0 group">
+        <div className="relative w-full max-w-[250px] md:max-w-none mx-auto md:mx-0 md:w-1/3 aspect-square rounded-xl overflow-hidden bg-muted/40 border border-border flex-shrink-0 group">
           <img 
             src={displayImage} 
             alt={product.name} 
@@ -429,7 +429,7 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
         </div>
         
         <div className="flex-1 grid grid-cols-1 gap-4">
-             <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm flex items-center justify-between gap-4">
+             <div className="bg-muted/30 border border-border rounded-xl p-4 flex items-center justify-between gap-4">
                 <div>
                   <p className="text-xs font-bold opacity-70 mb-1 uppercase">{product.supplierName || 'FORNECEDOR'}</p>
                   <p className="text-xs font-medium uppercase">{product.accountHolder || 'N/A'} - {product.accountType || 'N/A'}</p>
@@ -444,22 +444,22 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
              </div>
              
              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-[#B91C1C] rounded-xl p-2 flex flex-col justify-center items-center text-center shadow-inner">
-                    <p className="text-[10px] uppercase font-bold opacity-70 mb-1 text-white">PREÇO DE VENDA</p>
-                    <p className="text-xl font-bold text-white">R$ {formatCompactCurrency(price)}</p>
+                <div className="bg-muted/40 border border-border rounded-xl p-2 flex flex-col justify-center items-center text-center">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">PREÇO DE VENDA</p>
+                    <p className="text-xl font-bold text-foreground tabular-nums">R$ {formatCompactCurrency(price)}</p>
                 </div>
                 
-                <div className="bg-[#B91C1C] rounded-xl p-2 flex flex-col justify-center items-center text-center shadow-inner">
-                    <p className="text-[10px] uppercase font-bold opacity-70 mb-1 text-white">{isOrganic ? 'TRÁFEGO ORGÂNICO' : 'TRÁFEGO PAGO'}</p>
-                    <p className="text-xl font-bold text-white">R$ {formatCompactCurrency(trafficCost)}</p>
+                <div className="bg-muted/40 border border-border rounded-xl p-2 flex flex-col justify-center items-center text-center">
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">{isOrganic ? 'TRÁFEGO ORGÂNICO' : 'TRÁFEGO PAGO'}</p>
+                    <p className="text-xl font-bold text-foreground tabular-nums">R$ {formatCompactCurrency(trafficCost)}</p>
                 </div>
 
-                <div className={`${estimatedProfitPerUnit < 3 ? 'bg-red-600' : estimatedProfitPerUnit < 8 ? 'bg-yellow-500' : estimatedProfitPerUnit < 13 ? 'bg-green-600' : 'bg-blue-600'} rounded-xl p-2 flex flex-col justify-center items-center text-center shadow-inner`}>
+                <div className={`${estimatedProfitPerUnit < 3 ? "bg-red-500/15 text-red-500 border-red-500/30" : estimatedProfitPerUnit < 8 ? "bg-amber-500/15 text-amber-500 border-amber-500/30" : "bg-emerald-500/15 text-emerald-500 border-emerald-500/30"} rounded-xl p-2 border flex flex-col justify-center items-center text-center`}>
                     <p className="text-[10px] uppercase font-bold opacity-70 mb-0.5">LUCRO ESTIMADO</p>
-                    <p className="text-lg font-bold text-white">R$ {formatCompactCurrency(estimatedProfitPerUnit)}</p>
+                    <p className="text-lg font-bold tabular-nums">R$ {formatCompactCurrency(estimatedProfitPerUnit)}</p>
                 </div>
                 
-                <div className="bg-white/10 rounded-xl p-2 flex flex-col justify-center items-center text-center shadow-inner">
+                <div className="bg-muted/40 border border-border rounded-xl p-2 flex flex-col justify-center items-center text-center">
                     <p className="text-[10px] uppercase font-bold opacity-70 mb-0.5">PREÇO DE COMPRA</p>
                     <p className="text-sm font-bold">R$ {formatCompactCurrency(cost)}</p>
                 </div>
@@ -469,26 +469,26 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
 
       {/* Estatísticas Reais de Vendas */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-          <p className="text-xs font-bold opacity-70 mb-2 uppercase text-white">Total de vendas</p>
-          <p className="text-2xl font-bold text-white">R$ {formatCompactCurrency(salesStats.totalRevenue)}</p>
-          <p className="text-xs opacity-70 mt-1 text-white">{salesStats.totalSales} {salesStats.totalSales === 1 ? 'pedido' : 'pedidos'}</p>
+        <div className="bg-muted/30 border border-border rounded-xl p-4">
+          <p className="text-xs font-bold text-muted-foreground mb-2 uppercase">Total de vendas</p>
+          <p className="text-2xl font-bold text-foreground tabular-nums">R$ {formatCompactCurrency(salesStats.totalRevenue)}</p>
+          <p className="text-xs text-muted-foreground mt-1">{salesStats.totalSales} {salesStats.totalSales === 1 ? 'pedido' : 'pedidos'}</p>
         </div>
-        <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-          <p className="text-xs font-bold opacity-70 mb-2 uppercase text-white">Total de lucro</p>
-          <p className="text-2xl font-bold text-white">R$ {formatCompactCurrency(displayProfit)}</p>
-          <p className="text-xs opacity-70 mt-1 text-white">Receita: R$ {formatCompactCurrency(salesStats.totalRevenue)}</p>
+        <div className="bg-muted/30 border border-border rounded-xl p-4">
+          <p className="text-xs font-bold text-muted-foreground mb-2 uppercase">Total de lucro</p>
+          <p className="text-2xl font-bold text-foreground tabular-nums">R$ {formatCompactCurrency(displayProfit)}</p>
+          <p className="text-xs text-muted-foreground mt-1">Receita: R$ {formatCompactCurrency(salesStats.totalRevenue)}</p>
         </div>
-        <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-          <p className="text-xs font-bold opacity-70 mb-2 uppercase text-white">Total de custo</p>
-          <p className="text-2xl font-bold text-white">R$ {formatCompactCurrency(displayCost)}</p>
-          <p className="text-xs opacity-70 mt-1 text-white">Custo real dos produtos vendidos</p>
+        <div className="bg-muted/30 border border-border rounded-xl p-4">
+          <p className="text-xs font-bold text-muted-foreground mb-2 uppercase">Total de custo</p>
+          <p className="text-2xl font-bold text-foreground tabular-nums">R$ {formatCompactCurrency(displayCost)}</p>
+          <p className="text-xs text-muted-foreground mt-1">Custo real dos produtos vendidos</p>
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
         {scenarios.map((scenario) => (
-          <div key={scenario.units} className="bg-white/10 rounded-xl p-3 text-center hover:bg-white/20 transition-colors cursor-default flex flex-col items-center justify-center">
+          <div key={scenario.units} className="bg-white/10 rounded-xl p-3 text-center hover:bg-muted transition-colors cursor-default flex flex-col items-center justify-center">
             <p className="text-[10px] font-bold uppercase opacity-70 mb-2 whitespace-nowrap">{scenario.label}</p>
             <div className="flex flex-col items-center leading-none">
                 <span className="text-xs font-bold opacity-80 mb-1">R$</span>
@@ -498,20 +498,20 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
         ))}
       </div>
 
-      <div className="mt-8 rounded-xl bg-[#CC2952] p-4">
-        <p className="text-xs uppercase font-semibold tracking-wide text-white mb-3">{marketingTitle}</p>
+      <div className="mt-8 rounded-xl border border-border bg-muted/20 p-4">
+        <p className="text-xs uppercase font-semibold tracking-wide text-foreground mb-3">{marketingTitle}</p>
         <div className="flex items-center justify-between mb-4">
           <button
             type="button"
             onClick={handleChannelPrev}
             disabled={!hasChannels || selectedChannels.length === 1}
-            className="p-1 rounded-full bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-40"
+            className="p-1 rounded-full bg-white/10 hover:bg-muted transition-colors disabled:opacity-40"
           >
             <ChevronLeft className="w-4 h-4 text-white" />
           </button>
           <div ref={channelBadgeRef} className="flex-1 flex justify-center">
             {activeChannel ? (
-              <span className="inline-flex items-center gap-2 rounded-full bg-black/20 px-3 py-1 text-xs font-semibold">
+              <span className="inline-flex items-center gap-2 rounded-full bg-muted border border-border px-3 py-1 text-xs font-semibold">
                 {activeChannel.icon ? (
                   <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90">
                     <svg viewBox="0 0 24 24" className="h-4 w-4" fill={`#${activeChannel.icon.hex}`} aria-hidden="true">
@@ -529,56 +529,56 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
             type="button"
             onClick={handleChannelNext}
             disabled={!hasChannels || selectedChannels.length === 1}
-            className="p-1 rounded-full bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-40"
+            className="p-1 rounded-full bg-white/10 hover:bg-muted transition-colors disabled:opacity-40"
           >
             <ChevronRight className="w-4 h-4 text-white" />
           </button>
         </div>
 
         {activeChannelKey === 'mercado_ads' && mercadoAdsEnabled ? (
-          <div className="rounded-xl bg-black p-4">
+          <div className="rounded-xl border border-border bg-card p-4">
             <p className="text-xs uppercase font-semibold tracking-wide text-white mb-3">Mercado Livre Ads</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-white/90">
-              <div>Ativo: <span className="font-semibold text-white">{product.mercadoAdsEnabled ? 'Sim' : 'Não'}</span></div>
-              <div>Modo de gestão: <span className="font-semibold text-white">{product.mercadoAdsManagementMode === 'personalizado' ? 'Personalizado' : 'Automático'}</span></div>
-              <div>Solução: <span className="font-semibold text-white">{product.mercadoAdsSolution === 'display_ads' ? 'Display Ads' : product.mercadoAdsSolution === 'brand_ads' ? 'Brand Ads' : 'Product Ads'}</span></div>
-              <div>Seleção: <span className="font-semibold text-white">{product.mercadoAdsSelection || '-'}</span></div>
-              <div>Orçamento diário: <span className="font-semibold text-white">R$ {formatCurrency(mercadoAdsDailyBudget || 0) || '0,00'}</span></div>
-              <div>CPC Médio: <span className="font-semibold text-white">R$ {formatCurrency(mercadoAdsCpc || 0) || '0,00'}</span></div>
-              <div>ACOS alvo: <span className="font-semibold text-white">{mercadoAdsAcosTarget ? `${mercadoAdsAcosTarget}%` : '-'}</span></div>
-              <div>Conversão estimada: <span className="font-semibold text-white">{mercadoAdsConversionRate ? `${mercadoAdsConversionRate}%` : '-'}</span></div>
-              <div>Vendas esperadas: <span className="font-semibold text-white">{mercadoAdsSalesQuantity || 0}</span></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-muted-foreground">
+              <div>Ativo: <span className="font-semibold text-foreground">{product.mercadoAdsEnabled ? 'Sim' : 'Não'}</span></div>
+              <div>Modo de gestão: <span className="font-semibold text-foreground">{product.mercadoAdsManagementMode === 'personalizado' ? 'Personalizado' : 'Automático'}</span></div>
+              <div>Solução: <span className="font-semibold text-foreground">{product.mercadoAdsSolution === 'display_ads' ? 'Display Ads' : product.mercadoAdsSolution === 'brand_ads' ? 'Brand Ads' : 'Product Ads'}</span></div>
+              <div>Seleção: <span className="font-semibold text-foreground">{product.mercadoAdsSelection || '-'}</span></div>
+              <div>Orçamento diário: <span className="font-semibold text-foreground">R$ {formatCurrency(mercadoAdsDailyBudget || 0) || '0,00'}</span></div>
+              <div>CPC Médio: <span className="font-semibold text-foreground">R$ {formatCurrency(mercadoAdsCpc || 0) || '0,00'}</span></div>
+              <div>ACOS alvo: <span className="font-semibold text-foreground">{mercadoAdsAcosTarget ? `${mercadoAdsAcosTarget}%` : '-'}</span></div>
+              <div>Conversão estimada: <span className="font-semibold text-foreground">{mercadoAdsConversionRate ? `${mercadoAdsConversionRate}%` : '-'}</span></div>
+              <div>Vendas esperadas: <span className="font-semibold text-foreground">{mercadoAdsSalesQuantity || 0}</span></div>
             </div>
           </div>
         ) : activeChannelKey === 'shopee_ads' && shopeeAdsEnabled ? (
-          <div className="rounded-xl bg-[#B3254C] p-4">
+          <div className="rounded-xl border border-border bg-card p-4">
             <p className="text-xs uppercase font-semibold tracking-wide text-white mb-3">Shopee Ads</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-white/90">
-              <div>Ativo: <span className="font-semibold text-white">{product.shopeeUseAds ? 'Sim' : 'Não'}</span></div>
-              <div>Tipo de anúncio: <span className="font-semibold text-white">{product.shopeeAdType || '-'}</span></div>
-              <div>Tipo de lance: <span className="font-semibold text-white">{product.shopeeBidType || '-'}</span></div>
-              <div>Orçamento total: <span className="font-semibold text-white">R$ {formatCurrency(shopeeTotalBudget || 0) || '0,00'}</span></div>
-              <div>Data inicial: <span className="font-semibold text-white">{formatDateToBr(product.shopeeStartDate) || '-'}</span></div>
-              <div>Data final: <span className="font-semibold text-white">{formatDateToBr(product.shopeeEndDate) || '-'}</span></div>
-              <div>Orçamento diário: <span className="font-semibold text-white">R$ {formatCurrency(shopeeDailyBudget || 0) || '0,00'}</span></div>
-              <div>CPC máximo: <span className="font-semibold text-white">R$ {formatCurrency(shopeeMaxCpc || 0) || '0,00'}</span></div>
-              <div className="sm:col-span-2">Palavras-chave: <span className="font-semibold text-white">{Array.isArray(product.shopeeKeywords) && product.shopeeKeywords.length > 0 ? product.shopeeKeywords.join(', ') : '-'}</span></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-muted-foreground">
+              <div>Ativo: <span className="font-semibold text-foreground">{product.shopeeUseAds ? 'Sim' : 'Não'}</span></div>
+              <div>Tipo de anúncio: <span className="font-semibold text-foreground">{product.shopeeAdType || '-'}</span></div>
+              <div>Tipo de lance: <span className="font-semibold text-foreground">{product.shopeeBidType || '-'}</span></div>
+              <div>Orçamento total: <span className="font-semibold text-foreground">R$ {formatCurrency(shopeeTotalBudget || 0) || '0,00'}</span></div>
+              <div>Data inicial: <span className="font-semibold text-foreground">{formatDateToBr(product.shopeeStartDate) || '-'}</span></div>
+              <div>Data final: <span className="font-semibold text-foreground">{formatDateToBr(product.shopeeEndDate) || '-'}</span></div>
+              <div>Orçamento diário: <span className="font-semibold text-foreground">R$ {formatCurrency(shopeeDailyBudget || 0) || '0,00'}</span></div>
+              <div>CPC máximo: <span className="font-semibold text-foreground">R$ {formatCurrency(shopeeMaxCpc || 0) || '0,00'}</span></div>
+              <div className="sm:col-span-2">Palavras-chave: <span className="font-semibold text-foreground">{Array.isArray(product.shopeeKeywords) && product.shopeeKeywords.length > 0 ? product.shopeeKeywords.join(', ') : '-'}</span></div>
             </div>
           </div>
         ) : activeChannelKey === 'tiktok_ads' && tiktokAdsEnabled ? (
-          <div className="rounded-xl bg-black p-4 border border-white/20">
+          <div className="rounded-xl border border-border bg-card p-4">
             <p className="text-xs uppercase font-semibold tracking-wide text-white mb-3">TikTok Ads</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-white/90">
-              <div>Ativo: <span className="font-semibold text-white">{product.tiktokAdsEnabled ? 'Sim' : 'Não'}</span></div>
-              <div>Formato: <span className="font-semibold text-white">{getTiktokAdFormatLabel(product.tiktokAdFormat)}</span></div>
-              <div>Objetivo: <span className="font-semibold text-white">{getTiktokObjectiveLabel(product.tiktokCampaignObjective)}</span></div>
-              <div>Público: <span className="font-semibold text-white">{product.tiktokAudience || '-'}</span></div>
-              <div>Orçamento diário: <span className="font-semibold text-white">R$ {formatCurrency(tiktokDailyBudget || 0) || '0,00'}</span></div>
-              <div>CPA Alvo: <span className="font-semibold text-white">R$ {formatCurrency(tiktokCPA || 0) || '0,00'}</span></div>
-              <div>CPM: <span className="font-semibold text-white">R$ {formatCurrency(tiktokCPM || 0) || '0,00'}</span></div>
-              <div>CTR: <span className="font-semibold text-white">{formatCurrency(tiktokCTR || 0) || '0,00'}%</span></div>
-              <div>CVR: <span className="font-semibold text-white">{formatCurrency(tiktokCVR || 0) || '0,00'}%</span></div>
-              <div>Vendas esperadas: <span className="font-semibold text-white">{product.tiktokAdsSalesQuantity || 0}</span></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-muted-foreground">
+              <div>Ativo: <span className="font-semibold text-foreground">{product.tiktokAdsEnabled ? 'Sim' : 'Não'}</span></div>
+              <div>Formato: <span className="font-semibold text-foreground">{getTiktokAdFormatLabel(product.tiktokAdFormat)}</span></div>
+              <div>Objetivo: <span className="font-semibold text-foreground">{getTiktokObjectiveLabel(product.tiktokCampaignObjective)}</span></div>
+              <div>Público: <span className="font-semibold text-foreground">{product.tiktokAudience || '-'}</span></div>
+              <div>Orçamento diário: <span className="font-semibold text-foreground">R$ {formatCurrency(tiktokDailyBudget || 0) || '0,00'}</span></div>
+              <div>CPA Alvo: <span className="font-semibold text-foreground">R$ {formatCurrency(tiktokCPA || 0) || '0,00'}</span></div>
+              <div>CPM: <span className="font-semibold text-foreground">R$ {formatCurrency(tiktokCPM || 0) || '0,00'}</span></div>
+              <div>CTR: <span className="font-semibold text-foreground">{formatCurrency(tiktokCTR || 0) || '0,00'}%</span></div>
+              <div>CVR: <span className="font-semibold text-foreground">{formatCurrency(tiktokCVR || 0) || '0,00'}%</span></div>
+              <div>Vendas esperadas: <span className="font-semibold text-foreground">{product.tiktokAdsSalesQuantity || 0}</span></div>
             </div>
           </div>
         ) : (
