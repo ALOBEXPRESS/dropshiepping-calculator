@@ -6,7 +6,6 @@
 
 import React, { useState, useRef } from 'react';
 import gsap from 'gsap';
-import { useGSAP } from '@gsap/react';
 import KPICard from '@/components/KPICard';
 import WeeklyConversionChart from '@/components/WeeklyConversionChart';
 import LeadStatusChart from '@/components/LeadStatusChart';
@@ -65,30 +64,45 @@ const Dashboard: React.FC = () => {
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useGSAP(() => {
-    if (!isLoading && data) {
-      gsap.fromTo(
-        '.dashboard-kpi-card',
-        { opacity: 0, y: 15, scale: 0.98 },
-        { opacity: 1, y: 0, scale: 1, duration: 0.45, stagger: 0.06, ease: 'power2.out' }
-      );
-    }
-  }, { scope: containerRef, dependencies: [isLoading, Boolean(data)] });
+  React.useEffect(() => {
+    if (!containerRef.current) return;
 
-  useGSAP(() => {
-    if (!chartsLoading && chartsData) {
+    const ctx = gsap.context(() => {
+      // Header entrance
       gsap.fromTo(
-        '.dashboard-chart-card',
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out' }
+        '.dashboard-header',
+        { opacity: 0, y: -12 },
+        { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }
       );
-    }
-  }, { scope: containerRef, dependencies: [chartsLoading, Boolean(chartsData)] });
+
+      // KPI cards entrance with bounce
+      const kpiCards = containerRef.current?.querySelectorAll('.dashboard-kpi-card');
+      if (kpiCards && kpiCards.length > 0) {
+        gsap.fromTo(
+          kpiCards,
+          { opacity: 0, y: 20, scale: 0.94 },
+          { opacity: 1, y: 0, scale: 1, duration: 0.5, stagger: 0.06, ease: 'back.out(1.15)', clearProps: 'transform' }
+        );
+      }
+
+      // Chart cards entrance
+      const chartCards = containerRef.current?.querySelectorAll('.dashboard-chart-card');
+      if (chartCards && chartCards.length > 0) {
+        gsap.fromTo(
+          chartCards,
+          { opacity: 0, y: 24, scale: 0.98 },
+          { opacity: 1, y: 0, scale: 1, duration: 0.55, delay: 0.15, stagger: 0.1, ease: 'power2.out', clearProps: 'transform' }
+        );
+      }
+    }, containerRef);
+
+    return () => ctx.revert();
+  }, [isLoading, chartsLoading, period, selectedMarketplace]);
 
   return (
     <div ref={containerRef} className="space-y-4">
       {/* Page header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="dashboard-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">Dashboard</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
