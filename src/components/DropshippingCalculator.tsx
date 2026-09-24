@@ -2552,11 +2552,11 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
           {/* Header */}
         <div className="grid md:grid-cols-2 gap-4 items-center mb-8 header-animate">
           <div className="flex justify-center md:justify-start">
-             <Link to="/dashboard" className="cursor-pointer">
+             <Link to="/dashboard" className="cursor-pointer transition-all hover:opacity-85 hover:scale-[1.02] active:scale-[0.98] inline-block">
                <img 
                   src={logo} 
                   alt="Alob Express" 
-                  className="h-12 w-auto object-contain glitch-hover" 
+                  className="h-12 w-auto object-contain" 
                />
              </Link>
           </div>

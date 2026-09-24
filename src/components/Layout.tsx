@@ -133,7 +133,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center justify-between mb-6 h-10 px-1">
             {sidebarOpen && (
               <>
-                <Link to="/dashboard" className="cursor-pointer transition-opacity hover:opacity-80">
+                <Link
+                  to="/dashboard"
+                  onClick={() => {
+                    navigate('/dashboard');
+                    if (location.pathname === '/dashboard') {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
+                  className="cursor-pointer transition-all hover:opacity-85 hover:scale-[1.02] active:scale-[0.98] inline-flex items-center"
+                  aria-label="Ir para a Dashboard"
+                >
                   <img src={logo} alt="Alob Express" className="h-9 object-contain" />
                 </Link>
                 <button

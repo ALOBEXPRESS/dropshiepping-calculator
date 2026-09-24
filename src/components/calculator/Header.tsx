@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import logo from '../../imgs/Logonome-alobexpress.png';
 
@@ -7,35 +7,14 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ onLogoClick }) => {
-  const [isAnimating, setIsAnimating] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handleMouseEnter = () => {
-    if (isAnimating) return;
-    
-    setIsAnimating(true);
-    
-    // Animation lasts 0.3s, set cooldown to 1s
-    timeoutRef.current = setTimeout(() => {
-      setIsAnimating(false);
-    }, 1000);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, []);
-
   return (
     <div className="grid md:grid-cols-2 gap-4 items-center mb-8 header-animate">
       <div className="flex justify-center md:justify-start">
-         <Link to="/dashboard" onClick={onLogoClick} className="cursor-pointer">
+         <Link to="/dashboard" onClick={onLogoClick} className="cursor-pointer transition-all hover:opacity-85 hover:scale-[1.02] active:scale-[0.98] inline-block">
            <img 
               src={logo} 
               alt="Alob Express" 
-              className={`h-12 object-contain ${isAnimating ? 'glitch-active' : ''}`} 
-              onMouseEnter={handleMouseEnter}
+              className="h-12 object-contain" 
            />
          </Link>
       </div>
