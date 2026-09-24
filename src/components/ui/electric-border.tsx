@@ -24,6 +24,8 @@ interface ElectricBorderProps {
   speed?: number;
   chaos?: number;
   borderRadius?: number;
+  /** @deprecated accepted for backward compatibility but has no visual effect */
+  thickness?: number;
   className?: string;
   style?: CSSProperties;
 }
@@ -34,6 +36,8 @@ const ElectricBorder: React.FC<ElectricBorderProps> = ({
   speed = 1,
   chaos = 0.12,
   borderRadius = 16,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  thickness: _thickness,
   className,
   style
 }) => {
