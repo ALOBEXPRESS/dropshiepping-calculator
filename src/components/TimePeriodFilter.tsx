@@ -157,7 +157,7 @@ export const TimePeriodFilter: React.FC<TimePeriodFilterProps> = ({
 
   return (
     <div
-      className="w-full mb-6"
+      className="w-fit"
       role="group"
       aria-label="Filtro de período de tempo"
     >
@@ -174,7 +174,7 @@ export const TimePeriodFilter: React.FC<TimePeriodFilterProps> = ({
                 onKeyDown={(e) => handleKeyDown(e, option.id)}
                 disabled={disabled}
                 className={cn(
-                  'px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap',
+                  'px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 whitespace-nowrap',
                   'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
 
                   // Active

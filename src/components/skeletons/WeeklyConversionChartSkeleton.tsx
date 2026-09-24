@@ -23,7 +23,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export const WeeklyConversionChartSkeleton: React.FC = () => {
   return (
     <Card 
-      className="bg-[#1c1c1c] border-none rounded-2xl shadow-xl h-full flex flex-col"
+      className="bg-card border border-border rounded-xl shadow-sm h-full flex flex-col"
       role="status"
       aria-label="Loading conversion chart"
     >
@@ -32,17 +32,17 @@ export const WeeklyConversionChartSkeleton: React.FC = () => {
       </CardHeader>
       
       <CardContent className="flex-1">
-        <div className="w-full h-[400px] flex items-end justify-around gap-4 px-8 pb-12">
+        <div className="w-full h-[260px] flex items-end justify-around gap-4 px-8 pb-12">
           {/* Simulated bar chart with 5 bars of varying heights */}
           {[60, 75, 85, 70, 65].map((height, index) => (
             <div key={index} className="flex-1 flex flex-col items-center gap-2">
               {/* Bar */}
               <Skeleton 
-                className="w-full bg-[#2a2a2a]" 
+                className="w-full bg-muted" 
                 style={{ height: `${height}%` }}
               />
               {/* X-axis label */}
-              <Skeleton className="h-3 w-12 bg-[#2a2a2a]" />
+              <Skeleton className="h-3 w-12 bg-muted" />
             </div>
           ))}
         </div>
@@ -50,22 +50,22 @@ export const WeeklyConversionChartSkeleton: React.FC = () => {
         {/* Legend placeholders */}
         <div className="flex justify-center gap-6 mt-4">
           <div className="flex items-center gap-2">
-            <Skeleton className="h-3 w-3 rounded bg-[#2a2a2a]" />
-            <Skeleton className="h-3 w-24 bg-[#2a2a2a]" />
+            <Skeleton className="h-3 w-3 rounded bg-muted" />
+            <Skeleton className="h-3 w-24 bg-muted" />
           </div>
           <div className="flex items-center gap-2">
-            <Skeleton className="h-3 w-3 rounded bg-[#2a2a2a]" />
-            <Skeleton className="h-3 w-24 bg-[#2a2a2a]" />
+            <Skeleton className="h-3 w-3 rounded bg-muted" />
+            <Skeleton className="h-3 w-24 bg-muted" />
           </div>
           <div className="flex items-center gap-2">
-            <Skeleton className="h-3 w-3 rounded bg-[#2a2a2a]" />
-            <Skeleton className="h-3 w-28 bg-[#2a2a2a]" />
+            <Skeleton className="h-3 w-3 rounded bg-muted" />
+            <Skeleton className="h-3 w-28 bg-muted" />
           </div>
         </div>
       </CardContent>
 
       <CardFooter>
-        <Skeleton className="h-4 w-80 bg-[#2a2a2a]" />
+        <Skeleton className="h-4 w-80 bg-muted" />
       </CardFooter>
     </Card>
   );

@@ -97,9 +97,9 @@ export const LeadStatusChart = React.memo<LeadStatusChartProps>(({ data, recentS
   // Early return AFTER hooks
   if (!data || data.length === 0) {
     return (
-      <Card className="bg-[#1c1c1c] rounded-2xl border-none shadow-xl h-full flex flex-col">
-        <CardHeader>
-          <CardTitle className="text-white text-xl font-semibold">Leads</CardTitle>
+      <Card className="bg-card border border-border rounded-xl shadow-sm h-full flex flex-col">
+        <CardHeader className="p-4 pb-2">
+          <CardTitle className="text-foreground text-base font-bold">Leads</CardTitle>
         </CardHeader>
         <CardContent className="flex-1 flex items-center justify-center">
           <p className="text-[#a3a3a3] text-center">Nenhum dado de status de leads disponível</p>
@@ -109,16 +109,16 @@ export const LeadStatusChart = React.memo<LeadStatusChartProps>(({ data, recentS
   }
 
   return (
-    <Card className="bg-[#1c1c1c] rounded-2xl border-none shadow-xl h-full flex flex-col">
-      <CardHeader>
-        <CardTitle className="text-white text-xl font-semibold">Leads</CardTitle>
+    <Card className="bg-card border border-border rounded-xl shadow-sm h-full flex flex-col">
+      <CardHeader className="p-4 pb-2">
+        <CardTitle className="text-foreground text-base font-bold">Leads</CardTitle>
       </CardHeader>
       
-      <CardContent className="pb-4 flex-1">
+      <CardContent className="p-4 pt-0 flex-1">
         <div className="flex flex-col lg:flex-row items-center gap-8 h-full">
           {/* Bubble Visualization */}
           <div 
-            className="w-full lg:w-2/3 h-[300px]"
+            className="w-full lg:w-2/3 h-[220px]"
             role="img"
             aria-label={`Distribuição de status de leads: ${sanitizedData.map(d => `${d.label} ${d.count} leads (${d.percentage}%)`).join(', ')}`}
           >
@@ -164,8 +164,8 @@ export const LeadStatusChart = React.memo<LeadStatusChartProps>(({ data, recentS
             {sanitizedData.map((item) => (
               <div key={item.status} className="space-y-2" role="listitem">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-300">{item.label}</span>
-                  <span className="text-sm text-gray-400" aria-label={`${item.count} leads, ${item.percentage} percent`}>
+                  <span className="text-xs text-foreground">{item.label}</span>
+                  <span className="text-xs text-muted-foreground" aria-label={`${item.count} leads, ${item.percentage} percent`}>
                     {item.count} ({item.percentage}%)
                   </span>
                 </div>
@@ -191,7 +191,7 @@ export const LeadStatusChart = React.memo<LeadStatusChartProps>(({ data, recentS
         </div>
       </CardContent>
 
-      <CardFooter className="flex items-center gap-2 text-sm border-t border-gray-800 pt-4" style={{ color: '#a3a3a3' }}>
+      <CardFooter className="flex items-center gap-2 text-xs border-t border-border/60 p-4 pt-2 text-muted-foreground">
         <Avatar className="h-6 w-6" aria-hidden="true">
           <AvatarFallback className="bg-[#7C3AED] text-white text-xs">
             +{recentSignups ?? 0}

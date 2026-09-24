@@ -22,28 +22,28 @@ import { Skeleton } from '@/components/ui/skeleton';
 export const KPICardSkeleton: React.FC = () => {
   return (
     <Card 
-      className="bg-[#1c1c1c] border-none rounded-2xl p-6 shadow-xl"
+      className="bg-card border border-border rounded-xl p-3.5 sm:p-4 shadow-sm"
       role="status"
       aria-label="Loading KPI data"
     >
       <CardHeader className="p-0 mb-4">
         <div className="flex items-center justify-between">
           {/* Title skeleton */}
-          <Skeleton className="h-4 w-32 bg-[#2a2a2a]" />
+          <Skeleton className="h-4 w-32 bg-muted" />
           {/* Icon skeleton */}
-          <Skeleton className="h-5 w-5 rounded bg-[#2a2a2a]" />
+          <Skeleton className="h-5 w-5 rounded bg-muted" />
         </div>
       </CardHeader>
       
       <CardContent className="p-0">
         <div className="space-y-2">
           {/* Large value skeleton */}
-          <Skeleton className="h-9 w-40 bg-[#2a2a2a]" />
+          <Skeleton className="h-9 w-40 bg-muted" />
           
           {/* Trend indicator skeleton */}
           <div className="flex items-center gap-1">
-            <Skeleton className="h-4 w-4 rounded bg-[#2a2a2a]" />
-            <Skeleton className="h-4 w-16 bg-[#2a2a2a]" />
+            <Skeleton className="h-4 w-4 rounded bg-muted" />
+            <Skeleton className="h-4 w-16 bg-muted" />
           </div>
         </div>
       </CardContent>

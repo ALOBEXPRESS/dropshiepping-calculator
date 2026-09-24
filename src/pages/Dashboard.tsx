@@ -62,12 +62,12 @@ const Dashboard: React.FC = () => {
   const recentSignups = leadsData.reduce((s, l) => s + l.count, 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">Dashboard</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
             Visão geral do desempenho da sua operação
           </p>
         </div>
@@ -89,7 +89,7 @@ const Dashboard: React.FC = () => {
 
       {/* KPI Cards */}
       <section
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3"
         role="region"
         aria-label="Métricas KPI"
       >
@@ -114,7 +114,7 @@ const Dashboard: React.FC = () => {
 
       {/* Charts */}
       <section
-        className="grid grid-cols-1 lg:grid-cols-2 gap-4"
+        className="grid grid-cols-1 lg:grid-cols-2 gap-3"
         role="region"
         aria-label="Gráficos de Analytics"
       >

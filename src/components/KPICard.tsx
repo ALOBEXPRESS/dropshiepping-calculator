@@ -179,7 +179,7 @@ export const KPICard: React.FC<KPICardProps> = ({
     <Card
       className={cn(
         'relative overflow-hidden group',
-        'bg-card border border-border rounded-xl p-5',
+        'bg-card border border-border rounded-xl p-3.5 sm:p-4',
         'shadow-sm hover:shadow-md transition-all duration-200',
         'focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
       )}
@@ -215,7 +215,7 @@ export const KPICard: React.FC<KPICardProps> = ({
           {/* Trend badge */}
           <div
             className={cn(
-              'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold',
+              'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] font-semibold',
               trend.direction === 'up' && 'bg-success-muted text-success',
               trend.direction === 'down' && 'bg-danger-muted text-danger',
               trend.direction === 'neutral' && 'bg-muted text-muted-foreground',

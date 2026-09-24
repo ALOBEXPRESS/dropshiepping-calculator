@@ -50,9 +50,11 @@ const MarketplaceFilter: React.FC<MarketplaceFilterProps> = ({
           appearance-none
           bg-card 
           text-foreground 
-          px-4 
-          py-2 
-          pr-10
+          px-3
+py-1.5
+pr-8
+text-xs
+h-8
           rounded-lg 
           border 
           border-input

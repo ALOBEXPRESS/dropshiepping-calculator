@@ -149,9 +149,9 @@ export const WeeklyConversionChart = React.memo(({ data, mostProfitableDay }: We
   // Handle missing or empty data gracefully — early return AFTER hooks
   if (!data || data.length === 0) {
     return (
-      <Card className="bg-[#1c1c1c] border-none rounded-2xl shadow-xl h-full flex flex-col">
-        <CardHeader>
-          <CardTitle className="text-white text-xl font-semibold">Conversion</CardTitle>
+      <Card className="bg-card border border-border rounded-xl shadow-sm h-full flex flex-col">
+        <CardHeader className="p-4 pb-2">
+          <CardTitle className="text-foreground text-base font-bold">Conversion</CardTitle>
         </CardHeader>
         <CardContent className="flex-1 flex items-center justify-center">
           <p className="text-[#a3a3a3] text-center">Nenhum dado de conversão disponível</p>
@@ -161,16 +161,16 @@ export const WeeklyConversionChart = React.memo(({ data, mostProfitableDay }: We
   }
 
   return (
-    <Card className="bg-[#1c1c1c] border-none rounded-2xl shadow-xl h-full flex flex-col">
-      <CardHeader>
-        <CardTitle className="text-white text-xl font-semibold">Conversão</CardTitle>
+    <Card className="bg-card border border-border rounded-xl shadow-sm h-full flex flex-col">
+      <CardHeader className="p-4 pb-2">
+        <CardTitle className="text-foreground text-base font-bold">Conversão</CardTitle>
       </CardHeader>
       
       <CardContent className="flex-1" role="img" aria-label="Gráfico de barras de conversão semanal mostrando taxas, receita e lucro líquido ao longo do tempo">
-        <ResponsiveContainer width="100%" height={400} debounce={300}>
+        <ResponsiveContainer width="100%" height={260} debounce={300}>
           <BarChart
             data={sanitizedData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            margin={{ top: 10, right: 15, left: 10, bottom: 0 }}
           >
             <HatchPattern />
             <XAxis
@@ -232,8 +232,8 @@ export const WeeklyConversionChart = React.memo(({ data, mostProfitableDay }: We
         </ResponsiveContainer>
       </CardContent>
 
-      <CardFooter>
-        <p className="text-[#a3a3a3] text-sm" role="status">
+      <CardFooter className="p-4 pt-2 border-t border-border/60">
+        <p className="text-muted-foreground text-xs" role="status">
           {mostProfitableDay || 'N/A'} é o dia mais lucrativo deste mês. Bom trabalho!
         </p>
       </CardFooter>
