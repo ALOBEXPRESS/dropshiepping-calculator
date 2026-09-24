@@ -74,10 +74,10 @@ const AnimatedInput = ({
     <div className="space-y-1">
       <label 
         htmlFor={inputId}
-        className="block text-sm font-medium text-gray-700"
+        className="block text-sm font-medium text-foreground"
       >
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="text-destructive ml-1">*</span>}
       </label>
       
       <motion.div
@@ -90,7 +90,7 @@ const AnimatedInput = ({
         {icon && (
           <div className="
             absolute left-3 top-1/2 -translate-y-1/2
-            text-gray-400 group-focus-within:text-[#fe2c55]
+            text-muted-foreground group-focus-within:text-brand
             transition-colors duration-200
           ">
             {icon}
@@ -104,12 +104,10 @@ const AnimatedInput = ({
             icon && 'pl-11',
             rightIcon && 'pr-11',
             'border-2',
-            error ? 'border-red-500' : 'border-gray-200',
-            'focus:border-[#fe2c55] focus:ring-4 focus:ring-[#fe2c55]/10',
+            error ? 'border-destructive' : 'border-input',
+            'focus:border-brand focus:ring-4 focus:ring-brand/10',
             'focus:outline-none',
-            'bg-transparent',
-            'text-gray-900',
-            'placeholder:text-gray-400',
+            'bg-background/80 text-foreground placeholder:text-muted-foreground',
             'transition-all duration-200',
             className
           )}
@@ -131,7 +129,7 @@ const AnimatedInput = ({
           initial={{ opacity: 0, y: -5 }}
           animate={{ opacity: 1, y: 0 }}
           id={`${inputId}-error`}
-          className="text-sm text-red-500 flex items-center gap-1"
+          className="text-sm text-destructive flex items-center gap-1"
         >
           <AlertCircle className="w-4 h-4" />
           {error}
@@ -277,7 +275,7 @@ export default function LoginPremium() {
         className="flex-1 flex items-center justify-center p-8 relative overflow-hidden"
         style={{
           background: 'linear-gradient(270deg, rgba(0, 0, 0, 0.75) 4%, rgba(255, 255, 255, 0) 71%, rgba(23, 23, 23, 0) 100%)',
-          backgroundColor: '#000000'
+          backgroundColor: 'hsl(var(--background))'
         }}
       >
         {/* Lightning atrás do formulário - diagonal completa direita para esquerda (refletido) */}
@@ -306,7 +304,7 @@ export default function LoginPremium() {
           glowColor="37, 244, 238"
           disableAnimations={false}
         >
-        <div className="w-full max-w-2xl bg-white rounded-2xl p-10 shadow-2xl">
+        <div className="w-full max-w-2xl bg-card/90 backdrop-blur-xl border border-border rounded-2xl p-10 shadow-2xl">
           {/* Logo Simples sem Efeitos */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -323,35 +321,35 @@ export default function LoginPremium() {
             </div>
           </motion.div>
           
-          <p className="text-gray-600 mb-8">
+          <p className="text-muted-foreground mb-8">
             Escolha como você quer entrar na sua conta
           </p>
 
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100">
+            <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted">
               <TabsTrigger 
                 value="login" 
-                className="relative data-[state=active]:bg-[#fe2c55] data-[state=active]:text-white"
+                className="relative data-[state=active]:bg-brand data-[state=active]:text-brand-foreground"
               >
                 Login
                 {activeTab === 'login' && (
                   <motion.div
                     layoutId="activeTab"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#fe2c55]"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand"
                     transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                   />
                 )}
               </TabsTrigger>
               <TabsTrigger 
                 value="request" 
-                className="relative data-[state=active]:bg-[#fe2c55] data-[state=active]:text-white"
+                className="relative data-[state=active]:bg-brand data-[state=active]:text-brand-foreground"
               >
                 Solicitar Acesso
                 {activeTab === 'request' && (
                   <motion.div
                     layoutId="activeTab"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#fe2c55]"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand"
                     transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                   />
                 )}
@@ -395,7 +393,7 @@ export default function LoginPremium() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="text-gray-400 hover:text-[#fe2c55] transition-colors"
+                      className="text-muted-foreground hover:text-brand transition-colors"
                       aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                     >
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -410,9 +408,9 @@ export default function LoginPremium() {
                   className="
                     relative w-full overflow-hidden
                     min-h-[44px] px-6 py-3 rounded-lg
-                    bg-gradient-to-r from-[#fe2c55] to-pink-500
-                    text-white font-semibold
-                    hover:shadow-lg hover:shadow-[#fe2c55]/50
+                    bg-gradient-to-r from-brand to-rose-500
+                    text-brand-foreground font-semibold
+                    hover:shadow-lg hover:shadow-brand/50
                     disabled:opacity-50 disabled:cursor-not-allowed
                     transition-all duration-300
                     flex items-center justify-center gap-2
@@ -459,9 +457,9 @@ export default function LoginPremium() {
                   className="
                     relative w-full overflow-hidden
                     min-h-[44px] px-6 py-3 rounded-lg
-                    bg-gradient-to-r from-[#fe2c55] to-pink-500
-                    text-white font-semibold
-                    hover:shadow-lg hover:shadow-[#fe2c55]/50
+                    bg-gradient-to-r from-brand to-rose-500
+                    text-brand-foreground font-semibold
+                    hover:shadow-lg hover:shadow-brand/50
                     disabled:opacity-50 disabled:cursor-not-allowed
                     transition-all duration-300
                     flex items-center justify-center gap-2
@@ -498,7 +496,7 @@ export default function LoginPremium() {
         className="hidden lg:block flex-1 relative overflow-hidden h-screen"
         style={{
           background: 'linear-gradient(270deg, rgba(0, 0, 0, 0.75) 4%, rgba(255, 255, 255, 0) 71%, rgba(23, 23, 23, 0) 100%)',
-          backgroundColor: '#000000'
+          backgroundColor: 'hsl(var(--background))'
         }}
       >
         {/* Gradiente oval da esquerda para direita - esquerda escura, direita transparente */}
