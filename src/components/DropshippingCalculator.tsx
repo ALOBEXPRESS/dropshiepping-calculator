@@ -1,7 +1,7 @@
 'use client';
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import type { MouseEvent } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Calculator, TrendingUp, Package, DollarSign, AlertCircle, Plus, Trash2, ChevronLeft, ChevronRight, Loader2, Store, Search, RefreshCcw, Pencil } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
@@ -2552,12 +2552,13 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
           {/* Header */}
         <div className="grid md:grid-cols-2 gap-4 items-center mb-8 header-animate">
           <div className="flex justify-center md:justify-start">
-             <img 
-                src={logo} 
-                alt="Alob Express" 
-                className="h-12 w-auto object-contain glitch-hover cursor-pointer" 
-                onClick={() => window.location.reload()} 
-             />
+             <Link to="/dashboard" className="cursor-pointer">
+               <img 
+                  src={logo} 
+                  alt="Alob Express" 
+                  className="h-12 w-auto object-contain glitch-hover" 
+               />
+             </Link>
           </div>
           <div className="text-center md:text-right">
              <p className="text-gray-300 text-xl font-medium font-iceland">Calculadora de Precificação Dropshipping Nacional <span className="text-sm text-gray-500 font-normal">v3.0.0</span></p>

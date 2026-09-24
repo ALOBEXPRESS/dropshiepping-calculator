@@ -133,7 +133,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center justify-between mb-6 h-10 px-1">
             {sidebarOpen && (
               <>
-                <img src={logo} alt="Alob Express" className="h-9 object-contain" />
+                <Link to="/dashboard" className="cursor-pointer transition-opacity hover:opacity-80">
+                  <img src={logo} alt="Alob Express" className="h-9 object-contain" />
+                </Link>
                 <button
                   onClick={() => setSidebarOpen(false)}
                   className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
