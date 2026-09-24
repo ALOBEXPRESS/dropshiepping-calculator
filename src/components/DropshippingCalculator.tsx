@@ -3426,20 +3426,10 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
             </CardContent>
           </Card>
 
-          <div className="relative">
-            <div className={`transition-all duration-300 ${showProfitOverlay ? 'scale-[0.95] opacity-60 blur-[1px] max-h-[280px] overflow-hidden' : ''}`}>
-              <ProductsLoaded
-                organizationId={organizationId}
-                onFill={handleFillFromBlingProduct}
-                onUpdate={handleUpdateFromBlingProduct}
-                registeredBlingIds={registeredBlingIds}
-                registeredSkus={registeredProductSkus}
-              />
-            </div>
-
-            {showProfitOverlay ? (
-            <div className="absolute inset-0 z-20 profit-overlay-animate overflow-y-auto">
-              <ResultsPanel
+          <div className="space-y-6">
+            {showProfitOverlay && (
+              <div className="profit-overlay-animate">
+                <ResultsPanel
                 calculations={calculations}
                 marketplace={marketplace}
                 productName={productName}
@@ -4084,7 +4074,17 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 )}
               </ResultsPanel>
             </div>
-          ) : null}
+            )}
+
+            <div>
+              <ProductsLoaded
+                organizationId={organizationId}
+                onFill={handleFillFromBlingProduct}
+                onUpdate={handleUpdateFromBlingProduct}
+                registeredBlingIds={registeredBlingIds}
+                registeredSkus={registeredProductSkus}
+              />
+            </div>
           </div>
 
         </div>
