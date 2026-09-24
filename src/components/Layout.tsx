@@ -32,25 +32,34 @@ import logo from '@/assets/logo.png';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useUser } from '@/contexts/UserContext';
 
-// ── Route → nav style mapping ────────────────────────────────────────────────
-const NAV_ROUTES = {
-  ecommerce: [
-    { to: '/dashboard', label: 'Dashboard',   accent: 'text-[hsl(var(--chart-2))]',  dot: 'bg-[hsl(var(--chart-2))]',  dotMuted: 'bg-[hsl(var(--chart-2)/0.4)]',  active: 'bg-[hsl(var(--chart-2)/0.08)] text-[hsl(var(--chart-2))] font-semibold' },
-    { to: '/',          label: 'Calculadora', accent: 'text-[hsl(var(--chart-2))]',  dot: 'bg-[hsl(var(--chart-2))]',  dotMuted: 'bg-[hsl(var(--chart-2)/0.4)]',  active: 'bg-[hsl(var(--chart-2)/0.08)] text-[hsl(var(--chart-2))] font-semibold' },
-    { to: '/produtos',  label: 'Produtos',    accent: 'text-[hsl(var(--brand))]',    dot: 'bg-[hsl(var(--brand))]',    dotMuted: 'bg-[hsl(var(--brand)/0.4)]',    active: 'bg-[hsl(var(--brand)/0.08)] text-[hsl(var(--brand))] font-semibold' },
-    { to: '/leads',     label: 'Leads',       accent: 'text-[hsl(var(--chart-5))]',  dot: 'bg-[hsl(var(--chart-5))]',  dotMuted: 'bg-[hsl(var(--chart-5)/0.4)]',  active: 'bg-[hsl(var(--chart-5)/0.08)] text-[hsl(var(--chart-5))] font-semibold' },
-  ],
-  painel: [
-    { to: '/vendas',    label: 'Vendas',      accent: 'text-[hsl(var(--success))]',  dot: 'bg-[hsl(var(--success))]',  dotMuted: 'bg-[hsl(var(--success)/0.4)]',  active: 'bg-[hsl(var(--success)/0.08)] text-[hsl(var(--success))] font-semibold' },
-    { to: '/campanhas', label: 'Campanhas',   accent: 'text-[hsl(var(--warning))]',  dot: 'bg-[hsl(var(--warning))]',  dotMuted: 'bg-[hsl(var(--warning)/0.4)]',  active: 'bg-[hsl(var(--warning)/0.08)] text-[hsl(var(--warning))] font-semibold' },
-    { to: '/repasse',   label: 'Repasse',     accent: 'text-[hsl(var(--chart-6))]',  dot: 'bg-[hsl(var(--chart-6))]',  dotMuted: 'bg-[hsl(var(--chart-6)/0.4)]',  active: 'bg-[hsl(var(--chart-6)/0.08)] text-[hsl(var(--chart-6))] font-semibold' },
-  ],
-} as const;
+export interface NavRouteItem {
+  to: string;
+  label: string;
+  adminOnly?: boolean;
+  accent: string;
+  dot: string;
+  dotMuted: string;
+  active: string;
+}
 
-type RouteItem = typeof NAV_ROUTES.ecommerce[number] | typeof NAV_ROUTES.painel[number];
+const NAV_ROUTES: {
+  ecommerce: NavRouteItem[];
+  painel: NavRouteItem[];
+} = {
+  ecommerce: [
+    { to: '/dashboard', label: 'Dashboard',   adminOnly: false, accent: 'text-[hsl(var(--chart-2))]',  dot: 'bg-[hsl(var(--chart-2))]',  dotMuted: 'bg-[hsl(var(--chart-2)/0.4)]',  active: 'bg-[hsl(var(--chart-2)/0.08)] text-[hsl(var(--chart-2))] font-semibold' },
+    { to: '/',          label: 'Calculadora', adminOnly: false, accent: 'text-[hsl(var(--chart-2))]',  dot: 'bg-[hsl(var(--chart-2))]',  dotMuted: 'bg-[hsl(var(--chart-2)/0.4)]',  active: 'bg-[hsl(var(--chart-2)/0.08)] text-[hsl(var(--chart-2))] font-semibold' },
+    { to: '/produtos',  label: 'Produtos',    adminOnly: false, accent: 'text-[hsl(var(--brand))]',    dot: 'bg-[hsl(var(--brand))]',    dotMuted: 'bg-[hsl(var(--brand)/0.4)]',    active: 'bg-[hsl(var(--brand)/0.08)] text-[hsl(var(--brand))] font-semibold' },
+    { to: '/leads',     label: 'Leads',       adminOnly: false, accent: 'text-[hsl(var(--chart-5))]',  dot: 'bg-[hsl(var(--chart-5))]',  dotMuted: 'bg-[hsl(var(--chart-5)/0.4)]',  active: 'bg-[hsl(var(--chart-5)/0.08)] text-[hsl(var(--chart-5))] font-semibold' },
+    { to: '/vendas',    label: 'Vendas',      adminOnly: true,  accent: 'text-[hsl(var(--success))]',  dot: 'bg-[hsl(var(--success))]',  dotMuted: 'bg-[hsl(var(--success)/0.4)]',  active: 'bg-[hsl(var(--success)/0.08)] text-[hsl(var(--success))] font-semibold' },
+    { to: '/campanhas', label: 'Campanhas',   adminOnly: true,  accent: 'text-[hsl(var(--warning))]',  dot: 'bg-[hsl(var(--warning))]',  dotMuted: 'bg-[hsl(var(--warning)/0.4)]',  active: 'bg-[hsl(var(--warning)/0.08)] text-[hsl(var(--warning))] font-semibold' },
+    { to: '/repasse',   label: 'Repasse',     adminOnly: true,  accent: 'text-[hsl(var(--chart-6))]',  dot: 'bg-[hsl(var(--chart-6))]',  dotMuted: 'bg-[hsl(var(--chart-6)/0.4)]',  active: 'bg-[hsl(var(--chart-6)/0.08)] text-[hsl(var(--chart-6))] font-semibold' },
+  ],
+  painel: [],
+};
 
 // ── Reusable NavLink ──────────────────────────────────────────────────────────
-function NavLink({ route, pathname, e2eSearch }: { route: RouteItem; pathname: string; e2eSearch: string }) {
+function NavLink({ route, pathname, e2eSearch }: { route: NavRouteItem; pathname: string; e2eSearch: string }) {
   const isActive = route.to === '/' ? pathname === '/' : pathname.startsWith(route.to);
   return (
     <li>
@@ -166,29 +175,35 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${ecommerceOpen ? 'grid-rows-[1fr] opacity-100 mt-0.5' : 'grid-rows-[0fr] opacity-0 pointer-events-none'}`}>
                   <div className="overflow-hidden">
                     <ul className="space-y-0.5 pl-3 pb-1">
-                      {NAV_ROUTES.ecommerce.map(r => (
-                        <NavLink key={r.to} route={r} pathname={location.pathname} e2eSearch={e2eSearch} />
-                      ))}
+                      {NAV_ROUTES.ecommerce
+                        .filter(r => !r.adminOnly || isAdmin)
+                        .map(r => (
+                          <NavLink key={r.to} route={r} pathname={location.pathname} e2eSearch={e2eSearch} />
+                        ))}
                     </ul>
                   </div>
                 </div>
               </li>
 
-              {/* Painel group (admin only) */}
-              {isAdmin && (
-                <li className="pt-1">
-                  <GroupHeader icon={LayoutDashboard} label="Painel" open={painelOpen} onToggle={() => setPainelOpen(v => !v)} />
-                  <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${painelOpen ? 'grid-rows-[1fr] opacity-100 mt-0.5' : 'grid-rows-[0fr] opacity-0 pointer-events-none'}`}>
-                    <div className="overflow-hidden">
-                      <ul className="space-y-0.5 pl-3 pb-1">
-                        {NAV_ROUTES.painel.map(r => (
+              {/* Painel group */}
+              <li className="pt-1">
+                <GroupHeader icon={LayoutDashboard} label="Painel" open={painelOpen} onToggle={() => setPainelOpen(v => !v)} />
+                <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${painelOpen ? 'grid-rows-[1fr] opacity-100 mt-0.5' : 'grid-rows-[0fr] opacity-0 pointer-events-none'}`}>
+                  <div className="overflow-hidden">
+                    <ul className="space-y-0.5 pl-3 pb-1">
+                      {NAV_ROUTES.painel.length === 0 ? (
+                        <li className="px-3 py-1.5 text-xs text-muted-foreground/60 italic">
+                          Em breve
+                        </li>
+                      ) : (
+                        NAV_ROUTES.painel.map(r => (
                           <NavLink key={r.to} route={r} pathname={location.pathname} e2eSearch={e2eSearch} />
-                        ))}
-                      </ul>
-                    </div>
+                        ))
+                      )}
+                    </ul>
                   </div>
-                </li>
-              )}
+                </div>
+              </li>
             </ul>
           </nav>
         </div>
