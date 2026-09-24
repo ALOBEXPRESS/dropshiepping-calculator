@@ -1,0 +1,5 @@
+# code-review-graph ignore file
+# Ignore all docs except knowledge-graph
+docs/*
+!docs/knowledge-graph/
+!docs/knowledge-graph/**

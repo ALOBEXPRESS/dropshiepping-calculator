@@ -65,6 +65,10 @@ coverage/
 .nyc_output/
 test-results/
 tests/
+test/
+src/test/
+src/tests/
+__tests__/
 playwright-report/
 *.spec.ts.snap
 
@@ -73,7 +77,6 @@ playwright-report/
 # ============================================
 package-lock.json
 yarn.lock
-__tests__
 .playwright-mcp/
 # ============================================
 # EDITOR & IDE
@@ -107,8 +110,9 @@ desktop.ini
 # N8N Workflows (contain hardcoded secrets)
 src/hooks/n8n/
 
-# Test files — E2E specs are now tracked (needed for redesign safety net)
-# src/test/  ← UNBLOCKED for redesign-ui branch
+# Test files
+src/test/
+src/tests/
 
 # Documentation files (keep local only)
 .agents/
@@ -124,6 +128,7 @@ task-10-verification.md
 ORGANIZACAO_DOCS_COMPLETA.md
 dashboard-snapshot.md
 test-screenshots/
+screenshots/
 
 # Playwright MCP folder
 .playwright-mcp/
@@ -138,8 +143,10 @@ scripts/
 .claude/
 tools/
 
-# Documentation — docs/ tracked for audit and phase docs
-# docs/  ← UNBLOCKED for redesign-ui branch
+# Documentation — ignore all except knowledge-graph
+docs/*
+!docs/knowledge-graph/
+!docs/knowledge-graph/**
 
 # Scripts (contain sensitive operations)
 python-scripts/
