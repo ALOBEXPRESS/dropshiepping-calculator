@@ -166,13 +166,13 @@ export class DashboardService {
       affiliate_commission_rate?: number;
     }
 
-    const mktList = (mktsRes.data ?? []) as DbMarketplace[];
+    const mktList = (mktsRes.data ?? []) as unknown as DbMarketplace[];
     const mktMap = new Map(mktList.map(m => [m.id, m]));
     const mktByName = new Map(mktList.map(m => [m.name.toLowerCase().replace(/\s+/g, ''), m]));
     const mktCostMap = new Map((mktCostsRes.data ?? []).map(c => [c.order_id, Number(c.marketing_cost ?? 0)]));
 
     return (ordersRes.data ?? []).map((order) => {
-      const joinedMp = order.marketplaces as DbMarketplace | null;
+      const joinedMp = order.marketplaces as unknown as DbMarketplace | null;
       const mappedMp = order.marketplace_id ? mktMap.get(order.marketplace_id) : undefined;
       const rawMpName = joinedMp?.name || mappedMp?.name || '';
       const normalizedMp = rawMpName.toLowerCase().replace(/\s+/g, '');

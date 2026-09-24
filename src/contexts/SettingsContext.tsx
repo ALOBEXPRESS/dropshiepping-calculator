@@ -62,7 +62,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       // 1. Try to find an organization for this user
       let orgId = null;
-      const currentUid = user?.id ?? explicitUserId ?? null;
+      const currentUid = user?.id ?? null;
       if (currentUid) {
         currentUserIdRef.current = currentUid;
       }
@@ -149,7 +149,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
         if (newUserId && (newUserId !== currentUserIdRef.current || !organizationId)) {
           currentUserIdRef.current = newUserId;
-          fetchSettings(newUserId);
+          fetchSettings();
         }
       } else if (event === 'SIGNED_OUT') {
         currentUserIdRef.current = null;
