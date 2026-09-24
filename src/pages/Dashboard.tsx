@@ -26,17 +26,14 @@ const Dashboard: React.FC = () => {
 
   const { organizationId } = useSettings();
 
-  // Marketplace list for filter dropdown
   const { marketplaces, isLoading: isLoadingMarketplaces } = useMarketplaces();
 
-  // KPI cards
   const { data, isLoading, isError, error, refetch } = useDashboardData(
     organizationId,
     period,
     selectedMarketplace
   );
 
-  // Charts
   const {
     data: chartsData,
     isLoading: isLoadingCharts,
@@ -62,16 +59,20 @@ const Dashboard: React.FC = () => {
   const conversionData = chartsData?.conversions ?? [];
   const leadsData = chartsData?.leads ?? [];
   const mostProfitableDay = chartsData?.mostProfitableDay ?? '—';
-
-  // Recent signups = total orders in the leads categories
   const recentSignups = leadsData.reduce((s, l) => s + l.count, 0);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 p-4 sm:p-6">
-      <main className="max-w-7xl mx-auto space-y-6">
-
+    <div className="space-y-6">
+      {/* Page header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-foreground">Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Visão geral do desempenho da sua operação
+          </p>
+        </div>
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
           <TimePeriodFilter
             selectedPeriod={period}
             onPeriodChange={setPeriod}
@@ -84,63 +85,62 @@ const Dashboard: React.FC = () => {
             disabled={isLoading || isLoadingMarketplaces}
           />
         </div>
+      </div>
 
-        {/* KPI Cards */}
-        <section
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6"
-          role="region"
-          aria-label="Métricas KPI"
-        >
-          {isLoading ? (
-            <>
-              <KPICardSkeleton />
-              <KPICardSkeleton />
-              <KPICardSkeleton />
-              <KPICardSkeleton />
-              <KPICardSkeleton />
-            </>
-          ) : (
-            <>
-              <KPICard {...kpiProps!.revenue} />
-              <KPICard {...kpiProps!.fees} />
-              <KPICard {...kpiProps!.profit} />
-              <KPICard {...kpiProps!.products} />
-              <KPICard {...kpiProps!.customers} />
-            </>
-          )}
-        </section>
+      {/* KPI Cards */}
+      <section
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"
+        role="region"
+        aria-label="Métricas KPI"
+      >
+        {isLoading ? (
+          <>
+            <KPICardSkeleton />
+            <KPICardSkeleton />
+            <KPICardSkeleton />
+            <KPICardSkeleton />
+            <KPICardSkeleton />
+          </>
+        ) : (
+          <>
+            <KPICard {...kpiProps!.revenue} />
+            <KPICard {...kpiProps!.fees} />
+            <KPICard {...kpiProps!.profit} />
+            <KPICard {...kpiProps!.products} />
+            <KPICard {...kpiProps!.customers} />
+          </>
+        )}
+      </section>
 
-        {/* Charts */}
-        <section
-          className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6"
-          role="region"
-          aria-label="Gráficos de Analytics"
-        >
-          {chartsLoading ? (
-            <>
-              <WeeklyConversionChartSkeleton />
-              <LeadStatusChartSkeleton />
-            </>
-          ) : isErrorCharts ? (
-            <>
-              <WeeklyConversionChart data={[]} mostProfitableDay="—" />
-              <LeadStatusChart data={[]} recentSignups={0} />
-            </>
-          ) : (
-            <>
-              <WeeklyConversionChart
-                data={conversionData}
-                mostProfitableDay={mostProfitableDay}
-              />
-              <LeadStatusChart
-                data={leadsData}
-                recentSignups={recentSignups}
-              />
-            </>
-          )}
-        </section>
-
-      </main>
+      {/* Charts */}
+      <section
+        className="grid grid-cols-1 lg:grid-cols-2 gap-4"
+        role="region"
+        aria-label="Gráficos de Analytics"
+      >
+        {chartsLoading ? (
+          <>
+            <WeeklyConversionChartSkeleton />
+            <LeadStatusChartSkeleton />
+          </>
+        ) : isErrorCharts ? (
+          <>
+            <WeeklyConversionChart data={[]} mostProfitableDay="—" />
+            <LeadStatusChart data={[]} recentSignups={0} />
+          </>
+        ) : (
+          <>
+            <WeeklyConversionChart
+              data={conversionData}
+              mostProfitableDay={mostProfitableDay}
+            />
+            <LeadStatusChart
+              data={leadsData}
+              recentSignups={recentSignups}
+            />
+          </>
+        )}
+      </section>
     </div>
   );
 };

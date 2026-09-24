@@ -161,12 +161,11 @@ export const TimePeriodFilter: React.FC<TimePeriodFilterProps> = ({
       role="group"
       aria-label="Filtro de período de tempo"
     >
-      {/* Container with horizontal scroll on mobile */}
       <div className="overflow-x-auto scrollbar-hide">
-        <div className="flex gap-2 min-w-max md:min-w-0 md:justify-start">
+        <div className="flex gap-1.5 min-w-max md:min-w-0 md:justify-start p-1 bg-muted/50 rounded-xl w-fit">
           {periodOptions.map((option) => {
             const isActive = selectedPeriod === option.id;
-            
+
             return (
               <button
                 key={option.id}
@@ -175,18 +174,16 @@ export const TimePeriodFilter: React.FC<TimePeriodFilterProps> = ({
                 onKeyDown={(e) => handleKeyDown(e, option.id)}
                 disabled={disabled}
                 className={cn(
-                  // Base styles
-                  'px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-200',
-                  'focus:outline-none focus:ring-2 focus:ring-[#fe2c55] focus:ring-offset-2 focus:ring-offset-[#0f0f0f]',
-                  'whitespace-nowrap',
-                  
-                  // Active state
-                  isActive && !disabled && 'bg-[#fe2c55] text-white shadow-lg',
-                  
-                  // Inactive state
-                  !isActive && !disabled && 'bg-transparent text-[#a3a3a3] hover:bg-[#1c1c1c] hover:text-white',
-                  
-                  // Disabled state
+                  'px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap',
+                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+
+                  // Active
+                  isActive && !disabled && 'bg-card text-foreground shadow-sm font-semibold',
+
+                  // Inactive
+                  !isActive && !disabled && 'text-muted-foreground hover:text-foreground hover:bg-card/60',
+
+                  // Disabled
                   disabled && 'opacity-50 cursor-not-allowed'
                 )}
                 aria-pressed={isActive}
@@ -199,17 +196,6 @@ export const TimePeriodFilter: React.FC<TimePeriodFilterProps> = ({
           })}
         </div>
       </div>
-
-      {/* Custom scrollbar styles (hidden on mobile) */}
-      <style>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
     </div>
   );
 };

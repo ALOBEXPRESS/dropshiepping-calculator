@@ -143,11 +143,11 @@ const getTrendIcon = (direction: 'up' | 'down' | 'neutral') => {
 const getTrendColor = (direction: 'up' | 'down' | 'neutral'): string => {
   switch (direction) {
     case 'up':
-      return 'text-[#10b981]'; // Green
+      return 'text-success';
     case 'down':
-      return 'text-[#ef4444]'; // Red
+      return 'text-danger';
     case 'neutral':
-      return 'text-[#a3a3a3]'; // Gray
+      return 'text-muted-foreground';
   }
 };
 
@@ -176,44 +176,56 @@ export const KPICard: React.FC<KPICardProps> = ({
   const trendPercentage = trend.percentage ?? 0;
 
   return (
-    <Card 
-      className="bg-[#1c1c1c] border-none rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-shadow duration-200 focus-within:ring-2 focus-within:ring-[#FF4D00] focus-within:ring-offset-2 focus-within:ring-offset-[#0f0f0f]"
+    <Card
+      className={cn(
+        'relative overflow-hidden group',
+        'bg-card border border-border rounded-xl p-5',
+        'shadow-sm hover:shadow-md transition-all duration-200',
+        'focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
+      )}
       role="article"
       aria-label={`${title}: ${formattedValue}, trend ${trendSign}${trendPercentage}%`}
     >
-      <CardHeader className="p-0 mb-4">
+      {/* Subtle top accent line */}
+      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[hsl(var(--brand)/0.6)] via-[hsl(var(--chart-2)/0.4)] to-transparent rounded-t-xl" aria-hidden="true" />
+
+      <CardHeader className="p-0 mb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium text-[#a3a3a3] uppercase tracking-wide">
+          <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             {title}
           </CardTitle>
           {icon && (
-            <div className="text-[#a3a3a3]" aria-hidden="true">
+            <div className="text-muted-foreground group-hover:text-brand transition-colors" aria-hidden="true">
               {icon}
             </div>
           )}
         </div>
       </CardHeader>
-      
+
       <CardContent className="p-0">
-        <div className="space-y-2">
-          {/* Large value display */}
-          <p className="text-3xl font-bold text-white leading-none" aria-label={`Value: ${formattedValue}`}>
+        <div className="space-y-1.5">
+          {/* Value */}
+          <p
+            className="text-2xl font-bold leading-none tabular-nums text-foreground"
+            aria-label={`Value: ${formattedValue}`}
+          >
             {formattedValue}
           </p>
-          
-          {/* Trend indicator */}
-          <div 
+
+          {/* Trend badge */}
+          <div
             className={cn(
-              "flex items-center gap-1 text-sm font-medium",
+              'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold',
+              trend.direction === 'up' && 'bg-success-muted text-success',
+              trend.direction === 'down' && 'bg-danger-muted text-danger',
+              trend.direction === 'neutral' && 'bg-muted text-muted-foreground',
               trendColor
             )}
             role="status"
             aria-label={`Trend: ${trend.direction} ${trendPercentage} percent`}
           >
             <span aria-hidden="true">{trendIcon}</span>
-            <span>
-              {trendSign}{Math.abs(trendPercentage)}%
-            </span>
+            <span>{trendSign}{Math.abs(trendPercentage)}%</span>
           </div>
         </div>
       </CardContent>
