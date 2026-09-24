@@ -371,7 +371,7 @@ export function BulkEditModal({ open, onClose, products, onSave }: BulkEditModal
             type="button"
             disabled={selectedCount === 0 || isSaving}
             onClick={handleSave}
-            className="bg-[#fe2c55] hover:bg-[#e5194a] text-white"
+            className="bg-brand hover:bg-brand/90 text-brand-foreground font-semibold"
           >
             {isSaving ? 'Salvando...' : `Aplicar em ${selectedCount} produto${selectedCount !== 1 ? 's' : ''}`}
           </Button>

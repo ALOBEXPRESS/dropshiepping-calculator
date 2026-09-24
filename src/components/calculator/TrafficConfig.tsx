@@ -248,19 +248,19 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
   return (
     <>
        {/* Seletor de Tráfego: Pago vs Orgânico */}
-        <div className="flex items-center space-x-2 bg-purple-50 p-3 rounded-lg border border-purple-100 mb-4 animate-fadeIn dark:bg-[#FF3366]">
+        <div className="flex items-center space-x-2 bg-muted/40 p-3 rounded-xl border border-border mb-4 animate-fadeIn">
           <div className="grid grid-cols-2 gap-2 w-full">
               <Button
                   variant={trafficMode === 'paid' ? 'default' : 'outline'}
                   onClick={() => handleTrafficModeChange('paid')}
-                  className={trafficMode === 'paid' ? 'bg-green-600 hover:bg-green-700 text-white dark:bg-[#1D4ED8] dark:hover:bg-[#1D4ED8] dark:text-white' : ''}
+                  className={trafficMode === 'paid' ? 'bg-success hover:bg-success/90 text-success-foreground font-semibold shadow-sm' : ''}
               >
                   Tráfego Pago
               </Button>
               <Button
                   variant={trafficMode === 'organic' ? 'default' : 'outline'}
                   onClick={() => handleTrafficModeChange('organic')}
-                  className={trafficMode === 'organic' ? 'bg-[#fe2c55] hover:bg-[#d91c42] text-white dark:bg-[#1D4ED8] dark:hover:bg-[#1D4ED8] dark:text-white' : ''}
+                  className={trafficMode === 'organic' ? 'bg-brand hover:bg-brand/90 text-brand-foreground font-semibold shadow-sm' : ''}
               >
                   Tráfego Orgânico
               </Button>
@@ -285,7 +285,7 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                     size="sm"
                     variant={paidTrafficType === 'percent' ? 'default' : 'outline'}
                     onClick={() => setPaidTrafficType('percent')}
-                    className={`h-6 text-xs ${paidTrafficType === 'percent' ? 'bg-blue-600 dark:bg-[#1D4ED8] dark:hover:bg-[#1D4ED8] dark:text-white' : ''}`}
+                    className={`h-6 text-xs ${paidTrafficType === 'percent' ? 'bg-brand hover:bg-brand/90 text-brand-foreground font-semibold' : ''}`}
                 >
                     %
                 </Button>
@@ -293,7 +293,7 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                     size="sm"
                     variant={paidTrafficType === 'fixed' ? 'default' : 'outline'}
                     onClick={() => setPaidTrafficType('fixed')}
-                    className={`h-6 text-xs ${paidTrafficType === 'fixed' ? 'bg-blue-600 dark:bg-[#1D4ED8] dark:hover:bg-[#1D4ED8] dark:text-white' : ''}`}
+                    className={`h-6 text-xs ${paidTrafficType === 'fixed' ? 'bg-brand hover:bg-brand/90 text-brand-foreground font-semibold' : ''}`}
                 >
                     R$
                 </Button>
@@ -421,7 +421,7 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
            <CollapsibleSection
                title="Configuração de Tráfego Orgânico"
                icon={<TrendingUp className="w-4 h-4 text-blue-600" />}
-               className="bg-green-50 border border-green-100 dark:bg-[#FF3366]"
+               className="bg-muted/40 border border-border rounded-xl p-3"
            >
                <div className="space-y-4">
                    <div className="flex gap-2 mb-2 flex-wrap">
@@ -429,7 +429,7 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                            size="sm"
                            variant={organicSubMode === 'manual' ? 'default' : 'outline'}
                            onClick={() => setOrganicSubMode('manual')}
-                           className={`flex-1 text-xs ${organicSubMode === 'manual' ? 'bg-green-600 dark:bg-[#1D4ED8] dark:hover:bg-[#1D4ED8] dark:text-white' : ''}`}
+                           className={`flex-1 text-xs ${organicSubMode === 'manual' ? 'bg-success hover:bg-success/90 text-success-foreground font-semibold' : ''}`}
                        >
                            Forma Manual (MindVideo + n8n)
                        </Button>
@@ -437,7 +437,7 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                            size="sm"
                            variant={organicSubMode === 'automated' ? 'default' : 'outline'}
                            onClick={() => setOrganicSubMode('automated')}
-                           className={`flex-1 text-xs whitespace-normal h-auto min-h-[32px] py-1 ${organicSubMode === 'automated' ? 'bg-blue-600 dark:bg-[#1D4ED8] dark:hover:bg-[#1D4ED8] dark:text-white' : ''}`}
+                           className={`flex-1 text-xs whitespace-normal h-auto min-h-[32px] py-1 ${organicSubMode === 'automated' ? 'bg-brand hover:bg-brand/90 text-brand-foreground font-semibold' : ''}`}
                        >
                            Forma Automatizada (Kie.ai + n8n)
                        </Button>
@@ -664,7 +664,7 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                                size="sm"
                                variant={organicApi === 'gemini' ? 'default' : 'outline'}
                                onClick={() => setOrganicApi('gemini')}
-                               className={`flex-1 text-xs ${organicApi === 'gemini' ? 'bg-indigo-600 dark:bg-[#1D4ED8] dark:hover:bg-[#1D4ED8] dark:text-white' : ''}`}
+                               className={`flex-1 text-xs ${organicApi === 'gemini' ? 'bg-primary text-primary-foreground font-semibold' : ''}`}
                            >
                                Gemini (Grátis)
                            </Button>
@@ -672,7 +672,7 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                                size="sm"
                                variant={organicApi === 'chatgpt' ? 'default' : 'outline'}
                                onClick={() => setOrganicApi('chatgpt')}
-                               className={`flex-1 text-xs ${organicApi === 'chatgpt' ? 'bg-[#fe2c55] text-white hover:bg-[#d91c42] dark:bg-[#1D4ED8] dark:hover:bg-[#1D4ED8] dark:text-white' : ''}`}
+                               className={`flex-1 text-xs ${organicApi === 'chatgpt' ? 'bg-brand text-brand-foreground font-semibold' : ''}`}
                            >
                                ChatGPT (Pago)
                            </Button>
@@ -961,7 +961,7 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                                             size="sm"
                                             variant={videoGenerationLlm === 'veo3' ? 'default' : 'outline'}
                                             onClick={() => setVideoGenerationLlm?.('veo3')}
-                                            className={`flex-1 text-xs ${videoGenerationLlm === 'veo3' ? 'bg-[#fe2c55] hover:bg-[#d91c42] text-white dark:bg-[#1D4ED8] dark:hover:bg-[#1D4ED8] dark:text-white' : ''}`}
+                                            className={`flex-1 text-xs ${videoGenerationLlm === 'veo3' ? 'bg-brand hover:bg-brand/90 text-brand-foreground font-semibold shadow-sm' : ''}`}
                                         >
                                             Veo3
                                         </Button>
@@ -969,7 +969,7 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                                             size="sm"
                                             variant={videoGenerationLlm === 'grok' ? 'default' : 'outline'}
                                             onClick={() => setVideoGenerationLlm?.('grok')}
-                                            className={`flex-1 text-xs ${videoGenerationLlm === 'grok' ? 'bg-[#fe2c55] hover:bg-[#d91c42] text-white dark:bg-[#1D4ED8] dark:hover:bg-[#1D4ED8] dark:text-white' : ''}`}
+                                            className={`flex-1 text-xs ${videoGenerationLlm === 'grok' ? 'bg-brand hover:bg-brand/90 text-brand-foreground font-semibold shadow-sm' : ''}`}
                                         >
                                             Grok
                                         </Button>
@@ -977,7 +977,7 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                                             size="sm"
                                             variant={videoGenerationLlm === 'sora2' ? 'default' : 'outline'}
                                             onClick={() => setVideoGenerationLlm?.('sora2')}
-                                            className={`flex-1 text-xs ${videoGenerationLlm === 'sora2' ? 'bg-[#fe2c55] hover:bg-[#d91c42] text-white dark:bg-[#1D4ED8] dark:hover:bg-[#1D4ED8] dark:text-white' : ''}`}
+                                            className={`flex-1 text-xs ${videoGenerationLlm === 'sora2' ? 'bg-brand hover:bg-brand/90 text-brand-foreground font-semibold shadow-sm' : ''}`}
                                         >
                                             Sora2
                                         </Button>
@@ -985,7 +985,7 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                                             size="sm"
                                             variant={videoGenerationLlm === 'wan2' ? 'default' : 'outline'}
                                             onClick={() => setVideoGenerationLlm?.('wan2')}
-                                            className={`flex-1 text-xs ${videoGenerationLlm === 'wan2' ? 'bg-[#fe2c55] hover:bg-[#d91c42] text-white dark:bg-[#1D4ED8] dark:hover:bg-[#1D4ED8] dark:text-white' : ''}`}
+                                            className={`flex-1 text-xs ${videoGenerationLlm === 'wan2' ? 'bg-brand hover:bg-brand/90 text-brand-foreground font-semibold shadow-sm' : ''}`}
                                         >
                                             Wan 2
                                         </Button>
@@ -995,7 +995,7 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                                             size="sm"
                                             variant={videoGenerationLlm === 'copia' ? 'default' : 'outline'}
                                             onClick={() => setVideoGenerationLlm?.('copia')}
-                                            className={`flex-1 text-xs ${videoGenerationLlm === 'copia' ? 'bg-[#fe2c55] hover:bg-[#d91c42] text-white dark:bg-[#1D4ED8] dark:hover:bg-[#1D4ED8] dark:text-white' : ''}`}
+                                            className={`flex-1 text-xs ${videoGenerationLlm === 'copia' ? 'bg-brand hover:bg-brand/90 text-brand-foreground font-semibold shadow-sm' : ''}`}
                                         >
                                             Cópia
                                         </Button>
@@ -1003,7 +1003,7 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                                             size="sm"
                                             variant={videoGenerationLlm === 'kling' ? 'default' : 'outline'}
                                             onClick={() => setVideoGenerationLlm?.('kling')}
-                                            className={`flex-1 text-xs ${videoGenerationLlm === 'kling' ? 'bg-[#fe2c55] hover:bg-[#d91c42] text-white dark:bg-[#1D4ED8] dark:hover:bg-[#1D4ED8] dark:text-white' : ''}`}
+                                            className={`flex-1 text-xs ${videoGenerationLlm === 'kling' ? 'bg-brand hover:bg-brand/90 text-brand-foreground font-semibold shadow-sm' : ''}`}
                                         >
                                             Kling
                                         </Button>
@@ -1011,7 +1011,7 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                                             size="sm"
                                             variant={videoGenerationLlm === 'runway' ? 'default' : 'outline'}
                                             onClick={() => setVideoGenerationLlm?.('runway')}
-                                            className={`flex-1 text-xs ${videoGenerationLlm === 'runway' ? 'bg-[#fe2c55] hover:bg-[#d91c42] text-white dark:bg-[#1D4ED8] dark:hover:bg-[#1D4ED8] dark:text-white' : ''}`}
+                                            className={`flex-1 text-xs ${videoGenerationLlm === 'runway' ? 'bg-brand hover:bg-brand/90 text-brand-foreground font-semibold shadow-sm' : ''}`}
                                         >
                                             Runway
                                         </Button>
@@ -1019,7 +1019,7 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                                             size="sm"
                                             variant={videoGenerationLlm === 'luma' ? 'default' : 'outline'}
                                             onClick={() => setVideoGenerationLlm?.('luma')}
-                                            className={`flex-1 text-xs ${videoGenerationLlm === 'luma' ? 'bg-[#fe2c55] hover:bg-[#d91c42] text-white dark:bg-[#1D4ED8] dark:hover:bg-[#1D4ED8] dark:text-white' : ''}`}
+                                            className={`flex-1 text-xs ${videoGenerationLlm === 'luma' ? 'bg-brand hover:bg-brand/90 text-brand-foreground font-semibold shadow-sm' : ''}`}
                                         >
                                             Luma
                                         </Button>
@@ -1027,7 +1027,7 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                                             size="sm"
                                             variant={videoGenerationLlm === 'pika25' ? 'default' : 'outline'}
                                             onClick={() => setVideoGenerationLlm?.('pika25')}
-                                            className={`flex-1 text-xs ${videoGenerationLlm === 'pika25' ? 'bg-[#fe2c55] hover:bg-[#d91c42] text-white dark:bg-[#1D4ED8] dark:hover:bg-[#1D4ED8] dark:text-white' : ''}`}
+                                            className={`flex-1 text-xs ${videoGenerationLlm === 'pika25' ? 'bg-brand hover:bg-brand/90 text-brand-foreground font-semibold shadow-sm' : ''}`}
                                         >
                                             Pika 2.5
                                         </Button>
@@ -1035,7 +1035,7 @@ export const TrafficConfig: React.FC<TrafficConfigProps> = ({
                                             size="sm"
                                             variant={videoGenerationLlm === 'seedance' ? 'default' : 'outline'}
                                             onClick={() => setVideoGenerationLlm?.('seedance')}
-                                            className={`flex-1 text-xs ${videoGenerationLlm === 'seedance' ? 'bg-[#fe2c55] hover:bg-[#d91c42] text-white dark:bg-[#1D4ED8] dark:hover:bg-[#1D4ED8] dark:text-white' : ''}`}
+                                            className={`flex-1 text-xs ${videoGenerationLlm === 'seedance' ? 'bg-brand hover:bg-brand/90 text-brand-foreground font-semibold shadow-sm' : ''}`}
                                         >
                                             Seedance
                                         </Button>

@@ -81,7 +81,7 @@ export const VariationsManager: React.FC<VariationsManagerProps> = ({
               className="text-xs"
             />
           </div>
-          <Button onClick={addVariation} size="sm" className="w-full bg-[#d91c42] hover:bg-[#b91536]">
+          <Button onClick={addVariation} size="sm" className="w-full bg-brand hover:bg-brand/90 text-brand-foreground font-semibold">
             <Plus className="w-4 h-4 mr-2" /> Adicionar Variação
           </Button>
 

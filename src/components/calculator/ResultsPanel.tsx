@@ -1,9 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { TrendingUp, Loader2, Package, AlertCircle } from 'lucide-react';
-import contactBg from '../../imgs/contactbg.jpg';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { TrendingUp, Loader2, Package, AlertCircle, X, CheckCircle2 } from 'lucide-react';
 import type { CalculationResult, ShippingOption } from '../../types/calculator';
 import { formatCurrency } from '../../utils/currency';
 import { calculateShipping, formatShippingPrice, formatDeliveryTime, MelhorEnvioError } from '../../services/melhorEnvioService';
@@ -125,50 +124,21 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
 
   const getMarketplaceName = (slug: string) => {
     switch(slug) {
-        case 'mercadolivre': return 'Mercado Livre';
-        case 'shopee': return 'Shopee';
-        case 'tiktok': return 'TikTok';
-        case 'wordpress': return 'Site Próprio';
-        case 'facebook': return 'Facebook';
-        case 'olx': return 'OLX';
-        default: return slug.charAt(0).toUpperCase() + slug.slice(1);
+      case 'mercadolivre': return 'Mercado Livre';
+      case 'shopee': return 'Shopee';
+      case 'tiktok': return 'TikTok Shop';
+      case 'wordpress': return 'Site Próprio';
+      case 'facebook': return 'Facebook';
+      case 'olx': return 'OLX';
+      case 'amazon': return 'Amazon';
+      case 'enjoei': return 'Enjoei';
+      case 'shein': return 'Shein';
+      default: return slug ? slug.charAt(0).toUpperCase() + slug.slice(1) : 'Marketplace';
     }
   };
 
   const marketplaceName = getMarketplaceName(marketplace);
 
-  // Determine background color based on logic
-  const getBackgroundColor = () => {
-    if (!calculations) return '#16A34A'; // Default/Initial -> Green
-    
-    // Rule: Based on margin status and price
-    const { marginStatus, actualMargin, recommendedMargin } = calculations;
-    
-    // Negative -> Red
-    if (marginStatus === 'negative') return '#DC2928';
-
-    // Parse margin (format is usually "XX,X" or "XX.X")
-    const currentMargin = typeof actualMargin === 'string' 
-        ? parseFloat(actualMargin.replace(',', '.')) 
-        : Number(actualMargin);
-
-    const recommended = Number(recommendedMargin) || 25; // Default to 25 if missing
-
-    // Blue: Margin >= Recommended + 5%
-    if (currentMargin >= (recommended + 5)) {
-        return '#25f4ee'; // Cyan/Blue
-    }
-
-    // Green: Margin >= Recommended
-    if (currentMargin >= recommended) {
-        return '#16A34A'; // Green
-    }
-
-    // Yellow: Positive but below recommended
-    return '#FFA500';
-  };
-
-  const bgColor = getBackgroundColor();
   const formatMoney = (value: string | number) => formatCurrency(value);
   const formatPercent = (value: string | number, digits: number = 1) => {
     const num = typeof value === 'string' ? parseFloat(value) : value;
@@ -176,415 +146,376 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
     return num.toLocaleString('pt-BR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
   };
 
-  // Determine styles based on margin status for text contrast
-  const getStatusStyles = () => {
-    const defaultLight = {
-      text: 'text-black',
-      subText: 'text-black/80',
-      accent: 'text-black',
-      inputBorder: 'border-black/20 text-black placeholder-black/50',
-      border: 'border-black/10'
-    };
-
-    const defaultDark = {
-        bg: '', 
-        border: 'border-zinc-800/60',
-        text: 'text-white',
-        subText: 'text-white/90',
-        accent: 'text-white', 
-        inputBorder: 'border-zinc-700 text-white placeholder-white/50'
-    };
-
-    if (!calculations) return defaultDark; // Green needs white text
-
-    const bg = getBackgroundColor();
-
-    // Green (#16A34A) or Red (#DC2928) -> Dark Background -> White Text
-    if (bg === '#16A34A' || bg === '#DC2928') {
-        return defaultDark;
+  // Status and color metadata based on margin
+  const getMarginMeta = () => {
+    if (!calculations) {
+      return {
+        badge: 'Calculando',
+        badgeClass: 'bg-muted text-muted-foreground border-border',
+        profitColor: 'text-muted-foreground',
+        marginColor: 'text-muted-foreground',
+      };
     }
 
-    // Cyan (#25f4ee) or Orange (#FFA500) -> Light Background -> Black Text
-    return defaultLight;
+    const { marginStatus, actualMargin, recommendedMargin } = calculations;
+    const currentMargin = typeof actualMargin === 'string' 
+      ? parseFloat(actualMargin.replace(',', '.')) 
+      : Number(actualMargin);
+    const recommended = Number(recommendedMargin) || 25;
+
+    if (marginStatus === 'negative' || currentMargin < 0) {
+      return {
+        badge: 'Prejuízo / Margem Negativa',
+        badgeClass: 'bg-destructive/15 text-destructive border-destructive/30',
+        profitColor: 'text-destructive',
+        marginColor: 'text-destructive',
+      };
+    }
+
+    if (currentMargin >= recommended + 5) {
+      return {
+        badge: 'Alta Rentabilidade',
+        badgeClass: 'bg-brand/15 text-brand border-brand/30',
+        profitColor: 'text-brand',
+        marginColor: 'text-brand',
+      };
+    }
+
+    if (currentMargin >= recommended) {
+      return {
+        badge: 'Margem Saudável',
+        badgeClass: 'bg-success/15 text-success border-success/30',
+        profitColor: 'text-success',
+        marginColor: 'text-success',
+      };
+    }
+
+    return {
+      badge: 'Margem Baixa',
+      badgeClass: 'bg-warning/15 text-warning border-warning/30',
+      profitColor: 'text-warning',
+      marginColor: 'text-warning',
+    };
   };
 
-  const styles = getStatusStyles();
+  const meta = getMarginMeta();
 
   const handleClose = () => {
     if (!onClose) return;
 
     if (cardRef.current) {
-        gsap.to(cardRef.current, {
-            opacity: 0,
-            y: 20,
-            scale: 0.95,
-            duration: 0.3,
-            ease: "back.in(1.7)",
-            onComplete: onClose
-        });
+      gsap.to(cardRef.current, {
+        opacity: 0,
+        y: 20,
+        scale: 0.95,
+        duration: 0.25,
+        ease: 'power2.in',
+        onComplete: onClose
+      });
     } else {
-        onClose();
+      onClose();
     }
   };
 
   return (
-    <Card ref={cardRef} className="bg-transparent border-none shadow-xl relative overflow-hidden" style={{ opacity: 1, visibility: 'visible' }}>
-        <div className="absolute inset-0 z-0">
-            <img src={contactBg} alt="Background" className="w-full h-full object-cover opacity-20" />
-            <div className="absolute inset-0 bg-black/10" />
-        </div>
-        <div className="relative z-10">
-        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-4">
-          <div className="flex flex-row items-center gap-2">
-            <TrendingUp className="w-6 h-6 text-white" />
-            <CardTitle className="text-2xl font-bold text-white font-iceland">
-              Resultado da Precificação - {marketplaceName}
-            </CardTitle>
+    <Card 
+      ref={cardRef} 
+      className="rounded-2xl border border-border bg-card text-card-foreground shadow-2xl overflow-hidden transition-all duration-300"
+    >
+      {/* Header */}
+      <CardHeader className="p-4 sm:p-5 border-b border-border bg-muted/20 flex flex-row items-center justify-between gap-3 space-y-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="h-9 w-9 rounded-xl bg-brand/10 text-brand flex items-center justify-center shrink-0 border border-brand/20">
+            <TrendingUp className="w-5 h-5" />
           </div>
-          {onClose ? (
-            <button
-              type="button"
-              onClick={handleClose}
-              className="text-white/80 hover:text-white text-lg font-bold leading-none"
-            >
-              ✕
-            </button>
-          ) : null}
-        </CardHeader>
-        <CardContent className="p-0">
-        {calculations ? (
-          <div 
-            className={`w-full p-6 rounded-b-xl result-card-content ${styles.text}`}
-            style={{ 
-              backgroundColor: bgColor,
-              transition: 'background-color 0.5s ease-in-out'
-            }}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <CardTitle className="text-base sm:text-lg font-bold text-foreground font-iceland tracking-tight truncate">
+                Resultado da Precificação
+              </CardTitle>
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border shrink-0">
+                {marketplaceName}
+              </span>
+            </div>
+            {productName && (
+              <p className="text-xs text-muted-foreground truncate max-w-[280px] sm:max-w-xs mt-0.5">
+                {productName}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {onClose && (
+          <button
+            type="button"
+            onClick={handleClose}
+            aria-label="Fechar painel de resultados"
+            className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors shrink-0"
           >
-           <div className="space-y-4 result-card-animate">
-            {/* Preço de Venda Sugerido */}
-            <div>
-                <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-                    <div>
-                        <p className={`text-lg mb-1 font-iceland font-bold ${styles.text}`}>Preço de Venda Sugerido</p>
-                        
-                        {productName && (
-                            <p className={`text-lg font-semibold mb-1 ${styles.text}`}>{productName}</p>
-                        )}
-                        
-                        <p className={`text-5xl font-bold ${styles.text}`}>R$ {formatMoney(calculations.suggestedPrice)}</p>
-                        
-                        <p className={`text-xs mt-2 font-medium ${styles.subText}`}>{calculations.taxDescription}</p>
-                        
-                        {Number(calculations.gatewayCost) > 0 && (
-                            <div className="flex justify-between items-center mt-2 border-t border-black/10 pt-1 gap-2">
-                                <span className={`text-xs font-bold ${styles.subText}`}>Taxa Gateway:</span>
-                                <span className={`text-xs font-bold ${styles.text}`}>R$ {formatMoney(calculations.gatewayCost)}</span>
-                            </div>
-                        )}
-
-                        {Number(calculations.paidTrafficCost) > 0 && (
-                            <div className="flex justify-between items-center mt-2 border-t border-black/10 pt-1 gap-2">
-                                <span className={`text-xs font-bold ${styles.subText}`}>Investimento Tráfego:</span>
-                                <span className={`text-xs font-bold ${styles.text}`}>R$ {formatMoney(calculations.paidTrafficCost)}</span>
-                            </div>
-                        )}
-                        
-                        {Number(calculations.paidTrafficGatewayCost) > 0 && (
-                            <div className="flex justify-between items-center mt-2 border-t border-black/10 pt-1 gap-2">
-                                <span className={`text-xs font-bold ${styles.subText}`}>Taxa Gateway Tráfego:</span>
-                                <span className={`text-xs font-bold ${styles.text}`}>R$ {formatMoney(calculations.paidTrafficGatewayCost)}</span>
-                            </div>
-                        )}
-
-                        {marketplace === 'mercadolivre' && productPrice !== undefined && productPrice < 79.00 && Number(calculations.fixedFee) > 0 && (
-                            <div className="flex justify-between items-center mt-2 border-t border-black/10 pt-1 gap-2">
-                                <div className="flex items-center gap-1">
-                                    <span className={`text-xs font-bold ${styles.subText}`}>Taxa Fixa:</span>
-                                    <div className="relative group">
-                                        <span className={`text-xs cursor-help ${styles.subText}`}>ⓘ</span>
-                                        <div className={`absolute left-0 bottom-full mb-2 w-64 p-3 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 ${
-                                            calculations.marginStatus === 'negative' 
-                                                ? 'bg-zinc-800 border border-zinc-700 text-white' 
-                                                : 'bg-white border border-black/20 text-black'
-                                        }`}>
-                                            <p className={`text-xs font-bold mb-2 ${
-                                                calculations.marginStatus === 'negative' ? 'text-white' : 'text-black'
-                                            }`}>Faixas de Taxa Fixa do Mercado Livre:</p>
-                                            <ul className={`text-xs space-y-1 ${
-                                                calculations.marginStatus === 'negative' ? 'text-white/90' : 'text-black/80'
-                                            }`}>
-                                                <li>• &lt; R$ 12,50: R$ 0,00 (isento)</li>
-                                                <li>• R$ 12,50 - R$ 29,00: R$ 6,25</li>
-                                                <li>• R$ 29,01 - R$ 50,00: R$ 6,50</li>
-                                                <li>• R$ 50,01 - R$ 78,99: R$ 6,75</li>
-                                                <li>• ≥ R$ 79,00: R$ 0,00 (isento, mas com frete grátis)</li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div>
-                                <span className={`text-xs font-bold ${styles.text}`}>R$ {formatMoney(calculations.fixedFee)}</span>
-                            </div>
-                        )}
-
-                        {Number(calculations.influencerCost) > 0 && (
-                            <div className="flex justify-between items-center mt-2 border-t border-black/10 pt-1 gap-2">
-                                <span className={`text-xs font-bold ${styles.subText}`}>Influencer ({formatPercent(calculations.totalInfluencerPercent || 0, 1)}%):</span>
-                                <span className={`text-xs font-bold ${styles.text}`}>R$ {formatMoney(calculations.influencerCost)}</span>
-                            </div>
-                        )}
-
-                        {Number(calculations.affiliateCost) > 0 && (
-                            <div className="flex justify-between items-center mt-2 border-t border-black/10 pt-1 gap-2">
-                                <span className={`text-xs font-bold ${styles.subText}`}>Afiliado ({formatPercent(calculations.totalAffiliatePercent || 0, 1)}%):</span>
-                                <span className={`text-xs font-bold ${styles.text}`}>R$ {formatMoney(calculations.affiliateCost)}</span>
-                            </div>
-                        )}
-                    </div>
-                    {calculations.manualPrice > 0 && (
-                         <div className="text-left md:text-right">
-                            <p className="text-sm mb-1 font-bold text-black">Seu Preço</p>
-                            <p className="text-3xl font-bold text-black">R$ {formatMoney(calculations.manualPrice)}</p>
-                         </div>
-                    )}
-                </div>
-
-                {/* Profit & Margin Display */}
-                <div className={`mt-4 pt-4 border-t ${
-                    calculations.marginStatus === 'negative' ? 'border-zinc-800/60' : 'border-black/10'
-                } grid grid-cols-2 gap-4`}>
-                    <div>
-                        <p className={`text-sm font-bold ${styles.subText}`}>Lucro Líquido</p>
-                        <p className={`text-2xl font-bold ${styles.accent}`}>
-                            R$ {formatMoney(calculations.netRevenue)}
-                        </p>
-                    </div>
-                    <div className="text-right">
-                        <p className={`text-sm font-bold ${styles.subText}`}>Margem</p>
-                        <p className={`text-2xl font-bold ${styles.accent}`}>
-                            {formatPercent(calculations.actualMargin)}%
-                        </p>
-                    </div>
-                </div>
-                
-                {calculations.manualPrice > 0 && (
-                    <div className={`mt-4 pt-4 border-t flex flex-col md:flex-row justify-between items-center gap-2 ${
-                        calculations.marginStatus === 'negative' ? 'border-zinc-800/60' : 'border-black/10'
-                    }`}>
-                        <div>
-                            <p className={`text-xs font-bold ${styles.subText}`}>
-                                {calculations.increaseApplied > 0 ? 'Acréscimo Aplicado' : 'Desconto Aplicado'} ({formatPercent(Math.abs(calculations.discountPercent), 1)}%)
-                            </p>
-                            <p className={`font-bold ${
-                                (calculations.marginStatus === 'negative' || calculations.marginStatus === 'low')
-                                    ? (calculations.discountApplied < 0 ? 'text-green-300' : 'text-white')
-                                    : (calculations.discountApplied < 0 ? 'text-green-700' : 'text-black')
-                            }`}>
-                                R$ {formatMoney(calculations.increaseApplied > 0 ? calculations.increaseApplied : Math.abs(calculations.discountApplied))}
-                            </p>
-                        </div>
-                        <div className="text-left md:text-right">
-                            <p className={`text-xs font-bold ${styles.subText}`}>
-                                Valor Recomendado {marketplaceName}
-                            </p>
-                            <p className={`font-bold text-lg ${styles.text}`}>R$ {formatMoney(calculations.recommendedValue)}</p>
-                        </div>
-                    </div>
-                )}
-                
-                {calculations.competitor > 0 && !calculations.manualPrice && (
-                    <div className={`mt-4 pt-4 border-t ${
-                        calculations.marginStatus === 'negative' ? 'border-zinc-800/60' : 'border-black/10'
-                    }`}>
-                         <div className="flex flex-col md:flex-row justify-between items-center gap-2">
-                            <div className="text-left">
-                                <p className={`text-xs font-bold ${styles.subText}`}>
-                                    Valor Recomendado {marketplaceName}
-                                </p>
-                                <p className={`font-bold text-lg ${styles.text}`}>R$ {formatMoney(calculations.recommendedValue)}</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                 <Label htmlFor="competitorMarkup" className={`text-xs font-bold ${styles.subText}`}>Desconto p/ Ganhar:</Label>
-                                 <div className="flex items-center gap-2">
-                                     <span className={`text-xs font-bold ${styles.subText}`}>- R$</span>
-                                     <Input 
-                                        id="competitorDiscount"
-                                        type="number" 
-                                        value={competitorDiscount} 
-                                        onChange={(e) => setCompetitorDiscount(e.target.value)} 
-                                        step="0.50"
-                                        className={`h-8 w-20 text-xs bg-transparent border font-bold ${styles.inputBorder}`}
-                                     />
-                                 </div>
-                            </div>
-                         </div>
-                         <p className={`text-[10px] mt-1 text-right ${
-                            calculations.marginStatus === 'negative' ? 'text-white/70' : 'text-black/50'
-                         }`}>
-                            O valor recomendado é sempre menor que o concorrente. uma margem de (aproximadamente) 25%
-                         </p>
-                    </div>
-                )}
-                
-                {/* Shipping Section - Only for Mercado Livre with price >= R$ 79.00 and dimensions filled */}
-                {shouldShowShipping && (
-                  <div className={`mt-4 pt-4 border-t ${
-                    calculations.marginStatus === 'negative' ? 'border-zinc-800/60' : 'border-black/10'
-                  }`}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Package className={`w-5 h-5 ${styles.text}`} />
-                      <h4 className={`text-lg font-bold ${styles.text}`}>Cálculo de Frete</h4>
-                    </div>
-                    
-                    <p className={`text-xs mb-3 ${styles.subText}`}>
-                      Produtos acima de R$ 79,00 no Mercado Livre têm frete grátis obrigatório pago pelo vendedor.
-                    </p>
-
-                    {/* Region Selection */}
-                    <div className="mb-4">
-                      <Label className={`text-sm font-bold mb-2 block ${styles.text}`}>
-                        Selecione a Região de Destino:
-                      </Label>
-                      <div className="space-y-2">
-                        {supplierLocation && SHIPPING_REGIONS[supplierLocation] && 
-                          Object.entries(SHIPPING_REGIONS[supplierLocation]).map(([key, region]) => (
-                            <label 
-                              key={key} 
-                              className={`flex items-center space-x-2 cursor-pointer p-2 rounded ${
-                                selectedRegion === key 
-                                  ? (calculations.marginStatus === 'negative' ? 'bg-white/10' : 'bg-black/5')
-                                  : ''
-                              }`}
-                            >
-                              <input
-                                type="radio"
-                                name="shipping-region"
-                                value={key}
-                                checked={selectedRegion === key}
-                                onChange={(e) => handleRegionChange(e.target.value)}
-                                className="w-4 h-4"
-                              />
-                              <span className={`text-sm ${styles.text}`}>
-                                {key} - {region.name}
-                              </span>
-                            </label>
-                          ))
-                        }
-                      </div>
-                    </div>
-
-                    {/* Loading State */}
-                    {loadingShipping && (
-                      <div className="flex items-center justify-center py-4">
-                        <Loader2 className={`w-6 h-6 animate-spin ${styles.text}`} />
-                        <span className={`ml-2 text-sm ${styles.text}`}>Calculando frete...</span>
-                      </div>
-                    )}
-
-                    {/* Error State */}
-                    {shippingError && (
-                      <div className={`flex items-start gap-2 p-3 rounded-lg mb-4 ${
-                        calculations.marginStatus === 'negative' 
-                          ? 'bg-red-900/30 border border-red-700' 
-                          : 'bg-red-100 border border-red-300'
-                      }`}>
-                        <AlertCircle className={`w-5 h-5 flex-shrink-0 ${
-                          calculations.marginStatus === 'negative' ? 'text-red-400' : 'text-red-600'
-                        }`} />
-                        <div>
-                          <p className={`text-sm font-bold ${
-                            calculations.marginStatus === 'negative' ? 'text-red-300' : 'text-red-700'
-                          }`}>
-                            Erro ao calcular frete
-                          </p>
-                          <p className={`text-xs ${
-                            calculations.marginStatus === 'negative' ? 'text-red-400' : 'text-red-600'
-                          }`}>
-                            {shippingError}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Shipping Methods */}
-                    {!loadingShipping && shippingOptions.length > 0 && (
-                      <div className="mb-4">
-                        <Label className={`text-sm font-bold mb-2 block ${styles.text}`}>
-                          Selecione a Modalidade de Envio:
-                        </Label>
-                        <div className="space-y-2">
-                          {shippingOptions.map((option, index) => (
-                            <label
-                              key={index}
-                              className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer ${
-                                selectedShippingMethod === option.name
-                                  ? (calculations.marginStatus === 'negative' 
-                                      ? 'border-white bg-white/10' 
-                                      : 'border-black bg-black/5')
-                                  : (calculations.marginStatus === 'negative'
-                                      ? 'border-zinc-700 bg-zinc-800/30'
-                                      : 'border-black/20 bg-white/50')
-                              }`}
-                            >
-                              <div className="flex items-center space-x-2 flex-1">
-                                <input
-                                  type="radio"
-                                  name="shipping-method"
-                                  value={option.name}
-                                  checked={selectedShippingMethod === option.name}
-                                  onChange={(e) => handleShippingMethodChange(e.target.value)}
-                                  className="w-4 h-4"
-                                />
-                                <div className="flex justify-between items-center flex-1">
-                                  <span className={`font-bold text-sm ${styles.text}`}>{option.name}</span>
-                                  <div className="text-right">
-                                    <div className={`font-bold ${styles.accent}`}>
-                                      {formatShippingPrice(option.price)}
-                                    </div>
-                                    <div className={`text-xs ${styles.subText}`}>
-                                      {formatDeliveryTime(option.deliveryTime)}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Selected Shipping Info */}
-                    {selectedShippingMethod && (
-                      <div className={`p-3 rounded-lg ${
-                        calculations.marginStatus === 'negative'
-                          ? 'bg-green-900/30 border border-green-700'
-                          : 'bg-green-100 border border-green-300'
-                      }`}>
-                        <p className={`text-sm font-bold ${
-                          calculations.marginStatus === 'negative' ? 'text-green-300' : 'text-green-700'
-                        }`}>
-                          ✓ Frete selecionado: {selectedShippingMethod}
-                        </p>
-                        <p className={`text-xs ${
-                          calculations.marginStatus === 'negative' ? 'text-green-400' : 'text-green-600'
-                        }`}>
-                          O custo de frete foi incluído no cálculo de lucro e margem.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-                
-                {children}
-            </div>
-          </div>
-          </div>
-        ) : (
-            <div className="flex justify-center items-center h-40">
-                <p className="text-white/50">Preencha os dados para calcular</p>
-            </div>
+            <X className="w-4 h-4" />
+          </button>
         )}
-        </CardContent>
+      </CardHeader>
+
+      <CardContent className="p-4 sm:p-6 space-y-5">
+        {/* Top Hero: Preço de Venda Sugerido */}
+        <div className="rounded-xl p-4 sm:p-5 border border-border bg-muted/30 relative overflow-hidden">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <span className="text-xs uppercase font-bold tracking-wider text-muted-foreground">
+              Preço de Venda Sugerido
+            </span>
+            <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${meta.badgeClass}`}>
+              {meta.badge}
+            </span>
+          </div>
+
+          <div className="flex items-baseline gap-1 my-1">
+            <span className="text-lg sm:text-xl font-bold text-muted-foreground">R$</span>
+            <span className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-foreground tabular-nums">
+              {formatMoney(calculations.suggestedPrice)}
+            </span>
+          </div>
+
+          {calculations.taxDescription && (
+            <p className="text-xs text-muted-foreground mt-1">
+              {calculations.taxDescription}
+            </p>
+          )}
+
+          {/* Subtaxas aplicadas no preço sugerido */}
+          <div className="mt-3 pt-3 border-t border-border/60 space-y-1.5 text-xs">
+            {Number(calculations.gatewayCost) > 0 && (
+              <div className="flex justify-between items-center text-muted-foreground">
+                <span>Taxa Gateway:</span>
+                <span className="font-semibold text-foreground tabular-nums">R$ {formatMoney(calculations.gatewayCost)}</span>
+              </div>
+            )}
+            {Number(calculations.paidTrafficCost) > 0 && (
+              <div className="flex justify-between items-center text-muted-foreground">
+                <span>Investimento Tráfego:</span>
+                <span className="font-semibold text-foreground tabular-nums">R$ {formatMoney(calculations.paidTrafficCost)}</span>
+              </div>
+            )}
+            {Number(calculations.paidTrafficGatewayCost) > 0 && (
+              <div className="flex justify-between items-center text-muted-foreground">
+                <span>Taxa Gateway Tráfego:</span>
+                <span className="font-semibold text-foreground tabular-nums">R$ {formatMoney(calculations.paidTrafficGatewayCost)}</span>
+              </div>
+            )}
+            {marketplace === 'mercadolivre' && productPrice !== undefined && productPrice < 79.00 && Number(calculations.fixedFee) > 0 && (
+              <div className="flex justify-between items-center text-muted-foreground">
+                <span>Taxa Fixa (ML):</span>
+                <span className="font-semibold text-foreground tabular-nums">R$ {formatMoney(calculations.fixedFee)}</span>
+              </div>
+            )}
+            {Number(calculations.influencerCost) > 0 && (
+              <div className="flex justify-between items-center text-muted-foreground">
+                <span>Influencer ({formatPercent(calculations.totalInfluencerPercent || 0, 1)}%):</span>
+                <span className="font-semibold text-foreground tabular-nums">R$ {formatMoney(calculations.influencerCost)}</span>
+              </div>
+            )}
+            {Number(calculations.affiliateCost) > 0 && (
+              <div className="flex justify-between items-center text-muted-foreground">
+                <span>Afiliado ({formatPercent(calculations.totalAffiliatePercent || 0, 1)}%):</span>
+                <span className="font-semibold text-foreground tabular-nums">R$ {formatMoney(calculations.affiliateCost)}</span>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Hero KPIs: Lucro Líquido & Margem Real */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="rounded-xl p-3.5 sm:p-4 border border-border bg-card shadow-sm">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+              Lucro Líquido
+            </p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-xs sm:text-sm font-bold text-muted-foreground">R$</span>
+              <span className={`text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums ${meta.profitColor}`}>
+                {formatMoney(calculations.netRevenue)}
+              </span>
+            </div>
+          </div>
+
+          <div className="rounded-xl p-3.5 sm:p-4 border border-border bg-card shadow-sm text-right">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+              Margem Real
+            </p>
+            <div className="flex items-baseline justify-end">
+              <span className={`text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums ${meta.marginColor}`}>
+                {formatPercent(calculations.actualMargin)}%
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Preço Manual (se definido) */}
+        {calculations.manualPrice > 0 && (
+          <div className="rounded-xl p-3.5 sm:p-4 border border-border bg-muted/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">Seu Preço Manual</p>
+              <p className="text-xl font-bold text-foreground tabular-nums">
+                R$ {formatMoney(calculations.manualPrice)}
+              </p>
+            </div>
+            <div className="sm:text-right">
+              <p className="text-xs font-medium text-muted-foreground">
+                {calculations.increaseApplied > 0 ? 'Acréscimo Aplicado' : 'Desconto Aplicado'} ({formatPercent(Math.abs(calculations.discountPercent), 1)}%)
+              </p>
+              <p className={`text-base font-bold tabular-nums ${
+                calculations.discountApplied < 0 ? 'text-success' : 'text-foreground'
+              }`}>
+                R$ {formatMoney(calculations.increaseApplied > 0 ? calculations.increaseApplied : Math.abs(calculations.discountApplied))}
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Recomendado: R$ {formatMoney(calculations.recommendedValue)}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Comparação com Concorrente (se preenchido e sem preço manual) */}
+        {calculations.competitor > 0 && !calculations.manualPrice && (
+          <div className="rounded-xl p-3.5 sm:p-4 border border-border bg-muted/20 space-y-2">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Valor Recomendado {marketplaceName}</p>
+                <p className="text-lg font-bold text-foreground tabular-nums">R$ {formatMoney(calculations.recommendedValue)}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="competitorDiscount" className="text-xs font-medium text-muted-foreground">
+                  Desconto p/ Ganhar:
+                </Label>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs font-bold text-muted-foreground">- R$</span>
+                  <Input 
+                    id="competitorDiscount"
+                    type="number" 
+                    value={competitorDiscount} 
+                    onChange={(e) => setCompetitorDiscount(e.target.value)} 
+                    step="0.50"
+                    className="h-8 w-20 text-xs font-bold bg-background border-input tabular-nums"
+                  />
+                </div>
+              </div>
+            </div>
+            <p className="text-[10px] text-muted-foreground text-right">
+              O valor recomendado é calculado para ser competitivo garantindo margem saudável.
+            </p>
+          </div>
+        )}
+
+        {/* Shipping Section - Apenas para Mercado Livre com preço >= R$ 79.00 */}
+        {shouldShowShipping && (
+          <div className="rounded-xl p-4 border border-border bg-muted/20 space-y-3">
+            <div className="flex items-center gap-2">
+              <Package className="w-4 h-4 text-brand" />
+              <h4 className="text-sm font-bold text-foreground">Cálculo de Frete (Mercado Livre)</h4>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Produtos a partir de R$ 79,00 no Mercado Livre possuem frete grátis obrigatório custeado pelo vendedor.
+            </p>
+
+            {/* Seleção de Região */}
+            <div>
+              <Label className="text-xs font-semibold text-foreground mb-2 block">
+                Selecione a Região de Destino:
+              </Label>
+              <div className="space-y-1.5">
+                {supplierLocation && SHIPPING_REGIONS[supplierLocation] && 
+                  Object.entries(SHIPPING_REGIONS[supplierLocation]).map(([key, region]) => (
+                    <label 
+                      key={key} 
+                      className={`flex items-center space-x-2 cursor-pointer p-2 rounded-lg border text-xs transition-colors ${
+                        selectedRegion === key 
+                          ? 'border-brand bg-brand/10 text-foreground font-semibold'
+                          : 'border-border bg-card text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="shipping-region"
+                        value={key}
+                        checked={selectedRegion === key}
+                        onChange={(e) => handleRegionChange(e.target.value)}
+                        className="w-3.5 h-3.5 accent-brand"
+                      />
+                      <span>{key} - {region.name}</span>
+                    </label>
+                  ))
+                }
+              </div>
+            </div>
+
+            {loadingShipping && (
+              <div className="flex items-center justify-center py-3 text-muted-foreground gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-brand" />
+                <span className="text-xs font-medium">Calculando frete...</span>
+              </div>
+            )}
+
+            {shippingError && (
+              <div className="flex items-start gap-2 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive text-xs">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold">Erro ao calcular frete</p>
+                  <p className="text-destructive/80">{shippingError}</p>
+                </div>
+              </div>
+            )}
+
+            {!loadingShipping && shippingOptions.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-foreground block">
+                  Modalidade de Envio:
+                </Label>
+                <div className="space-y-1.5">
+                  {shippingOptions.map((option, index) => (
+                    <label
+                      key={index}
+                      className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer text-xs transition-colors ${
+                        selectedShippingMethod === option.name
+                          ? 'border-brand bg-brand/10 text-foreground font-semibold'
+                          : 'border-border bg-card text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2 flex-1">
+                        <input
+                          type="radio"
+                          name="shipping-method"
+                          value={option.name}
+                          checked={selectedShippingMethod === option.name}
+                          onChange={(e) => handleShippingMethodChange(e.target.value)}
+                          className="w-3.5 h-3.5 accent-brand"
+                        />
+                        <span className="font-semibold">{option.name}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-bold text-foreground tabular-nums">
+                          {formatShippingPrice(option.price)}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground ml-1.5">
+                          ({formatDeliveryTime(option.deliveryTime)})
+                        </span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedShippingMethod && (
+              <div className="flex items-center gap-2 p-2.5 rounded-lg border border-success/30 bg-success/10 text-success text-xs font-medium">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>Frete selecionado: {selectedShippingMethod} (incluído nos cálculos)</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Children (Comparativo rápido, Detalhamento de custos, Vídeos) */}
+        {children}
+      </CardContent>
     </Card>
   );
 };

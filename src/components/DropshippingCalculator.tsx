@@ -4,6 +4,7 @@ import type { MouseEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Calculator, TrendingUp, Package, DollarSign, AlertCircle, Plus, Trash2, ChevronLeft, ChevronRight, Loader2, Store, Search, RefreshCcw, Pencil } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
@@ -140,6 +141,7 @@ const SYSTEM_SLUG_MAP: Record<string, string> = {
 };
 
 const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'products' }) => {
+  const [formSection, setFormSection] = useState<'basic' | 'pricing' | 'marketplace' | 'costs'>('basic');
   const container = useRef<HTMLDivElement>(null);
   const prevCalculations = useRef<CalculationResult | null>(null);
   const navigate = useNavigate();
@@ -1827,9 +1829,9 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
               </div>
               <p className="text-sm font-bold text-white">{clvData.avgOrdersPerCustomer.toFixed(1)}</p>
             </div>
-            <div className="bg-black/30 border border-[#fe2c55]/20 rounded-lg p-3">
+            <div className="bg-black/30 border border-brand/20 rounded-lg p-3">
               <div className="flex items-center gap-1.5 mb-1.5">
-                <svg className="w-3 h-3 text-[#fe2c55]" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <svg className="w-3 h-3 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
                 <p className="text-[10px] text-white/50 uppercase tracking-wide">Taxa Recompra</p>
@@ -1858,7 +1860,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
             profitAnalysis.profitMargin >= 20
               ? 'bg-green-400/20 text-green-300 border-green-400/30'
               : profitAnalysis.profitMargin >= 15
-              ? 'bg-[#fe2c55]/20 text-[#fe2c55] border-[#fe2c55]/30'
+              ? 'bg-brand/20 text-brand border-brand/30'
               : 'bg-red-400/20 text-red-200 border-red-400/30'
           }`}>
             {profitAnalysis.profitMargin.toFixed(1)}% margem
@@ -1925,7 +1927,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
           <div className={`rounded-lg p-2.5 text-[10px] flex items-start gap-2 mb-3 ${
             profitAnalysis.profitMargin < 15
               ? 'bg-red-900/40 border border-red-400/40 text-red-200'
-              : 'bg-[#fe2c55]/20 border border-[#fe2c55]/40 text-pink-200'
+              : 'bg-brand/20 border border-brand/40 text-pink-200'
           }`}>
             <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
             <span>
@@ -1974,7 +1976,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
             <div className="space-y-2">
               {topProducts.map((product, index) => {
                 const rankColors = [
-                  { bg: 'bg-[#fe2c55]/20', border: 'border-[#fe2c55]/40', text: 'text-[#fe2c55]', dot: 'bg-gradient-to-br from-[#fe2c55] to-[#d91c42]' },
+                  { bg: 'bg-brand/20', border: 'border-brand/40', text: 'text-brand', dot: 'bg-gradient-to-br from-[#fe2c55] to-[#d91c42]' },
                   { bg: 'bg-zinc-400/15', border: 'border-zinc-400/30', text: 'text-zinc-300', dot: 'bg-gradient-to-br from-zinc-300 to-zinc-500' },
                   { bg: 'bg-orange-400/15', border: 'border-orange-400/30', text: 'text-orange-300', dot: 'bg-gradient-to-br from-orange-400 to-orange-600' },
                   { bg: 'bg-white/5', border: 'border-white/10', text: 'text-white/60', dot: 'bg-white/30' },
@@ -2102,9 +2104,9 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                         </div>
                         <p className="text-sm font-bold text-white">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(current.revenue)}</p>
                       </div>
-                      <div className="bg-black/30 border border-[#fe2c55]/20 rounded-lg p-3">
+                      <div className="bg-black/30 border border-brand/20 rounded-lg p-3">
                         <div className="flex items-center gap-1.5 mb-1.5">
-                          <TrendingUp className="w-3 h-3 text-[#fe2c55]" />
+                          <TrendingUp className="w-3 h-3 text-brand" />
                           <p className="text-[10px] text-white/50 uppercase tracking-wide">Lucro</p>
                         </div>
                         <p className="text-sm font-bold text-green-300">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(current.profit)}</p>
@@ -2522,7 +2524,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
   return (
     <div className="min-h-screen bg-black relative overflow-hidden font-sans" ref={container}>
       <Dialog open={isGlobalSummaryOpen} onOpenChange={setIsGlobalSummaryOpen}>
-        <DialogContent className="max-w-5xl bg-[#0d0d0d] text-white border border-white/10 max-h-[90vh] flex flex-col p-0">
+        <DialogContent className="max-w-5xl bg-card text-white border border-white/10 max-h-[90vh] flex flex-col p-0">
           <DialogHeader className="px-6 pt-6 pb-0 flex-shrink-0">
             <DialogTitle>Resumo Financeiro Geral</DialogTitle>
           </DialogHeader>
@@ -2570,13 +2572,13 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
             onClick={handleNavigateToProductsButton}
             className="
               relative overflow-hidden
-              bg-[#fe2c55] hover:bg-[#d91c42] text-white font-semibold text-xs uppercase tracking-wide px-4 py-2 h-8
+              bg-brand hover:bg-brand/90 text-white font-semibold text-xs uppercase tracking-wide px-4 py-2 h-8
               before:absolute before:inset-0
               before:bg-gradient-to-r before:from-transparent before:via-white/30 before:to-transparent
               before:translate-x-[-200%]
               hover:before:translate-x-[200%]
               before:transition-transform before:duration-700
-              hover:shadow-lg hover:shadow-[#fe2c55]/50
+              hover:shadow-lg hover:shadow-brand/30
               transition-shadow duration-300
             "
           >
@@ -2585,13 +2587,13 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         </div>
         )}
         {!showOnlyProducts && (
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid lg:grid-cols-2 gap-6 items-start">
           {/* Painel de Entrada */}
-            <Card className="shadow-xl backdrop-blur-xl bg-white dark:bg-gray-900 border border-white/20 dark:border-gray-700/20" style={{ opacity: 1, visibility: 'visible' }}>
-              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+            <Card className="rounded-2xl border border-border bg-card text-card-foreground shadow-xl overflow-hidden" style={{ opacity: 1, visibility: 'visible' }}>
+              <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 p-4 sm:p-5 border-b border-border bg-muted/20">
                 <div className="flex flex-row items-center gap-2">
                    <Calculator className="w-6 h-6 text-blue-600" />
-                   <CardTitle className="text-2xl font-bold text-gray-800 dark:text-white font-iceland">Dados do Produto</CardTitle>
+                   <CardTitle className="text-lg sm:text-xl font-bold text-foreground font-iceland tracking-tight truncate whitespace-nowrap">Dados do Produto</CardTitle>
                 </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -2613,8 +2615,26 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 </GradientButton>
               </div>
             </CardHeader>
-            <CardContent className="space-y-5 pt-4" style={{ opacity: 1, visibility: 'visible' }}>
-              {/* Feedback Messages - Agora usando Toasts (Sonner) */}
+            <CardContent className="p-4 sm:p-6" style={{ opacity: 1, visibility: 'visible' }}>
+              <Tabs value={formSection} onValueChange={(val) => setFormSection(val as any)} className="w-full">
+                <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full h-auto p-1 bg-muted/60 rounded-xl gap-1 mb-6">
+                  <TabsTrigger value="basic" className="text-xs font-semibold py-2 px-1">
+                    1. Básico
+                  </TabsTrigger>
+                  <TabsTrigger value="pricing" className="text-xs font-semibold py-2 px-1">
+                    2. Precificação
+                  </TabsTrigger>
+                  <TabsTrigger value="marketplace" className="text-xs font-semibold py-2 px-1">
+                    3. Marketplace
+                  </TabsTrigger>
+                  <TabsTrigger value="costs" className="text-xs font-semibold py-2 px-1">
+                    4. Custos & Tráfego
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* TAB 1: BÁSICO */}
+                <TabsContent value="basic" forceMount className={formSection === 'basic' ? 'space-y-5' : 'hidden'}>
+                  <div className="space-y-4">
               <ProductInfo 
                 productName={productName}
                 setProductName={setProductName}
@@ -2657,30 +2677,21 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 suppliersList={suppliersList}
                 accountHoldersList={accountHoldersList}
               />
-              <MarketplaceConfig 
-                marketplace={marketplace}
-                handleMarketplaceChange={handleMarketplaceChange}
-                marketplacesList={marketplacesList}
-              />
-              {marketplace === 'facebook' && (
-                <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn">
-                  <Label className="text-sm font-semibold text-gray-800 dark:text-white">
-                    Forma de entrega
-                  </Label>
-                  <Select value={facebookDelivery} onValueChange={(val) => setFacebookDelivery(val as 'entrega' | 'retirada')}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a entrega" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="entrega">Entrega</SelectItem>
-                      <SelectItem value="retirada">Retirada</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+                  </div>
+                  <div className="flex justify-end pt-4 border-t border-border">
+                    <Button
+                      type="button"
+                      onClick={() => setFormSection('pricing')}
+                      className="bg-brand hover:bg-brand/90 text-brand-foreground text-xs font-semibold h-9"
+                    >
+                      Avançar para Precificação →
+                    </Button>
+                  </div>
+                </TabsContent>
 
-
-
+                {/* TAB 2: PRECIFICAÇÃO */}
+                <TabsContent value="pricing" forceMount className={formSection === 'pricing' ? 'space-y-5' : 'hidden'}>
+                  <div className="space-y-4">
               <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn mt-6">
                 <Label htmlFor="costPrice" className="text-base font-bold !text-red-500">
                   Preço de Custo do Fornecedor
@@ -2764,7 +2775,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
               </div>
 
               {/* Variações Checkbox */}
-              <div className="flex items-center space-x-2 bg-gray-50 p-3 rounded-lg border border-gray-100 dark:bg-[#FF3366]">
+              <div className="flex items-center space-x-2 bg-muted/40 p-3 rounded-xl border border-border">
                 <Checkbox 
                   id="hasVariations" 
                   checked={hasVariations}
@@ -2803,7 +2814,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                       className="text-xs"
                     />
                   </div>
-                  <Button onClick={addVariation} size="sm" className="w-full bg-[#d91c42] hover:bg-[#b91536]">
+                  <Button onClick={addVariation} size="sm" className="w-full bg-brand hover:bg-brand/90 text-brand-foreground font-semibold">
                     <Plus className="w-4 h-4 mr-2" /> Adicionar Variação
                   </Button>
 
@@ -2918,6 +2929,269 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                   </div>
               )}
 
+                  </div>
+                  <div className="flex justify-between items-center pt-4 border-t border-border">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setFormSection('basic')}
+                      className="text-xs h-9 border-border"
+                    >
+                      ← Voltar: Básico
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => setFormSection('marketplace')}
+                      className="bg-brand hover:bg-brand/90 text-brand-foreground text-xs font-semibold h-9"
+                    >
+                      Avançar para Marketplace →
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                {/* TAB 3: MARKETPLACE */}
+                <TabsContent value="marketplace" forceMount className={formSection === 'marketplace' ? 'space-y-5' : 'hidden'}>
+                  <div className="space-y-4">
+              <MarketplaceConfig 
+                marketplace={marketplace}
+                handleMarketplaceChange={handleMarketplaceChange}
+                marketplacesList={marketplacesList}
+              />
+              {marketplace === 'facebook' && (
+                <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn">
+                  <Label className="text-sm font-semibold text-gray-800 dark:text-white">
+                    Forma de entrega
+                  </Label>
+                  <Select value={facebookDelivery} onValueChange={(val) => setFacebookDelivery(val as 'entrega' | 'retirada')}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a entrega" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="entrega">Entrega</SelectItem>
+                      <SelectItem value="retirada">Retirada</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+
+
+              {/* Opções específicas por marketplace */}
+              <ShopeeConfig
+                marketplace={marketplace}
+                category={category}
+                handleShopeeCategoryChange={handleShopeeCategoryChange}
+                extraCommission={extraCommission}
+                setExtraCommission={setExtraCommission}
+                shippingOption={shippingOption}
+                setShippingOption={setShippingOption}
+                shopeeSellerType={shopeeSellerType}
+                shopeeStoreCouponEnabled={shopeeStoreCouponEnabled}
+                setShopeeStoreCouponEnabled={setShopeeStoreCouponEnabled}
+                shopeeStoreCouponValue={shopeeStoreCouponValue}
+                setShopeeStoreCouponValue={setShopeeStoreCouponValue}
+                shopeeStoreCouponType={shopeeStoreCouponType}
+                setShopeeStoreCouponType={setShopeeStoreCouponType}
+                shopeeProductCouponEnabled={shopeeProductCouponEnabled}
+                setShopeeProductCouponEnabled={setShopeeProductCouponEnabled}
+                shopeeProductCouponValue={shopeeProductCouponValue}
+                setShopeeProductCouponValue={setShopeeProductCouponValue}
+                shopeeProductCouponType={shopeeProductCouponType}
+                setShopeeProductCouponType={setShopeeProductCouponType}
+                shopeeFollowerCouponEnabled={shopeeFollowerCouponEnabled}
+                setShopeeFollowerCouponEnabled={setShopeeFollowerCouponEnabled}
+                shopeeFollowerCouponValue={shopeeFollowerCouponValue}
+                setShopeeFollowerCouponValue={setShopeeFollowerCouponValue}
+                shopeeFollowerCouponType={shopeeFollowerCouponType}
+                setShopeeFollowerCouponType={setShopeeFollowerCouponType}
+                shopeeSellerVoucherEnabled={shopeeSellerVoucherEnabled}
+                setShopeeSellerVoucherEnabled={setShopeeSellerVoucherEnabled}
+                shopeeSellerVoucherValue={shopeeSellerVoucherValue}
+                setShopeeSellerVoucherValue={setShopeeSellerVoucherValue}
+                shopeeSellerVoucherType={shopeeSellerVoucherType}
+                setShopeeSellerVoucherType={setShopeeSellerVoucherType}
+                useShopeeAds={useShopeeAds}
+                handleShopeeAdsChange={handleShopeeAdsChange}
+                adsCPC={adsCPC}
+                setAdsCPC={setAdsCPC}
+                dailyBudget={dailyBudget}
+                setDailyBudget={setDailyBudget}
+                salesQuantity={salesQuantity}
+                setSalesQuantity={setSalesQuantity}
+                shopeeTotalBudget={shopeeTotalBudget}
+                setShopeeTotalBudget={setShopeeTotalBudget}
+                shopeeStartDate={shopeeStartDate}
+                setShopeeStartDate={setShopeeStartDate}
+                shopeeEndDate={shopeeEndDate}
+                setShopeeEndDate={setShopeeEndDate}
+                shopeeAdType={shopeeAdType}
+                setShopeeAdType={setShopeeAdType}
+                shopeeBidType={shopeeBidType}
+                setShopeeBidType={setShopeeBidType}
+                shopeeKeywordInput={shopeeKeywordInput}
+                setShopeeKeywordInput={setShopeeKeywordInput}
+                shopeeKeywords={shopeeKeywords}
+                setShopeeKeywords={setShopeeKeywords}
+                shopeeMaxCpc={shopeeMaxCpc}
+                setShopeeMaxCpc={setShopeeMaxCpc}
+                availableMarketingCapital={availableShopeeBudget}
+                remainingMarketingCapital={remainingMarketingCapital}
+              />
+
+              <MercadoLivreConfig
+                marketplace={marketplace}
+                hasReputation={hasReputation}
+                setHasReputation={setHasReputation}
+                reputationLevel={reputationLevel}
+                setReputationLevel={setReputationLevel}
+                adType={adType}
+                setAdType={setAdType}
+                category={category}
+                setCategory={setCategory}
+                meliPlus={meliPlus}
+                setMeliPlus={setMeliPlus}
+                mlShippingCost={mlShippingCost}
+                setMlShippingCost={setMlShippingCost}
+                mercadoAdsEnabled={mercadoAdsEnabled}
+                setMercadoAdsEnabled={setMercadoAdsEnabled}
+                mercadoAdsManagementMode={mercadoAdsManagementMode}
+                setMercadoAdsManagementMode={setMercadoAdsManagementMode}
+                mercadoAdsSolution={mercadoAdsSolution}
+                setMercadoAdsSolution={setMercadoAdsSolution}
+                mercadoAdsSelection={mercadoAdsSelection}
+                setMercadoAdsSelection={setMercadoAdsSelection}
+                mercadoAdsDailyBudget={mercadoAdsDailyBudget}
+                setMercadoAdsDailyBudget={setMercadoAdsDailyBudget}
+                mercadoAdsAcosTarget={mercadoAdsAcosTarget}
+                setMercadoAdsAcosTarget={setMercadoAdsAcosTarget}
+                mercadoAdsSalesQuantity={mercadoAdsSalesQuantity}
+                setMercadoAdsSalesQuantity={setMercadoAdsSalesQuantity}
+                mercadoAdsCpc={mercadoAdsCpc}
+                setMercadoAdsCpc={setMercadoAdsCpc}
+                mercadoAdsConversionRate={mercadoAdsConversionRate}
+                setMercadoAdsConversionRate={setMercadoAdsConversionRate}
+                mercadoAdsBudgetType={mercadoAdsBudgetType}
+                setMercadoAdsBudgetType={setMercadoAdsBudgetType}
+                handleFloatInput={handleFloatInput}
+                supplierName={supplierName}
+                weight={weight}
+                width={width}
+                height={height}
+                depth={depth}
+                manualSellingPrice={manualSellingPrice}
+              />
+
+              <TikTokConfig
+                marketplace={marketplace}
+                tiktokCommission={tiktokCommission}
+                setTiktokCommission={setTiktokCommission}
+                marketplaceShippingCost={wordpressShipping}
+                setMarketplaceShippingCost={setWordpressShipping}
+                tiktokAdsEnabled={tiktokAdsEnabled}
+                setTiktokAdsEnabled={setTiktokAdsEnabled}
+                tiktokAdFormat={tiktokAdFormat}
+                setTiktokAdFormat={setTiktokAdFormat}
+                tiktokAudience={tiktokAudience}
+                setTiktokAudience={setTiktokAudience}
+                tiktokCampaignObjective={tiktokCampaignObjective}
+                setTiktokCampaignObjective={setTiktokCampaignObjective}
+                tiktokDailyBudget={tiktokDailyBudget}
+                setTiktokDailyBudget={setTiktokDailyBudget}
+                tiktokCPA={tiktokCPA}
+                setTiktokCPA={setTiktokCPA}
+                tiktokAdsSalesQuantity={tiktokAdsSalesQuantity}
+                setTiktokAdsSalesQuantity={setTiktokAdsSalesQuantity}
+                tiktokCPM={tiktokCPM}
+                setTiktokCPM={setTiktokCPM}
+                tiktokCTR={tiktokCTR}
+                setTiktokCTR={setTiktokCTR}
+                tiktokCVR={tiktokCVR}
+                setTiktokCVR={setTiktokCVR}
+                tiktokCatalogId={tiktokCatalogId}
+                setTiktokCatalogId={setTiktokCatalogId}
+                tiktokSfpEnabled={tiktokSfpEnabled}
+                setTiktokSfpEnabled={setTiktokSfpEnabled}
+              />
+
+              <TikTokPromotions
+                marketplace={marketplace}
+                tiktokPromoProductValue={tiktokPromoProductValue}
+                setTiktokPromoProductValue={setTiktokPromoProductValue}
+                tiktokPromoProductType={tiktokPromoProductType}
+                setTiktokPromoProductType={setTiktokPromoProductType}
+                tiktokPromoProductUntil={tiktokPromoProductUntil}
+                setTiktokPromoProductUntil={setTiktokPromoProductUntil}
+                tiktokPromoNewCustomerValue={tiktokPromoNewCustomerValue}
+                setTiktokPromoNewCustomerValue={setTiktokPromoNewCustomerValue}
+                tiktokPromoNewCustomerType={tiktokPromoNewCustomerType}
+                setTiktokPromoNewCustomerType={setTiktokPromoNewCustomerType}
+                tiktokPromoShippingValue={tiktokPromoShippingValue}
+                setTiktokPromoShippingValue={setTiktokPromoShippingValue}
+                tiktokPromoShippingType={tiktokPromoShippingType}
+                setTiktokPromoShippingType={setTiktokPromoShippingType}
+              />
+
+              <EnjoeiConfig
+                marketplace={marketplace}
+                enjoeiAdType={enjoeiAdType}
+                setEnjoeiAdType={setEnjoeiAdType}
+                enjoeiInactivityMonths={enjoeiInactivityMonths}
+                setEnjoeiInactivityMonths={setEnjoeiInactivityMonths}
+                marketplaceShippingCost={wordpressShipping}
+                setMarketplaceShippingCost={setWordpressShipping}
+              />
+
+              <AmazonConfig
+                marketplace={marketplace}
+                amazonPlan={amazonPlan}
+                setAmazonPlan={setAmazonPlan}
+                amazonCategory={amazonCategory}
+                setAmazonCategory={setAmazonCategory}
+                marketplaceShippingCost={wordpressShipping}
+                setMarketplaceShippingCost={setWordpressShipping}
+              />
+
+              {['wordpress', 'shein'].includes(marketplace) && (
+                <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn">
+                   <Label htmlFor="wordpressShipping" className="text-sm font-semibold text-gray-800">
+                     Valor do Frete (R$)
+                   </Label>
+                   <div className="relative">
+                      <Input
+                       id="wordpressShipping"
+                        type="text"
+                        inputMode="decimal"
+                       value={wordpressShipping}
+                        onChange={(e) => handleCurrencyChange(e, setWordpressShipping)}
+                        placeholder="0,00"
+                      />
+                   </div>
+                </div>
+              )}
+
+                  </div>
+                  <div className="flex justify-between items-center pt-4 border-t border-border">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setFormSection('pricing')}
+                      className="text-xs h-9 border-border"
+                    >
+                      ← Voltar: Precificação
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => setFormSection('costs')}
+                      className="bg-brand hover:bg-brand/90 text-brand-foreground text-xs font-semibold h-9"
+                    >
+                      Avançar para Custos & Tráfego →
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                {/* TAB 4: CUSTOS & TRÁFEGO */}
+                <TabsContent value="costs" forceMount className={formSection === 'costs' ? 'space-y-5' : 'hidden'}>
+                  <div className="space-y-4">
               {/* Configuração de Gateway de Pagamento */}
               <GatewayConfig
                 gatewayBank={gatewayBank}
@@ -3127,199 +3401,28 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
 
 
 
-              {/* Opções específicas por marketplace */}
-              <ShopeeConfig
-                marketplace={marketplace}
-                category={category}
-                handleShopeeCategoryChange={handleShopeeCategoryChange}
-                extraCommission={extraCommission}
-                setExtraCommission={setExtraCommission}
-                shippingOption={shippingOption}
-                setShippingOption={setShippingOption}
-                shopeeSellerType={shopeeSellerType}
-                shopeeStoreCouponEnabled={shopeeStoreCouponEnabled}
-                setShopeeStoreCouponEnabled={setShopeeStoreCouponEnabled}
-                shopeeStoreCouponValue={shopeeStoreCouponValue}
-                setShopeeStoreCouponValue={setShopeeStoreCouponValue}
-                shopeeStoreCouponType={shopeeStoreCouponType}
-                setShopeeStoreCouponType={setShopeeStoreCouponType}
-                shopeeProductCouponEnabled={shopeeProductCouponEnabled}
-                setShopeeProductCouponEnabled={setShopeeProductCouponEnabled}
-                shopeeProductCouponValue={shopeeProductCouponValue}
-                setShopeeProductCouponValue={setShopeeProductCouponValue}
-                shopeeProductCouponType={shopeeProductCouponType}
-                setShopeeProductCouponType={setShopeeProductCouponType}
-                shopeeFollowerCouponEnabled={shopeeFollowerCouponEnabled}
-                setShopeeFollowerCouponEnabled={setShopeeFollowerCouponEnabled}
-                shopeeFollowerCouponValue={shopeeFollowerCouponValue}
-                setShopeeFollowerCouponValue={setShopeeFollowerCouponValue}
-                shopeeFollowerCouponType={shopeeFollowerCouponType}
-                setShopeeFollowerCouponType={setShopeeFollowerCouponType}
-                shopeeSellerVoucherEnabled={shopeeSellerVoucherEnabled}
-                setShopeeSellerVoucherEnabled={setShopeeSellerVoucherEnabled}
-                shopeeSellerVoucherValue={shopeeSellerVoucherValue}
-                setShopeeSellerVoucherValue={setShopeeSellerVoucherValue}
-                shopeeSellerVoucherType={shopeeSellerVoucherType}
-                setShopeeSellerVoucherType={setShopeeSellerVoucherType}
-                useShopeeAds={useShopeeAds}
-                handleShopeeAdsChange={handleShopeeAdsChange}
-                adsCPC={adsCPC}
-                setAdsCPC={setAdsCPC}
-                dailyBudget={dailyBudget}
-                setDailyBudget={setDailyBudget}
-                salesQuantity={salesQuantity}
-                setSalesQuantity={setSalesQuantity}
-                shopeeTotalBudget={shopeeTotalBudget}
-                setShopeeTotalBudget={setShopeeTotalBudget}
-                shopeeStartDate={shopeeStartDate}
-                setShopeeStartDate={setShopeeStartDate}
-                shopeeEndDate={shopeeEndDate}
-                setShopeeEndDate={setShopeeEndDate}
-                shopeeAdType={shopeeAdType}
-                setShopeeAdType={setShopeeAdType}
-                shopeeBidType={shopeeBidType}
-                setShopeeBidType={setShopeeBidType}
-                shopeeKeywordInput={shopeeKeywordInput}
-                setShopeeKeywordInput={setShopeeKeywordInput}
-                shopeeKeywords={shopeeKeywords}
-                setShopeeKeywords={setShopeeKeywords}
-                shopeeMaxCpc={shopeeMaxCpc}
-                setShopeeMaxCpc={setShopeeMaxCpc}
-                availableMarketingCapital={availableShopeeBudget}
-                remainingMarketingCapital={remainingMarketingCapital}
-              />
-
-              <MercadoLivreConfig
-                marketplace={marketplace}
-                hasReputation={hasReputation}
-                setHasReputation={setHasReputation}
-                reputationLevel={reputationLevel}
-                setReputationLevel={setReputationLevel}
-                adType={adType}
-                setAdType={setAdType}
-                category={category}
-                setCategory={setCategory}
-                meliPlus={meliPlus}
-                setMeliPlus={setMeliPlus}
-                mlShippingCost={mlShippingCost}
-                setMlShippingCost={setMlShippingCost}
-                mercadoAdsEnabled={mercadoAdsEnabled}
-                setMercadoAdsEnabled={setMercadoAdsEnabled}
-                mercadoAdsManagementMode={mercadoAdsManagementMode}
-                setMercadoAdsManagementMode={setMercadoAdsManagementMode}
-                mercadoAdsSolution={mercadoAdsSolution}
-                setMercadoAdsSolution={setMercadoAdsSolution}
-                mercadoAdsSelection={mercadoAdsSelection}
-                setMercadoAdsSelection={setMercadoAdsSelection}
-                mercadoAdsDailyBudget={mercadoAdsDailyBudget}
-                setMercadoAdsDailyBudget={setMercadoAdsDailyBudget}
-                mercadoAdsAcosTarget={mercadoAdsAcosTarget}
-                setMercadoAdsAcosTarget={setMercadoAdsAcosTarget}
-                mercadoAdsSalesQuantity={mercadoAdsSalesQuantity}
-                setMercadoAdsSalesQuantity={setMercadoAdsSalesQuantity}
-                mercadoAdsCpc={mercadoAdsCpc}
-                setMercadoAdsCpc={setMercadoAdsCpc}
-                mercadoAdsConversionRate={mercadoAdsConversionRate}
-                setMercadoAdsConversionRate={setMercadoAdsConversionRate}
-                mercadoAdsBudgetType={mercadoAdsBudgetType}
-                setMercadoAdsBudgetType={setMercadoAdsBudgetType}
-                handleFloatInput={handleFloatInput}
-                supplierName={supplierName}
-                weight={weight}
-                width={width}
-                height={height}
-                depth={depth}
-                manualSellingPrice={manualSellingPrice}
-              />
-
-              <TikTokConfig
-                marketplace={marketplace}
-                tiktokCommission={tiktokCommission}
-                setTiktokCommission={setTiktokCommission}
-                marketplaceShippingCost={wordpressShipping}
-                setMarketplaceShippingCost={setWordpressShipping}
-                tiktokAdsEnabled={tiktokAdsEnabled}
-                setTiktokAdsEnabled={setTiktokAdsEnabled}
-                tiktokAdFormat={tiktokAdFormat}
-                setTiktokAdFormat={setTiktokAdFormat}
-                tiktokAudience={tiktokAudience}
-                setTiktokAudience={setTiktokAudience}
-                tiktokCampaignObjective={tiktokCampaignObjective}
-                setTiktokCampaignObjective={setTiktokCampaignObjective}
-                tiktokDailyBudget={tiktokDailyBudget}
-                setTiktokDailyBudget={setTiktokDailyBudget}
-                tiktokCPA={tiktokCPA}
-                setTiktokCPA={setTiktokCPA}
-                tiktokAdsSalesQuantity={tiktokAdsSalesQuantity}
-                setTiktokAdsSalesQuantity={setTiktokAdsSalesQuantity}
-                tiktokCPM={tiktokCPM}
-                setTiktokCPM={setTiktokCPM}
-                tiktokCTR={tiktokCTR}
-                setTiktokCTR={setTiktokCTR}
-                tiktokCVR={tiktokCVR}
-                setTiktokCVR={setTiktokCVR}
-                tiktokCatalogId={tiktokCatalogId}
-                setTiktokCatalogId={setTiktokCatalogId}
-                tiktokSfpEnabled={tiktokSfpEnabled}
-                setTiktokSfpEnabled={setTiktokSfpEnabled}
-              />
-
-              <TikTokPromotions
-                marketplace={marketplace}
-                tiktokPromoProductValue={tiktokPromoProductValue}
-                setTiktokPromoProductValue={setTiktokPromoProductValue}
-                tiktokPromoProductType={tiktokPromoProductType}
-                setTiktokPromoProductType={setTiktokPromoProductType}
-                tiktokPromoProductUntil={tiktokPromoProductUntil}
-                setTiktokPromoProductUntil={setTiktokPromoProductUntil}
-                tiktokPromoNewCustomerValue={tiktokPromoNewCustomerValue}
-                setTiktokPromoNewCustomerValue={setTiktokPromoNewCustomerValue}
-                tiktokPromoNewCustomerType={tiktokPromoNewCustomerType}
-                setTiktokPromoNewCustomerType={setTiktokPromoNewCustomerType}
-                tiktokPromoShippingValue={tiktokPromoShippingValue}
-                setTiktokPromoShippingValue={setTiktokPromoShippingValue}
-                tiktokPromoShippingType={tiktokPromoShippingType}
-                setTiktokPromoShippingType={setTiktokPromoShippingType}
-              />
-
-              <EnjoeiConfig
-                marketplace={marketplace}
-                enjoeiAdType={enjoeiAdType}
-                setEnjoeiAdType={setEnjoeiAdType}
-                enjoeiInactivityMonths={enjoeiInactivityMonths}
-                setEnjoeiInactivityMonths={setEnjoeiInactivityMonths}
-                marketplaceShippingCost={wordpressShipping}
-                setMarketplaceShippingCost={setWordpressShipping}
-              />
-
-              <AmazonConfig
-                marketplace={marketplace}
-                amazonPlan={amazonPlan}
-                setAmazonPlan={setAmazonPlan}
-                amazonCategory={amazonCategory}
-                setAmazonCategory={setAmazonCategory}
-                marketplaceShippingCost={wordpressShipping}
-                setMarketplaceShippingCost={setWordpressShipping}
-              />
-
-              {['wordpress', 'shein'].includes(marketplace) && (
-                <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn">
-                   <Label htmlFor="wordpressShipping" className="text-sm font-semibold text-gray-800">
-                     Valor do Frete (R$)
-                   </Label>
-                   <div className="relative">
-                      <Input
-                       id="wordpressShipping"
-                        type="text"
-                        inputMode="decimal"
-                       value={wordpressShipping}
-                        onChange={(e) => handleCurrencyChange(e, setWordpressShipping)}
-                        placeholder="0,00"
-                      />
-                   </div>
-                </div>
-              )}
-
+                  </div>
+                  <div className="flex justify-between items-center pt-4 border-t border-border">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setFormSection('marketplace')}
+                      className="text-xs h-9 border-border"
+                    >
+                      ← Voltar: Marketplace
+                    </Button>
+                    <GradientButton
+                      onClick={handleSaveProduct}
+                      disabled={isSaveDisabled}
+                      loading={isSavingProduct}
+                      icon={<Plus className="w-4 h-4" />}
+                      className="h-9 px-4 text-xs font-semibold"
+                    >
+                      Adicionar Produto
+                    </GradientButton>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
 
@@ -3645,8 +3748,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
 
                   <div className={`flex justify-between items-center py-4 rounded-lg px-4 mt-2 border shadow-lg ${
                      calculations.marginStatus === 'negative' ? 'bg-red-600 border-red-500' :
-                     calculations.marginStatus === 'excellent' ? 'bg-[#16A34A] border-green-600' :
-                     'bg-[#DCFCE7] border-green-200'
+                     calculations.marginStatus === 'excellent' ? 'bg-brand/15 border-brand/30 text-brand' : 'bg-success/15 border-success/30 text-success'
                    }`} style={{ opacity: 1, visibility: 'visible' }}>
                      <span className={`font-bold font-iceland text-xl ${
                          calculations.marginStatus === 'negative' || calculations.marginStatus === 'excellent' ? 'text-white' : 'text-black'
@@ -3671,8 +3773,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
 
                    <div className={`flex justify-between items-center py-4 rounded-lg px-4 border shadow-lg ${
                      calculations.marginStatus === 'negative' ? 'bg-red-600 border-red-500' :
-                     calculations.marginStatus === 'excellent' ? 'bg-[#16A34A] border-green-600' :
-                     'bg-[#DCFCE7] border-green-200'
+                     calculations.marginStatus === 'excellent' ? 'bg-brand/15 border-brand/30 text-brand' : 'bg-success/15 border-success/30 text-success'
                    }`} style={{ opacity: 1, visibility: 'visible' }}>
                      <span className={`font-bold font-iceland text-xl ${
                          calculations.marginStatus === 'negative' || calculations.marginStatus === 'excellent' ? 'text-white' : 'text-black'
@@ -3991,10 +4092,10 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
         {showOnlyProducts ? (
           <>
           <div className="grid gap-6 lg:grid-cols-2">
-            <div className="bg-[#FF3366]/80 text-white rounded-xl p-5 shadow-lg border border-white/10 flex flex-col overflow-visible">
+            <div className="bg-card text-card-foreground rounded-2xl p-5 shadow-xl border border-border flex flex-col overflow-visible">
               <ElectricBorder color="#fe2c55" speed={0.8} chaos={0.1} borderRadius={16} className="flex flex-col flex-1 overflow-visible">
                 <div className="rounded-lg p-0 flex flex-col flex-1 h-full">
-                  <div className="flex items-center justify-between p-4 bg-[#FF3366]/80 rounded-t-2xl">
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-t-2xl">
                   </div>
 
                   <div className="px-4 pt-3 pb-1">
@@ -4003,7 +4104,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                       value={projectionSearch}
                       onChange={e => { setProjectionSearch(e.target.value); setSelectedProductIndex(0); }}
                       placeholder="Pesquisar produto..."
-                      className="w-full rounded-lg px-3 py-2 text-sm bg-[#FF3366]/40 text-white placeholder-white/70 border border-white/30 focus:outline-none focus:border-white/70"
+                      className="w-full rounded-lg px-3 py-2 text-sm bg-muted/50 text-foreground placeholder:text-muted-foreground border border-input focus:outline-none focus:ring-2 focus:ring-ring"
                     />
                   </div>
 
@@ -4025,7 +4126,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 <Card id="produtos" className="shadow-xl backdrop-blur-xl bg-white dark:bg-gray-900 border border-white/20 dark:border-gray-700/20" style={{ opacity: 1, visibility: 'visible' }}>
                   <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2" onClick={handleNavigateToProducts}>
                     <div className="flex flex-row items-center gap-2 cursor-pointer">
-                      <Package className="w-6 h-6 text-[#fe2c55]" />
+                      <Package className="w-6 h-6 text-brand" />
                       <CardTitle className="tracking-tight text-2xl font-bold text-gray-800 dark:text-white font-iceland">Produtos adicionados</CardTitle>
                     </div>
                     {filteredProducts.length > 0 && (
@@ -4317,7 +4418,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                   </div>
                   {shouldShowProductsLoading ? (
                     <div className="flex items-center justify-center py-20">
-                      <MoonLoader color="#ff2a6d" size={40} />
+                      <MoonLoader color="hsl(var(--brand))" size={40} />
                     </div>
                   ) : effectiveProducts.length === 0 ? (
                     <div className="text-sm text-gray-500">Nenhum produto adicionado ainda.</div>
@@ -4459,7 +4560,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
               <CollapsibleSection title="Taxas dos Marketplaces (Referência)" icon={<AlertCircle className="w-6 h-6 text-blue-600" />}>
                 <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-700">
                   <div className="bg-white rounded-lg p-4 border border-pink-100">
-                    <h5 className="font-bold text-[#fe2c55] mb-2">📦 Mercado Livre Clássico</h5>
+                    <h5 className="font-bold text-brand mb-2">📦 Mercado Livre Clássico</h5>
                     <ul className="space-y-1 ml-4">
                       <li>• <strong>Comissão:</strong> 10% a 14% sobre o valor da venda (varia por categoria)</li>
                       <li>• <strong>Custo Fixo:</strong> Hoje varia por faixa de preço.</li>
@@ -4470,7 +4571,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                   </div>
                   
                   <div className="bg-white rounded-lg p-4 border border-pink-100">
-                    <h5 className="font-bold text-[#fe2c55] mb-2">⭐ Anúncio Premium (Mercado Livre)</h5>
+                    <h5 className="font-bold text-brand mb-2">⭐ Anúncio Premium (Mercado Livre)</h5>
                     <ul className="space-y-1 ml-4">
                       <li>• <strong>Comissão:</strong> 15% a 19% sobre o valor da venda (varia por categoria)</li>
                       <li>• <strong>Custo Fixo:</strong> Hoje varia por faixa de preço.</li>
@@ -4481,7 +4582,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                   </div>
 
                   <div className="bg-white rounded-lg p-4 border border-pink-100">
-                    <h5 className="font-bold text-[#fe2c55] mb-2">📦 Amazon</h5>
+                    <h5 className="font-bold text-brand mb-2">📦 Amazon</h5>
                     <ul className="space-y-1 ml-4">
                       <li>• <strong>1. Comissão de Venda (Taxa de Referência):</strong> A Amazon cobra uma comissão sobre o valor total da venda (preço do item + frete + embalagem para presente).
                         <ul className="ml-4 mt-1 list-disc text-xs text-gray-600">
@@ -4505,7 +4606,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                   </div>
 
                   <div className="bg-white rounded-lg p-4 border border-pink-100">
-                    <h5 className="font-bold text-[#fe2c55] mb-2">🛍️ Shopee</h5>
+                    <h5 className="font-bold text-brand mb-2">🛍️ Shopee</h5>
                     <ul className="space-y-1 ml-4">
                       <li>• <strong>Com Frete Grátis:</strong> 14% comissão + 6% frete + R$ 4 fixo*</li>
                       <li>• <strong>Sem Frete Grátis:</strong> 12% comissão + 2% transação + R$ 4 fixo*</li>

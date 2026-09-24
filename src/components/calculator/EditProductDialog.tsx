@@ -1122,7 +1122,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
         onClose();
       }
     }}>
-      <DialogContent className="sm:max-w-[920px] max-h-[85vh] overflow-y-auto overflow-x-hidden bg-gray-50 dark:bg-gray-900">
+      <DialogContent className="sm:max-w-[920px] max-h-[85vh] overflow-y-auto overflow-x-hidden bg-card border border-border shadow-2xl text-card-foreground">
         <DialogHeader>
           <DialogTitle>Editar Produto</DialogTitle>
           <DialogDescription>
@@ -1141,12 +1141,12 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                   onClick={() => setStep(index)}
                   className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
                     isActive
-                      ? 'border-[#fe2c55] bg-[#fe2c55]/10 text-[#fe2c55]'
+                      ? 'border-brand bg-brand/10 text-brand font-semibold shadow-sm'
                       : 'border-border bg-background text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   <span className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold ${
-                    isActive ? 'border-[#fe2c55] text-[#fe2c55]' : 'border-border text-muted-foreground'
+                    isActive ? 'border-brand bg-brand text-brand-foreground' : 'border-border text-muted-foreground'
                   }`}>
                     {index + 1}
                   </span>
@@ -2153,10 +2153,10 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                 </>
               )}
               {step === 3 && (
-                <div className="bg-[#DCFCE7] rounded-xl p-4 border border-white dark:border-zinc-800 shadow-md animate-fadeIn text-black">
-                  <div className="flex items-center gap-2 mb-3 border-b border-white dark:border-zinc-800 pb-2">
-                    <TrendingUp className="w-5 h-5 text-black" />
-                    <h3 className="font-bold text-lg text-black">Tráfego Orgânico</h3>
+                <div className="bg-muted/30 rounded-2xl p-5 border border-border shadow-sm animate-fadeIn text-foreground">
+                  <div className="flex items-center gap-2 mb-3 border-b border-border pb-2">
+                    <TrendingUp className="w-5 h-5 text-brand" />
+                    <h3 className="font-bold text-lg text-foreground">Tráfego Orgânico</h3>
                   </div>
                   
                   {/* Video Model - Dropdown */}
@@ -3277,7 +3277,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                         <button
                           type="button"
                           onClick={() => handleChange('shopeeFreeShipping', !formData.shopeeFreeShipping)}
-                          className={`w-6 h-6 rounded flex items-center justify-center border-2 transition-colors ${formData.shopeeFreeShipping ? 'bg-[#fe2c55] border-[#fe2c55]' : 'bg-transparent border-gray-400'}`}
+                          className={`w-6 h-6 rounded flex items-center justify-center border-2 transition-colors ${formData.shopeeFreeShipping ? 'bg-brand border-brand text-brand-foreground' : 'bg-transparent border-input'}`}
                         >
                           {formData.shopeeFreeShipping && (
                             <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>

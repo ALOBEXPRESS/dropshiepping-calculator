@@ -51,7 +51,7 @@ export const GatewayConfig: React.FC<GatewayConfigProps> = ({
     { key: 'paypal', label: 'PayPal', active: 'bg-black hover:bg-black ring-2 ring-black ring-offset-2' },
     { key: 'stripe', label: 'Stripe', active: 'bg-black hover:bg-black ring-2 ring-black ring-offset-2' },
     { key: 'bradesco', label: 'Bradesco', active: 'bg-black hover:bg-black ring-2 ring-black ring-offset-2' },
-    { key: 'pagbank', label: 'PagBank', active: 'bg-white hover:bg-white ring-2 ring-[#dde05b] ring-offset-2' }
+    { key: 'pagbank', label: 'PagBank', active: 'bg-white hover:bg-white ring-2 ring-primary ring-offset-2' }
   ];
   const handleFeeTypeChange = (type: 'percent' | 'fixed') => {
     setGatewayFeeType(type);
@@ -72,8 +72,8 @@ export const GatewayConfig: React.FC<GatewayConfigProps> = ({
 
   return (
     <>
-      <div className="grid w-full max-w-sm gap-2 animate-fadeIn bg-gray-50 p-3 rounded-lg border border-gray-200 dark:bg-[#FF3366]">
-         <Label className="text-sm font-semibold !text-gray-800 dark:!text-white">
+      <div className="grid w-full max-w-sm gap-2 animate-fadeIn bg-muted/40 p-4 rounded-xl border border-border">
+         <Label className="text-sm font-semibold text-foreground">
            Configuração de Pagamento
          </Label>
          
