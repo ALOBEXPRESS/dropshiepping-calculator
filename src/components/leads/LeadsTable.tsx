@@ -210,7 +210,7 @@ export default function LeadsTable({
           </div>
 
           {/* Table skeleton */}
-          <div className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800 p-6">
+          <div className="bg-card rounded-lg border border-border p-6">
             <LoadingState variant="list" count={5} />
           </div>
         </div>

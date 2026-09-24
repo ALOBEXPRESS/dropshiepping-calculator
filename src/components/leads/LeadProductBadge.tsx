@@ -76,7 +76,7 @@ export const LeadProductBadge: React.FC<{
   if (loading) {
     return (
       <div className="flex items-center gap-1">
-        <div className="h-4 w-24 animate-pulse rounded bg-zinc-700/50" />
+        <div className="h-4 w-24 animate-pulse rounded bg-muted" />
       </div>
     );
   }
@@ -91,7 +91,7 @@ export const LeadProductBadge: React.FC<{
         <div key={i} className="flex items-center gap-1 group relative">
           <Package className="w-3 h-3 text-orange-400/70 flex-shrink-0" />
           <span
-            className="text-[11px] text-zinc-300 truncate max-w-[170px] cursor-default"
+            className="text-[11px] text-foreground truncate max-w-[170px] cursor-default"
             title={`#${p.order_number} — ${p.description}`}
           >
             {p.description.length > 28 ? p.description.slice(0, 28) + '…' : p.description}
@@ -99,7 +99,7 @@ export const LeadProductBadge: React.FC<{
         </div>
       ))}
       {products.length > 2 && (
-        <span className="text-[10px] text-zinc-500">+{products.length - 2} mais</span>
+        <span className="text-[10px] text-muted-foreground">+{products.length - 2} mais</span>
       )}
     </div>
   );

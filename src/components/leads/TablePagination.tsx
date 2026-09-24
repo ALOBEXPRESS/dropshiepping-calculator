@@ -155,14 +155,14 @@ export function TablePagination({
     <div className={className}>
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         {/* Result count - Requirement 5.1 */}
-        <div className="text-sm text-gray-600 dark:text-gray-400">
+        <div className="text-sm text-muted-foreground">
           Mostrando {startResult}-{endResult} de {totalCount} leads
         </div>
         
         <div className="flex flex-col sm:flex-row items-center gap-4">
           {/* Page size selector - Requirement 5.4, 5.5 */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
+            <span className="text-sm text-muted-foreground whitespace-nowrap">
               Itens por página:
             </span>
             <Select

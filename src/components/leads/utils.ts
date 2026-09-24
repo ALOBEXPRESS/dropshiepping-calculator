@@ -96,8 +96,8 @@ export function formatCurrency(value: number | null | undefined): string {
  * @returns Tailwind CSS classes for badge
  */
 export function getStatusColor(status: LeadStatus | null | undefined): string {
-  if (!status) return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
-  return STATUS_COLORS[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+  if (!status) return 'bg-muted text-muted-foreground';
+  return STATUS_COLORS[status] || 'bg-muted text-muted-foreground';
 }
 
 /**

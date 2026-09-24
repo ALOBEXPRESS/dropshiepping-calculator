@@ -238,11 +238,11 @@ export function FilterBar({
     <div className="grid grid-cols-1 gap-4">
       {/* Search input - Requirement 3.1 */}
       <div>
-        <Label htmlFor="search" className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
+        <Label htmlFor="search" className="text-sm font-medium text-foreground mb-1.5 block">
           Buscar
         </Label>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             id="search"
             type="text"
@@ -257,7 +257,7 @@ export function FilterBar({
       
       {/* Status filter - Requirement 3.2 */}
       <div>
-        <Label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
+        <Label className="text-sm font-medium text-foreground mb-1.5 block">
           Status
         </Label>
         <Popover>
@@ -280,13 +280,13 @@ export function FilterBar({
               {LEAD_STATUS_OPTIONS.map((option) => (
                 <label
                   key={option.value}
-                  className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 p-2 rounded"
+                  className="flex items-center gap-2 cursor-pointer hover:bg-muted p-2 rounded"
                 >
                   <input
                     type="checkbox"
                     checked={filters.status?.includes(option.value) || false}
                     onChange={() => handleStatusChange(option.value)}
-                    className="rounded border-gray-300"
+                    className="rounded border-input"
                   />
                   <span className="text-sm">{option.label}</span>
                 </label>
@@ -298,7 +298,7 @@ export function FilterBar({
       
       {/* Marketplace filter - Requirement 3.3 */}
       <div>
-        <Label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
+        <Label className="text-sm font-medium text-foreground mb-1.5 block">
           Canal
         </Label>
         <Popover>
@@ -322,19 +322,19 @@ export function FilterBar({
               {marketplaces?.map((marketplace) => (
                 <label
                   key={marketplace.id}
-                  className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 p-2 rounded"
+                  className="flex items-center gap-2 cursor-pointer hover:bg-muted p-2 rounded"
                 >
                   <input
                     type="checkbox"
                     checked={filters.marketplaceId?.includes(marketplace.id) || false}
                     onChange={() => handleMarketplaceChange(marketplace.id)}
-                    className="rounded border-gray-300"
+                    className="rounded border-input"
                   />
                   <span className="text-sm">{marketplace.name}</span>
                 </label>
               ))}
               {(!marketplaces || marketplaces.length === 0) && (
-                <div className="text-sm text-gray-500 p-2">
+                <div className="text-sm text-muted-foreground p-2">
                   Nenhum canal disponível
                 </div>
               )}
@@ -345,7 +345,7 @@ export function FilterBar({
       
       {/* Gender filter - Requirement 3.4 */}
       <div>
-        <Label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
+        <Label className="text-sm font-medium text-foreground mb-1.5 block">
           Gênero
         </Label>
         <Popover>
@@ -368,7 +368,7 @@ export function FilterBar({
               {GENDER_OPTIONS.map((option) => (
                 <label
                   key={option.value}
-                  className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 p-2 rounded"
+                  className="flex items-center gap-2 cursor-pointer hover:bg-muted p-2 rounded"
                 >
                   <input
                     type="checkbox"
@@ -378,7 +378,7 @@ export function FilterBar({
                         : filters.gender?.includes(option.value as Gender) || false
                     }
                     onChange={() => handleGenderChange(option.value)}
-                    className="rounded border-gray-300"
+                    className="rounded border-input"
                   />
                   <span className="text-sm">{option.label}</span>
                 </label>
@@ -390,7 +390,7 @@ export function FilterBar({
       
       {/* Date range filter - Requirement 3.5 */}
       <div>
-        <Label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
+        <Label className="text-sm font-medium text-foreground mb-1.5 block">
           Período
         </Label>
         <Popover open={isDatePopoverOpen} onOpenChange={setIsDatePopoverOpen}>
@@ -429,7 +429,7 @@ export function FilterBar({
                 <Label className="text-sm font-medium">Período personalizado</Label>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <Label htmlFor="date-from" className="text-xs text-gray-500">De</Label>
+                    <Label htmlFor="date-from" className="text-xs text-muted-foreground">De</Label>
                     <Input
                       id="date-from"
                       type="date"
@@ -446,7 +446,7 @@ export function FilterBar({
                     />
                   </div>
                   <div>
-                    <Label htmlFor="date-to" className="text-xs text-gray-500">Até</Label>
+                    <Label htmlFor="date-to" className="text-xs text-muted-foreground">Até</Label>
                     <Input
                       id="date-to"
                       type="date"
@@ -477,14 +477,14 @@ export function FilterBar({
     <div 
       role="search" 
       aria-label="Filtros de leads"
-      className={`bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-200 dark:border-zinc-800 ${className}`}
+      className={`bg-card rounded-lg p-4 border border-border ${className}`}
     >
       <div className="space-y-4">
         {/* Header with filter count and clear button */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" aria-hidden="true" />
-            <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+            <Filter className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+            <h3 className="text-sm font-medium text-foreground">
               Filtros
             </h3>
             {activeFilterCount > 0 && (
@@ -570,11 +570,11 @@ export function FilterBar({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Search input - Requirement 3.1 */}
             <div className="lg:col-span-2">
-              <Label htmlFor="search-desktop" className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
+              <Label htmlFor="search-desktop" className="text-sm font-medium text-foreground mb-1.5 block">
                 Buscar
               </Label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="search-desktop"
                   type="text"
@@ -589,7 +589,7 @@ export function FilterBar({
             
             {/* Status filter - Requirement 3.2 */}
             <div>
-              <Label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
+              <Label className="text-sm font-medium text-foreground mb-1.5 block">
                 Status
               </Label>
               <Popover>
@@ -612,13 +612,13 @@ export function FilterBar({
                     {LEAD_STATUS_OPTIONS.map((option) => (
                       <label
                         key={option.value}
-                        className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 p-2 rounded"
+                        className="flex items-center gap-2 cursor-pointer hover:bg-muted p-2 rounded"
                       >
                         <input
                           type="checkbox"
                           checked={filters.status?.includes(option.value) || false}
                           onChange={() => handleStatusChange(option.value)}
-                          className="rounded border-gray-300"
+                          className="rounded border-input"
                         />
                         <span className="text-sm">{option.label}</span>
                       </label>
@@ -630,7 +630,7 @@ export function FilterBar({
             
             {/* Marketplace filter - Requirement 3.3 */}
             <div>
-              <Label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
+              <Label className="text-sm font-medium text-foreground mb-1.5 block">
                 Canal
               </Label>
               <Popover>
@@ -654,19 +654,19 @@ export function FilterBar({
                     {marketplaces?.map((marketplace) => (
                       <label
                         key={marketplace.id}
-                        className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 p-2 rounded"
+                        className="flex items-center gap-2 cursor-pointer hover:bg-muted p-2 rounded"
                       >
                         <input
                           type="checkbox"
                           checked={filters.marketplaceId?.includes(marketplace.id) || false}
                           onChange={() => handleMarketplaceChange(marketplace.id)}
-                          className="rounded border-gray-300"
+                          className="rounded border-input"
                         />
                         <span className="text-sm">{marketplace.name}</span>
                       </label>
                     ))}
                     {(!marketplaces || marketplaces.length === 0) && (
-                      <div className="text-sm text-gray-500 p-2">
+                      <div className="text-sm text-muted-foreground p-2">
                         Nenhum canal disponível
                       </div>
                     )}
@@ -677,7 +677,7 @@ export function FilterBar({
             
             {/* Gender filter - Requirement 3.4 */}
             <div>
-              <Label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
+              <Label className="text-sm font-medium text-foreground mb-1.5 block">
                 Gênero
               </Label>
               <Popover>
@@ -700,7 +700,7 @@ export function FilterBar({
                     {GENDER_OPTIONS.map((option) => (
                       <label
                         key={option.value}
-                        className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 p-2 rounded"
+                        className="flex items-center gap-2 cursor-pointer hover:bg-muted p-2 rounded"
                       >
                         <input
                           type="checkbox"
@@ -710,7 +710,7 @@ export function FilterBar({
                               : filters.gender?.includes(option.value as Gender) || false
                           }
                           onChange={() => handleGenderChange(option.value)}
-                          className="rounded border-gray-300"
+                          className="rounded border-input"
                         />
                         <span className="text-sm">{option.label}</span>
                       </label>
@@ -722,7 +722,7 @@ export function FilterBar({
             
             {/* Date range filter - Requirement 3.5 */}
             <div className="lg:col-span-2">
-              <Label className="text-sm text-gray-700 dark:text-gray-300 mb-1.5 block">
+              <Label className="text-sm font-medium text-foreground mb-1.5 block">
                 Período
               </Label>
               <Popover open={isDatePopoverOpen} onOpenChange={setIsDatePopoverOpen}>
@@ -761,7 +761,7 @@ export function FilterBar({
                       <Label className="text-sm font-medium">Período personalizado</Label>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <Label htmlFor="date-from-desktop" className="text-xs text-gray-500">De</Label>
+                          <Label htmlFor="date-from-desktop" className="text-xs text-muted-foreground">De</Label>
                           <Input
                             id="date-from-desktop"
                             type="date"
@@ -778,7 +778,7 @@ export function FilterBar({
                           />
                         </div>
                         <div>
-                          <Label htmlFor="date-to-desktop" className="text-xs text-gray-500">Até</Label>
+                          <Label htmlFor="date-to-desktop" className="text-xs text-muted-foreground">Até</Label>
                           <Input
                             id="date-to-desktop"
                             type="date"
@@ -807,7 +807,7 @@ export function FilterBar({
         
         {/* Result counter - Requirement 3.7 */}
         <div 
-          className="text-sm text-gray-600 dark:text-gray-400"
+          className="text-sm text-muted-foreground"
           role="status"
           aria-live="polite"
           aria-atomic="true"

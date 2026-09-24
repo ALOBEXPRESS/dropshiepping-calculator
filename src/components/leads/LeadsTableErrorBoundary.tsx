@@ -91,35 +91,35 @@ export class LeadsTableErrorBoundary extends Component<Props, State> {
 
       // Default error UI
       return (
-        <Card className="bg-white dark:bg-[#1c1c1c] border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm">
+        <Card className="bg-card border-border rounded-lg shadow-sm">
           <CardHeader className="text-center pb-4">
             <div className="flex justify-center mb-3">
-              <div className="bg-red-500/10 p-3 rounded-full">
-                <AlertCircle className="w-8 h-8 text-red-500" />
+              <div className="bg-destructive/10 p-3 rounded-full">
+                <AlertCircle className="w-8 h-8 text-destructive" />
               </div>
             </div>
-            <CardTitle className="text-gray-900 dark:text-white text-xl font-semibold">
+            <CardTitle className="text-foreground text-xl font-semibold">
               Erro ao Carregar Tabela de Leads
             </CardTitle>
           </CardHeader>
 
           <CardContent className="text-center space-y-3 pb-4">
-            <p className="text-gray-600 dark:text-gray-400 text-sm">
+            <p className="text-muted-foreground text-sm">
               Encontramos um erro ao carregar a tabela de leads. Isso pode ser um problema temporário.
             </p>
 
             {/* Show error message in development mode */}
             {import.meta.env.DEV && this.state.error && (
-              <div className="bg-gray-100 dark:bg-[#2a2a2a] rounded-lg p-3 text-left">
-                <p className="text-red-600 dark:text-red-400 text-xs font-mono break-words">
+              <div className="bg-muted rounded-lg p-3 text-left">
+                <p className="text-destructive text-xs font-mono break-words">
                   {this.state.error.message}
                 </p>
                 {this.state.errorInfo && (
                   <details className="mt-2">
-                    <summary className="text-gray-600 dark:text-gray-400 text-xs cursor-pointer hover:text-gray-900 dark:hover:text-white">
+                    <summary className="text-muted-foreground text-xs cursor-pointer hover:text-foreground">
                       Stack trace
                     </summary>
-                    <pre className="text-gray-600 dark:text-gray-400 text-xs mt-2 overflow-auto max-h-32">
+                    <pre className="text-muted-foreground text-xs mt-2 overflow-auto max-h-32">
                       {this.state.errorInfo.componentStack}
                     </pre>
                   </details>

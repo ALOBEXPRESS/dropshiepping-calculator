@@ -73,7 +73,7 @@ export function LeadsMobileList({
 
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-gray-200 dark:border-zinc-800 p-6">
+      <div className="rounded-lg border border-border bg-card p-6">
         <div className="text-center text-muted-foreground">
           Carregando leads...
         </div>
@@ -83,7 +83,7 @@ export function LeadsMobileList({
 
   if (leads.length === 0) {
     return (
-      <div className="rounded-lg border border-gray-200 dark:border-zinc-800 p-6">
+      <div className="rounded-lg border border-border bg-card p-6">
         <div className="text-center text-muted-foreground">
           Nenhum lead encontrado
         </div>

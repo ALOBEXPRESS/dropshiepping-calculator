@@ -452,7 +452,7 @@ export function LeadsTableContent({
 
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-gray-200 dark:border-zinc-800">
+      <div className="rounded-lg border border-border bg-card">
         <div className="p-8 text-center text-muted-foreground">
           Carregando leads...
         </div>
@@ -462,7 +462,7 @@ export function LeadsTableContent({
 
   if (leads.length === 0) {
     return (
-      <div className="rounded-lg border border-gray-200 dark:border-zinc-800">
+      <div className="rounded-lg border border-border bg-card">
         <div className="p-8 text-center text-muted-foreground">
           Nenhum lead encontrado
         </div>
@@ -490,7 +490,7 @@ export function LeadsTableContent({
       ref={parentRef}
       role="region"
       aria-label="Tabela de leads"
-      className="rounded-lg border border-gray-200 dark:border-zinc-800 overflow-auto"
+      className="rounded-lg border border-border bg-card overflow-auto"
       style={{
         maxHeight: shouldVirtualize ? '600px' : 'none',
       }}

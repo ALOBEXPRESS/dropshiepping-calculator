@@ -92,7 +92,7 @@ const LeadsDashboard: React.FC<LeadsDashboardProps> = () => {
   }, [period]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 p-4 sm:p-6">
+    <div className="min-h-screen bg-background p-4 sm:p-6">
       <main className="max-w-7xl mx-auto space-y-6">
           
           {/* Filters Section - Para os Funis de Leads */}
