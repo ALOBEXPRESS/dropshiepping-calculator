@@ -111,6 +111,7 @@ src/hooks/n8n/
 src/test/
 
 # Documentation files (keep local only)
+.agents/
 AGENTS.md
 CLAUDE.md
 USER.md
