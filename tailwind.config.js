@@ -11,12 +11,31 @@ export default {
         sans: ['Oxanium', 'sans-serif'],
         iceland: ['Iceland', 'sans-serif'],
         inter: ['Inter', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+      },
+      fontVariantNumeric: {
+        'tabular-nums': 'tabular-nums',
       },
   		borderRadius: {
-  			lg: 'var(--radius)',
-  			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)'
+  			DEFAULT: 'var(--radius)',
+  			'sm': 'var(--radius-sm)',
+  			'md': 'var(--radius-md)',
+  			'lg': 'var(--radius-lg)',
+  			'xl': 'var(--radius-xl)',
+  			'2xl': 'var(--radius-2xl)',
+  			'full': 'var(--radius-full)',
   		},
+        boxShadow: {
+          sm: 'var(--shadow-sm)',
+          md: 'var(--shadow-md)',
+          lg: 'var(--shadow-lg)',
+          brand: 'var(--shadow-brand)',
+        },
+        maxWidth: {
+          content: 'var(--content-xl)',
+          '2xl-content': 'var(--content-2xl)',
+          prose: 'var(--content-prose)',
+        },
       animation: {
         gradient: 'gradient 3s linear infinite',
         slideDown: 'slideDown 0.2s ease-out',
@@ -105,8 +124,36 @@ export default {
   				'2': 'hsl(var(--chart-2))',
   				'3': 'hsl(var(--chart-3))',
   				'4': 'hsl(var(--chart-4))',
-  				'5': 'hsl(var(--chart-5))'
-  			}
+  				'5': 'hsl(var(--chart-5))',
+  				'6': 'hsl(var(--chart-6))',
+  				'7': 'hsl(var(--chart-7))',
+  				'8': 'hsl(var(--chart-8))'
+  			},
+          brand: {
+            DEFAULT: 'hsl(var(--brand))',
+            foreground: 'hsl(var(--brand-foreground))',
+            muted: 'hsl(var(--brand-muted))',
+          },
+          success: {
+            DEFAULT: 'hsl(var(--success))',
+            foreground: 'hsl(var(--success-foreground))',
+            muted: 'hsl(var(--success-muted))',
+          },
+          warning: {
+            DEFAULT: 'hsl(var(--warning))',
+            foreground: 'hsl(var(--warning-foreground))',
+            muted: 'hsl(var(--warning-muted))',
+          },
+          danger: {
+            DEFAULT: 'hsl(var(--danger))',
+            foreground: 'hsl(var(--danger-foreground))',
+            muted: 'hsl(var(--danger-muted))',
+          },
+          info: {
+            DEFAULT: 'hsl(var(--info))',
+            foreground: 'hsl(var(--info-foreground))',
+            muted: 'hsl(var(--info-muted))',
+          },
   		}
   	}
   },
