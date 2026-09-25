@@ -286,3 +286,32 @@ describe('calcOrderProfit — affiliate', () => {
     expect(r.realProfit).toBe(90);
   });
 });
+
+describe('calcOrderProfit — Shopee with reembolso_fornecedor', () => {
+  it('Shopee order #226: cost 17.78, reembolso_fornecedor 15.79 → realProfit -1.99', () => {
+    const r = calcOrderProfit({
+      total_amount: 48.73,
+      marketplace: 'Shopee',
+      products: [{ unit_cost: 17.78, quantity: 1 }],
+      tiktok_reembolso_disabled: false,
+      reembolso_fornecedor_enabled: true,
+      reembolso_fornecedor_value: 15.79,
+    }, { commission_rate: 20, fixed_fee: 4 });
+    expect(r.totalProductCost).toBe(17.78); // no Dogama fee
+    expect(r.realProfit).toBe(-1.99); // 15.79 - 17.78
+  });
+
+  it('Shopee order #225: cost 27.64, reembolso_fornecedor 26.39 → realProfit -1.25', () => {
+    const r = calcOrderProfit({
+      total_amount: 52.9,
+      marketplace: 'Shopee',
+      products: [{ unit_cost: 27.64, quantity: 1 }],
+      tiktok_reembolso_disabled: false,
+      reembolso_fornecedor_enabled: true,
+      reembolso_fornecedor_value: 26.39,
+    }, { commission_rate: 20, fixed_fee: 4 });
+    expect(r.totalProductCost).toBe(27.64);
+    expect(r.realProfit).toBe(-1.25); // 26.39 - 27.64
+  });
+});
+

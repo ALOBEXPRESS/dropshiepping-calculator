@@ -62,12 +62,15 @@ export function calcOrderProfit(
   const isFreeSample =
     order.is_free_sample === true || String(order.is_free_sample ?? '') === 'true';
   const products = order.products ?? [];
+  const rawMp = (order.marketplace ?? '').toLowerCase();
+  const isShopee = rawMp.includes('shopee');
   const isTikTok =
-    (order.marketplace ?? '').toLowerCase().includes('tiktok')
-    || order.tiktok_sfp_enabled === true
-    || String(order.tiktok_sfp_enabled ?? '') === 'true'
-    || (order.tiktok_retorno_liquido != null && Number(order.tiktok_retorno_liquido) > 0)
-    || order.tiktok_reembolso_disabled !== undefined;
+    !isShopee && (
+      rawMp.includes('tiktok')
+      || (order.tiktok_retorno_liquido != null && Number(order.tiktok_retorno_liquido) > 0)
+      || order.tiktok_sfp_enabled === true
+      || String(order.tiktok_sfp_enabled ?? '') === 'true'
+    );
 
   // ── Product cost ──────────────────────────────────────────────────────────
   const totalBaseCost = products.reduce((sum, p) => {

@@ -351,10 +351,11 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             const bo = Array.isArray(dbOrder.bling_orders) ? dbOrder.bling_orders[0] : dbOrder.bling_orders;
 
             const isShopee = rawMpName.toLowerCase().includes('shopee');
-            const isTikTok = rawMpName.toLowerCase().includes('tiktok')
+            const isTikTok = !isShopee && (
+              rawMpName.toLowerCase().includes('tiktok')
               || (bo?.tiktok_retorno_liquido != null && Number(bo.tiktok_retorno_liquido) > 0)
-              || bo?.tiktok_reembolso_disabled !== undefined
-              || String((tx as unknown as { marketplace_name?: string }).marketplace_name ?? '').toLowerCase().includes('tiktok');
+              || String((tx as unknown as { marketplace_name?: string }).marketplace_name ?? '').toLowerCase().includes('tiktok')
+            );
 
             const mp = joinedMp || mappedMp || namedMp;
             const mpName = mp?.name || (isShopee ? 'Shopee' : isTikTok ? 'TikTok Shop' : rawMpName || 'TikTok Shop');
@@ -436,10 +437,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             });
 
             const mktCost = mktCostMap.get(tx.id) ?? 0;
-            const hasReembolsoSaved = dbOrder.reembolso_fornecedor_enabled === true || dbOrder.reembolso_marketplace_enabled === true || dbOrder.reembolso_value != null;
-            const computedProfit = (hasReembolsoSaved && dbOrder.total_profit != null && !isNaN(Number(dbOrder.total_profit)))
-              ? Number(dbOrder.total_profit)
-              : (result.realProfit - mktCost);
+            const computedProfit = result.realProfit - mktCost;
 
             return {
               ...tx,

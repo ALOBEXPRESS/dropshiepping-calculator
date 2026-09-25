@@ -2614,8 +2614,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         );
         const { realProfit: profit, totalProductCost: tpcYearly } = computeOrderRealProfit(mergedOrder, cfg, affiliateByOrderId[orderId]);
         const manualDeduct = manualMarketingCostByOrderId[orderId] ?? 0;
-        const hasReembolsoOv = (orderId in reembolsoByOrderId)
-          || (o as { reembolso_value?: number | null }).reembolso_value != null;
+        const hasRetornoLiquido = Boolean((mergedOrder as { tiktok_retorno_liquido?: number | null }).tiktok_retorno_liquido);
+        const hasReembolsoOv = !hasRetornoLiquido && ((orderId in reembolsoByOrderId)
+          || (o as { reembolso_value?: number | null }).reembolso_value != null);
         const rawReembolsoOv = orderId in reembolsoByOrderId
           ? reembolsoByOrderId[orderId]
           : (o as { reembolso_value?: number | null }).reembolso_value;
@@ -4687,6 +4688,26 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                   else delete next[oid];
                                   return next;
                                 });
+                                setOrderEnrichmentById(prev => ({
+                                  ...prev,
+                                  [oid]: {
+                                    ...(prev[oid] ?? {}),
+                                    reembolso_marketplace_enabled: reembolsoMarketplaceEnabled,
+                                    reembolso_marketplace_value: valMkt,
+                                    reembolso_fornecedor_enabled: reembolsoFornecedorEnabled,
+                                    reembolso_fornecedor_value: valForn,
+                                    total_profit: calculatedProfit,
+                                  }
+                                }));
+                                setSelectedOrder(prev => prev ? {
+                                  ...prev,
+                                  reembolso_marketplace_enabled: reembolsoMarketplaceEnabled,
+                                  reembolso_marketplace_value: valMkt,
+                                  reembolso_fornecedor_enabled: reembolsoFornecedorEnabled,
+                                  reembolso_fornecedor_value: valForn,
+                                  reembolso_value: valMkt,
+                                  total_profit: calculatedProfit,
+                                } : null);
                                 await refetch();
                                 await refetchYearly();
                                 onOrderUpdated?.();
