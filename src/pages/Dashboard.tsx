@@ -41,28 +41,14 @@ const Dashboard: React.FC = () => {
     isError: isErrorCharts,
   } = useDashboardCharts(organizationId, period, selectedMarketplace);
 
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const kpiProps = data ? transformToKPICardProps(data) : null;
-
-  if (isError) {
-    return (
-      <DashboardErrorState
-        error={error?.message || 'Falha ao carregar dados do dashboard'}
-        onRetry={refetch}
-      />
-    );
-  }
-
-  if (!isLoading && !data) {
-    return <EmptyDashboardState />;
-  }
-
   const chartsLoading = isLoadingCharts || isLoading;
   const conversionData = chartsData?.conversions ?? [];
   const leadsData = chartsData?.leads ?? [];
   const mostProfitableDay = chartsData?.mostProfitableDay ?? '—';
   const recentSignups = leadsData.reduce((s, l) => s + l.count, 0);
-
-  const containerRef = useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     if (!containerRef.current) return;
@@ -98,6 +84,19 @@ const Dashboard: React.FC = () => {
 
     return () => ctx.revert();
   }, [isLoading, chartsLoading, period, selectedMarketplace]);
+
+  if (isError) {
+    return (
+      <DashboardErrorState
+        error={error?.message || 'Falha ao carregar dados do dashboard'}
+        onRetry={refetch}
+      />
+    );
+  }
+
+  if (!isLoading && !data) {
+    return <EmptyDashboardState />;
+  }
 
   return (
     <div ref={containerRef} className="space-y-4">

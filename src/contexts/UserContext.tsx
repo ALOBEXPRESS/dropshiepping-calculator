@@ -39,16 +39,15 @@ const UserContext = createContext<UserContextType>({
 export const useUser = () => useContext(UserContext);
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { organizationId } = useSettings();
+  const { organizationId, loading: settingsLoading } = useSettings();
   const [userId, setUserId] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [role, setRole] = useState<UserRole>(null);
-  const [roleLoading, setRoleLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
-  const fetchRole = useCallback(async (uid: string, orgId: string | null) => {
-    if (!orgId) { setRoleLoading(false); return; }
-    setRoleLoading(true);
+  const fetchRole = useCallback(async (uid: string, orgId: string) => {
     try {
       const { data } = await supabase
         .from('organization_members')
@@ -60,7 +59,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       setRole('member');
     } finally {
-      setRoleLoading(false);
+      setLoadedKey(`${uid}:${orgId}`);
     }
   }, []);
 
@@ -84,21 +83,41 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setEmail(user.email ?? null);
         fetchProfile(user.id);
       }
+      setAuthLoading(false);
+    }).catch(() => {
+      setAuthLoading(false);
     });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       const user = session?.user ?? null;
       setUserId(user?.id ?? null);
       setEmail(user?.email ?? null);
-      if (user) fetchProfile(user.id);
-      else { setProfile(null); setRole(null); }
+      if (user) {
+        fetchProfile(user.id);
+      } else {
+        setProfile(null);
+        setRole(null);
+        setLoadedKey(null);
+      }
+      setAuthLoading(false);
     });
     return () => subscription.unsubscribe();
   }, [fetchProfile]);
 
+  const targetKey = userId && organizationId ? `${userId}:${organizationId}` : null;
+
   useEffect(() => {
-    if (userId && organizationId) fetchRole(userId, organizationId);
-    else if (!organizationId) setRoleLoading(false);
-  }, [userId, organizationId, fetchRole]);
+    if (authLoading || settingsLoading) return;
+    if (userId && organizationId) {
+      if (loadedKey !== `${userId}:${organizationId}`) {
+        fetchRole(userId, organizationId);
+      }
+    } else {
+      setRole(null);
+    }
+  }, [authLoading, settingsLoading, userId, organizationId, loadedKey, fetchRole]);
+
+  const roleLoading = authLoading || (userId ? (settingsLoading || (targetKey ? loadedKey !== targetKey : false)) : false);
 
   return (
     <UserContext.Provider value={{
