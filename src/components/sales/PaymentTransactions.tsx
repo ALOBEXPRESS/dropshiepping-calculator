@@ -181,6 +181,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
                 id,
                 order_number,
                 total_amount,
+                total_profit,
                 discount_value,
                 shipping_cost,
                 other_expenses,
@@ -192,6 +193,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
                 reembolso_fornecedor_value,
                 is_free_sample,
                 is_personal_purchase,
+                manual_product_cost,
                 marketplace_id,
                 bling_order_id,
                 bling_orders!bling_order_id (
@@ -270,6 +272,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             id: string;
             order_number?: string | number;
             total_amount?: number;
+            total_profit?: number | null;
             discount_value?: number;
             shipping_cost?: number;
             other_expenses?: number;
@@ -281,6 +284,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             reembolso_fornecedor_value?: number | null;
             is_free_sample?: boolean | string;
             is_personal_purchase?: boolean | string;
+            manual_product_cost?: number | null;
             marketplace_id?: string;
             bling_order_id?: string;
             bling_orders?: DbBlingOrder | null;
@@ -362,6 +366,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
               reembolso_fornecedor_value: dbOrder.reembolso_fornecedor_value,
               is_free_sample: dbOrder.is_free_sample,
               is_personal_purchase: dbOrder.is_personal_purchase,
+              manual_product_cost: dbOrder.manual_product_cost,
               marketplace: mpName,
               products: orderProducts,
             };
@@ -372,7 +377,10 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             });
 
             const mktCost = mktCostMap.get(tx.id) ?? 0;
-            const computedProfit = result.realProfit - mktCost;
+            const hasReembolsoSaved = dbOrder.reembolso_fornecedor_enabled === true || dbOrder.reembolso_marketplace_enabled === true || dbOrder.reembolso_value != null;
+            const computedProfit = (hasReembolsoSaved && dbOrder.total_profit != null && !isNaN(Number(dbOrder.total_profit)))
+              ? Number(dbOrder.total_profit)
+              : (result.realProfit - mktCost);
 
             return {
               ...tx,

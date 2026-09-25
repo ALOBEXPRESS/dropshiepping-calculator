@@ -34,6 +34,7 @@ interface RevenueReportChartProps {
   organizationId: string;
   refreshTrigger?: number;
   onOrderDeleted?: () => void;
+  onOrderUpdated?: () => void;
   period?: PeriodFilter;
   onPeriodChange?: (period: PeriodFilter) => void;
   /** Register a callback so external components can open the order detail modal by order_id */
@@ -95,7 +96,7 @@ interface OrderDetail {
   tiktok_sfp_enabled?: boolean;
 }
 
-export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organizationId, refreshTrigger, onOrderDeleted, period: externalPeriod, onPeriodChange, onRegisterOpenOrder, onRegisterOpenAff, onAffDeleted }) => {
+export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organizationId, refreshTrigger, onOrderDeleted, onOrderUpdated, period: externalPeriod, onPeriodChange, onRegisterOpenOrder, onRegisterOpenAff, onAffDeleted }) => {
   const [period, setPeriod] = useState<PeriodFilter>(externalPeriod || 'monthly');
   const [windowOffset, setWindowOffset] = useState(0);
   const { data, loading, error, refetch } = useRevenueReport(organizationId, period);
@@ -2282,6 +2283,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       // Refetch chart data so Lucro totals reflect new cost_price
       refetch();
       refetchYearly();
+      onOrderUpdated?.();
     } catch (err) {
       console.error('Erro ao salvar custos:', err);
     } finally {
@@ -3451,6 +3453,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                               setSelectedOrder({ ...selectedOrder, order_date: manualOrderDate });
                               refetch();
                               refetchYearly();
+                              onOrderUpdated?.();
                             } finally {
                               setSavingOrderDate(false);
                             }
@@ -3528,6 +3531,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                       setSelectedOrder({ ...selectedOrder, tiktok_reembolso_disabled: !tiktokReembolsoEnabled });
                                       refetch();
                                       refetchYearly();
+                                      onOrderUpdated?.();
                                     } finally {
                                       setSavingReembolso(false);
                                     }
@@ -3674,6 +3678,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                 setSelectedOrder({ ...selectedOrder, tiktok_retorno_liquido: saveVal });
                                 refetch();
                                 refetchYearly();
+                                onOrderUpdated?.();
                               } finally {
                                 setSavingRetornoLiquido(false);
                               }
@@ -4201,6 +4206,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                     .eq('id', selectedOrder.order_id);
                                   refetch();
                                   refetchYearly();
+                                  onOrderUpdated?.();
                                 } finally {
                                   setSavingCoupon(false);
                                 }
@@ -4337,6 +4343,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                 .eq('id', selectedOrder.order_id);
                               refetch();
                               refetchYearly();
+                              onOrderUpdated?.();
                             }}
                             className="w-full py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors flex items-center justify-center gap-2"
                           >
@@ -4538,6 +4545,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                 });
                                 await refetch();
                                 await refetchYearly();
+                                onOrderUpdated?.();
                               } finally {
                                 setSavingReembolsoPedido(false);
                               }
@@ -4698,6 +4706,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                 }
                                 await refetch();
                                 await refetchYearly();
+                                onOrderUpdated?.();
                               } finally {
                                 setSavingMarketingCost(false);
                               }

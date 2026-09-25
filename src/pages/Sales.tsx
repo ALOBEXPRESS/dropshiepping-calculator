@@ -308,6 +308,7 @@ const Sales: React.FC = () => {
               organizationId={organizationId} 
               refreshTrigger={refreshKey} 
               onOrderDeleted={handleRefresh}
+              onOrderUpdated={handleRefresh}
               period={period}
               onPeriodChange={setPeriod}
               onRegisterOpenOrder={(fn) => { openOrderByIdRef.current = fn; }}
