@@ -2191,13 +2191,22 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     return isNaN(num) ? 0 : num;
   };
 
-  const formatBRLInputOnBlur = (valStr: string): string => {
+  const formatCurrencyInputOnChange = (valStr: string): string => {
     if (!valStr || !valStr.trim()) return '';
-    const num = parseBRLFloat(valStr);
+    const digits = valStr.replace(/\D/g, '');
+    if (!digits) return '';
+    const intVal = parseInt(digits, 10);
+    if (intVal === 0) return '';
+    const num = intVal / 100;
     return new Intl.NumberFormat('pt-BR', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(num);
+  };
+
+  const formatBRLInputOnBlur = (valStr: string): string => {
+    if (!valStr || !valStr.trim()) return '';
+    return formatCurrencyInputOnChange(valStr);
   };
 
   const handleSaveCosts = async (
@@ -3646,7 +3655,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             inputMode="decimal"
                             placeholder="0,00"
                             value={manualRetornoLiquido}
-                            onChange={(e) => setManualRetornoLiquido(e.target.value.replace(/[^0-9,.]/g, ''))}
+                            onChange={(e) => setManualRetornoLiquido(formatCurrencyInputOnChange(e.target.value))}
                             onBlur={() => setManualRetornoLiquido(formatBRLInputOnBlur(manualRetornoLiquido))}
                             className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-teal-500 tabular-nums"
                           />
@@ -3740,7 +3749,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                               inputMode="decimal"
                               placeholder={formatBRLInputOnBlur(String(totalBaseCost + orderSupplierFee + orderGatewayFee)) || '0,00'}
                               value={manualTotalProductCost}
-                              onChange={(e) => setManualTotalProductCost(e.target.value.replace(/[^0-9,.]/g, ''))}
+                              onChange={(e) => setManualTotalProductCost(formatCurrencyInputOnChange(e.target.value))}
                               onBlur={() => setManualTotalProductCost(formatBRLInputOnBlur(manualTotalProductCost))}
                               className="w-20 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 tabular-nums text-right font-semibold"
                             />
@@ -3777,7 +3786,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                     placeholder={String(p.unitCostRaw)}
                                     value={manualCostOverrides[i] ?? ''}
                                     onChange={(e) => {
-                                      const val = e.target.value.replace(/[^0-9,.]/g, '');
+                                      const val = formatCurrencyInputOnChange(e.target.value);
                                       setManualCostOverrides(prev => ({ ...prev, [i]: val }));
                                     }}
                                     onBlur={() => {
@@ -3835,7 +3844,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                   disabled={hasManualTotalCost}
                                   placeholder={String(productGatewayFee)}
                                   value={manualGatewayFee}
-                                  onChange={(e) => setManualGatewayFee(e.target.value.replace(/[^0-9,.]/g, ''))}
+                                  onChange={(e) => setManualGatewayFee(formatCurrencyInputOnChange(e.target.value))}
                                   onBlur={() => setManualGatewayFee(formatBRLInputOnBlur(manualGatewayFee))}
                                   className="w-14 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 tabular-nums text-right disabled:opacity-50"
                                 />
@@ -3988,7 +3997,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                               inputMode="decimal"
                               placeholder={sfpEnabled ? '0' : String(selectedOrder.shipping_cost)}
                               value={manualShipping}
-                              onChange={(e) => setManualShipping(e.target.value.replace(/[^0-9,.]/g, ''))}
+                              onChange={(e) => setManualShipping(formatCurrencyInputOnChange(e.target.value))}
                               onBlur={() => setManualShipping(formatBRLInputOnBlur(manualShipping))}
                               className="w-16 bg-zinc-800/60 border border-zinc-700 rounded px-2 py-0.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 tabular-nums text-right"
                             />
@@ -4090,10 +4099,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                   inputMode="decimal"
                                   placeholder="0,00"
                                   value={manualDesconto}
-                                  onChange={(e) => {
-                                    const v = e.target.value.replace(/[^0-9,.]/g, '');
-                                    setManualDesconto(v);
-                                  }}
+                                  onChange={(e) => setManualDesconto(formatCurrencyInputOnChange(e.target.value))}
                                   onBlur={() => setManualDesconto(formatBRLInputOnBlur(manualDesconto))}
                                   className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-yellow-500 tabular-nums"
                                 />
@@ -4122,10 +4128,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                 inputMode="decimal"
                                 placeholder="0,00"
                                 value={manualDesconto}
-                                onChange={(e) => {
-                                  const v = e.target.value.replace(/[^0-9,.]/g, '');
-                                  setManualDesconto(v);
-                                }}
+                                onChange={(e) => setManualDesconto(formatCurrencyInputOnChange(e.target.value))}
                                 onBlur={() => setManualDesconto(formatBRLInputOnBlur(manualDesconto))}
                                 className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-yellow-500 tabular-nums"
                               />
@@ -4162,7 +4165,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                               inputMode="decimal"
                               placeholder={manualCouponType === 'percent' ? '10' : '0,00'}
                               value={manualCoupon}
-                              onChange={(e) => setManualCoupon(e.target.value.replace(/[^0-9,.]/g, ''))}
+                              onChange={(e) => {
+                                if (manualCouponType === 'fixed') {
+                                  setManualCoupon(formatCurrencyInputOnChange(e.target.value));
+                                } else {
+                                  setManualCoupon(e.target.value.replace(/[^0-9,.]/g, ''));
+                                }
+                              }}
                               onBlur={() => {
                                 if (manualCouponType === 'fixed') {
                                   setManualCoupon(formatBRLInputOnBlur(manualCoupon));
@@ -4307,10 +4316,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             inputMode="decimal"
                             placeholder="0,00"
                             value={manualAcrescimo}
-                            onChange={(e) => {
-                              const v = e.target.value.replace(/[^0-9,.]/g, '');
-                              setManualAcrescimo(v);
-                            }}
+                            onChange={(e) => setManualAcrescimo(formatCurrencyInputOnChange(e.target.value))}
                             onBlur={() => setManualAcrescimo(formatBRLInputOnBlur(manualAcrescimo))}
                             className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500 tabular-nums"
                           />
@@ -4412,7 +4418,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                   inputMode="text"
                                   placeholder="0,00"
                                   value={reembolsoMarketplaceValue}
-                                  onChange={(e) => setReembolsoMarketplaceValue(e.target.value.replace(/[^0-9,.-]/g, ''))}
+                                  onChange={(e) => setReembolsoMarketplaceValue(formatCurrencyInputOnChange(e.target.value))}
                                   onBlur={() => setReembolsoMarketplaceValue(formatBRLInputOnBlur(reembolsoMarketplaceValue))}
                                   className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-rose-500 tabular-nums"
                                 />
@@ -4451,7 +4457,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                   inputMode="text"
                                   placeholder="0,00"
                                   value={reembolsoFornecedorValue}
-                                  onChange={(e) => setReembolsoFornecedorValue(e.target.value.replace(/[^0-9,.-]/g, ''))}
+                                  onChange={(e) => setReembolsoFornecedorValue(formatCurrencyInputOnChange(e.target.value))}
                                   onBlur={() => setReembolsoFornecedorValue(formatBRLInputOnBlur(reembolsoFornecedorValue))}
                                   className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500 tabular-nums"
                                 />
@@ -4640,7 +4646,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             placeholder="0,00"
                             value={manualMarketingCost}
                             readOnly={!manualCostEnabled || !!linkedCampaignId}
-                            onChange={manualCostEnabled && !linkedCampaignId ? (e) => setManualMarketingCost(e.target.value.replace(/[^0-9,.]/g, '')) : undefined}
+                            onChange={manualCostEnabled && !linkedCampaignId ? (e) => setManualMarketingCost(formatCurrencyInputOnChange(e.target.value)) : undefined}
                             onBlur={() => {
                               if (manualCostEnabled && !linkedCampaignId) {
                                 setManualMarketingCost(formatBRLInputOnBlur(manualMarketingCost));
