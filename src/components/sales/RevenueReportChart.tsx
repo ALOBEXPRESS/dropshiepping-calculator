@@ -800,11 +800,24 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       products: mergedProducts,
       total_cost: mergedTotalCost,
       product_cost_price: mergedProductCostPrice,
-      // RPC values take precedence over enrichment for these critical fields
-      tiktok_retorno_liquido: (o as { tiktok_retorno_liquido?: number | null }).tiktok_retorno_liquido
-        ?? enrichment.tiktok_retorno_liquido,
-      tiktok_reembolso_disabled: (o as { tiktok_reembolso_disabled?: boolean }).tiktok_reembolso_disabled
-        ?? enrichment.tiktok_reembolso_disabled,
+      tiktok_retorno_liquido: (enrichment.tiktok_retorno_liquido != null && Number(enrichment.tiktok_retorno_liquido) > 0)
+        ? Number(enrichment.tiktok_retorno_liquido)
+        : ((o as { tiktok_retorno_liquido?: number | null }).tiktok_retorno_liquido ?? undefined),
+      tiktok_reembolso_disabled: enrichment.tiktok_reembolso_disabled !== undefined
+        ? enrichment.tiktok_reembolso_disabled
+        : (o as { tiktok_reembolso_disabled?: boolean }).tiktok_reembolso_disabled,
+      reembolso_marketplace_enabled: enrichment.reembolso_marketplace_enabled !== undefined
+        ? enrichment.reembolso_marketplace_enabled
+        : (o as { reembolso_marketplace_enabled?: boolean }).reembolso_marketplace_enabled,
+      reembolso_marketplace_value: enrichment.reembolso_marketplace_value !== undefined
+        ? enrichment.reembolso_marketplace_value
+        : (o as { reembolso_marketplace_value?: number | null }).reembolso_marketplace_value,
+      reembolso_fornecedor_enabled: enrichment.reembolso_fornecedor_enabled !== undefined
+        ? enrichment.reembolso_fornecedor_enabled
+        : (o as { reembolso_fornecedor_enabled?: boolean }).reembolso_fornecedor_enabled,
+      reembolso_fornecedor_value: enrichment.reembolso_fornecedor_value !== undefined
+        ? enrichment.reembolso_fornecedor_value
+        : (o as { reembolso_fornecedor_value?: number | null }).reembolso_fornecedor_value,
     };
   }, []);
 
@@ -851,8 +864,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const existing = orderEnrichmentByIdRef.current[id];
         const hasCustomer = isMeaningfulCustomerName((o as { customer_name?: string }).customer_name)
           || isMeaningfulCustomerName(existing?.customer_name);
+        const hasFullDetails = existing && existing.total_profit !== undefined && existing.tiktok_retorno_liquido !== undefined;
 
-        if (!hasCustomer) idsNeedingOrderRow.add(id);
+        if (!hasCustomer || !hasFullDetails) idsNeedingOrderRow.add(id);
 
         const isFreeSample = (o as { is_free_sample?: boolean | string }).is_free_sample === true
           || String((o as { is_free_sample?: unknown }).is_free_sample ?? '') === 'true';
@@ -947,6 +961,37 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         type OrderCustomerRow = {
           id?: string | null;
           order_number?: string | number | null;
+          total_profit?: number | null;
+          discount_value?: number | null;
+          shipping_cost?: number | null;
+          other_expenses?: number | null;
+          marketplace_commission?: number | null;
+          reembolso_value?: number | null;
+          reembolso_marketplace_enabled?: boolean | null;
+          reembolso_marketplace_value?: number | null;
+          reembolso_fornecedor_enabled?: boolean | null;
+          reembolso_fornecedor_value?: number | null;
+          is_free_sample?: boolean | string | null;
+          is_personal_purchase?: boolean | string | null;
+          marketplace_id?: string | null;
+          bling_order_id?: string | null;
+          bling_orders?: {
+            id?: string;
+            total_products?: number | string | null;
+            base_value?: number | string | null;
+            commission_tax?: number | string | null;
+            shipping_cost?: number | string | null;
+            tiktok_reembolso_disabled?: boolean | null;
+            tiktok_retorno_liquido?: number | null;
+          } | Array<{
+            id?: string;
+            total_products?: number | string | null;
+            base_value?: number | string | null;
+            commission_tax?: number | string | null;
+            shipping_cost?: number | string | null;
+            tiktok_reembolso_disabled?: boolean | null;
+            tiktok_retorno_liquido?: number | null;
+          }> | null;
           lead_id?: string | null;
           customer_id?: string | null;
           leads?: { name?: string | null } | Array<{ name?: string | null }> | null;
@@ -955,6 +1000,29 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const baseSelect = `
           id,
           order_number,
+          total_profit,
+          discount_value,
+          shipping_cost,
+          other_expenses,
+          marketplace_commission,
+          reembolso_value,
+          reembolso_marketplace_enabled,
+          reembolso_marketplace_value,
+          reembolso_fornecedor_enabled,
+          reembolso_fornecedor_value,
+          is_free_sample,
+          is_personal_purchase,
+          marketplace_id,
+          bling_order_id,
+          bling_orders!bling_order_id (
+            id,
+            total_products,
+            base_value,
+            commission_tax,
+            shipping_cost,
+            tiktok_reembolso_disabled,
+            tiktok_retorno_liquido
+          ),
           lead_id,
           customer_id,
           leads!lead_id (
@@ -1178,9 +1246,20 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               ? 'Cliente Sônia'
               : derivedCustomerName;
 
+          const bo = Array.isArray(resolved.bling_orders) ? resolved.bling_orders[0] : resolved.bling_orders;
           updates[reportId] = {
             ...(updates[reportId] ?? existing ?? {}),
             customer_name: derivedCustomerNameWithFixes ?? existing?.customer_name,
+            total_profit: resolved.total_profit != null ? Number(resolved.total_profit) : (existing?.total_profit ?? undefined),
+            reembolso_value: resolved.reembolso_value ?? existing?.reembolso_value,
+            reembolso_marketplace_enabled: resolved.reembolso_marketplace_enabled != null ? Boolean(resolved.reembolso_marketplace_enabled) : existing?.reembolso_marketplace_enabled,
+            reembolso_marketplace_value: resolved.reembolso_marketplace_value != null ? Number(resolved.reembolso_marketplace_value) : existing?.reembolso_marketplace_value,
+            reembolso_fornecedor_enabled: resolved.reembolso_fornecedor_enabled != null ? Boolean(resolved.reembolso_fornecedor_enabled) : existing?.reembolso_fornecedor_enabled,
+            reembolso_fornecedor_value: resolved.reembolso_fornecedor_value != null ? Number(resolved.reembolso_fornecedor_value) : existing?.reembolso_fornecedor_value,
+            tiktok_retorno_liquido: bo?.tiktok_retorno_liquido != null ? Number(bo.tiktok_retorno_liquido) : (existing?.tiktok_retorno_liquido ?? null),
+            tiktok_reembolso_disabled: bo?.tiktok_reembolso_disabled != null ? (bo.tiktok_reembolso_disabled === true) : existing?.tiktok_reembolso_disabled,
+            is_free_sample: resolved.is_free_sample === true || existing?.is_free_sample,
+            is_personal_purchase: resolved.is_personal_purchase === true || existing?.is_personal_purchase,
           };
           if (!isMeaningfulCustomerName(leadName) && !isMeaningfulCustomerName(derivedCustomerNameWithFixes) && actualId) {
             reportIdNeedingFull.push({ reportId, actualId });
@@ -2215,6 +2294,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     supplierFeePercent: string,
     gatewayFee: string,
     manualTotalCost?: string,
+    orderId?: string,
+    currentRealProfit?: number,
   ) => {
     if (!products || products.length === 0) return;
     setSavingCosts(true);
@@ -2285,6 +2366,20 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               .eq('organization_id', organizationId);
           }
         }
+      }
+
+      if (orderId && currentRealProfit !== undefined) {
+        await supabase
+          .from('orders')
+          .update({ total_profit: currentRealProfit })
+          .eq('id', orderId);
+        setOrderEnrichmentById(prev => ({
+          ...prev,
+          [orderId]: {
+            ...(prev[orderId] ?? {}),
+            total_profit: currentRealProfit,
+          }
+        }));
       }
 
       setCostsSaved(true);
@@ -2418,8 +2513,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const liquidoFinal = typeof result === 'number' ? Number(o.total_amount ?? 0) : result.precoVendaLiquidoFinal;
 
         // Reembolso override: substitui receita pelo valor do reembolso e subtrai custos do produto
-        const hasReembolsoOverride = (o.order_id in reembolsoByOrderId)
-          || (o as { reembolso_value?: number | null }).reembolso_value != null;
+        // Retorno líquido do TikTok prevalece (já é o valor líquido final)
+        const hasRetornoLiquido = Boolean((mergedOrder as { tiktok_retorno_liquido?: number | null }).tiktok_retorno_liquido);
+        const hasReembolsoOverride = !hasRetornoLiquido && ((o.order_id in reembolsoByOrderId)
+          || (o as { reembolso_value?: number | null }).reembolso_value != null);
         const rawReembolsoOverride = o.order_id in reembolsoByOrderId
           ? reembolsoByOrderId[o.order_id]
           : (o as { reembolso_value?: number | null }).reembolso_value;
@@ -2435,6 +2532,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const isPersonal = (o as { is_personal_purchase?: boolean }).is_personal_purchase === true
           || String((o as { order_number?: string | number }).order_number ?? '').trim() === '208';
         const isRefunded = hasReembolsoOverride
+          || hasRetornoLiquido
           || String((o as { order_number?: string | number }).order_number ?? '').trim() === '15';
         const effectiveProductCost = isPersonal ? 0 : totalProductCost;
         const effectiveMarketplaceCost = isRefunded ? 0 : subtotalMarketplace;
@@ -2891,9 +2989,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
           const { realProfit: rawRealProfit2, isFreeSample, totalProductCost: tpc2 } = computeOrderRealProfit(mergedOrder, resolvedMarketplaceConfig);
           const manualMktDeduct2 = perOrderMarketingCostRef.current[order.order_id] ?? 0;
-          const hasReembolsoOv2 = order.order_id in reembolsoByOrderIdRef.current;
-          const rawReembolso2 = (order as { reembolso_value?: number | null }).reembolso_value;
-          const reembolsoOv2 = hasReembolsoOv2 ? reembolsoByOrderIdRef.current[order.order_id] : (rawReembolso2 != null ? Number(rawReembolso2) : null);
+          const hasRetornoLiquido2 = Boolean((mergedOrder as { tiktok_retorno_liquido?: number | null }).tiktok_retorno_liquido);
+          const hasReembolsoOv2 = !hasRetornoLiquido2 && (order.order_id in reembolsoByOrderIdRef.current);
+          const rawReembolso2 = (mergedOrder as { reembolso_value?: number | null }).reembolso_value ?? (order as { reembolso_value?: number | null }).reembolso_value;
+          const reembolsoOv2 = hasReembolsoOv2 ? reembolsoByOrderIdRef.current[order.order_id] : (!hasRetornoLiquido2 && rawReembolso2 != null ? Number(rawReembolso2) : null);
           const realProfit = reembolsoOv2 !== null && !isNaN(reembolsoOv2)
             ? (reembolsoOv2 - tpc2 - manualMktDeduct2)
             : (rawRealProfit2 - manualMktDeduct2);
@@ -2926,10 +3025,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
           const orderDetailData: OrderDetail = {
             order_id: order.order_id,
-            bling_order_id: (order as { bling_order_id?: string | null }).bling_order_id ?? null,
+            bling_order_id: (order as { bling_order_id?: string | null }).bling_order_id ?? (mergedOrder as { bling_order_id?: string | null }).bling_order_id ?? null,
             order_date: (order as { order_date?: string | null }).order_date ?? null,
-            tiktok_reembolso_disabled: (order as { tiktok_reembolso_disabled?: boolean }).tiktok_reembolso_disabled === true,
-            tiktok_retorno_liquido: (order as { tiktok_retorno_liquido?: number | null }).tiktok_retorno_liquido ?? null,
+            tiktok_reembolso_disabled: (mergedOrder as { tiktok_reembolso_disabled?: boolean }).tiktok_reembolso_disabled === true,
+            tiktok_retorno_liquido: (mergedOrder as { tiktok_retorno_liquido?: number | null }).tiktok_retorno_liquido ?? null,
             order_number: orderNumber,
             marketplace: marketplaceName,
             marketplace_fixed_fee: Number(resolvedMarketplaceConfig?.fixed_fee ?? (order as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0),
@@ -3684,9 +3783,23 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                   .from('bling_orders')
                                   .update({ tiktok_retorno_liquido: saveVal })
                                   .eq('id', selectedOrder.bling_order_id);
-                                setSelectedOrder({ ...selectedOrder, tiktok_retorno_liquido: saveVal });
-                                refetch();
-                                refetchYearly();
+                                if (selectedOrder.order_id) {
+                                  await supabase
+                                    .from('orders')
+                                    .update({ total_profit: finalRealProfit })
+                                    .eq('id', selectedOrder.order_id);
+                                  setOrderEnrichmentById(prev => ({
+                                    ...prev,
+                                    [selectedOrder.order_id]: {
+                                      ...(prev[selectedOrder.order_id] ?? {}),
+                                      tiktok_retorno_liquido: saveVal ?? undefined,
+                                      total_profit: finalRealProfit,
+                                    }
+                                  }));
+                                }
+                                setSelectedOrder({ ...selectedOrder, tiktok_retorno_liquido: saveVal, total_profit: finalRealProfit });
+                                await refetch();
+                                await refetchYearly();
                                 onOrderUpdated?.();
                               } finally {
                                 setSavingRetornoLiquido(false);
@@ -3890,6 +4003,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           manualSupplierFeePercent,
                           manualGatewayFee,
                           manualTotalProductCost,
+                          selectedOrder?.order_id,
+                          finalRealProfit,
                         )}
                         disabled={savingCosts}
                         className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
@@ -4211,8 +4326,20 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                 try {
                                   await supabase
                                     .from('orders')
-                                    .update({ coupon_value: v > 0 ? v : null, coupon_type: manualCouponType })
+                                    .update({
+                                      coupon_value: v > 0 ? v : null,
+                                      coupon_type: manualCouponType,
+                                      total_profit: finalRealProfit,
+                                    })
                                     .eq('id', selectedOrder.order_id);
+                                  setSelectedOrder({ ...selectedOrder, total_profit: finalRealProfit });
+                                  setOrderEnrichmentById(prev => ({
+                                    ...prev,
+                                    [selectedOrder.order_id]: {
+                                      ...(prev[selectedOrder.order_id] ?? {}),
+                                      total_profit: finalRealProfit,
+                                    }
+                                  }));
                                   refetch();
                                   refetchYearly();
                                   onOrderUpdated?.();
@@ -4345,8 +4472,19 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                               const val = parseFloat((manualAcrescimo || '0').replace(',', '.')) || 0;
                               await supabase
                                 .from('orders')
-                                .update({ manual_acrescimo: val > 0 ? val : null })
+                                .update({
+                                  manual_acrescimo: val > 0 ? val : null,
+                                  total_profit: finalRealProfit,
+                                })
                                 .eq('id', selectedOrder.order_id);
+                              setSelectedOrder({ ...selectedOrder, total_profit: finalRealProfit });
+                              setOrderEnrichmentById(prev => ({
+                                ...prev,
+                                [selectedOrder.order_id]: {
+                                  ...(prev[selectedOrder.order_id] ?? {}),
+                                  total_profit: finalRealProfit,
+                                }
+                              }));
                               refetch();
                               refetchYearly();
                               onOrderUpdated?.();
@@ -4709,6 +4847,20 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                     delete next[selectedOrder.order_id];
                                     return next;
                                   });
+                                }
+                                if (selectedOrder.order_id) {
+                                  await supabase
+                                    .from('orders')
+                                    .update({ total_profit: finalRealProfit })
+                                    .eq('id', selectedOrder.order_id);
+                                  setSelectedOrder({ ...selectedOrder, total_profit: finalRealProfit });
+                                  setOrderEnrichmentById(prev => ({
+                                    ...prev,
+                                    [selectedOrder.order_id]: {
+                                      ...(prev[selectedOrder.order_id] ?? {}),
+                                      total_profit: finalRealProfit,
+                                    }
+                                  }));
                                 }
                                 await refetch();
                                 await refetchYearly();

@@ -163,6 +163,7 @@ export const useHeroStats = (
           id: string;
           order_number?: string | number;
           total_amount?: number;
+          total_profit?: number | null;
           discount_value?: number;
           shipping_cost?: number;
           other_expenses?: number;
@@ -176,7 +177,7 @@ export const useHeroStats = (
           is_personal_purchase?: boolean | string;
           marketplace_id?: string;
           bling_order_id?: string;
-          bling_orders?: DbBlingOrder | null;
+          bling_orders?: DbBlingOrder | DbBlingOrder[] | null;
           marketplaces?: DbMarketplace | null;
           order_items?: DbOrderItem[];
         }
@@ -195,6 +196,7 @@ export const useHeroStats = (
                   id,
                   order_number,
                   total_amount,
+                  total_profit,
                   discount_value,
                   shipping_cost,
                   other_expenses,
@@ -296,8 +298,9 @@ export const useHeroStats = (
           }));
 
           const calculatedTotalProducts = orderProducts.reduce((s, p) => s + (p.unit_price * p.quantity), 0);
-          const boBaseValue = Number(dbOrder.bling_orders?.base_value ?? 0);
-          const boTotalProducts = Number(dbOrder.bling_orders?.total_products ?? 0);
+          const bo = Array.isArray(dbOrder.bling_orders) ? dbOrder.bling_orders[0] : dbOrder.bling_orders;
+          const boBaseValue = Number(bo?.base_value ?? 0);
+          const boTotalProducts = Number(bo?.total_products ?? 0);
 
           const effectiveTotalProducts = boTotalProducts > 0
             ? boTotalProducts
@@ -324,8 +327,8 @@ export const useHeroStats = (
             marketplace_fixed_fee: fixedFee,
             fixed_fee: fixedFee,
             tiktok_sfp_enabled: isTikTok,
-            tiktok_reembolso_disabled: dbOrder.bling_orders?.tiktok_reembolso_disabled === true,
-            tiktok_retorno_liquido: dbOrder.bling_orders?.tiktok_retorno_liquido,
+            tiktok_reembolso_disabled: bo?.tiktok_reembolso_disabled === true,
+            tiktok_retorno_liquido: bo?.tiktok_retorno_liquido != null ? Number(bo.tiktok_retorno_liquido) : undefined,
             reembolso_value: dbOrder.reembolso_value,
             reembolso_marketplace_enabled: dbOrder.reembolso_marketplace_enabled != null ? Boolean(dbOrder.reembolso_marketplace_enabled) : undefined,
             reembolso_marketplace_value: dbOrder.reembolso_marketplace_value,
@@ -343,6 +346,10 @@ export const useHeroStats = (
           });
 
           const mktCost = mktCostMap.get(orderId) ?? 0;
+          const hasReembolsoSaved = dbOrder.reembolso_fornecedor_enabled === true || dbOrder.reembolso_marketplace_enabled === true || dbOrder.reembolso_value != null;
+          if (hasReembolsoSaved && dbOrder.total_profit != null && !isNaN(Number(dbOrder.total_profit))) {
+            return Number(dbOrder.total_profit);
+          }
           return Math.round((result.realProfit - mktCost) * 100) / 100;
         };
 

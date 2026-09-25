@@ -193,7 +193,6 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
                 reembolso_fornecedor_value,
                 is_free_sample,
                 is_personal_purchase,
-                manual_product_cost,
                 marketplace_id,
                 bling_order_id,
                 bling_orders!bling_order_id (
@@ -284,10 +283,9 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             reembolso_fornecedor_value?: number | null;
             is_free_sample?: boolean | string;
             is_personal_purchase?: boolean | string;
-            manual_product_cost?: number | null;
             marketplace_id?: string;
             bling_order_id?: string;
-            bling_orders?: DbBlingOrder | null;
+            bling_orders?: DbBlingOrder | DbBlingOrder[] | null;
             marketplaces?: DbMarketplace | null;
             order_items?: DbOrderItem[];
           }
@@ -329,8 +327,9 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             }));
 
             const calculatedTotalProducts = orderProducts.reduce((s, p) => s + (p.unit_price * p.quantity), 0);
-            const boBaseValue = Number(dbOrder.bling_orders?.base_value ?? 0);
-            const boTotalProducts = Number(dbOrder.bling_orders?.total_products ?? 0);
+            const bo = Array.isArray(dbOrder.bling_orders) ? dbOrder.bling_orders[0] : dbOrder.bling_orders;
+            const boBaseValue = Number(bo?.base_value ?? 0);
+            const boTotalProducts = Number(bo?.total_products ?? 0);
 
             const effectiveTotalProducts = boTotalProducts > 0
               ? boTotalProducts
@@ -357,8 +356,8 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
               marketplace_fixed_fee: fixedFee,
               fixed_fee: fixedFee,
               tiktok_sfp_enabled: isTikTok,
-              tiktok_reembolso_disabled: dbOrder.bling_orders?.tiktok_reembolso_disabled === true,
-              tiktok_retorno_liquido: dbOrder.bling_orders?.tiktok_retorno_liquido,
+              tiktok_reembolso_disabled: bo?.tiktok_reembolso_disabled === true,
+              tiktok_retorno_liquido: bo?.tiktok_retorno_liquido != null ? Number(bo.tiktok_retorno_liquido) : undefined,
               reembolso_value: dbOrder.reembolso_value,
               reembolso_marketplace_enabled: dbOrder.reembolso_marketplace_enabled != null ? Boolean(dbOrder.reembolso_marketplace_enabled) : undefined,
               reembolso_marketplace_value: dbOrder.reembolso_marketplace_value,
@@ -366,7 +365,6 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
               reembolso_fornecedor_value: dbOrder.reembolso_fornecedor_value,
               is_free_sample: dbOrder.is_free_sample,
               is_personal_purchase: dbOrder.is_personal_purchase,
-              manual_product_cost: dbOrder.manual_product_cost,
               marketplace: mpName,
               products: orderProducts,
             };
