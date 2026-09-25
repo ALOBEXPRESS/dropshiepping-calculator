@@ -11,14 +11,15 @@
  * - Cores consistentes com o design system (roxo/azul)
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import Chart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
 import { useAffiliateCommissionData } from '@/hooks/sales/useAffiliateCommissionData';
-import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight, ChevronDown, BarChart3 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface AffiliateCommissionChartProps {
   organizationId: string;
@@ -39,6 +40,7 @@ export const AffiliateCommissionChart: React.FC<AffiliateCommissionChartProps> =
     error,
   } = useAffiliateCommissionData(organizationId, refreshTrigger);
 
+  const [isOpen, setIsOpen] = useState(false);
   const [selectedAffiliate, setSelectedAffiliate] = useState<string>('all');
   const [chartOffset, setChartOffset] = useState(0);
   const chartWrapperRef = useRef<HTMLDivElement>(null);
@@ -61,19 +63,25 @@ export const AffiliateCommissionChart: React.FC<AffiliateCommissionChartProps> =
   const chartData = filteredData.slice(0, 50);
 
   // Estado para largura do container
-  const [containerWidth, setContainerWidth] = React.useState(800);
+  const [containerWidth, setContainerWidth] = useState(800);
 
   // Atualizar largura do container
-  React.useEffect(() => {
+  useEffect(() => {
     const updateWidth = () => {
       if (chartWrapperRef.current) {
         setContainerWidth(chartWrapperRef.current.clientWidth);
       }
     };
-    updateWidth();
-    window.addEventListener('resize', updateWidth);
-    return () => window.removeEventListener('resize', updateWidth);
-  }, []);
+    if (isOpen) {
+      // Small timeout to allow container transition/render
+      const timer = setTimeout(updateWidth, 50);
+      window.addEventListener('resize', updateWidth);
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('resize', updateWidth);
+      };
+    }
+  }, [isOpen]);
 
   // Calcular largura do gráfico e se tem scroll - Aumentar largura por produto
   const chartWidth = Math.max(1200, chartData.length * 80);
@@ -242,8 +250,8 @@ export const AffiliateCommissionChart: React.FC<AffiliateCommissionChartProps> =
   if (loading) {
     return (
       <Card className="p-6 border-border">
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <div className="flex items-center justify-center h-24">
+          <Loader2 className="w-6 h-6 animate-spin text-purple-500" />
         </div>
       </Card>
     );
@@ -252,7 +260,7 @@ export const AffiliateCommissionChart: React.FC<AffiliateCommissionChartProps> =
   if (error) {
     return (
       <Card className="p-6 border-border">
-        <div className="text-center text-red-500 py-8">{error}</div>
+        <div className="text-center text-red-500 py-4">{error}</div>
       </Card>
     );
   }
@@ -260,136 +268,170 @@ export const AffiliateCommissionChart: React.FC<AffiliateCommissionChartProps> =
   if (marketplaces.length === 0) {
     return (
       <Card className="p-6 border-border">
-        <div className="text-center text-muted-foreground py-8">
-          <p className="text-lg font-semibold mb-2">Nenhum marketplace com comissão de afiliado</p>
-          <p className="text-sm">Configure a comissão de afiliado nos marketplaces para visualizar este relatório.</p>
+        <div className="text-center text-muted-foreground py-6">
+          <p className="text-base font-semibold mb-1">Nenhum marketplace com comissão de afiliado</p>
+          <p className="text-xs">Configure a comissão de afiliado nos marketplaces para visualizar este relatório.</p>
         </div>
       </Card>
     );
   }
 
+  const avgCommission = filteredData.length > 0
+    ? formatPercentage(
+        filteredData.reduce((sum, p) => sum + p.max_affiliate_percentage, 0) / filteredData.length
+      )
+    : '0.0%';
+
+  const totalStock = filteredData.reduce((sum, p) => sum + p.stock_quantity, 0);
+
   return (
-    <Card className="p-6 border-border">
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <h3 className="text-lg font-semibold text-foreground mb-2">
-            Relatório de Comissão de Afiliado
-          </h3>
-          <div className="flex items-center gap-4">
+    <Card className="border-border overflow-hidden bg-card transition-all">
+      {/* Accordion Trigger Header */}
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className={cn(
+          'w-full flex items-center justify-between p-4 sm:p-5',
+          'hover:bg-zinc-900/60 transition-all cursor-pointer select-none text-left group'
+        )}
+        aria-expanded={isOpen}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8 flex-wrap">
+          <div className="flex items-center gap-2.5">
+            <BarChart3 className="w-5 h-5 text-purple-500 group-hover:scale-110 transition-transform" />
+            <h3 className="text-base sm:text-lg font-semibold text-foreground">
+              Relatório de Comissão de Afiliado
+            </h3>
+          </div>
+
+          <div className="flex items-center gap-6">
             <div>
-              <p className="text-xs text-muted-foreground">Total de Produtos</p>
-              <p className="text-xl font-bold text-purple-600">{filteredData.length}</p>
+              <p className="text-[11px] text-muted-foreground font-medium">Total de Produtos</p>
+              <p className="text-base sm:text-lg font-bold text-purple-500">{filteredData.length}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Comissão Média</p>
-              <p className="text-xl font-bold text-purple-600">
-                {filteredData.length > 0
-                  ? formatPercentage(
-                      filteredData.reduce((sum, p) => sum + p.max_affiliate_percentage, 0) / filteredData.length
-                    )
-                  : '0.0%'}
-              </p>
+              <p className="text-[11px] text-muted-foreground font-medium">Comissão Média</p>
+              <p className="text-base sm:text-lg font-bold text-purple-500">{avgCommission}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Estoque Total</p>
-              <p className="text-xl font-bold text-purple-600">
-                {filteredData.reduce((sum, p) => sum + p.stock_quantity, 0)}
-              </p>
+              <p className="text-[11px] text-muted-foreground font-medium">Estoque Total</p>
+              <p className="text-base sm:text-lg font-bold text-purple-500">{totalStock}</p>
             </div>
           </div>
         </div>
-        <div className="flex flex-col gap-2">
-          <Select value={selectedMarketplace} onValueChange={setSelectedMarketplace}>
-            <SelectTrigger className="w-[200px] border-border">
-              <SelectValue placeholder="Selecione o marketplace" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os Marketplaces</SelectItem>
-              {marketplaces.map((marketplace) => (
-                <SelectItem key={marketplace.id} value={marketplace.id}>
-                  {marketplace.name} ({formatPercentage(marketplace.affiliate_commission_rate)})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          <Select value={selectedAffiliate} onValueChange={setSelectedAffiliate}>
-            <SelectTrigger className="w-[200px] border-border">
-              <SelectValue placeholder="Filtrar por afiliado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os Afiliados</SelectItem>
-              {affiliates.map((affiliate) => affiliate && (
-                <SelectItem key={affiliate} value={affiliate}>
-                  {affiliate}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
 
-      {chartData.length > 0 ? (
-        <div className="relative overflow-hidden">
-          {/* Botões de navegação - só aparecem se houver scroll */}
-          {hasScroll && chartOffset > 0 && (
-            <div className="absolute left-2 top-1/2 -translate-y-1/2 z-10">
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={handleScrollLeft}
-                className="h-10 w-10 rounded-full bg-white dark:bg-muted shadow-lg hover:shadow-xl transition-all hover:scale-110"
-                aria-label="Rolar para esquerda"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </Button>
+        <div className="flex items-center gap-2 text-muted-foreground group-hover:text-foreground shrink-0 ml-2">
+          <span className="text-xs font-medium hidden sm:inline">
+            {isOpen ? 'Ocultar' : 'Expandir'}
+          </span>
+          <ChevronDown
+            className={cn(
+              'w-5 h-5 transition-transform duration-200 text-muted-foreground group-hover:text-foreground',
+              isOpen && 'rotate-180 text-purple-400'
+            )}
+          />
+        </div>
+      </button>
+
+      {/* Accordion Content */}
+      {isOpen && (
+        <div className="p-4 sm:p-6 pt-2 border-t border-border/60 animate-in fade-in-50 duration-200 space-y-6">
+          {/* Filters Bar */}
+          <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+            <Select value={selectedMarketplace} onValueChange={setSelectedMarketplace}>
+              <SelectTrigger className="w-[180px] sm:w-[220px] border-border bg-background">
+                <SelectValue placeholder="Selecione o marketplace" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Marketplaces</SelectItem>
+                {marketplaces.map((marketplace) => (
+                  <SelectItem key={marketplace.id} value={marketplace.id}>
+                    {marketplace.name} ({formatPercentage(marketplace.affiliate_commission_rate)})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={selectedAffiliate} onValueChange={setSelectedAffiliate}>
+              <SelectTrigger className="w-[180px] sm:w-[220px] border-border bg-background">
+                <SelectValue placeholder="Filtrar por afiliado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Afiliados</SelectItem>
+                {affiliates.map((affiliate) => affiliate && (
+                  <SelectItem key={affiliate} value={affiliate}>
+                    {affiliate}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Chart Content */}
+          {chartData.length > 0 ? (
+            <div className="relative overflow-hidden">
+              {/* Botões de navegação - só aparecem se houver scroll */}
+              {hasScroll && chartOffset > 0 && (
+                <div className="absolute left-2 top-1/2 -translate-y-1/2 z-10">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={handleScrollLeft}
+                    className="h-10 w-10 rounded-full bg-card/90 shadow-lg hover:shadow-xl transition-all hover:scale-110 border border-border"
+                    aria-label="Rolar para esquerda"
+                  >
+                    <ChevronLeft className="w-6 h-6" />
+                  </Button>
+                </div>
+              )}
+
+              {hasScroll && chartOffset < maxOffset && (
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 z-10">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={handleScrollRight}
+                    className="h-10 w-10 rounded-full bg-card/90 shadow-lg hover:shadow-xl transition-all hover:scale-110 border border-border"
+                    aria-label="Rolar para direita"
+                  >
+                    <ChevronRight className="w-6 h-6" />
+                  </Button>
+                </div>
+              )}
+
+              {/* Container do gráfico - sem scrollbar */}
+              <div ref={chartWrapperRef} className="w-full">
+                <div
+                  style={{
+                    width: `${chartWidth}px`,
+                    transform: `translateX(-${chartOffset}px)`,
+                    transition: 'transform 0.3s ease-out',
+                  }}
+                >
+                  <Chart
+                    options={chartOptions}
+                    series={chartSeries}
+                    type="bar"
+                    height={400}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-64 text-muted-foreground">
+              <div className="text-center">
+                <p className="text-base font-semibold mb-1">Nenhum produto com afiliado</p>
+                <p className="text-xs">
+                  {selectedMarketplace === 'all' && selectedAffiliate === 'all'
+                    ? 'Não há produtos com afiliados cadastrados.'
+                    : 'Não há produtos com afiliados para os filtros selecionados.'}
+                </p>
+              </div>
             </div>
           )}
-          
-          {hasScroll && chartOffset < maxOffset && (
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 z-10">
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={handleScrollRight}
-                className="h-10 w-10 rounded-full bg-white dark:bg-muted shadow-lg hover:shadow-xl transition-all hover:scale-110"
-                aria-label="Rolar para direita"
-              >
-                <ChevronRight className="w-6 h-6" />
-              </Button>
-            </div>
-          )}
-
-          {/* Container do gráfico - sem scrollbar */}
-          <div ref={chartWrapperRef} className="w-full">
-            <div 
-              style={{ 
-                width: `${chartWidth}px`,
-                transform: `translateX(-${chartOffset}px)`,
-                transition: 'transform 0.3s ease-out'
-              }}
-            >
-              <Chart
-                options={chartOptions}
-                series={chartSeries}
-                type="bar"
-                height={400}
-              />
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="flex items-center justify-center h-64 text-muted-foreground">
-          <div className="text-center">
-            <p className="text-lg font-semibold mb-2">Nenhum produto com afiliado</p>
-            <p className="text-sm">
-              {selectedMarketplace === 'all' && selectedAffiliate === 'all'
-                ? 'Não há produtos com afiliados cadastrados.'
-                : 'Não há produtos com afiliados para os filtros selecionados.'}
-            </p>
-          </div>
         </div>
       )}
     </Card>
   );
 };
+

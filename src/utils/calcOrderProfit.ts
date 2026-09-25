@@ -23,6 +23,7 @@ export interface OrderProfitInput {
   reembolso_fornecedor_value?: number | null;
   reembolso_marketplace_enabled?: boolean;
   reembolso_fornecedor_enabled?: boolean;
+  manual_product_cost?: number | string | null;
   is_free_sample?: boolean | string;
   is_personal_purchase?: boolean | string;
   marketplace?: string;
@@ -87,7 +88,14 @@ export function calcOrderProfit(
     : 0;
   const orderSupplierFee = isDogama ? (totalBaseCost * effectiveSupFeePercent) / 100 : 0;
   const orderGatewayFee = isDogama ? productGatewayFee : 0;
-  const totalProductCost = totalBaseCost + orderSupplierFee + orderGatewayFee;
+  
+  const manualProductCost = order.manual_product_cost != null && !isNaN(Number(order.manual_product_cost))
+    ? Number(order.manual_product_cost)
+    : null;
+
+  const totalProductCost = manualProductCost !== null
+    ? manualProductCost
+    : totalBaseCost + orderSupplierFee + orderGatewayFee;
 
   // ── Sale prices ───────────────────────────────────────────────────────────
   const totalProductsValue = Number(order.total_products ?? totalAmount);
@@ -183,6 +191,8 @@ export function calcOrderProfit(
   // ── Net price ─────────────────────────────────────────────────────────────
   const precoVendaLiquidoFinal = hasReembolsoMarketplace
     ? effectiveMktVal
+    : hasFornecedorEnabled
+    ? 0
     : hasRetornoLiquido
     ? retornoLiquido
     : isTikTok
@@ -192,6 +202,8 @@ export function calcOrderProfit(
   // ── Profit ────────────────────────────────────────────────────────────────
   const realProfitRaw = isFreeSample
     ? -effectiveProductCost
+    : hasFornecedorEnabled && !hasReembolsoMarketplace
+    ? effectiveFornecedorVal - baseProductCost
     : precoVendaLiquidoFinal - effectiveProductCost;
 
   return {

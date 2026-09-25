@@ -1,10 +1,11 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, Gift, Package } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Gift, Package } from 'lucide-react';
 import { FreeSampleCard } from './FreeSampleCard';
 import { ConfirmFreeSampleDialog } from './ConfirmFreeSampleDialog';
 import { useFreeSampleLane } from '@/hooks/useFreeSampleLane';
+import { cn } from '@/lib/utils';
 import type { PendingOrder } from '@/types/pendingOrder';
 import type { InfluencerOption } from '@/hooks/useFreeSampleLane';
 
@@ -26,6 +27,7 @@ export const FreeSampleLane: React.FC<FreeSampleLaneProps> = ({
   const { processing, processFreeSample, getInfluencersForMarketplace } =
     useFreeSampleLane(organizationId, onOrderProcessed);
 
+  const [isOpen, setIsOpen] = useState(false);
   const [dialogOrder, setDialogOrder] = useState<PendingOrder | null>(null);
   const [dialogInfluencers, setDialogInfluencers] = useState<InfluencerOption[]>([]);
   const [dialogInfluencersLoading, setDialogInfluencersLoading] = useState(false);
@@ -42,8 +44,10 @@ export const FreeSampleLane: React.FC<FreeSampleLaneProps> = ({
   }, []);
 
   React.useEffect(() => {
-    checkArrows();
-  }, [orders, checkArrows]);
+    if (isOpen) {
+      checkArrows();
+    }
+  }, [orders, checkArrows, isOpen]);
 
   const scroll = (dir: 'left' | 'right') => {
     const el = scrollRef.current;
@@ -82,7 +86,10 @@ export const FreeSampleLane: React.FC<FreeSampleLaneProps> = ({
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    setIsDragOver(true);
+    if (!isDragOver) {
+      setIsDragOver(true);
+      setIsOpen(true);
+    }
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
@@ -99,6 +106,7 @@ export const FreeSampleLane: React.FC<FreeSampleLaneProps> = ({
       const order = JSON.parse(e.dataTransfer.getData('application/json')) as PendingOrder;
       const source = e.dataTransfer.getData('text/source');
       if (order && onDropOrder) {
+        setIsOpen(true);
         onDropOrder(order);
         // Notify PendingOrders that this card was successfully dropped here
         // so onDragEnd doesn't remove it via the unreliable dropEffect check
@@ -130,110 +138,149 @@ export const FreeSampleLane: React.FC<FreeSampleLaneProps> = ({
       />
 
       <div
-        className={`w-full rounded-xl transition-colors duration-200 ${
+        className={cn(
+          'w-full rounded-xl transition-all duration-200',
           isDragOver
-            ? 'ring-2 ring-violet-400 ring-offset-2 bg-violet-50/50 dark:bg-violet-950/20'
+            ? 'ring-2 ring-violet-500 ring-offset-2 ring-offset-background bg-violet-950/20'
             : ''
-        }`}
+        )}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        {/* Section header */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex items-center gap-2">
-            <Gift className="w-5 h-5 text-violet-500" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Amostras Grátis — Influenciadores
-            </h2>
-          </div>
-          <Badge
-            variant="secondary"
-            className="bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300 border border-violet-200 dark:border-violet-800"
-          >
-            {orders.length} {orders.length === 1 ? 'pedido' : 'pedidos'}
-          </Badge>
-          {isDragOver && (
-            <span className="text-xs text-violet-500 dark:text-violet-400 animate-pulse font-medium">
-              Solte aqui para adicionar como amostra grátis
-            </span>
+        {/* Accordion Trigger Header */}
+        <button
+          type="button"
+          onClick={() => setIsOpen((prev) => !prev)}
+          className={cn(
+            'w-full flex items-center justify-between p-3.5 sm:p-4 rounded-xl',
+            'bg-card border border-border hover:border-violet-500/40 hover:bg-zinc-900/60',
+            'transition-all duration-200 cursor-pointer select-none text-left group'
           )}
-        </div>
+          aria-expanded={isOpen}
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-violet-950/50 text-violet-400 border border-violet-800/40 group-hover:scale-105 transition-transform">
+              <Gift className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm sm:text-base font-semibold text-foreground">
+                  Amostras Grátis — Influenciadores
+                </h2>
+                <Badge
+                  variant="secondary"
+                  className="bg-violet-900/30 text-violet-300 border border-violet-800/60 text-[11px] px-2 py-0.5"
+                >
+                  {orders.length} {orders.length === 1 ? 'pedido' : 'pedidos'}
+                </Badge>
+              </div>
+              {isDragOver ? (
+                <span className="text-xs text-violet-400 animate-pulse font-medium">
+                  Solte aqui para adicionar como amostra grátis
+                </span>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Fila para envio e classificação de produtos para influenciadores
+                </p>
+              )}
+            </div>
+          </div>
 
-        {/* Empty state */}
-        {orders.length === 0 ? (
-          <Card
-            className={`p-8 border-dashed transition-colors duration-200 ${
-              isDragOver
-                ? 'border-violet-400 bg-violet-100/50 dark:bg-violet-900/20'
-                : 'border-violet-200 dark:border-violet-900/50 bg-violet-50/30 dark:bg-violet-950/10'
-            }`}
-          >
-            <div className="flex flex-col items-center justify-center gap-3 text-center">
-              <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors duration-200 ${
+          <div className="flex items-center gap-2 text-muted-foreground group-hover:text-foreground shrink-0 ml-2">
+            <span className="text-xs font-medium text-muted-foreground hidden sm:inline">
+              {isOpen ? 'Ocultar' : 'Expandir'}
+            </span>
+            <ChevronDown
+              className={cn(
+                'w-5 h-5 transition-transform duration-200',
+                isOpen && 'rotate-180'
+              )}
+            />
+          </div>
+        </button>
+
+        {/* Collapsible Content */}
+        {isOpen && (
+          <div className="mt-3 animate-in fade-in-50 duration-200">
+            {/* Empty state */}
+            {orders.length === 0 ? (
+              <Card
+                className={cn(
+                  'p-8 border-dashed transition-colors duration-200',
                   isDragOver
-                    ? 'bg-violet-200 dark:bg-violet-800/50'
-                    : 'bg-violet-100 dark:bg-violet-900/30'
-                }`}
+                    ? 'border-violet-400 bg-violet-100/50 dark:bg-violet-900/20'
+                    : 'border-violet-200 dark:border-violet-900/50 bg-violet-50/30 dark:bg-violet-950/10'
+                )}
               >
-                <Package className={`w-6 h-6 ${isDragOver ? 'text-violet-600' : 'text-violet-400'}`} />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {isDragOver
-                    ? 'Solte o pedido aqui!'
-                    : 'Nenhum pedido na fila de amostras grátis'}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {isDragOver
-                    ? 'O pedido será movido para a fila de amostras grátis.'
-                    : 'Arraste um pedido de cima para cá para enviá-lo como amostra grátis.'}
-                </p>
-              </div>
-            </div>
-          </Card>
-        ) : (
-          /* Carousel */
-          <div className="relative">
-            {/* Left arrow */}
-            {showLeftArrow && (
-              <button
-                onClick={() => scroll('left')}
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-full p-2 shadow-lg border border-gray-200 dark:border-zinc-700 transition-all"
-                aria-label="Rolar para esquerda"
-              >
-                <ChevronLeft className="w-6 h-6 text-gray-700 dark:text-gray-300" />
-              </button>
-            )}
+                <div className="flex flex-col items-center justify-center gap-3 text-center">
+                  <div
+                    className={cn(
+                      'w-12 h-12 rounded-full flex items-center justify-center transition-colors duration-200',
+                      isDragOver
+                        ? 'bg-violet-200 dark:bg-violet-800/50'
+                        : 'bg-violet-100 dark:bg-violet-900/30'
+                    )}
+                  >
+                    <Package className={cn('w-6 h-6', isDragOver ? 'text-violet-600' : 'text-violet-400')} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {isDragOver
+                        ? 'Solte o pedido aqui!'
+                        : 'Nenhum pedido na fila de amostras grátis'}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {isDragOver
+                        ? 'O pedido será movido para a fila de amostras grátis.'
+                        : 'Arraste um pedido de cima para cá para enviá-lo como amostra grátis.'}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            ) : (
+              /* Carousel */
+              <div className="relative">
+                {/* Left arrow */}
+                {showLeftArrow && (
+                  <button
+                    onClick={() => scroll('left')}
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-full p-2 shadow-lg border border-gray-200 dark:border-zinc-700 transition-all cursor-pointer"
+                    aria-label="Rolar para esquerda"
+                  >
+                    <ChevronLeft className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+                  </button>
+                )}
 
-            {/* Cards scroll container */}
-            <div
-              ref={scrollRef}
-              onScroll={checkArrows}
-              className="flex gap-4 overflow-x-auto pb-2 scroll-smooth"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
-              {orders.map((order) => (
-                <FreeSampleCard
-                  key={order.bling_order_id}
-                  order={order}
-                  onProcess={() => handleProcess(order)}
-                  isProcessing={processing === order.bling_order_id}
-                  onReturnToPending={onReturnOrder ? () => onReturnOrder(order) : undefined}
-                />
-              ))}
-            </div>
+                {/* Cards scroll container */}
+                <div
+                  ref={scrollRef}
+                  onScroll={checkArrows}
+                  className="flex gap-4 overflow-x-auto pb-2 scroll-smooth"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
+                  {orders.map((order) => (
+                    <FreeSampleCard
+                      key={order.bling_order_id}
+                      order={order}
+                      onProcess={() => handleProcess(order)}
+                      isProcessing={processing === order.bling_order_id}
+                      onReturnToPending={onReturnOrder ? () => onReturnOrder(order) : undefined}
+                    />
+                  ))}
+                </div>
 
-            {/* Right arrow */}
-            {showRightArrow && (
-              <button
-                onClick={() => scroll('right')}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-full p-2 shadow-lg border border-gray-200 dark:border-zinc-700 transition-all"
-                aria-label="Rolar para direita"
-              >
-                <ChevronRight className="w-6 h-6 text-gray-700 dark:text-gray-300" />
-              </button>
+                {/* Right arrow */}
+                {showRightArrow && (
+                  <button
+                    onClick={() => scroll('right')}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-full p-2 shadow-lg border border-gray-200 dark:border-zinc-700 transition-all cursor-pointer"
+                    aria-label="Rolar para direita"
+                  >
+                    <ChevronRight className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+                  </button>
+                )}
+              </div>
             )}
           </div>
         )}

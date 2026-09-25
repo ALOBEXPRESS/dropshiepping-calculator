@@ -128,6 +128,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     manualSupplierFeePercent: string;
     manualGatewayFee: string;
     manualCostOverrides: Record<number, string>;
+    manualTotalProductCost?: string;
     manualShipping: string;
     manualRetornoLiquido: string;
   };
@@ -178,6 +179,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const manualSupplierFeePercentRef = useRef('');
   const manualGatewayFeeRef = useRef('');
   const manualCostOverridesRef = useRef<Record<number, string>>({});
+  const manualTotalProductCostRef = useRef('');
   const manualShippingRef = useRef('');
   const manualRetornoLiquidoRef = useRef('');
 
@@ -192,6 +194,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       manualSupplierFeePercent: manualSupplierFeePercentRef.current,
       manualGatewayFee: manualGatewayFeeRef.current,
       manualCostOverrides: manualCostOverridesRef.current,
+      manualTotalProductCost: manualTotalProductCostRef.current,
       manualShipping: manualShippingRef.current,
       manualRetornoLiquido: manualRetornoLiquidoRef.current,
     };
@@ -416,6 +419,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     setManualSupplierFeePercent(saved?.manualSupplierFeePercent ?? '');
     setManualGatewayFee(saved?.manualGatewayFee ?? '');
     setManualCostOverrides(saved?.manualCostOverrides ?? {});
+    setManualTotalProductCost(saved?.manualTotalProductCost ?? '');
     setManualShipping(saved?.manualShipping ?? '');
     setManualRetornoLiquido(
       saved?.manualRetornoLiquido ??
@@ -688,6 +692,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [manualSupplierFeePercent, setManualSupplierFeePercent] = useState<string>('');
   const [manualGatewayFee, setManualGatewayFee] = useState<string>('');
   const [manualCostOverrides, setManualCostOverrides] = useState<Record<number, string>>({});
+  const [manualTotalProductCost, setManualTotalProductCost] = useState<string>('');
   const [manualShipping, setManualShipping] = useState<string>('');
   const [manualMarketingCost, setManualMarketingCost] = useState<string>('');
   const [manualCostEnabled, setManualCostEnabled] = useState(false);
@@ -700,6 +705,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   manualSupplierFeePercentRef.current = manualSupplierFeePercent;
   manualGatewayFeeRef.current = manualGatewayFee;
   manualCostOverridesRef.current = manualCostOverrides;
+  manualTotalProductCostRef.current = manualTotalProductCost;
   manualShippingRef.current = manualShipping;
   manualRetornoLiquidoRef.current = manualRetornoLiquido;
   const [openMarketingCost, setOpenMarketingCost] = useState(false);
@@ -2169,55 +2175,105 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     }).format(value);
   };
 
+  const parseBRLFloat = (val: string | number | null | undefined): number => {
+    if (val == null) return 0;
+    if (typeof val === 'number') return isNaN(val) ? 0 : val;
+    const raw = String(val).trim();
+    if (!raw) return 0;
+    let normalized = raw;
+    if (raw.includes(',') && raw.includes('.')) {
+      normalized = raw.replace(/\./g, '').replace(',', '.');
+    } else if (raw.includes(',')) {
+      normalized = raw.replace(',', '.');
+    }
+    const num = parseFloat(normalized);
+    return isNaN(num) ? 0 : num;
+  };
+
+  const formatBRLInputOnBlur = (valStr: string): string => {
+    if (!valStr || !valStr.trim()) return '';
+    const num = parseBRLFloat(valStr);
+    return new Intl.NumberFormat('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(num);
+  };
+
   const handleSaveCosts = async (
     products: OrderDetail['products'],
     costOverrides: Record<number, string>,
     supplierFeePercent: string,
     gatewayFee: string,
+    manualTotalCost?: string,
   ) => {
     if (!products || products.length === 0) return;
     setSavingCosts(true);
     setCostsSaved(false);
     try {
-      for (let i = 0; i < products.length; i++) {
-        const p = products[i];
-        const sku = p.sku?.trim();
-        if (!sku) continue;
-
-        const overrideRaw = costOverrides[i];
-        if (overrideRaw !== undefined && overrideRaw !== '') {
-          const costVal = parseFloat(overrideRaw.replace(',', '.')) || 0;
+      if (manualTotalCost !== undefined && manualTotalCost.trim() !== '') {
+        const manualCostVal = parseBRLFloat(manualTotalCost);
+        const perItemCost = products.length > 0 ? manualCostVal / products.length : manualCostVal;
+        for (const p of products) {
+          const sku = p.sku?.trim();
+          if (!sku) continue;
           await supabase
             .from('products')
-            .update({ cost_price: costVal })
+            .update({
+              cost_price: perItemCost,
+              supplier_fee_value: 0,
+              supplier_gateway_fee_value: 0,
+            })
             .eq('sku', sku)
             .eq('organization_id', organizationId);
           await supabase
             .from('products_variations_bling')
-            .update({ cost_price: costVal })
+            .update({
+              cost_price: perItemCost,
+            })
             .eq('sku', sku)
             .eq('organization_id', organizationId);
         }
-      }
+      } else {
+        for (let i = 0; i < products.length; i++) {
+          const p = products[i];
+          const sku = p.sku?.trim();
+          if (!sku) continue;
 
-      // Supplier fee + gateway fee: apply to all products in this order (by sku)
-      for (const p of products) {
-        const sku = p.sku?.trim();
-        if (!sku) continue;
-        const feeUpdates: { supplier_fee_value?: number; supplier_fee_type?: string; supplier_gateway_fee_value?: number } = {};
-        if (supplierFeePercent !== '') {
-          feeUpdates.supplier_fee_value = parseFloat(supplierFeePercent.replace(',', '.')) || 0;
-          feeUpdates.supplier_fee_type = 'percent';
+          const overrideRaw = costOverrides[i];
+          if (overrideRaw !== undefined && overrideRaw !== '') {
+            const costVal = parseBRLFloat(overrideRaw);
+            await supabase
+              .from('products')
+              .update({ cost_price: costVal })
+              .eq('sku', sku)
+              .eq('organization_id', organizationId);
+            await supabase
+              .from('products_variations_bling')
+              .update({ cost_price: costVal })
+              .eq('sku', sku)
+              .eq('organization_id', organizationId);
+          }
         }
-        if (gatewayFee !== '') {
-          feeUpdates.supplier_gateway_fee_value = parseFloat(gatewayFee.replace(',', '.')) || 0;
-        }
-        if (Object.keys(feeUpdates).length > 0) {
-          await supabase
-            .from('products')
-            .update(feeUpdates)
-            .eq('sku', sku)
-            .eq('organization_id', organizationId);
+
+        // Supplier fee + gateway fee: apply to all products in this order (by sku)
+        for (const p of products) {
+          const sku = p.sku?.trim();
+          if (!sku) continue;
+          const feeUpdates: { supplier_fee_value?: number; supplier_fee_type?: string; supplier_gateway_fee_value?: number } = {};
+          if (supplierFeePercent !== '') {
+            feeUpdates.supplier_fee_value = parseFloat(supplierFeePercent.replace(',', '.')) || 0;
+            feeUpdates.supplier_fee_type = 'percent';
+          }
+          if (gatewayFee !== '') {
+            feeUpdates.supplier_gateway_fee_value = parseBRLFloat(gatewayFee);
+          }
+          if (Object.keys(feeUpdates).length > 0) {
+            await supabase
+              .from('products')
+              .update(feeUpdates)
+              .eq('sku', sku)
+              .eq('organization_id', organizationId);
+          }
         }
       }
 
@@ -3101,7 +3157,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               // Manual override: user can type new cost per item
               const overrideRaw = manualCostOverrides[i];
               const unitCost = overrideRaw !== undefined && overrideRaw !== ''
-                ? (parseFloat(overrideRaw.replace(',', '.')) || 0)
+                ? parseBRLFloat(overrideRaw)
                 : unitCostRaw;
               const baseCost = unitCost * qty;
               const totalPrice = unitPrice * qty;
@@ -3136,12 +3192,17 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             // Gateway fee: manual override if set, else product value, else R$2
             const effectiveGatewayFee = isDogama
               ? (manualGatewayFee !== ''
-                  ? (parseFloat(manualGatewayFee.replace(',', '.')) || 0)
+                  ? parseBRLFloat(manualGatewayFee)
                   : productGatewayFee)
               : 0;
             const orderGatewayFee = effectiveGatewayFee;
 
-            const totalProductCost = totalBaseCost + orderSupplierFee + orderGatewayFee;
+            const hasManualTotalCost = manualTotalProductCost.trim() !== '' && !isNaN(parseBRLFloat(manualTotalProductCost));
+            const manualTotalCostVal = hasManualTotalCost ? parseBRLFloat(manualTotalProductCost) : null;
+
+            const totalProductCost = manualTotalCostVal !== null
+              ? manualTotalCostVal
+              : (totalBaseCost + orderSupplierFee + orderGatewayFee);
             const isFreeSample = selectedOrder.is_free_sample === true;
             const isPersonalPurchase = selectedOrder.is_personal_purchase === true || String(selectedOrder.order_number).trim() === '208';
 
@@ -3150,7 +3211,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
             // ── Desconto ──────────────────────────────────────────────────────────
             const blingDiscountValue = Number(selectedOrder.discount_value ?? 0);
-            const manualDiscountValue = parseFloat(manualDesconto.replace(',', '.').replace(/[^0-9.]/g, '')) || 0;
+            const manualDiscountValue = parseBRLFloat(manualDesconto);
             const activeDiscount = blingDiscountEnabled
               ? (blingDiscountValue > 0 ? blingDiscountValue : 0)
               : manualDiscountValue;
@@ -3185,17 +3246,17 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const sfpFee = sfpEnabled ? precoVendaBruto * 0.06 : 0;
             // Frete: TikTok com SFP = incluso (default 0); manual override possível
             const effectiveShipping = manualShipping !== ''
-              ? (parseFloat(manualShipping.replace(',', '.')) || 0)
+              ? parseBRLFloat(manualShipping)
               : (sfpEnabled ? 0 : selectedOrder.shipping_cost);
             const subtotalMarketplace = isFreeSample ? 0 : (commissionPercent + affiliateCommission + fixedFee + sfpFee + effectiveShipping + selectedOrder.other_expenses);
 
             // ── Retorno Líquido TikTok ────────────────────────────────────────────
             // When user fills this, TikTok already paid net amount → skip marketplace cost + affiliates
-            const retornoLiquidoValue = parseFloat(manualRetornoLiquido.replace(',', '.')) || 0;
+            const retornoLiquidoValue = parseBRLFloat(manualRetornoLiquido);
             const hasRetornoLiquido = isTikTok && retornoLiquidoValue > 0;
 
             // ── Acréscimo ─────────────────────────────────────────────────────────
-            const acrescimoManual = parseFloat(manualAcrescimo.replace(',', '.')) || 0;
+            const acrescimoManual = parseBRLFloat(manualAcrescimo);
             // Reembolso TikTok = desconto ativo (só TikTok)
             const tiktokReembolsoValue = isTikTok ? activeDiscount : 0;
             const acrescimoValue = acrescimoManual + (tiktokReembolsoEnabled && isTikTok ? tiktokReembolsoValue : 0);
@@ -3212,9 +3273,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
             // ── Lucro = Preço Líquido - Custo Produto ────────────────────────────
             // taxas marketplace já descontadas no precoVendaLiquidoFinal
-            const manualMarketingCostVal = manualCostEnabled ? (parseFloat(manualMarketingCost.replace(',', '.')) || 0) : 0;
+            const manualMarketingCostVal = manualCostEnabled ? parseBRLFloat(manualMarketingCost) : 0;
             const manualCouponVal = (() => {
-              const v = parseFloat(manualCoupon.replace(',', '.')) || 0;
+              const v = parseBRLFloat(manualCoupon);
               if (v <= 0) return 0;
               return manualCouponType === 'percent'
                 ? (precoVendaPagoCliente * v) / 100  // % sobre preço pago pelo cliente
@@ -3227,25 +3288,29 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               ? (precoVendaLiquidoFinal - totalProductCost - manualMarketingCostVal)
               : (precoVendaLiquidoFinal - totalProductCost + acrescimoManual - manualMarketingCostVal);
             // ── Reembolso Marketplace & Fornecedor ─────────────────────────────
-            const hasReembolsoMktActive = reembolsoMarketplaceEnabled && reembolsoMarketplaceValue.trim() !== '' && !isNaN(parseFloat(reembolsoMarketplaceValue.replace(',', '.')));
-            const reembolsoMktVal = hasReembolsoMktActive ? (parseFloat(reembolsoMarketplaceValue.replace(',', '.')) || 0) : 0;
+            const hasReembolsoMktActive = reembolsoMarketplaceEnabled && reembolsoMarketplaceValue.trim() !== '' && !isNaN(parseBRLFloat(reembolsoMarketplaceValue));
+            const reembolsoMktVal = hasReembolsoMktActive ? parseBRLFloat(reembolsoMarketplaceValue) : 0;
 
-            const hasReembolsoFornActive = reembolsoFornecedorEnabled && reembolsoFornecedorValue.trim() !== '' && !isNaN(parseFloat(reembolsoFornecedorValue.replace(',', '.')));
-            const reembolsoFornVal = hasReembolsoFornActive ? (parseFloat(reembolsoFornecedorValue.replace(',', '.')) || 0) : 0;
+            const hasReembolsoFornActive = reembolsoFornecedorEnabled && reembolsoFornecedorValue.trim() !== '' && !isNaN(parseBRLFloat(reembolsoFornecedorValue));
+            const reembolsoFornVal = hasReembolsoFornActive ? parseBRLFloat(reembolsoFornecedorValue) : 0;
 
             const effectiveProductCostModal = (isPersonalPurchase ? 0 : totalProductCost) - (hasReembolsoFornActive ? reembolsoFornVal : 0);
 
             const finalRealProfit = hasReembolsoMktActive
               ? (reembolsoMktVal - effectiveProductCostModal - manualMarketingCostVal)
+              : hasReembolsoFornActive
+              ? (reembolsoFornVal - (isPersonalPurchase ? 0 : totalProductCost) - manualMarketingCostVal)
               : isFreeSample
               ? -effectiveProductCostModal
               : hasRetornoLiquido
               ? (precoVendaLiquidoFinal - effectiveProductCostModal - manualMarketingCostVal)
               : (precoVendaLiquidoFinal - effectiveProductCostModal + acrescimoManual - manualMarketingCostVal);
 
-            const hasReembolsoActive = hasReembolsoMktActive;
+            const hasReembolsoActive = hasReembolsoMktActive || hasReembolsoFornActive;
             const marginBase = hasReembolsoMktActive
               ? (Math.abs(reembolsoMktVal) > 0 ? Math.abs(reembolsoMktVal) : (Math.abs(precoVendaLiquidoFinal) > 0 ? Math.abs(precoVendaLiquidoFinal) : selectedOrder.total_amount))
+              : hasReembolsoFornActive
+              ? (Math.abs(reembolsoFornVal) > 0 ? Math.abs(reembolsoFornVal) : (Math.abs(totalProductCost) > 0 ? Math.abs(totalProductCost) : selectedOrder.total_amount))
               : (Math.abs(precoVendaLiquidoFinal) > 0 ? Math.abs(precoVendaLiquidoFinal) : selectedOrder.total_amount);
             const margin = marginBase > 0
               ? ((finalRealProfit / marginBase) * 100).toFixed(1) : '0.0';
@@ -3578,6 +3643,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             placeholder="0,00"
                             value={manualRetornoLiquido}
                             onChange={(e) => setManualRetornoLiquido(e.target.value.replace(/[^0-9,.]/g, ''))}
+                            onBlur={() => setManualRetornoLiquido(formatBRLInputOnBlur(manualRetornoLiquido))}
                             className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-teal-500 tabular-nums"
                           />
                           {retornoLiquidoValue > 0 && (
@@ -3654,8 +3720,41 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                     </button>
                     {openProduto && (
                       <div className="bg-zinc-900/40 border-t border-red-950/20">
+                        {/* Custo manual total (inclui todas as taxas) */}
+                        <div className="px-4 py-3 bg-red-950/30 border-b border-red-950/40 flex items-center justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <span className="text-xs font-semibold text-zinc-200 block">Custo manual total com taxas</span>
+                            <p className="text-[10px] text-zinc-400">
+                              Insira o custo já incluindo todas as taxas. Ao preencher, ignora os custos dos itens e taxas abaixo.
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="text-xs text-zinc-400">R$</span>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              placeholder={formatBRLInputOnBlur(String(totalBaseCost + orderSupplierFee + orderGatewayFee)) || '0,00'}
+                              value={manualTotalProductCost}
+                              onChange={(e) => setManualTotalProductCost(e.target.value.replace(/[^0-9,.]/g, ''))}
+                              onBlur={() => setManualTotalProductCost(formatBRLInputOnBlur(manualTotalProductCost))}
+                              className="w-20 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 tabular-nums text-right font-semibold"
+                            />
+                            {manualTotalProductCost && (
+                              <button
+                                onClick={() => setManualTotalProductCost('')}
+                                className="text-zinc-500 hover:text-zinc-300 transition-colors p-0.5"
+                                title="Limpar custo manual"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
                         {/* Itens — apenas custo base por produto */}
-                        <div className="divide-y divide-zinc-800/30">
+                        <div className={`divide-y divide-zinc-800/30 ${hasManualTotalCost ? 'opacity-50' : ''}`}>
                           {productItems.map((p, i) => (
                             <div key={i} className="flex items-center justify-between px-4 py-2.5 gap-2">
                               <div className="flex-1 min-w-0 text-left">
@@ -3664,26 +3763,44 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                 {p.qty > 1 && <p className="text-[10px] text-zinc-500">{p.qty}×</p>}
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0">
-                                <input
-                                  type="text"
-                                  inputMode="decimal"
-                                  placeholder={String(p.unitCostRaw)}
-                                  value={manualCostOverrides[i] ?? ''}
-                                  onChange={(e) => {
-                                    const val = e.target.value.replace(/[^0-9,.]/g, '');
-                                    setManualCostOverrides(prev => ({ ...prev, [i]: val }));
-                                  }}
-                                  className="w-16 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 tabular-nums text-right"
-                                />
-                                <span className="text-red-400 text-[12px] font-semibold tabular-nums">-{formatCurrency(p.baseCost)}</span>
+                                {hasManualTotalCost ? (
+                                  <span className="text-[10px] text-amber-500/80 italic font-mono mr-1">(ignorado)</span>
+                                ) : (
+                                  <input
+                                    type="text"
+                                    inputMode="decimal"
+                                    placeholder={String(p.unitCostRaw)}
+                                    value={manualCostOverrides[i] ?? ''}
+                                    onChange={(e) => {
+                                      const val = e.target.value.replace(/[^0-9,.]/g, '');
+                                      setManualCostOverrides(prev => ({ ...prev, [i]: val }));
+                                    }}
+                                    onBlur={() => {
+                                      if (manualCostOverrides[i]) {
+                                        const formatted = formatBRLInputOnBlur(manualCostOverrides[i]);
+                                        setManualCostOverrides(prev => ({ ...prev, [i]: formatted }));
+                                      }
+                                    }}
+                                    className="w-16 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 tabular-nums text-right"
+                                  />
+                                )}
+                                <span className={`text-[12px] font-semibold tabular-nums ${hasManualTotalCost ? 'text-zinc-500 line-through' : 'text-red-400'}`}>
+                                  -{formatCurrency(p.baseCost)}
+                                </span>
                               </div>
                             </div>
                           ))}
                         </div>
+
                         {/* Taxas do fornecedor — só Dogama */}
                         {isDogama && (
-                          <div className="border-t border-red-950/30 bg-red-950/15 px-4 py-3 space-y-2">
-                            <p className="text-[10px] font-semibold text-red-500/70 uppercase tracking-widest mb-2">Taxas do Fornecedor</p>
+                          <div className={`border-t border-red-950/30 bg-red-950/15 px-4 py-3 space-y-2 ${hasManualTotalCost ? 'opacity-50' : ''}`}>
+                            <div className="flex items-center justify-between">
+                              <p className="text-[10px] font-semibold text-red-500/70 uppercase tracking-widest">Taxas do Fornecedor</p>
+                              {hasManualTotalCost && (
+                                <span className="text-[10px] text-amber-500/80 font-medium">(ignoradas pelo custo manual)</span>
+                              )}
+                            </div>
                             {/* Taxa % fornecedor — editável, pré-preenche com valor do produto */}
                             <div className="flex items-center justify-between gap-3">
                               <span className="text-xs text-zinc-400 shrink-0">Taxa fornecedor</span>
@@ -3691,13 +3808,16 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                 <input
                                   type="text"
                                   inputMode="decimal"
+                                  disabled={hasManualTotalCost}
                                   placeholder={String(effectiveSupFeePercent)}
                                   value={manualSupplierFeePercent}
                                   onChange={(e) => setManualSupplierFeePercent(e.target.value.replace(/[^0-9,.]/g, ''))}
-                                  className="w-14 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 tabular-nums text-right"
+                                  className="w-14 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 tabular-nums text-right disabled:opacity-50"
                                 />
                                 <span className="text-zinc-500 text-xs">%</span>
-                                <span className="text-red-400 text-xs font-semibold tabular-nums">-{formatCurrency(orderSupplierFee)}</span>
+                                <span className={`text-xs font-semibold tabular-nums ${hasManualTotalCost ? 'text-zinc-500 line-through' : 'text-red-400'}`}>
+                                  -{formatCurrency(orderSupplierFee)}
+                                </span>
                               </div>
                             </div>
                             {/* Taxa de transação Dogama — editável (0 para zerar) */}
@@ -3707,19 +3827,31 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                 <input
                                   type="text"
                                   inputMode="decimal"
+                                  disabled={hasManualTotalCost}
                                   placeholder={String(productGatewayFee)}
                                   value={manualGatewayFee}
                                   onChange={(e) => setManualGatewayFee(e.target.value.replace(/[^0-9,.]/g, ''))}
-                                  className="w-14 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 tabular-nums text-right"
+                                  onBlur={() => setManualGatewayFee(formatBRLInputOnBlur(manualGatewayFee))}
+                                  className="w-14 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 tabular-nums text-right disabled:opacity-50"
                                 />
-                                <span className="text-red-400 text-xs font-semibold tabular-nums">-{formatCurrency(orderGatewayFee)}</span>
+                                <span className={`text-xs font-semibold tabular-nums ${hasManualTotalCost ? 'text-zinc-500 line-through' : 'text-red-400'}`}>
+                                  -{formatCurrency(orderGatewayFee)}
+                                </span>
                               </div>
                             </div>
                             {/* Subtotal custo produto */}
                             <div className="flex justify-between items-center pt-1.5 border-t border-red-950/20">
-                              <span className="text-[11px] text-zinc-400 font-medium">Subtotal custo</span>
+                              <span className="text-[11px] text-zinc-400 font-medium">
+                                Subtotal custo {hasManualTotalCost && '(custo manual)'}
+                              </span>
                               <span className="text-red-400 text-[12px] font-bold tabular-nums">-{formatCurrency(totalProductCost)}</span>
                             </div>
+                          </div>
+                        )}
+                        {!isDogama && hasManualTotalCost && (
+                          <div className="flex justify-between items-center px-4 py-2 border-t border-red-950/20">
+                            <span className="text-[11px] text-zinc-400 font-medium">Subtotal custo (custo manual)</span>
+                            <span className="text-red-400 text-[12px] font-bold tabular-nums">-{formatCurrency(totalProductCost)}</span>
                           </div>
                         )}
                       </div>
@@ -3727,7 +3859,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   </div>
 
                   {/* Salvar custos no banco */}
-                  {(Object.keys(manualCostOverrides).some(k => manualCostOverrides[Number(k)] !== '') || manualSupplierFeePercent !== '' || manualGatewayFee !== '') && (
+                  {(Object.keys(manualCostOverrides).some(k => manualCostOverrides[Number(k)] !== '') || manualSupplierFeePercent !== '' || manualGatewayFee !== '' || manualTotalProductCost !== '') && (
                     <div className="flex items-center justify-end gap-3 px-1 py-1">
                       {costsSaved && (
                         <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
@@ -3743,6 +3875,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           manualCostOverrides,
                           manualSupplierFeePercent,
                           manualGatewayFee,
+                          manualTotalProductCost,
                         )}
                         disabled={savingCosts}
                         className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
@@ -3851,6 +3984,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                               placeholder={sfpEnabled ? '0' : String(selectedOrder.shipping_cost)}
                               value={manualShipping}
                               onChange={(e) => setManualShipping(e.target.value.replace(/[^0-9,.]/g, ''))}
+                              onBlur={() => setManualShipping(formatBRLInputOnBlur(manualShipping))}
                               className="w-16 bg-zinc-800/60 border border-zinc-700 rounded px-2 py-0.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 tabular-nums text-right"
                             />
                             {effectiveShipping > 0 && (
@@ -3955,6 +4089,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                     const v = e.target.value.replace(/[^0-9,.]/g, '');
                                     setManualDesconto(v);
                                   }}
+                                  onBlur={() => setManualDesconto(formatBRLInputOnBlur(manualDesconto))}
                                   className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-yellow-500 tabular-nums"
                                 />
                                 {manualDiscountValue > 0 && (
@@ -3986,6 +4121,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                   const v = e.target.value.replace(/[^0-9,.]/g, '');
                                   setManualDesconto(v);
                                 }}
+                                onBlur={() => setManualDesconto(formatBRLInputOnBlur(manualDesconto))}
                                 className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-yellow-500 tabular-nums"
                               />
                               {manualDiscountValue > 0 && (
@@ -4022,6 +4158,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                               placeholder={manualCouponType === 'percent' ? '10' : '0,00'}
                               value={manualCoupon}
                               onChange={(e) => setManualCoupon(e.target.value.replace(/[^0-9,.]/g, ''))}
+                              onBlur={() => {
+                                if (manualCouponType === 'fixed') {
+                                  setManualCoupon(formatBRLInputOnBlur(manualCoupon));
+                                }
+                              }}
                               className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-yellow-500 tabular-nums"
                             />
                             {manualCoupon && (
@@ -4164,6 +4305,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                               const v = e.target.value.replace(/[^0-9,.]/g, '');
                               setManualAcrescimo(v);
                             }}
+                            onBlur={() => setManualAcrescimo(formatBRLInputOnBlur(manualAcrescimo))}
                             className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500 tabular-nums"
                           />
                           {acrescimoManual > 0 && (
@@ -4264,6 +4406,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                   placeholder="0,00"
                                   value={reembolsoMarketplaceValue}
                                   onChange={(e) => setReembolsoMarketplaceValue(e.target.value.replace(/[^0-9,.-]/g, ''))}
+                                  onBlur={() => setReembolsoMarketplaceValue(formatBRLInputOnBlur(reembolsoMarketplaceValue))}
                                   className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-rose-500 tabular-nums"
                                 />
                                 {reembolsoMarketplaceValue && (
@@ -4302,6 +4445,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                   placeholder="0,00"
                                   value={reembolsoFornecedorValue}
                                   onChange={(e) => setReembolsoFornecedorValue(e.target.value.replace(/[^0-9,.-]/g, ''))}
+                                  onBlur={() => setReembolsoFornecedorValue(formatBRLInputOnBlur(reembolsoFornecedorValue))}
                                   className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500 tabular-nums"
                                 />
                                 {reembolsoFornecedorValue && (
@@ -4338,7 +4482,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                               </span>
                             </div>
                             <p className="text-[10px] text-zinc-500">
-                              Receita ({formatCurrency(hasReembolsoMktActive ? reembolsoMktVal : precoVendaLiquidoFinal)}) - Custo Efetivo ({formatCurrency(effectiveProductCostModal)})
+                              {hasReembolsoMktActive && hasReembolsoFornActive
+                                ? `Receita Mkt (${formatCurrency(reembolsoMktVal)}) + Reembolso Forn (${formatCurrency(reembolsoFornVal)}) - Custo Produto (${formatCurrency(totalProductCost)})`
+                                : hasReembolsoFornActive
+                                ? `Reembolso Fornecedor (${formatCurrency(reembolsoFornVal)}) - Custo Produto (${formatCurrency(totalProductCost)})`
+                                : `Receita Mkt (${formatCurrency(reembolsoMktVal)}) - Custo Produto (${formatCurrency(totalProductCost)})`}
                               {manualMarketingCostVal > 0 && ` - Marketing (${formatCurrency(manualMarketingCostVal)})`}
                             </p>
                           </div>
@@ -4351,17 +4499,19 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                               if (!selectedOrder?.order_id) return;
                               setSavingReembolsoPedido(true);
                               try {
-                                const parsedMkt = parseFloat(reembolsoMarketplaceValue.replace(',', '.'));
-                                const valMkt = reembolsoMarketplaceEnabled && !isNaN(parsedMkt) ? parsedMkt : (reembolsoMarketplaceEnabled ? 0 : null);
+                                const parsedMkt = parseBRLFloat(reembolsoMarketplaceValue);
+                                const valMkt = reembolsoMarketplaceEnabled && reembolsoMarketplaceValue.trim() !== '' ? parsedMkt : (reembolsoMarketplaceEnabled ? 0 : null);
 
-                                const parsedForn = parseFloat(reembolsoFornecedorValue.replace(',', '.'));
-                                const valForn = reembolsoFornecedorEnabled && !isNaN(parsedForn) ? parsedForn : (reembolsoFornecedorEnabled ? 0 : null);
+                                const parsedForn = parseBRLFloat(reembolsoFornecedorValue);
+                                const valForn = reembolsoFornecedorEnabled && reembolsoFornecedorValue.trim() !== '' ? parsedForn : (reembolsoFornecedorEnabled ? 0 : null);
 
                                 const effectiveCost = (isPersonalPurchase ? 0 : totalProductCost) - (valForn ?? 0);
                                 const calculatedProfit = valMkt !== null
-                                  ? Math.round((valMkt - effectiveCost - manualMarketingCostVal) * 100) / 100
+                                  ? Math.round(((valMkt + (valForn ?? 0)) - (isPersonalPurchase ? 0 : totalProductCost) - manualMarketingCostVal) * 100) / 100
+                                  : valForn !== null
+                                  ? Math.round((valForn - (isPersonalPurchase ? 0 : totalProductCost) - manualMarketingCostVal) * 100) / 100
                                   : isFreeSample
-                                  ? Math.round((-effectiveCost - manualMarketingCostVal) * 100) / 100
+                                  ? Math.round((-(isPersonalPurchase ? 0 : totalProductCost) - manualMarketingCostVal) * 100) / 100
                                   : hasRetornoLiquido
                                   ? Math.round((precoVendaLiquidoFinal - effectiveCost - manualMarketingCostVal) * 100) / 100
                                   : Math.round((precoVendaLiquidoFinal - effectiveCost + acrescimoManual - manualMarketingCostVal) * 100) / 100;
@@ -4483,6 +4633,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             value={manualMarketingCost}
                             readOnly={!manualCostEnabled || !!linkedCampaignId}
                             onChange={manualCostEnabled && !linkedCampaignId ? (e) => setManualMarketingCost(e.target.value.replace(/[^0-9,.]/g, '')) : undefined}
+                            onBlur={() => {
+                              if (manualCostEnabled && !linkedCampaignId) {
+                                setManualMarketingCost(formatBRLInputOnBlur(manualMarketingCost));
+                              }
+                            }}
                             className={`flex-1 border rounded-lg px-3 py-1.5 text-sm placeholder-zinc-600 tabular-nums ${manualCostEnabled && !linkedCampaignId ? 'bg-zinc-800 border-zinc-600 text-white focus:outline-none focus:border-purple-500 cursor-text' : 'bg-zinc-900 border-zinc-700 text-zinc-400 cursor-not-allowed'}`}
                           />
                           {manualMarketingCost && (

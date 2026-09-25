@@ -1,10 +1,11 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, ShoppingBag, Package } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, ShoppingBag, Package } from 'lucide-react';
 import { FreeSampleCard } from './FreeSampleCard';
 import { RegisterProductBeforeProcessModal } from './RegisterProductBeforeProcessModal';
 import { supabase } from '@/lib/supabase';
+import { cn } from '@/lib/utils';
 import type { PendingOrder } from '@/types/pendingOrder';
 
 interface PersonalPurchaseLaneProps {
@@ -22,6 +23,7 @@ export const PersonalPurchaseLane: React.FC<PersonalPurchaseLaneProps> = ({
   onDropOrder,
   onReturnOrder,
 }) => {
+  const [isOpen, setIsOpen] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [processing, setProcessing] = useState<string | null>(null);
   const [registerOrder, setRegisterOrder] = useState<PendingOrder | null>(null);
@@ -37,8 +39,10 @@ export const PersonalPurchaseLane: React.FC<PersonalPurchaseLaneProps> = ({
   }, []);
 
   React.useEffect(() => {
-    checkArrows();
-  }, [orders, checkArrows]);
+    if (isOpen) {
+      checkArrows();
+    }
+  }, [orders, checkArrows, isOpen]);
 
   const scroll = (dir: 'left' | 'right') => {
     const el = scrollRef.current;
@@ -98,7 +102,10 @@ export const PersonalPurchaseLane: React.FC<PersonalPurchaseLaneProps> = ({
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    setIsDragOver(true);
+    if (!isDragOver) {
+      setIsDragOver(true);
+      setIsOpen(true);
+    }
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
@@ -112,6 +119,7 @@ export const PersonalPurchaseLane: React.FC<PersonalPurchaseLaneProps> = ({
       const order = JSON.parse(e.dataTransfer.getData('application/json')) as PendingOrder;
       const source = e.dataTransfer.getData('text/source');
       if (order && onDropOrder) {
+        setIsOpen(true);
         onDropOrder(order);
         // Dispatch event for both pending and freesample sources so originating lane removes card
         if (source === 'pending' || source === 'freesample') {
@@ -150,114 +158,144 @@ export const PersonalPurchaseLane: React.FC<PersonalPurchaseLaneProps> = ({
           onCancel={() => setRegisterOrder(null)}
         />
       )}
-    <div
-      className={`w-full rounded-xl transition-colors duration-200 ${
-        isDragOver
-          ? 'ring-2 ring-orange-400 ring-offset-2 bg-orange-50/50 dark:bg-orange-950/20'
-          : ''
-      }`}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-    >
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="flex items-center gap-2">
-          <ShoppingBag className="w-5 h-5 text-orange-500" />
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Compras pessoais — Jonatan &amp; Alyson
-          </h2>
-        </div>
-        <Badge
-          variant="secondary"
-          className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border border-orange-200 dark:border-orange-800"
+      <div
+        className={cn(
+          'w-full rounded-xl transition-all duration-200',
+          isDragOver && 'ring-2 ring-orange-500/60 ring-offset-2 ring-offset-background'
+        )}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {/* Accordion Trigger Header */}
+        <button
+          type="button"
+          onClick={() => setIsOpen((prev) => !prev)}
+          className={cn(
+            'w-full flex items-center justify-between p-3.5 sm:p-4 rounded-xl',
+            'bg-card border border-border hover:border-orange-500/40 hover:bg-zinc-900/60 transition-all',
+            'cursor-pointer select-none text-left group'
+          )}
+          aria-expanded={isOpen}
         >
-          {orders.length} {orders.length === 1 ? 'pedido' : 'pedidos'}
-        </Badge>
-        {isDragOver && (
-          <span className="text-xs text-orange-500 dark:text-orange-400 animate-pulse font-medium">
-            Solte aqui para adicionar como compra pessoal
-          </span>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="w-5 h-5 text-orange-500 group-hover:scale-110 transition-transform" />
+              <h2 className="text-base sm:text-lg font-semibold text-foreground">
+                Compras pessoais — Jonatan &amp; Alyson
+              </h2>
+            </div>
+            <Badge
+              variant="secondary"
+              className="bg-orange-500/10 text-orange-400 border border-orange-500/20"
+            >
+              {orders.length} {orders.length === 1 ? 'pedido' : 'pedidos'}
+            </Badge>
+            {isDragOver && (
+              <span className="text-xs text-orange-400 animate-pulse font-medium">
+                Solte aqui para adicionar como compra pessoal
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 text-muted-foreground group-hover:text-foreground">
+            <span className="text-xs font-medium hidden sm:inline">
+              {isOpen ? 'Ocultar' : 'Expandir'}
+            </span>
+            <ChevronDown
+              className={cn(
+                'w-5 h-5 transition-transform duration-200 text-muted-foreground group-hover:text-foreground',
+                isOpen && 'rotate-180 text-orange-400'
+              )}
+            />
+          </div>
+        </button>
+
+        {/* Accordion Content */}
+        {isOpen && (
+          <div className="mt-3 animate-in fade-in-50 duration-200">
+            {orders.length === 0 ? (
+              <Card
+                className={cn(
+                  'p-8 border-dashed transition-colors duration-200',
+                  isDragOver
+                    ? 'border-orange-400 bg-orange-500/10'
+                    : 'border-orange-500/30 bg-orange-500/5'
+                )}
+              >
+                <div className="flex flex-col items-center justify-center gap-3 text-center">
+                  <div
+                    className={cn(
+                      'w-12 h-12 rounded-full flex items-center justify-center transition-colors duration-200',
+                      isDragOver ? 'bg-orange-500/20' : 'bg-orange-500/10'
+                    )}
+                  >
+                    <Package
+                      className={cn(
+                        'w-6 h-6',
+                        isDragOver ? 'text-orange-400' : 'text-orange-500/70'
+                      )}
+                    />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {isDragOver ? 'Solte o pedido aqui!' : 'Nenhuma compra pessoal na fila'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {isDragOver
+                        ? 'O pedido será movido para compras pessoais.'
+                        : 'Arraste um pedido de cima para cá para classificar como compra pessoal.'}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            ) : (
+              <div className="relative">
+                {showLeftArrow && (
+                  <button
+                    onClick={() => scroll('left')}
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-card hover:bg-accent rounded-full p-2 shadow-lg border border-border transition-all"
+                    aria-label="Rolar para esquerda"
+                  >
+                    <ChevronLeft className="w-6 h-6 text-foreground" />
+                  </button>
+                )}
+
+                <div
+                  ref={scrollRef}
+                  onScroll={checkArrows}
+                  className="flex gap-4 overflow-x-auto pb-2 scroll-smooth"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
+                  {orders.map((order) => (
+                    <div key={order.bling_order_id} className="relative flex-shrink-0">
+                      <FreeSampleCard
+                        order={order}
+                        onProcess={() => handleProcess(order)}
+                        isProcessing={processing === order.bling_order_id}
+                        onReturnToPending={onReturnOrder ? () => onReturnOrder(order) : undefined}
+                        processLabel="Processar Lucro"
+                        processButtonClass="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700"
+                        isPersonalPurchase={true}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {showRightArrow && (
+                  <button
+                    onClick={() => scroll('right')}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-card hover:bg-accent rounded-full p-2 shadow-lg border border-border transition-all"
+                    aria-label="Rolar para direita"
+                  >
+                    <ChevronRight className="w-6 h-6 text-foreground" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         )}
       </div>
-
-      {/* Empty state */}
-      {orders.length === 0 ? (
-        <Card
-          className={`p-8 border-dashed transition-colors duration-200 ${
-            isDragOver
-              ? 'border-orange-400 bg-orange-100/50 dark:bg-orange-900/20'
-              : 'border-orange-200 dark:border-orange-900/50 bg-orange-50/30 dark:bg-orange-950/10'
-          }`}
-        >
-          <div className="flex flex-col items-center justify-center gap-3 text-center">
-            <div
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors duration-200 ${
-                isDragOver
-                  ? 'bg-orange-200 dark:bg-orange-800/50'
-                  : 'bg-orange-100 dark:bg-orange-900/30'
-              }`}
-            >
-              <Package className={`w-6 h-6 ${isDragOver ? 'text-orange-600' : 'text-orange-400'}`} />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                {isDragOver ? 'Solte o pedido aqui!' : 'Nenhuma compra pessoal na fila'}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {isDragOver
-                  ? 'O pedido será movido para compras pessoais.'
-                  : 'Arraste um pedido de cima para cá para classificar como compra pessoal.'}
-              </p>
-            </div>
-          </div>
-        </Card>
-      ) : (
-        <div className="relative">
-          {showLeftArrow && (
-            <button
-              onClick={() => scroll('left')}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-full p-2 shadow-lg border border-gray-200 dark:border-zinc-700 transition-all"
-              aria-label="Rolar para esquerda"
-            >
-              <ChevronLeft className="w-6 h-6 text-gray-700 dark:text-gray-300" />
-            </button>
-          )}
-
-          <div
-            ref={scrollRef}
-            onScroll={checkArrows}
-            className="flex gap-4 overflow-x-auto pb-2 scroll-smooth"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
-            {orders.map((order) => (
-              <div key={order.bling_order_id} className="relative flex-shrink-0">
-                <FreeSampleCard
-                  order={order}
-                  onProcess={() => handleProcess(order)}
-                  isProcessing={processing === order.bling_order_id}
-                  onReturnToPending={onReturnOrder ? () => onReturnOrder(order) : undefined}
-                  processLabel="Processar Lucro"
-                  processButtonClass="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700"
-                  isPersonalPurchase={true}
-                />
-                {/* Override process button label via overlay not possible — handled inside FreeSampleCard */}
-              </div>
-            ))}
-          </div>
-
-          {showRightArrow && (
-            <button
-              onClick={() => scroll('right')}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-full p-2 shadow-lg border border-gray-200 dark:border-zinc-700 transition-all"
-              aria-label="Rolar para direita"
-            >
-              <ChevronRight className="w-6 h-6 text-gray-700 dark:text-gray-300" />
-            </button>
-          )}
-        </div>
-      )}
-    </div>
     </>
   );
 };

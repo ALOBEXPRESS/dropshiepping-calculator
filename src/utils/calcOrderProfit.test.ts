@@ -161,18 +161,42 @@ describe('calcOrderProfit — reembolso_value', () => {
     expect(r.realProfit).toBe(64.15); // -9.85 - (-74) = +64.15
   });
 
-  it('reembolso_marketplace_enabled=false ignores legacy reembolso_value and computes normal profit', () => {
+  it('reembolso_fornecedor_enabled without marketplace refund yields profit = reembolso_fornecedor - product_cost', () => {
     const r = calcOrderProfit(
       baseOrder({
         total_amount: 100,
-        reembolso_value: -9.85,
         reembolso_marketplace_enabled: false,
-        products: [{ unit_cost: 20, quantity: 1 }],
+        reembolso_fornecedor_enabled: true,
+        reembolso_fornecedor_value: 26.39,
+        products: [{ unit_cost: 28.39, quantity: 1 }],
       })
     );
-    // falls through to normal sale price (100 - 20 = 80)
-    expect(r.precoVendaLiquidoFinal).toBe(100);
-    expect(r.realProfit).toBe(80);
+    expect(r.precoVendaLiquidoFinal).toBe(0);
+    expect(r.totalProductCost).toBe(28.39);
+    expect(r.realProfit).toBe(-2); // 26.39 - 28.39 = -2.00
+  });
+
+  it('manual_product_cost overrides item costs and fees and is used in reembolso_fornecedor', () => {
+    const r = calcOrderProfit(
+      baseOrder({
+        total_amount: 100,
+        marketplace: 'TikTok Shop',
+        manual_product_cost: 24.90,
+        reembolso_fornecedor_enabled: true,
+        reembolso_fornecedor_value: 26.39,
+        products: [
+          {
+            unit_cost: 20,
+            quantity: 1,
+            supplier_fee_value: 6,
+            supplier_fee_type: 'percent',
+            supplier_gateway_fee_value: 2,
+          },
+        ],
+      })
+    );
+    expect(r.totalProductCost).toBe(24.90);
+    expect(r.realProfit).toBe(1.49); // 26.39 - 24.90 = +1.49
   });
 });
 
