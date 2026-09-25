@@ -138,13 +138,20 @@ export const useHeroStats = (
           fixed_fee?: number;
         }
         interface DbProduct {
+          id?: string;
+          sku?: string;
+          name?: string;
           cost_price?: number;
-          supplier_fee_value?: string;
+          supplier_fee_value?: string | number;
           supplier_fee_type?: string;
-          supplier_gateway_fee_value?: string;
+          supplier_gateway_fee_value?: string | number;
           supplier_gateway_fee_type?: string;
         }
         interface DbOrderItem {
+          id?: string;
+          product_id?: string | null;
+          product_name?: string | null;
+          sku?: string | null;
           quantity?: number;
           unit_cost?: number;
           unit_price?: number;
@@ -186,10 +193,24 @@ export const useHeroStats = (
         let mktMap = new Map<string, DbMarketplace>();
         let mktByName = new Map<string, DbMarketplace>();
         let mktCostMap = new Map<string, number>();
+        const productsById = new Map<string, DbProduct>();
+        const productsBySku = new Map<string, DbProduct>();
+        const productsByName = new Map<string, DbProduct>();
+
+        const normalizeKey = (raw: string) => {
+          const v = raw.trim();
+          if (!v) return [];
+          const beforeCor = v.split(/\s+Cor:/i)[0]?.trim() ?? '';
+          const beforeSemi = v.split(';')[0]?.trim() ?? '';
+          const out = [v];
+          if (beforeCor && beforeCor !== v) out.push(beforeCor);
+          if (beforeSemi && beforeSemi !== v) out.push(beforeSemi);
+          return Array.from(new Set(out.filter(Boolean)));
+        };
 
         if (allOrderIds.length > 0) {
           try {
-            const [ordersRes, mktsRes, mktCostsRes] = await Promise.all([
+            const [ordersRes, mktsRes, mktCostsRes, productsRes] = await Promise.all([
               supabase
                 .from('orders')
                 .select(`
@@ -226,10 +247,15 @@ export const useHeroStats = (
                     fixed_fee
                   ),
                   order_items (
+                    id,
+                    product_id,
+                    product_name,
+                    sku,
                     quantity,
                     unit_cost,
                     unit_price,
                     products (
+                      id,
                       name,
                       sku,
                       cost_price,
@@ -248,6 +274,10 @@ export const useHeroStats = (
                 .from('campaign_order_costs')
                 .select('order_id, marketing_cost')
                 .in('order_id', allOrderIds),
+              supabase
+                .from('products')
+                .select('id, sku, name, cost_price, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
+                .or(`organization_id.eq.${organizationId},organization_id.is.null`),
             ]);
 
             if (ordersRes.data) {
@@ -259,6 +289,16 @@ export const useHeroStats = (
             }
             if (mktCostsRes.data) {
               mktCostMap = new Map((mktCostsRes.data as Array<{ order_id: string; marketing_cost?: number }>).map(c => [c.order_id, Number(c.marketing_cost ?? 0)]));
+            }
+            for (const p of (productsRes.data ?? []) as DbProduct[]) {
+              if (p.id) productsById.set(p.id, p);
+              if (p.sku) productsBySku.set(p.sku.trim(), p);
+              if (p.name) {
+                productsByName.set(p.name.trim(), p);
+                for (const k of normalizeKey(p.name)) {
+                  if (!productsByName.has(k)) productsByName.set(k, p);
+                }
+              }
             }
           } catch (err) {
             console.error('Error fetching order enrichments for hero stats:', err);
@@ -287,15 +327,30 @@ export const useHeroStats = (
           const commissionRate = mp?.commission_rate ?? (isShopee ? 20 : isTikTok ? 10 : 0);
           const fixedFee = mp?.fixed_fee ?? (isShopee ? 4 : 0);
 
-          const orderProducts = (dbOrder.order_items ?? []).map((it) => ({
-            quantity: it.quantity ?? 1,
-            unit_price: it.unit_price ?? 0,
-            unit_cost: it.unit_cost ?? it.products?.cost_price ?? 0,
-            supplier_fee_value: it.products?.supplier_fee_value,
-            supplier_fee_type: it.products?.supplier_fee_type,
-            supplier_gateway_fee_value: it.products?.supplier_gateway_fee_value,
-            supplier_gateway_fee_type: it.products?.supplier_gateway_fee_type,
-          }));
+          const orderProducts = (dbOrder.order_items ?? []).map((it) => {
+            const candidateKeys = [
+              String(it.sku ?? '').trim(),
+              ...normalizeKey(String(it.product_name ?? '')),
+            ].filter(Boolean);
+
+            const lookup = (it.product_id ? productsById.get(it.product_id) : undefined)
+              || candidateKeys.map(k => productsBySku.get(k)).find(Boolean)
+              || candidateKeys.map(k => productsByName.get(k)).find(Boolean)
+              || it.products;
+
+            const rawUnitCost = Number(it.unit_cost ?? 0);
+            const resolvedUnitCost = rawUnitCost > 0 ? rawUnitCost : Number(lookup?.cost_price ?? 0);
+
+            return {
+              quantity: it.quantity ?? 1,
+              unit_price: it.unit_price ?? 0,
+              unit_cost: resolvedUnitCost,
+              supplier_fee_value: lookup?.supplier_fee_value != null ? String(lookup.supplier_fee_value) : undefined,
+              supplier_fee_type: lookup?.supplier_fee_type != null ? String(lookup.supplier_fee_type) : undefined,
+              supplier_gateway_fee_value: lookup?.supplier_gateway_fee_value != null ? String(lookup.supplier_gateway_fee_value) : undefined,
+              supplier_gateway_fee_type: lookup?.supplier_gateway_fee_type != null ? String(lookup.supplier_gateway_fee_type) : undefined,
+            };
+          });
 
           const calculatedTotalProducts = orderProducts.reduce((s, p) => s + (p.unit_price * p.quantity), 0);
           const bo = Array.isArray(dbOrder.bling_orders) ? dbOrder.bling_orders[0] : dbOrder.bling_orders;
