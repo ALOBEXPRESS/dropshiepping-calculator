@@ -187,13 +187,6 @@ export const WeeklyConversionChart = React.memo(({ data, mostProfitableDay }: We
 
   const handleMouseEnter = () => {
     if (!containerRef.current) return;
-    gsap.to(containerRef.current, {
-      borderColor: 'rgba(255, 184, 0, 0.35)',
-      boxShadow: '0 12px 28px -8px rgba(255, 184, 0, 0.15)',
-      duration: 0.25,
-      ease: 'power2.out',
-    });
-
     const bars = containerRef.current.querySelectorAll('.recharts-bar-rectangle path, path.recharts-rectangle');
     if (bars.length > 0) {
       gsap.to(bars, {
@@ -215,8 +208,7 @@ export const WeeklyConversionChart = React.memo(({ data, mostProfitableDay }: We
       rotationX: 0,
       y: 0,
       scale: 1,
-      borderColor: '',
-      boxShadow: '',
+      clearProps: 'transform',
       duration: 0.45,
       ease: 'power3.out',
     });

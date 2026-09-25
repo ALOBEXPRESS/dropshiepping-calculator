@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import TimePeriodFilter from './TimePeriodFilter';
 import MarketplaceFilter from './MarketplaceFilter';
@@ -29,6 +30,7 @@ export interface LeadsDashboardProps {}
  */
 const LeadsDashboard: React.FC<LeadsDashboardProps> = () => {
   const { organizationId } = useSettings();
+  const queryClient = useQueryClient();
   const [period, setPeriod] = useState<TimePeriod>('total');
   const [selectedMarketplace, setSelectedMarketplace] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -39,7 +41,9 @@ const LeadsDashboard: React.FC<LeadsDashboardProps> = () => {
 
   const handleRefresh = useCallback(() => {
     setRefreshKey(Date.now());
-  }, []);
+    queryClient.invalidateQueries({ queryKey: ['leads'] });
+    queryClient.invalidateQueries({ queryKey: ['lead-kpis'] });
+  }, [queryClient]);
 
   const handleClassifyLeads = async () => {
     if (!organizationId || isClassifying) return;
@@ -64,6 +68,8 @@ const LeadsDashboard: React.FC<LeadsDashboardProps> = () => {
         });
       }
       handleRefresh();
+      await queryClient.invalidateQueries({ queryKey: ['leads'] });
+      await queryClient.invalidateQueries({ queryKey: ['lead-kpis'] });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       console.error('[LeadsDashboard] Erro ao classificar leads:', error);

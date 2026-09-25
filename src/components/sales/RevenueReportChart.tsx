@@ -54,6 +54,11 @@ interface OrderDetail {
   is_free_sample?: boolean;
   is_personal_purchase?: boolean;
   reembolso_value?: number | null;
+  reembolso_marketplace_value?: number | null;
+  reembolso_fornecedor_value?: number | null;
+  reembolso_marketplace_enabled?: boolean;
+  reembolso_fornecedor_enabled?: boolean;
+  reembolso_motivo?: string | null;
   tiktok_reembolso_disabled?: boolean;
   tiktok_retorno_liquido?: number | null;
   customer_name?: string;
@@ -424,7 +429,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     setSavingCoupon(false);
     setLinkedCampaignId(null);
     setAvailableCampaigns([]);
-    setReembolsoValue('');
+    setReembolsoMarketplaceEnabled(false);
+    setReembolsoMarketplaceValue('');
+    setReembolsoFornecedorEnabled(false);
+    setReembolsoFornecedorValue('');
     setReembolsoMotivo('');
     setOpenReembolso(false);
 
@@ -481,11 +489,22 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
         const { data: orderRow } = await supabase
           .from('orders')
-          .select('coupon_value, coupon_type, manual_acrescimo, reembolso_value, reembolso_motivo, order_date')
+          .select('coupon_value, coupon_type, manual_acrescimo, reembolso_value, reembolso_marketplace_value, reembolso_fornecedor_value, reembolso_marketplace_enabled, reembolso_fornecedor_enabled, reembolso_motivo, order_date')
           .eq('id', orderId)
           .maybeSingle();
         if (orderRow) {
-          const or = orderRow as { coupon_value: number | null; coupon_type: string | null; manual_acrescimo: number | null; reembolso_value: number | null; reembolso_motivo: string | null; order_date: string | null };
+          const or = orderRow as {
+            coupon_value?: number | null;
+            coupon_type?: string | null;
+            manual_acrescimo?: number | null;
+            reembolso_value?: number | null;
+            reembolso_marketplace_value?: number | null;
+            reembolso_fornecedor_value?: number | null;
+            reembolso_marketplace_enabled?: boolean | null;
+            reembolso_fornecedor_enabled?: boolean | null;
+            reembolso_motivo?: string | null;
+            order_date?: string | null;
+          };
           if (or.coupon_value != null) {
             setManualCoupon(
               new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(or.coupon_value)
@@ -497,12 +516,37 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(or.manual_acrescimo)
             );
           }
-          if (or.reembolso_value != null) {
-            setReembolsoValue(
+          if (or.reembolso_marketplace_enabled != null) {
+            setReembolsoMarketplaceEnabled(Boolean(or.reembolso_marketplace_enabled));
+            if (or.reembolso_marketplace_value != null) {
+              setReembolsoMarketplaceValue(
+                new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(or.reembolso_marketplace_value)
+              );
+            } else if (or.reembolso_marketplace_enabled && or.reembolso_value != null) {
+              setReembolsoMarketplaceValue(
+                new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(or.reembolso_value)
+              );
+            }
+          } else if (or.reembolso_value != null) {
+            setReembolsoMarketplaceEnabled(true);
+            setReembolsoMarketplaceValue(
               new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(or.reembolso_value)
             );
-            setReembolsoMotivo(or.reembolso_motivo ?? '');
           }
+
+          if (or.reembolso_fornecedor_enabled != null) {
+            setReembolsoFornecedorEnabled(Boolean(or.reembolso_fornecedor_enabled));
+            if (or.reembolso_fornecedor_value != null) {
+              setReembolsoFornecedorValue(
+                new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(or.reembolso_fornecedor_value)
+              );
+            }
+          }
+
+          if (or.reembolso_motivo) {
+            setReembolsoMotivo(or.reembolso_motivo);
+          }
+
           if (or.order_date) {
             setManualOrderDate(or.order_date);
           }
@@ -688,8 +732,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [savingReembolso, setSavingReembolso] = useState(false);
   const [savingRetornoLiquido, setSavingRetornoLiquido] = useState(false);
   const [manualOrderDate, setManualOrderDate] = useState<string>('');
-  // Reembolso de pedido — substitui todo cálculo de lucro pelo valor inserido
-  const [reembolsoValue, setReembolsoValue] = useState<string>('');
+  // Reembolso de pedido — Marketplace e Fornecedor
+  const [reembolsoMarketplaceEnabled, setReembolsoMarketplaceEnabled] = useState(false);
+  const [reembolsoMarketplaceValue, setReembolsoMarketplaceValue] = useState<string>('');
+  const [reembolsoFornecedorEnabled, setReembolsoFornecedorEnabled] = useState(false);
+  const [reembolsoFornecedorValue, setReembolsoFornecedorValue] = useState<string>('');
   const [reembolsoMotivo, setReembolsoMotivo] = useState<string>('');
   const [openReembolso, setOpenReembolso] = useState(false);
   const [savingReembolsoPedido, setSavingReembolsoPedido] = useState(false);
@@ -2244,8 +2291,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       setManualMarketingCost('');
       setManualCostEnabled(false);
       setManualCoupon('');
-      setManualCouponType('fixed');
-      setReembolsoValue('');
+      setReembolsoMarketplaceEnabled(false);
+      setReembolsoMarketplaceValue('');
+      setReembolsoFornecedorEnabled(false);
+      setReembolsoFornecedorValue('');
       setReembolsoMotivo('');
       setOpenReembolso(false);
       setLinkedCampaignId(null);
@@ -3177,14 +3226,26 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               : hasRetornoLiquido
               ? (precoVendaLiquidoFinal - totalProductCost - manualMarketingCostVal)
               : (precoVendaLiquidoFinal - totalProductCost + acrescimoManual - manualMarketingCostVal);
-            // Reembolso override: substitui receita líquida pelo valor reembolsado, subtraindo custos do produto
-            const hasReembolsoActive = reembolsoValue.trim() !== '' && !isNaN(parseFloat(reembolsoValue.replace(',', '.')));
-            const reembolsoVal = hasReembolsoActive ? (parseFloat(reembolsoValue.replace(',', '.')) || 0) : 0;
-            const finalRealProfit = hasReembolsoActive
-              ? (reembolsoVal - totalProductCost - manualMarketingCostVal)
-              : realProfit;
-            const marginBase = hasReembolsoActive
-              ? (Math.abs(reembolsoVal) > 0 ? Math.abs(reembolsoVal) : (Math.abs(precoVendaLiquidoFinal) > 0 ? Math.abs(precoVendaLiquidoFinal) : selectedOrder.total_amount))
+            // ── Reembolso Marketplace & Fornecedor ─────────────────────────────
+            const hasReembolsoMktActive = reembolsoMarketplaceEnabled && reembolsoMarketplaceValue.trim() !== '' && !isNaN(parseFloat(reembolsoMarketplaceValue.replace(',', '.')));
+            const reembolsoMktVal = hasReembolsoMktActive ? (parseFloat(reembolsoMarketplaceValue.replace(',', '.')) || 0) : 0;
+
+            const hasReembolsoFornActive = reembolsoFornecedorEnabled && reembolsoFornecedorValue.trim() !== '' && !isNaN(parseFloat(reembolsoFornecedorValue.replace(',', '.')));
+            const reembolsoFornVal = hasReembolsoFornActive ? (parseFloat(reembolsoFornecedorValue.replace(',', '.')) || 0) : 0;
+
+            const effectiveProductCostModal = Math.max(0, totalProductCost - (hasReembolsoFornActive ? reembolsoFornVal : 0));
+
+            const finalRealProfit = hasReembolsoMktActive
+              ? (reembolsoMktVal - effectiveProductCostModal - manualMarketingCostVal)
+              : isFreeSample
+              ? -effectiveProductCostModal
+              : hasRetornoLiquido
+              ? (precoVendaLiquidoFinal - effectiveProductCostModal - manualMarketingCostVal)
+              : (precoVendaLiquidoFinal - effectiveProductCostModal + acrescimoManual - manualMarketingCostVal);
+
+            const hasReembolsoActive = hasReembolsoMktActive;
+            const marginBase = hasReembolsoMktActive
+              ? (Math.abs(reembolsoMktVal) > 0 ? Math.abs(reembolsoMktVal) : (Math.abs(precoVendaLiquidoFinal) > 0 ? Math.abs(precoVendaLiquidoFinal) : selectedOrder.total_amount))
               : (Math.abs(precoVendaLiquidoFinal) > 0 ? Math.abs(precoVendaLiquidoFinal) : selectedOrder.total_amount);
             const margin = marginBase > 0
               ? ((finalRealProfit / marginBase) * 100).toFixed(1) : '0.0';
@@ -4158,9 +4219,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                         </svg>
                         <span className="text-rose-400 font-semibold text-xs uppercase tracking-wide">Reembolso</span>
-                        {hasReembolsoActive && (
-                          <span className="text-[10px] text-rose-400/80 font-mono bg-rose-950/40 px-1.5 py-0.5 rounded">
-                            {formatCurrency(reembolsoVal)}
+                        {hasReembolsoMktActive && (
+                          <span className="text-[10px] text-rose-400/80 font-mono bg-rose-950/40 px-1.5 py-0.5 rounded border border-rose-900/40">
+                            Mkt: {formatCurrency(reembolsoMktVal)}
+                          </span>
+                        )}
+                        {hasReembolsoFornActive && (
+                          <span className="text-[10px] text-emerald-400/80 font-mono bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-900/40">
+                            Forn: {formatCurrency(reembolsoFornVal)}
                           </span>
                         )}
                       </div>
@@ -4169,43 +4235,115 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       </svg>
                     </button>
                     {openReembolso && (
-                      <div className="px-4 py-3 space-y-3 bg-zinc-900/40 border-t border-rose-950/20">
-                        <p className="text-[11px] text-zinc-500">
-                          Quando preenchido, o valor reembolsado entra como receita líquida do pedido, subtraindo o custo do produto e taxas de fornecedor (<strong className="text-rose-400">Lucro = Reembolso - Custo do Produto</strong>). Custos de marketplace, afiliados, descontos e acréscimos são ignorados.
+                      <div className="px-4 py-3 space-y-3.5 bg-zinc-900/40 border-t border-rose-950/20">
+                        <p className="text-[11px] text-zinc-400 leading-relaxed">
+                          Marque as opções de reembolso desejadas para ajustar o lucro do pedido:
                         </p>
-                        <div className="flex items-center gap-3">
-                          <label className="text-zinc-400 text-sm whitespace-nowrap">Valor (R$)</label>
-                          <input
-                            type="text"
-                            inputMode="text"
-                            placeholder="0,00"
-                            value={reembolsoValue}
-                            onChange={(e) => setReembolsoValue(e.target.value.replace(/[^0-9,.-]/g, ''))}
-                            className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-rose-500 tabular-nums"
-                          />
-                          {reembolsoValue && (
-                            <button onClick={() => setReembolsoValue('')} className="text-zinc-500 hover:text-zinc-300 transition-colors">
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
+
+                        {/* Reembolso Marketplace */}
+                        <div className="space-y-2 rounded-lg bg-zinc-900/80 border border-zinc-800/80 p-3">
+                          <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={reembolsoMarketplaceEnabled}
+                              onChange={(e) => setReembolsoMarketplaceEnabled(e.target.checked)}
+                              className="rounded border-zinc-700 bg-zinc-800 text-rose-500 focus:ring-rose-500/30 w-4 h-4 cursor-pointer"
+                            />
+                            <span className="text-xs font-semibold text-zinc-200">Reembolso marketplace</span>
+                          </label>
+                          <p className="text-[10px] text-zinc-500 pl-6.5">
+                            Substitui a receita líquida do pedido pelo valor reembolsado pelo marketplace (ignora taxas normais de venda).
+                          </p>
+                          {reembolsoMarketplaceEnabled && (
+                            <div className="flex items-center gap-3 pt-1 pl-6.5">
+                              <label className="text-zinc-400 text-xs whitespace-nowrap">Valor (R$)</label>
+                              <div className="flex-1 relative flex items-center">
+                                <input
+                                  type="text"
+                                  inputMode="text"
+                                  placeholder="0,00"
+                                  value={reembolsoMarketplaceValue}
+                                  onChange={(e) => setReembolsoMarketplaceValue(e.target.value.replace(/[^0-9,.-]/g, ''))}
+                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-rose-500 tabular-nums"
+                                />
+                                {reembolsoMarketplaceValue && (
+                                  <button onClick={() => setReembolsoMarketplaceValue('')} className="absolute right-2 text-zinc-500 hover:text-zinc-300 transition-colors">
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
                           )}
                         </div>
+
+                        {/* Reembolso Fornecedor */}
+                        <div className="space-y-2 rounded-lg bg-zinc-900/80 border border-zinc-800/80 p-3">
+                          <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={reembolsoFornecedorEnabled}
+                              onChange={(e) => setReembolsoFornecedorEnabled(e.target.checked)}
+                              className="rounded border-zinc-700 bg-zinc-800 text-emerald-500 focus:ring-emerald-500/30 w-4 h-4 cursor-pointer"
+                            />
+                            <span className="text-xs font-semibold text-zinc-200">Reembolso fornecedor</span>
+                          </label>
+                          <p className="text-[10px] text-zinc-500 pl-6.5">
+                            Reduz o custo do produto pelo valor devolvido/estornado pelo fornecedor.
+                          </p>
+                          {reembolsoFornecedorEnabled && (
+                            <div className="flex items-center gap-3 pt-1 pl-6.5">
+                              <label className="text-zinc-400 text-xs whitespace-nowrap">Valor (R$)</label>
+                              <div className="flex-1 relative flex items-center">
+                                <input
+                                  type="text"
+                                  inputMode="text"
+                                  placeholder="0,00"
+                                  value={reembolsoFornecedorValue}
+                                  onChange={(e) => setReembolsoFornecedorValue(e.target.value.replace(/[^0-9,.-]/g, ''))}
+                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500 tabular-nums"
+                                />
+                                {reembolsoFornecedorValue && (
+                                  <button onClick={() => setReembolsoFornecedorValue('')} className="absolute right-2 text-zinc-500 hover:text-zinc-300 transition-colors">
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Motivo */}
                         <div>
-                          <label className="text-zinc-400 text-sm block mb-1">Motivo</label>
+                          <label className="text-zinc-400 text-xs block mb-1">Motivo / Observações</label>
                           <textarea
-                            placeholder="Ex: Produto devolvido pelo cliente..."
+                            placeholder="Ex: Produto devolvido pelo cliente, estorno do fornecedor..."
                             value={reembolsoMotivo}
                             onChange={(e) => setReembolsoMotivo(e.target.value)}
                             rows={2}
                             className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-rose-500 resize-none"
                           />
                         </div>
-                        {hasReembolsoActive && (
-                          <p className="text-[11px] text-rose-400/70">
-                            Lucro real = {formatCurrency(finalRealProfit)} (Reembolso {formatCurrency(reembolsoVal)} - Custo {formatCurrency(totalProductCost)})
-                          </p>
+
+                        {/* Resumo dinâmico de Lucro */}
+                        {(hasReembolsoMktActive || hasReembolsoFornActive) && (
+                          <div className="p-2.5 rounded-lg bg-zinc-950/60 border border-zinc-800/80 text-[11px] text-zinc-400 space-y-1">
+                            <div className="font-semibold text-zinc-300 flex items-center justify-between">
+                              <span>Lucro Real Estimado:</span>
+                              <span className={finalRealProfit >= 0 ? 'text-emerald-400 font-mono font-bold' : 'text-rose-400 font-mono font-bold'}>
+                                {formatCurrency(finalRealProfit)}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-zinc-500">
+                              Receita ({formatCurrency(hasReembolsoMktActive ? reembolsoMktVal : precoVendaLiquidoFinal)}) - Custo Efetivo ({formatCurrency(effectiveProductCostModal)})
+                              {manualMarketingCostVal > 0 && ` - Marketing (${formatCurrency(manualMarketingCostVal)})`}
+                            </p>
+                          </div>
                         )}
+
                         {selectedOrder?.order_id && (
                           <button
                             disabled={savingReembolsoPedido}
@@ -4213,25 +4351,38 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                               if (!selectedOrder?.order_id) return;
                               setSavingReembolsoPedido(true);
                               try {
-                                const hasInput = reembolsoValue.trim() !== '';
-                                const parsed = parseFloat(reembolsoValue.replace(',', '.'));
-                                const val = hasInput && !isNaN(parsed) ? parsed : null;
-                                const calculatedProfit = val !== null
-                                  ? Math.round((val - totalProductCost - manualMarketingCostVal) * 100) / 100
-                                  : null;
+                                const parsedMkt = parseFloat(reembolsoMarketplaceValue.replace(',', '.'));
+                                const valMkt = reembolsoMarketplaceEnabled && !isNaN(parsedMkt) ? parsedMkt : (reembolsoMarketplaceEnabled ? 0 : null);
+
+                                const parsedForn = parseFloat(reembolsoFornecedorValue.replace(',', '.'));
+                                const valForn = reembolsoFornecedorEnabled && !isNaN(parsedForn) ? parsedForn : (reembolsoFornecedorEnabled ? 0 : null);
+
+                                const effectiveCost = Math.max(0, totalProductCost - (valForn ?? 0));
+                                const calculatedProfit = valMkt !== null
+                                  ? Math.round((valMkt - effectiveCost - manualMarketingCostVal) * 100) / 100
+                                  : isFreeSample
+                                  ? Math.round((-effectiveCost - manualMarketingCostVal) * 100) / 100
+                                  : hasRetornoLiquido
+                                  ? Math.round((precoVendaLiquidoFinal - effectiveCost - manualMarketingCostVal) * 100) / 100
+                                  : Math.round((precoVendaLiquidoFinal - effectiveCost + acrescimoManual - manualMarketingCostVal) * 100) / 100;
+
                                 await supabase
                                   .from('orders')
                                   .update({
-                                    reembolso_value: val,
-                                    reembolso_motivo: val !== null ? (reembolsoMotivo || null) : null,
-                                    ...(calculatedProfit !== null ? { total_profit: calculatedProfit } : {}),
+                                    reembolso_marketplace_enabled: reembolsoMarketplaceEnabled,
+                                    reembolso_marketplace_value: valMkt,
+                                    reembolso_fornecedor_enabled: reembolsoFornecedorEnabled,
+                                    reembolso_fornecedor_value: valForn,
+                                    reembolso_value: valMkt,
+                                    reembolso_motivo: reembolsoMotivo || null,
+                                    total_profit: calculatedProfit,
                                   })
                                   .eq('id', selectedOrder.order_id);
-                                // Immediately update reembolsoByOrderId for instant chart refresh
+
                                 const oid = selectedOrder.order_id;
                                 setReembolsoByOrderId(prev => {
                                   const next = { ...prev };
-                                  if (val !== null) next[oid] = val;
+                                  if (valMkt !== null) next[oid] = valMkt;
                                   else delete next[oid];
                                   return next;
                                 });
@@ -4241,7 +4392,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                 setSavingReembolsoPedido(false);
                               }
                             }}
-                            className="w-full py-2 rounded-lg bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs font-semibold transition-colors flex items-center justify-center gap-2"
+                            className="w-full py-2 rounded-lg bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-rose-950/40"
                           >
                             {savingReembolsoPedido ? (
                               <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>

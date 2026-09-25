@@ -131,6 +131,35 @@ describe('calcOrderProfit — reembolso_value', () => {
     // falls through to normal calculation
     expect(r.realProfit).toBe(80);
   });
+
+  it('reembolso_marketplace_enabled with value overrides net sales price', () => {
+    const r = calcOrderProfit(
+      baseOrder({
+        total_amount: 100,
+        reembolso_marketplace_enabled: true,
+        reembolso_marketplace_value: 10,
+        products: [{ unit_cost: 20, quantity: 1 }],
+      })
+    );
+    expect(r.precoVendaLiquidoFinal).toBe(10);
+    expect(r.realProfit).toBe(-10); // 10 - 20
+  });
+
+  it('reembolso_fornecedor_enabled reduces product cost', () => {
+    const r = calcOrderProfit(
+      baseOrder({
+        total_amount: 100,
+        reembolso_marketplace_enabled: true,
+        reembolso_marketplace_value: 0,
+        reembolso_fornecedor_enabled: true,
+        reembolso_fornecedor_value: 20,
+        products: [{ unit_cost: 20, quantity: 1 }],
+      })
+    );
+    expect(r.precoVendaLiquidoFinal).toBe(0);
+    expect(r.effectiveProductCost).toBe(0);
+    expect(r.realProfit).toBe(0); // 0 - 0
+  });
 });
 
 // ─── TikTok specifics ────────────────────────────────────────────────────────

@@ -19,6 +19,10 @@ export interface OrderProfitInput {
   tiktok_reembolso_disabled?: boolean;
   tiktok_retorno_liquido?: number | null;
   reembolso_value?: number | null;
+  reembolso_marketplace_value?: number | null;
+  reembolso_fornecedor_value?: number | null;
+  reembolso_marketplace_enabled?: boolean;
+  reembolso_fornecedor_enabled?: boolean;
   is_free_sample?: boolean | string;
   is_personal_purchase?: boolean | string;
   marketplace?: string;
@@ -42,6 +46,7 @@ export interface OrderProfitResult {
   realProfit: number;
   isFreeSample: boolean;
   totalProductCost: number;
+  effectiveProductCost: number;
   precoVendaLiquidoFinal: number;
   subtotalMarketplace: number;
 }
@@ -145,12 +150,33 @@ export function calcOrderProfit(
 
   const retornoLiquido = Number(order.tiktok_retorno_liquido ?? 0);
   const hasRetornoLiquido = isTikTok && retornoLiquido > 0;
-  const reembolsoValue = order.reembolso_value != null ? Number(order.reembolso_value) : null;
-  const hasReembolsoValue = reembolsoValue !== null && !isNaN(reembolsoValue);
+
+  // ── Reembolso Marketplace ─────────────────────────────────────────────────
+  const hasMktEnabled = order.reembolso_marketplace_enabled === true;
+  const parsedMktVal = order.reembolso_marketplace_value != null && !isNaN(Number(order.reembolso_marketplace_value))
+    ? Number(order.reembolso_marketplace_value)
+    : null;
+  const legacyVal = order.reembolso_value != null && !isNaN(Number(order.reembolso_value))
+    ? Number(order.reembolso_value)
+    : null;
+
+  const effectiveMktVal = hasMktEnabled
+    ? (parsedMktVal ?? 0)
+    : (!order.reembolso_marketplace_enabled && legacyVal !== null ? legacyVal : null);
+
+  const hasReembolsoMarketplace = effectiveMktVal !== null;
+
+  // ── Reembolso Fornecedor ──────────────────────────────────────────────────
+  const hasFornecedorEnabled = order.reembolso_fornecedor_enabled === true;
+  const parsedFornecedorVal = order.reembolso_fornecedor_value != null && !isNaN(Number(order.reembolso_fornecedor_value))
+    ? Number(order.reembolso_fornecedor_value)
+    : 0;
+  const effectiveFornecedorVal = hasFornecedorEnabled ? Math.max(0, parsedFornecedorVal) : 0;
+  const effectiveProductCost = Math.max(0, totalProductCost - effectiveFornecedorVal);
 
   // ── Net price ─────────────────────────────────────────────────────────────
-  const precoVendaLiquidoFinal = hasReembolsoValue
-    ? reembolsoValue
+  const precoVendaLiquidoFinal = hasReembolsoMarketplace
+    ? effectiveMktVal
     : hasRetornoLiquido
     ? retornoLiquido
     : isTikTok
@@ -159,13 +185,14 @@ export function calcOrderProfit(
 
   // ── Profit ────────────────────────────────────────────────────────────────
   const realProfitRaw = isFreeSample
-    ? -totalProductCost
-    : precoVendaLiquidoFinal - totalProductCost;
+    ? -effectiveProductCost
+    : precoVendaLiquidoFinal - effectiveProductCost;
 
   return {
     realProfit: Math.round(realProfitRaw * 100) / 100,
     isFreeSample,
     totalProductCost: Math.round(totalProductCost * 100) / 100,
+    effectiveProductCost: Math.round(effectiveProductCost * 100) / 100,
     precoVendaLiquidoFinal: Math.round(precoVendaLiquidoFinal * 100) / 100,
     subtotalMarketplace: Math.round(subtotalMarketplace * 100) / 100,
   };

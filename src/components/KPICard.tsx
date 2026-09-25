@@ -198,8 +198,7 @@ export const KPICard: React.FC<KPICardProps> = ({
   const handleMouseEnter = () => {
     if (!cardRef.current) return;
     gsap.to(cardRef.current, {
-      borderColor: 'hsl(var(--brand) / 0.4)',
-      boxShadow: '0 12px 24px -8px rgba(225, 29, 72, 0.25)',
+      scale: 1.02,
       duration: 0.25,
       ease: 'power2.out',
     });
@@ -212,8 +211,7 @@ export const KPICard: React.FC<KPICardProps> = ({
       rotationX: 0,
       y: 0,
       scale: 1,
-      borderColor: '',
-      boxShadow: '',
+      clearProps: 'transform',
       duration: 0.45,
       ease: 'power3.out',
     });
@@ -229,7 +227,7 @@ export const KPICard: React.FC<KPICardProps> = ({
       className={cn(
         'relative overflow-hidden group cursor-pointer',
         'bg-card border border-border rounded-xl p-3.5 sm:p-4',
-        'shadow-sm transition-colors duration-200',
+        'shadow-sm hover:border-brand/40 hover:shadow-lg transition-[border-color,box-shadow] duration-200',
         'focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
       )}
       role="article"

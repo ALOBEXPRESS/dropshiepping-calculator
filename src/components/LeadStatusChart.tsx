@@ -134,13 +134,6 @@ export const LeadStatusChart = React.memo<LeadStatusChartProps>(({ data, recentS
 
   const handleMouseEnter = () => {
     if (!containerRef.current) return;
-    gsap.to(containerRef.current, {
-      borderColor: 'rgba(124, 58, 237, 0.35)',
-      boxShadow: '0 12px 28px -8px rgba(124, 58, 237, 0.15)',
-      duration: 0.25,
-      ease: 'power2.out',
-    });
-
     const bubbles = containerRef.current.querySelectorAll('.recharts-scatter-symbol path, .recharts-symbols, circle');
     if (bubbles.length > 0) {
       gsap.to(bubbles, {
@@ -162,8 +155,7 @@ export const LeadStatusChart = React.memo<LeadStatusChartProps>(({ data, recentS
       rotationX: 0,
       y: 0,
       scale: 1,
-      borderColor: '',
-      boxShadow: '',
+      clearProps: 'transform',
       duration: 0.45,
       ease: 'power3.out',
     });
