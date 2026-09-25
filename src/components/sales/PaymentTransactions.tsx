@@ -214,7 +214,6 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
                   id,
                   product_id,
                   product_name,
-                  sku,
                   quantity,
                   unit_cost,
                   unit_price,
@@ -345,23 +344,28 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
 
             const joinedMp = dbOrder.marketplaces;
             const mappedMp = dbOrder.marketplace_id ? mktMap.get(dbOrder.marketplace_id) : undefined;
-            const rawMpName = joinedMp?.name || (tx as unknown as { marketplaces?: { name?: string } }).marketplaces?.name || mappedMp?.name || '';
+            const rawMpName = joinedMp?.name || (tx as unknown as { marketplaces?: { name?: string } }).marketplaces?.name || (tx as unknown as { marketplace_name?: string }).marketplace_name || mappedMp?.name || '';
             const normalizedMp = rawMpName.toLowerCase().replace(/\s+/g, '');
             const namedMp = mktByName.get(normalizedMp);
 
+            const bo = Array.isArray(dbOrder.bling_orders) ? dbOrder.bling_orders[0] : dbOrder.bling_orders;
+
             const isShopee = rawMpName.toLowerCase().includes('shopee');
-            const isTikTok = rawMpName.toLowerCase().includes('tiktok');
+            const isTikTok = rawMpName.toLowerCase().includes('tiktok')
+              || (bo?.tiktok_retorno_liquido != null && Number(bo.tiktok_retorno_liquido) > 0)
+              || bo?.tiktok_reembolso_disabled !== undefined
+              || String((tx as unknown as { marketplace_name?: string }).marketplace_name ?? '').toLowerCase().includes('tiktok');
 
             const mp = joinedMp || mappedMp || namedMp;
-            const mpName = mp?.name || (isShopee ? 'Shopee' : isTikTok ? 'TikTok Shop' : rawMpName);
+            const mpName = mp?.name || (isShopee ? 'Shopee' : isTikTok ? 'TikTok Shop' : rawMpName || 'TikTok Shop');
 
             const commissionRate = mp?.commission_rate ?? (isShopee ? 20 : isTikTok ? 10 : 0);
             const fixedFee = mp?.fixed_fee ?? (isShopee ? 4 : 0);
 
             const orderProducts = (dbOrder.order_items ?? []).map((it) => {
               const candidateKeys = [
-                String(it.sku ?? '').trim(),
-                ...normalizeKey(String(it.product_name ?? '')),
+                String(it.products?.sku ?? '').trim(),
+                ...normalizeKey(String(it.product_name ?? it.products?.name ?? '')),
               ].filter(Boolean);
 
               const lookup = (it.product_id ? productsById.get(it.product_id) : undefined)
@@ -369,8 +373,9 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
                 || candidateKeys.map(k => productsByName.get(k)).find(Boolean)
                 || it.products;
 
+              const lookupCost = Number(lookup?.cost_price ?? 0);
               const rawUnitCost = Number(it.unit_cost ?? 0);
-              const resolvedUnitCost = rawUnitCost > 0 ? rawUnitCost : Number(lookup?.cost_price ?? 0);
+              const resolvedUnitCost = lookupCost > 0 ? lookupCost : (rawUnitCost > 0 ? rawUnitCost : 0);
 
               return {
                 quantity: it.quantity ?? 1,
@@ -384,7 +389,6 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             });
 
             const calculatedTotalProducts = orderProducts.reduce((s, p) => s + (p.unit_price * p.quantity), 0);
-            const bo = Array.isArray(dbOrder.bling_orders) ? dbOrder.bling_orders[0] : dbOrder.bling_orders;
             const boBaseValue = Number(bo?.base_value ?? 0);
             const boTotalProducts = Number(bo?.total_products ?? 0);
 
