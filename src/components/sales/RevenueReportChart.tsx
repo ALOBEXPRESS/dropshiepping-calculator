@@ -3233,7 +3233,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const hasReembolsoFornActive = reembolsoFornecedorEnabled && reembolsoFornecedorValue.trim() !== '' && !isNaN(parseFloat(reembolsoFornecedorValue.replace(',', '.')));
             const reembolsoFornVal = hasReembolsoFornActive ? (parseFloat(reembolsoFornecedorValue.replace(',', '.')) || 0) : 0;
 
-            const effectiveProductCostModal = Math.max(0, totalProductCost - (hasReembolsoFornActive ? reembolsoFornVal : 0));
+            const effectiveProductCostModal = (isPersonalPurchase ? 0 : totalProductCost) - (hasReembolsoFornActive ? reembolsoFornVal : 0);
 
             const finalRealProfit = hasReembolsoMktActive
               ? (reembolsoMktVal - effectiveProductCostModal - manualMarketingCostVal)
@@ -4357,7 +4357,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                 const parsedForn = parseFloat(reembolsoFornecedorValue.replace(',', '.'));
                                 const valForn = reembolsoFornecedorEnabled && !isNaN(parsedForn) ? parsedForn : (reembolsoFornecedorEnabled ? 0 : null);
 
-                                const effectiveCost = Math.max(0, totalProductCost - (valForn ?? 0));
+                                const effectiveCost = (isPersonalPurchase ? 0 : totalProductCost) - (valForn ?? 0);
                                 const calculatedProfit = valMkt !== null
                                   ? Math.round((valMkt - effectiveCost - manualMarketingCostVal) * 100) / 100
                                   : isFreeSample

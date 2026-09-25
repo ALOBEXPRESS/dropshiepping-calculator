@@ -186,6 +186,10 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
                 other_expenses,
                 marketplace_commission,
                 reembolso_value,
+                reembolso_marketplace_enabled,
+                reembolso_marketplace_value,
+                reembolso_fornecedor_enabled,
+                reembolso_fornecedor_value,
                 is_free_sample,
                 is_personal_purchase,
                 marketplace_id,
@@ -271,6 +275,10 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             other_expenses?: number;
             marketplace_commission?: number;
             reembolso_value?: number | null;
+            reembolso_marketplace_enabled?: boolean | null;
+            reembolso_marketplace_value?: number | null;
+            reembolso_fornecedor_enabled?: boolean | null;
+            reembolso_fornecedor_value?: number | null;
             is_free_sample?: boolean | string;
             is_personal_purchase?: boolean | string;
             marketplace_id?: string;
@@ -348,6 +356,10 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
               tiktok_reembolso_disabled: dbOrder.bling_orders?.tiktok_reembolso_disabled === true,
               tiktok_retorno_liquido: dbOrder.bling_orders?.tiktok_retorno_liquido,
               reembolso_value: dbOrder.reembolso_value,
+              reembolso_marketplace_enabled: dbOrder.reembolso_marketplace_enabled != null ? Boolean(dbOrder.reembolso_marketplace_enabled) : undefined,
+              reembolso_marketplace_value: dbOrder.reembolso_marketplace_value,
+              reembolso_fornecedor_enabled: dbOrder.reembolso_fornecedor_enabled != null ? Boolean(dbOrder.reembolso_fornecedor_enabled) : undefined,
+              reembolso_fornecedor_value: dbOrder.reembolso_fornecedor_value,
               is_free_sample: dbOrder.is_free_sample,
               is_personal_purchase: dbOrder.is_personal_purchase,
               marketplace: mpName,
@@ -360,17 +372,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             });
 
             const mktCost = mktCostMap.get(tx.id) ?? 0;
-            const isPersonal = dbOrder.is_personal_purchase === true
-              || String(dbOrder.order_number ?? '').trim() === '208';
-            const isRefunded = Number(dbOrder.reembolso_value ?? 0) > 0
-              || String(dbOrder.order_number ?? '').trim() === '15';
-            const effectiveProductCost = isPersonal ? 0 : result.totalProductCost;
-
-            const computedProfit = isRefunded
-              ? (Number(dbOrder.reembolso_value ?? 0) - effectiveProductCost - mktCost)
-              : isPersonal
-              ? (result.realProfit + result.totalProductCost - mktCost)
-              : (result.realProfit - mktCost);
+            const computedProfit = result.realProfit - mktCost;
 
             return {
               ...tx,

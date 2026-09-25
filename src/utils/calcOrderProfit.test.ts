@@ -145,20 +145,34 @@ describe('calcOrderProfit — reembolso_value', () => {
     expect(r.realProfit).toBe(-10); // 10 - 20
   });
 
-  it('reembolso_fornecedor_enabled reduces product cost', () => {
+  it('reembolso_fornecedor_enabled reduces product cost and increases profit when higher than product cost', () => {
     const r = calcOrderProfit(
       baseOrder({
         total_amount: 100,
         reembolso_marketplace_enabled: true,
-        reembolso_marketplace_value: 0,
+        reembolso_marketplace_value: -9.85,
         reembolso_fornecedor_enabled: true,
-        reembolso_fornecedor_value: 20,
+        reembolso_fornecedor_value: 94,
         products: [{ unit_cost: 20, quantity: 1 }],
       })
     );
-    expect(r.precoVendaLiquidoFinal).toBe(0);
-    expect(r.effectiveProductCost).toBe(0);
-    expect(r.realProfit).toBe(0); // 0 - 0
+    expect(r.precoVendaLiquidoFinal).toBe(-9.85);
+    expect(r.effectiveProductCost).toBe(-74); // 20 - 94 = -74
+    expect(r.realProfit).toBe(64.15); // -9.85 - (-74) = +64.15
+  });
+
+  it('reembolso_marketplace_enabled=false ignores legacy reembolso_value and computes normal profit', () => {
+    const r = calcOrderProfit(
+      baseOrder({
+        total_amount: 100,
+        reembolso_value: -9.85,
+        reembolso_marketplace_enabled: false,
+        products: [{ unit_cost: 20, quantity: 1 }],
+      })
+    );
+    // falls through to normal sale price (100 - 20 = 80)
+    expect(r.precoVendaLiquidoFinal).toBe(100);
+    expect(r.realProfit).toBe(80);
   });
 });
 

@@ -95,6 +95,10 @@ export class DashboardService {
         other_expenses,
         marketplace_commission,
         reembolso_value,
+        reembolso_marketplace_enabled,
+        reembolso_marketplace_value,
+        reembolso_fornecedor_enabled,
+        reembolso_fornecedor_value,
         is_free_sample,
         is_personal_purchase,
         marketplace_id,
@@ -258,6 +262,10 @@ export class DashboardService {
         tiktok_reembolso_disabled: bo?.tiktok_reembolso_disabled === true,
         tiktok_retorno_liquido: bo?.tiktok_retorno_liquido != null ? Number(bo.tiktok_retorno_liquido) : null,
         reembolso_value: order.reembolso_value != null ? Number(order.reembolso_value) : null,
+        reembolso_marketplace_enabled: order.reembolso_marketplace_enabled,
+        reembolso_marketplace_value: order.reembolso_marketplace_value != null ? Number(order.reembolso_marketplace_value) : null,
+        reembolso_fornecedor_enabled: order.reembolso_fornecedor_enabled,
+        reembolso_fornecedor_value: order.reembolso_fornecedor_value != null ? Number(order.reembolso_fornecedor_value) : null,
         is_free_sample: order.is_free_sample,
         is_personal_purchase: order.is_personal_purchase,
         marketplace: mpName,
@@ -270,12 +278,7 @@ export class DashboardService {
       });
 
       const mktCost = mktCostMap.get(order.id) ?? 0;
-      const hasReembolso = order.reembolso_value != null;
-      const reembolsoOv = hasReembolso ? Number(order.reembolso_value) : null;
-
-      const effectiveProfit = hasReembolso && reembolsoOv !== null && !isNaN(reembolsoOv)
-        ? (reembolsoOv - result.totalProductCost - mktCost)
-        : (result.realProfit - mktCost);
+      const effectiveProfit = result.realProfit - mktCost;
 
       return {
         id: order.id,

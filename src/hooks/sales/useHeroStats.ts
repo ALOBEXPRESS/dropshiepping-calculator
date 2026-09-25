@@ -64,6 +64,10 @@ function computeProfitFromOrders(orders: Record<string, unknown>[]): number {
       tiktok_reembolso_disabled: Boolean(o.tiktok_reembolso_disabled),
       tiktok_retorno_liquido: o.tiktok_retorno_liquido != null ? Number(o.tiktok_retorno_liquido) : null,
       reembolso_value: o.reembolso_value != null ? Number(o.reembolso_value) : null,
+      reembolso_marketplace_enabled: o.reembolso_marketplace_enabled as boolean | undefined,
+      reembolso_marketplace_value: o.reembolso_marketplace_value != null ? Number(o.reembolso_marketplace_value) : null,
+      reembolso_fornecedor_enabled: o.reembolso_fornecedor_enabled as boolean | undefined,
+      reembolso_fornecedor_value: o.reembolso_fornecedor_value != null ? Number(o.reembolso_fornecedor_value) : null,
       marketplace: marketplaceName,
       products: products.map((p) => ({
         quantity: Number(p.quantity ?? 1),
@@ -164,6 +168,10 @@ export const useHeroStats = (
           other_expenses?: number;
           marketplace_commission?: number;
           reembolso_value?: number | null;
+          reembolso_marketplace_enabled?: boolean | null;
+          reembolso_marketplace_value?: number | null;
+          reembolso_fornecedor_enabled?: boolean | null;
+          reembolso_fornecedor_value?: number | null;
           is_free_sample?: boolean | string;
           is_personal_purchase?: boolean | string;
           marketplace_id?: string;
@@ -192,6 +200,10 @@ export const useHeroStats = (
                   other_expenses,
                   marketplace_commission,
                   reembolso_value,
+                  reembolso_marketplace_enabled,
+                  reembolso_marketplace_value,
+                  reembolso_fornecedor_enabled,
+                  reembolso_fornecedor_value,
                   is_free_sample,
                   is_personal_purchase,
                   marketplace_id,
@@ -315,6 +327,10 @@ export const useHeroStats = (
             tiktok_reembolso_disabled: dbOrder.bling_orders?.tiktok_reembolso_disabled === true,
             tiktok_retorno_liquido: dbOrder.bling_orders?.tiktok_retorno_liquido,
             reembolso_value: dbOrder.reembolso_value,
+            reembolso_marketplace_enabled: dbOrder.reembolso_marketplace_enabled != null ? Boolean(dbOrder.reembolso_marketplace_enabled) : undefined,
+            reembolso_marketplace_value: dbOrder.reembolso_marketplace_value,
+            reembolso_fornecedor_enabled: dbOrder.reembolso_fornecedor_enabled != null ? Boolean(dbOrder.reembolso_fornecedor_enabled) : undefined,
+            reembolso_fornecedor_value: dbOrder.reembolso_fornecedor_value,
             is_free_sample: dbOrder.is_free_sample,
             is_personal_purchase: dbOrder.is_personal_purchase,
             marketplace: mpName,
@@ -327,19 +343,7 @@ export const useHeroStats = (
           });
 
           const mktCost = mktCostMap.get(orderId) ?? 0;
-          const isPersonal = dbOrder.is_personal_purchase === true
-            || String(dbOrder.order_number ?? '').trim() === '208';
-          const isRefunded = dbOrder.reembolso_value != null
-            || String(dbOrder.order_number ?? '').trim() === '15';
-          const effectiveProductCost = isPersonal ? 0 : result.totalProductCost;
-
-          const computedProfit = isRefunded
-            ? (Number(dbOrder.reembolso_value ?? 0) - effectiveProductCost - mktCost)
-            : isPersonal
-            ? (result.realProfit + result.totalProductCost - mktCost)
-            : (result.realProfit - mktCost);
-
-          return Math.round(computedProfit * 100) / 100;
+          return Math.round((result.realProfit - mktCost) * 100) / 100;
         };
 
         const totalProfit = (currentOrders as Record<string, unknown>[]).reduce((sum, o) => {
