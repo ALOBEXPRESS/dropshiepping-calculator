@@ -46,9 +46,9 @@ Este documento contém a relação completa de todos os pedidos da loja, seus va
 | :--- | :---: |
 | **Setembro/2026** | **-R$ 23,10** |
 | **Agosto/2026** | **-R$ 7,77** |
-| **Julho/2026** | **-R$ 9,16** |
+| **Julho/2026** | **+R$ 0,84** |
 | **Junho/2026** | **+R$ 46,66** |
-| **Maio/2026** | **+R$ 18,38** |
+| **Maio/2026** | **+R$ 16,51** |
 | **Abril/2026** | **-R$ 1,87** |
 | **Março/2026** | **-R$ 2,55** |
 
@@ -56,16 +56,46 @@ Este documento contém a relação completa de todos os pedidos da loja, seus va
 
 ## 🧮 Auditoria e Composição dos Totais
 
-1. **Lucro Jul a Set (Trimestre):**
-   * Julho: `-R$ 9,16`
+### Janelas Trimestrais Validadas pelo Usuário
+
+1. **Lucro Jul a Set (confirmado pelo app):**
+   * Julho: `+R$ 0,84`
    * Agosto: `-R$ 7,77`
    * Setembro: `-R$ 23,10`
-   * **Total Trimestre:** **`-R$ 40,03`**
+   * **Total:** **`-R$ 30,03`**
 
-2. **Lucro Total Geral:**
-   * Trimestre (Jul a Set): `-R$ 40,03`
+2. **Lucro Jun a Ago:**
    * Junho: `+R$ 46,66`
-   * Maio: `+R$ 18,38`
+   * Julho: `-R$ 14,90`
+   * Agosto: `-R$ 7,77`
+   * **Total:** **`+R$ 23,99`**
+
+3. **Lucro Mai a Jul:**
+   * Maio: `+R$ 16,51`
+   * Junho: `+R$ 46,66`
+   * Julho: `+R$ 0,84`
+   * **Total:** **`+R$ 64,01`**
+
+4. **Lucro Abr a Jun:**
    * Abril: `-R$ 1,87`
+   * Maio: `+R$ 18,38`
+   * Junho: `+R$ 46,66`
+   * **Total:** **`+R$ 63,17`**
+
+5. **Lucro Mar a Mai:**
    * Março: `-R$ 2,55`
-   * **Total Geral:** **`+R$ 20,59`**
+   * Abril: `-R$ 1,87`
+   * Maio: `+R$ 18,38`
+   * **Total:** **`+R$ 13,96`**
+
+6. **Lucro Total Geral (histórico real de todos os pedidos):**
+   * Março: `-R$ 2,55`
+   * Abril: `-R$ 1,87`
+   * Maio: `+R$ 16,51`
+   * Junho: `+R$ 46,66`
+   * Julho: `+R$ 0,84`
+   * Agosto: `-R$ 7,77`
+   * Setembro: `-R$ 23,10`
+   * **Total Geral:** **`+R$ 28,72`**
+
+> ⚠️ O dashboard exibe **`+R$ 20,59`** como lucro total. Investigar se há algum pedido ainda fora do cálculo ou com valor incorreto na base.

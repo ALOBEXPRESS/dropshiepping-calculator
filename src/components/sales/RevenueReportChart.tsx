@@ -294,17 +294,24 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             } | null;
           }>;
 
-          const mappedProducts = items.map((it) => ({
-            name: it.products?.name ?? 'Produto',
-            sku: it.products?.sku ?? '',
-            quantity: it.quantity ?? 1,
-            unit_price: it.unit_price ?? 0,
-            unit_cost: it.unit_cost ?? it.products?.cost_price ?? 0,
-            supplier_fee_value: it.products?.supplier_fee_value,
-            supplier_fee_type: it.products?.supplier_fee_type,
-            supplier_gateway_fee_value: it.products?.supplier_gateway_fee_value,
-            supplier_gateway_fee_type: it.products?.supplier_gateway_fee_type,
-          }));
+          const mappedProducts = items.map((it) => {
+            // Prioriza cost_price do produto (sempre atualizado) sobre unit_cost do order_item
+            // (consistente com PaymentTransactions.tsx para garantir cálculos idênticos)
+            const productCostPrice = Number(it.products?.cost_price ?? 0);
+            const rawUnitCost = Number(it.unit_cost ?? 0);
+            const resolvedUnitCost = productCostPrice > 0 ? productCostPrice : (rawUnitCost > 0 ? rawUnitCost : 0);
+            return {
+              name: it.products?.name ?? 'Produto',
+              sku: it.products?.sku ?? '',
+              quantity: it.quantity ?? 1,
+              unit_price: it.unit_price ?? 0,
+              unit_cost: resolvedUnitCost,
+              supplier_fee_value: it.products?.supplier_fee_value,
+              supplier_fee_type: it.products?.supplier_fee_type,
+              supplier_gateway_fee_value: it.products?.supplier_gateway_fee_value,
+              supplier_gateway_fee_type: it.products?.supplier_gateway_fee_type,
+            };
+          });
 
           order = {
             order_id: dbOrder.id,
@@ -2521,10 +2528,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           ? reembolsoByOrderId[o.order_id]
           : (o as { reembolso_value?: number | null }).reembolso_value;
         const reembolsoOverride = rawReembolsoOverride != null ? Number(rawReembolsoOverride) : null;
-        const manualMktCost = manualMarketingCostByOrderId[o.order_id] ?? 0;
+        // manualMarketingCostByOrderId já contém campaign_order_costs + GVM Play (todos os custos salvos)
+        const totalMktCost = manualMarketingCostByOrderId[o.order_id] ?? 0;
         const effectiveProfit = hasReembolsoOverride && reembolsoOverride !== null && !isNaN(reembolsoOverride)
-          ? (reembolsoOverride - totalProductCost - manualMktCost)
-          : (realProfit - (manualMktCost > 0 ? manualMktCost : 0));
+          ? (reembolsoOverride - totalProductCost - totalMktCost)
+          : (realProfit - totalMktCost);
+
+        // Marketing cost para exibição no painel de totais (keyed by order_id)
+        const orderMarketingCost = (marketingCostByProductId as unknown as Record<string, number>)[`order:${o.order_id}`] ?? 0;
 
         // Custo total do pedido: Produto + Marketplace
         // Compra pessoal: não considera custo do produto
@@ -2541,11 +2552,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         totalRevenue += liquidoFinal;
         totalCost += realCost;
         totalProfit += effectiveProfit;
-
-        // Marketing cost: look up saved cost from campaign_order_costs via order_id
-        // marketingCostByProductId is a secondary fallback keyed by product_id
-        // Primary: use order_id directly mapped to cost (populated by fetchMarketingCosts below)
-        const orderMarketingCost = (marketingCostByProductId as unknown as Record<string, number>)[`order:${o.order_id}`] ?? 0;
         totalMarketingCost += orderMarketingCost;
       });
 
@@ -2613,7 +2619,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           Number((o as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0)
         );
         const { realProfit: profit, totalProductCost: tpcYearly } = computeOrderRealProfit(mergedOrder, cfg, affiliateByOrderId[orderId]);
-        const manualDeduct = manualMarketingCostByOrderId[orderId] ?? 0;
+        // manualMarketingCostByOrderId contém campaign_order_costs + GVM Play
+        const totalDeduct = manualMarketingCostByOrderId[orderId] ?? 0;
         const hasRetornoLiquido = Boolean((mergedOrder as { tiktok_retorno_liquido?: number | null }).tiktok_retorno_liquido);
         const hasReembolsoOv = !hasRetornoLiquido && ((orderId in reembolsoByOrderId)
           || (o as { reembolso_value?: number | null }).reembolso_value != null);
@@ -2622,12 +2629,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           : (o as { reembolso_value?: number | null }).reembolso_value;
         const reembolsoOv = rawReembolsoOv != null ? Number(rawReembolsoOv) : null;
         const effectiveProfit = hasReembolsoOv && reembolsoOv !== null && !isNaN(reembolsoOv)
-          ? (reembolsoOv - tpcYearly - manualDeduct)
-          : (profit - manualDeduct);
+          ? (reembolsoOv - tpcYearly - totalDeduct)
+          : (profit - totalDeduct);
         return s + effectiveProfit;
       }, 0);
     }, 0);
-  }, [yearlyData, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig, manualMarketingCostByOrderId, reembolsoByOrderId, affiliateByOrderId]);
+  }, [yearlyData, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig, manualMarketingCostByOrderId, marketingCostByProductId, reembolsoByOrderId, affiliateByOrderId]);
 
   // Custo total = produto + taxas de marketplace (respeitando compra pessoal e reembolso)
   const allDataTotalCost = useMemo(() => {
