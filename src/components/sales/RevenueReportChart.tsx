@@ -2605,65 +2605,19 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const currentPeriodCost = visibleData.reduce((sum, item) => sum + Number(item.total_cost ?? 0), 0);
   const currentPeriodProfit = visibleData.reduce((sum, item) => sum + Number(item.total_profit ?? 0), 0);
 
-  // Lucro total de TODOS os dados — calculado sobre yearlyData (todos os meses do ano)
-  // independente do filtro de período selecionado
+  // Lucro total de TODOS os dados — soma direta de recalculatedData (todos os períodos do ano)
+  // recalculatedData já aplica cost_price, reembolsos, marketing e todos os overrides corretamente.
+  // Usar recalculatedData aqui garante consistência com os valores exibidos no gráfico.
   const allDataTotalProfit = useMemo(() => {
-    return yearlyData.reduce((sum, item) => {
-      const orders = item.orders_data ?? [];
-      return sum + orders.reduce((s, o) => {
-        const orderId = (o as { order_id?: string }).order_id ?? '';
-        const mergedOrder = mergeOrderForTooltip(o);
-        const cfg = resolveMarketplaceConfig(
-          (o as { marketplace?: string }).marketplace,
-          Number((o as { commission_rate?: number }).commission_rate ?? 0),
-          Number((o as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0)
-        );
-        const { realProfit: profit, totalProductCost: tpcYearly } = computeOrderRealProfit(mergedOrder, cfg, affiliateByOrderId[orderId]);
-        // manualMarketingCostByOrderId contém campaign_order_costs + GVM Play
-        const totalDeduct = manualMarketingCostByOrderId[orderId] ?? 0;
-        const hasRetornoLiquido = Boolean((mergedOrder as { tiktok_retorno_liquido?: number | null }).tiktok_retorno_liquido);
-        const hasReembolsoOv = !hasRetornoLiquido && ((orderId in reembolsoByOrderId)
-          || (o as { reembolso_value?: number | null }).reembolso_value != null);
-        const rawReembolsoOv = orderId in reembolsoByOrderId
-          ? reembolsoByOrderId[orderId]
-          : (o as { reembolso_value?: number | null }).reembolso_value;
-        const reembolsoOv = rawReembolsoOv != null ? Number(rawReembolsoOv) : null;
-        const effectiveProfit = hasReembolsoOv && reembolsoOv !== null && !isNaN(reembolsoOv)
-          ? (reembolsoOv - tpcYearly - totalDeduct)
-          : (profit - totalDeduct);
-        return s + effectiveProfit;
-      }, 0);
-    }, 0);
-  }, [yearlyData, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig, manualMarketingCostByOrderId, marketingCostByProductId, reembolsoByOrderId, affiliateByOrderId]);
+    return recalculatedData.reduce((sum, item) => sum + Number(item.total_profit ?? 0), 0);
+  }, [recalculatedData]);
 
   // Custo total = produto + taxas de marketplace (respeitando compra pessoal e reembolso)
+  // Custo total de TODOS os dados — soma direta de recalculatedData (todos os períodos)
+  // Consistente com allDataTotalProfit e com os valores do gráfico.
   const allDataTotalCost = useMemo(() => {
-    return yearlyData.reduce((sum, item) => {
-      const orders = item.orders_data ?? [];
-      return sum + orders.reduce((s, o) => {
-        const orderId = (o as { order_id?: string }).order_id ?? '';
-        const mergedOrder = mergeOrderForTooltip(o);
-        const cfg = resolveMarketplaceConfig(
-          (o as { marketplace?: string }).marketplace,
-          Number((o as { commission_rate?: number }).commission_rate ?? 0),
-          Number((o as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0)
-        );
-        const result = computeOrderRealProfit(mergedOrder, cfg, affiliateByOrderId[orderId]);
-        const totalProductCost = typeof result === 'number' ? 0 : result.totalProductCost;
-        const subtotalMarketplace = typeof result === 'number' ? 0 : result.subtotalMarketplace;
-        const hasReembolsoOv = (orderId in reembolsoByOrderId)
-          || (o as { reembolso_value?: number | null }).reembolso_value != null;
-        const isPersonal = (o as { is_personal_purchase?: boolean }).is_personal_purchase === true
-          || String((o as { order_number?: string | number }).order_number ?? '').trim() === '208';
-        const isRefunded = hasReembolsoOv
-          || String((o as { order_number?: string | number }).order_number ?? '').trim() === '15';
-        const effectiveProductCost = isPersonal ? 0 : totalProductCost;
-        const effectiveMarketplaceCost = isRefunded ? 0 : subtotalMarketplace;
-        const realCost = effectiveProductCost + effectiveMarketplaceCost;
-        return s + realCost;
-      }, 0);
-    }, 0);
-  }, [yearlyData, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig, affiliateByOrderId, reembolsoByOrderId]);
+    return recalculatedData.reduce((sum, item) => sum + Number(item.total_cost ?? 0), 0);
+  }, [recalculatedData]);
 
   const marketingCostSeriesData = visibleData.map((periodData) => {
     const periodMarketingCost = (periodData.orders_data ?? []).reduce((sum, order) => {
