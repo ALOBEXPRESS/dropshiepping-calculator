@@ -42,6 +42,19 @@ export const handleCurrencyChange = (
   setter: (val: string) => void
 ) => {
   let value = e.target.value;
+  if (!value) {
+    setter('');
+    return;
+  }
+  
+  // Replace dot with comma immediately (enables numeric keypad decimal key)
+  value = value.replace(/\./g, ',');
+  
+  // If user enters comma when field is empty, autocomplete to "0,"
+  if (value === ',') {
+    setter('0,');
+    return;
+  }
   
   // Remove non-digit and non-comma characters
   value = value.replace(/[^\d,]/g, '');
@@ -63,16 +76,20 @@ export const handleCurrencyChange = (
   setter(value);
 };
 
-// Format on blur to add thousands separators and fix decimals
+// Format on blur to add thousands separators and fix decimals (autocompleting ,00)
 export const handleCurrencyBlur = (
     e: React.FocusEvent<HTMLInputElement>,
     setter: (val: string) => void
 ) => {
     const value = e.target.value;
-    if (!value) return;
+    if (!value || value.trim() === '') return;
     
     const num = parseCurrency(value);
-    setter(formatCurrency(num));
+    if (num > 0) {
+        setter(formatCurrency(num));
+    } else if (value.trim() === '0' || value.trim() === '0,' || value.trim() === '0,0') {
+        setter('0,00');
+    }
 };
 
 export const formatCompactCurrency = (value: number): string => {

@@ -386,5 +386,68 @@ describe('Pricing Service', () => {
       expect(Number(result3Percent.netRevenue) - Number(result6Percent.netRevenue)).toBeCloseTo(0.36, 2);
       expect(Number(result3Percent.actualMargin)).toBeGreaterThan(Number(result6Percent.actualMargin));
     });
+
+    it('should recalculate net revenue and margin when TikTok commission changes from 6% to 16%', () => {
+      const result6Percent = calculateMetrics(
+        34.00, // baseCost
+        0,     // pkgCost
+        3,     // supplierFeeVal (3%)
+        0,     // markup
+        'tiktok',
+        'eletronicos',
+        'classico',
+        'without',
+        'cnpj',
+        0,
+        false, 0, 0, 0, 0,
+        69.90, // manualPriceVal
+        0, 0,
+        6,     // tiktokCommVal = 6%
+        0, 0, 0, 0, 0, 'percent', 0, 0, 0, 'classico', 0, '', '', '', '', false,
+        'percent',
+        0,
+        2.00,
+        'fixed',
+        'individual',
+        'eletronicos',
+        0, 0, 0, 0, 0, 'fixed', 'fixed', 'fixed', 'fixed', 0, [],
+        [{ id: '1', name: 'Afiliado', percentage: '10.5' }]
+      );
+
+      const result16Percent = calculateMetrics(
+        34.00, // baseCost
+        0,     // pkgCost
+        3,     // supplierFeeVal (3%)
+        0,     // markup
+        'tiktok',
+        'eletronicos',
+        'classico',
+        'without',
+        'cnpj',
+        0,
+        false, 0, 0, 0, 0,
+        69.90, // manualPriceVal
+        0, 0,
+        16,    // tiktokCommVal = 16%
+        0, 0, 0, 0, 0, 'percent', 0, 0, 0, 'classico', 0, '', '', '', '', false,
+        'percent',
+        0,
+        2.00,
+        'fixed',
+        'individual',
+        'eletronicos',
+        0, 0, 0, 0, 0, 'fixed', 'fixed', 'fixed', 'fixed', 0, [],
+        [{ id: '1', name: 'Afiliado', percentage: '10.5' }]
+      );
+
+      expect(result6Percent.marketplaceFee).toBe('6');
+      expect(result16Percent.marketplaceFee).toBe('16');
+      expect(Number(result6Percent.marketplaceCost)).toBeCloseTo(4.19, 2);
+      expect(Number(result16Percent.marketplaceCost)).toBeCloseTo(11.18, 2);
+      expect(Number(result6Percent.netRevenue)).toBeCloseTo(15.35, 2);
+      expect(Number(result16Percent.netRevenue)).toBeCloseTo(8.36, 2);
+      expect(Number(result6Percent.netRevenue) - Number(result16Percent.netRevenue)).toBeCloseTo(6.99, 2);
+      expect(Number(result16Percent.actualMargin)).toBeLessThan(Number(result6Percent.actualMargin));
+    });
   });
 });

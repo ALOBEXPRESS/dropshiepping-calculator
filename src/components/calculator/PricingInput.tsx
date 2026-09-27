@@ -2,6 +2,7 @@ import React from 'react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { handleCurrencyBlur } from "../../utils/currency";
 
 interface PricingInputProps {
   costPrice: string;
@@ -56,12 +57,15 @@ export const PricingInput: React.FC<PricingInputProps> = ({
   const showDimensionsWarning = marketplace === 'mercadolivre' && costPriceValue >= 79 && hasMissingDimensions;
   return (
     <>
-      <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn">
-        <Label htmlFor="costPrice" className="text-base font-bold !text-red-500">
-          Preço de Custo do Fornecedor
-        </Label>
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-semibold">
+      {/* Preço de Custo do Fornecedor */}
+      <div className="relative w-full max-w-sm rounded-xl p-3.5 border border-border/70 bg-card/60 transition-all duration-300 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 mt-4 animate-fadeIn">
+        <div className="flex items-center justify-between mb-2">
+          <Label htmlFor="costPrice" className="text-sm font-bold text-foreground flex items-center gap-2 cursor-pointer">
+            Preço de Custo do Fornecedor
+          </Label>
+        </div>
+        <div className="relative flex items-center">
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground font-extrabold text-lg select-none pointer-events-none">
             R$
           </span>
           <Input
@@ -70,13 +74,24 @@ export const PricingInput: React.FC<PricingInputProps> = ({
             inputMode="decimal"
             value={costPrice}
             onChange={handleFloatInput(setCostPrice)}
-            className="pl-10 text-xl font-bold border border-red-400 focus:border-red-500"
+            onBlur={(e) => handleCurrencyBlur(e, setCostPrice)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.currentTarget.blur();
+              }
+            }}
+            className="pl-12 pr-4 py-2.5 text-2xl font-black text-white bg-zinc-950/80 border border-border rounded-lg focus-visible:ring-0 focus-visible:ring-offset-0 shadow-inner placeholder:text-zinc-600 transition-all h-13"
             placeholder="0,00"
             step="0.01"
+            autoFocus
           />
         </div>
+        <p className="text-[11px] text-zinc-400 mt-2 flex items-center gap-1.5">
+          <span className="text-xs">✨</span>
+          <span>Insira o custo do produto para atualizar margens e lucros em tempo real</span>
+        </p>
         {showDimensionsWarning && (
-          <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
+          <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
             <p className="text-xs text-blue-700 dark:text-blue-300">
               <strong>⚠️ Importante:</strong> Para produtos com preço ≥ R$ 79,00 no Mercado Livre, 
               as dimensões são obrigatórias para calcular o custo de frete grátis que você pagará.
@@ -87,7 +102,7 @@ export const PricingInput: React.FC<PricingInputProps> = ({
 
       {/* Preço de Venda Manual */}
       <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn">
-        <Label htmlFor="manualSellingPrice" className="text-base font-bold !text-blue-600">
+        <Label htmlFor="manualSellingPrice" className="text-base font-bold !text-blue-500">
           Preço de venda
         </Label>
         <div className="relative">
@@ -100,6 +115,12 @@ export const PricingInput: React.FC<PricingInputProps> = ({
             inputMode="decimal"
             value={manualSellingPrice}
             onChange={handleFloatInput(setManualSellingPrice)}
+            onBlur={(e) => handleCurrencyBlur(e, setManualSellingPrice)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.currentTarget.blur();
+              }
+            }}
             className="pl-10 text-xl border border-blue-400 focus:border-blue-600 font-bold"
             placeholder="0,00"
             step="0.01"

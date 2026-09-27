@@ -443,15 +443,20 @@ export const useDropshippingCalculator = () => {
     };
   }, []);
 
-  // Sync TikTok commission display field with price-based rate
+  // Sync TikTok commission display field with price-based rate if standard rates are in use
   // Policy (15 Jul 2026): price < R$50 → 10%; price >= R$50 → 6%
   useEffect(() => {
     if (marketplace !== 'tiktok') return;
     const price = parseCurrency(manualSellingPrice) || 0;
     if (price <= 0) return; // no manual price set — keep current
-    const newRate = price < 50 ? '10' : '6';
-    setTiktokCommission(newRate);
-  }, [manualSellingPrice, marketplace]);
+    const standardRates = ['6', '10', ''];
+    if (standardRates.includes(tiktokCommission)) {
+      const newRate = price < 50 ? '10' : '6';
+      if (newRate !== tiktokCommission) {
+        setTiktokCommission(newRate);
+      }
+    }
+  }, [manualSellingPrice, marketplace, tiktokCommission]);
 
   useEffect(() => {
     const draft: ProductDraft = {
@@ -1087,7 +1092,7 @@ export const useDropshippingCalculator = () => {
     const manual = parseCurrency(manualSellingPrice) || 0;
     const competitor = parseCurrency(competitorPrice) || 0;
     const compMarkup = parseCurrency(competitorMarkup) || 1.1;
-    const tiktokComm = parseCurrency(tiktokCommission) || 6;
+    const tiktokComm = tiktokCommission !== '' ? (parseCurrency(tiktokCommission) || 0) : 6;
     const wpShipping = parseCurrency(wordpressShipping) || 0;
     const emergency = operationMode === 'dropshipping' ? (parseCurrency(emergencyReserve) || 0) : 0;
     const rRate = parseCurrency(returnRate) || 33.33;
@@ -1169,7 +1174,7 @@ export const useDropshippingCalculator = () => {
       const gatewayFeeValue = parseCurrency(gatewayFee) || 0;
       const competitor = parseCurrency(competitorPrice) || 0;
       const compMarkup = parseCurrency(competitorMarkup) || 1.1;
-      const tiktokComm = parseCurrency(tiktokCommission) || 6;
+      const tiktokComm = tiktokCommission !== '' ? (parseCurrency(tiktokCommission) || 0) : 6;
       const wpShipping = parseCurrency(wordpressShipping) || 0;
       const emergency = operationMode === 'dropshipping' ? (parseCurrency(emergencyReserve) || 0) : 0;
       const rRate = parseCurrency(returnRate) || 33.33;

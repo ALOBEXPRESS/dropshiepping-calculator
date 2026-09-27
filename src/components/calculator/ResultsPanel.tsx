@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { TrendingUp, Loader2, Package, AlertCircle, X, CheckCircle2 } from 'lucide-react';
+import { TrendingUp, Loader2, Package, AlertCircle, X, CheckCircle2, Sparkles } from 'lucide-react';
 import type { CalculationResult, ShippingOption } from '../../types/calculator';
 import { formatCurrency } from '../../utils/currency';
 import { calculateShipping, formatShippingPrice, formatDeliveryTime, MelhorEnvioError } from '../../services/melhorEnvioService';
@@ -315,29 +315,59 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
       </CardHeader>
 
       <CardContent className="p-4 sm:p-6 space-y-5">
-        {/* Top Hero: Preço de Venda Sugerido */}
-        <div className={`rounded-xl p-4 sm:p-5 border relative overflow-hidden transition-colors duration-300 ${theme.heroBg} ${theme.heroBorder} ${theme.heroGlow}`}>
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-xs uppercase font-bold tracking-wider text-muted-foreground">
-              Preço de Venda Sugerido
-            </span>
-            <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border transition-colors duration-300 ${theme.badgeBg}`}>
-              {theme.badge}
-            </span>
-          </div>
+        {/* Top Hero: Preço Principal (Manual ou Sugerido) */}
+        {(() => {
+          const hasManualPrice = Number(calculations.manualPrice) > 0;
+          const displayPrice = hasManualPrice ? calculations.manualPrice : calculations.suggestedPrice;
 
-          <div className="flex items-baseline gap-1 my-1">
-            <span className="text-lg sm:text-xl font-bold text-muted-foreground">R$</span>
-            <span className={`text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight tabular-nums transition-colors duration-300 ${theme.kpiColor}`}>
-              {formatMoney(calculations.suggestedPrice)}
-            </span>
-          </div>
+          return (
+            <div className={`rounded-xl p-4 sm:p-5 border relative overflow-hidden transition-colors duration-300 ${theme.heroBg} ${theme.heroBorder} ${theme.heroGlow}`}>
+              <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs uppercase font-extrabold tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    {hasManualPrice ? (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-blue-400" />
+                        Seu Preço de Venda
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                        Preço de Venda Sugerido
+                      </>
+                    )}
+                  </span>
+                  {!hasManualPrice && (
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/40 shadow-sm animate-pulse">
+                      Sugestão Automática
+                    </span>
+                  )}
+                </div>
+                <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border transition-colors duration-300 ${theme.badgeBg}`}>
+                  {theme.badge}
+                </span>
+              </div>
 
-          {calculations.taxDescription && (
-            <p className="text-xs text-muted-foreground mt-1">
-              {calculations.taxDescription}
-            </p>
-          )}
+              <div className="flex items-baseline gap-1 my-1">
+                <span className="text-lg sm:text-xl font-bold text-muted-foreground">R$</span>
+                <span className={`text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight tabular-nums transition-colors duration-300 ${theme.kpiColor}`}>
+                  {formatMoney(displayPrice)}
+                </span>
+              </div>
+
+              {/* Destaque contrastante para quando NÃO há preço manual */}
+              {!hasManualPrice && (
+                <div className="mt-2.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-start sm:items-center gap-2 text-xs text-amber-200/90 font-medium">
+                  <span className="text-amber-400 font-bold text-sm shrink-0">💡</span>
+                  <span>Preço calculado para sua margem ideal ({calculations.recommendedMargin}%). Para aplicar seu próprio valor, defina o <strong>Preço de venda</strong>.</span>
+                </div>
+              )}
+
+              {calculations.taxDescription && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  {calculations.taxDescription}
+                </p>
+              )}
 
           {/* Subtaxas aplicadas no preço sugerido */}
           <div className="mt-3 pt-3 border-t border-border/60 space-y-1.5 text-xs">
@@ -379,6 +409,8 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
             )}
           </div>
         </div>
+      );
+    })()}
 
         {/* Hero KPIs: Lucro Líquido & Margem Real */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
@@ -406,13 +438,16 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
           </div>
         </div>
 
-        {/* Preço Manual (se definido) */}
-        {calculations.manualPrice > 0 && (
+        {/* Preço Sugerido Comparativo (quando preço manual está ativo) */}
+        {Number(calculations.manualPrice) > 0 && (
           <div className="rounded-xl p-3.5 sm:p-4 border border-border bg-muted/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <div>
-              <p className="text-xs font-medium text-muted-foreground">Seu Preço Manual</p>
+              <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                Preço Sugerido (Recomendado)
+              </p>
               <p className="text-xl font-bold text-foreground tabular-nums">
-                R$ {formatMoney(calculations.manualPrice)}
+                R$ {formatMoney(calculations.suggestedPrice)}
               </p>
             </div>
             <div className="sm:text-right">

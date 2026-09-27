@@ -59,7 +59,7 @@ import { ReferenceService, type Supplier, type AccountHolder, type Marketplace }
 import { useSettings } from '../contexts/SettingsContext';
 import type { CalculationResult, ProductItem, ProductVariationRecord } from '../types/calculator';
 import { mercadoLivreTaxes } from '../services/pricingService';
-import { formatCurrency, handleCurrencyChange, parseCurrency } from '../utils/currency';
+import { formatCurrency, handleCurrencyChange, handleCurrencyBlur, parseCurrency } from '../utils/currency';
 import { supabase } from '@/lib/supabase';
 import { useMultipleProductsSalesStats } from '../hooks/useMultipleProductsSalesStats';
 import { useProfitAnalysis } from '../hooks/sales/useProfitAnalysis';
@@ -141,12 +141,29 @@ const SYSTEM_SLUG_MAP: Record<string, string> = {
 };
 
 const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'products' }) => {
-  const [formSection, setFormSection] = useState<'basic' | 'pricing' | 'marketplace' | 'costs'>('basic');
+  const [formSection, setFormSection] = useState<'basic' | 'pricing' | 'marketplace' | 'costs'>('pricing');
+  const costPriceInputRef = useRef<HTMLInputElement>(null);
+  const costBoxRef = useRef<HTMLDivElement>(null);
+  const [isCostFocused, setIsCostFocused] = useState(false);
+  const prevCostHighlightedRef = useRef(false);
+  const prevCostThemeRef = useRef('');
   const container = useRef<HTMLDivElement>(null);
   const prevCalculations = useRef<CalculationResult | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const e2eSearch = new URLSearchParams(location.search).get('e2e') === 'true' ? '?e2e=true' : '';
+
+  useEffect(() => {
+    if (formSection === 'pricing') {
+      const timer = setTimeout(() => {
+        if (costPriceInputRef.current) {
+          costPriceInputRef.current.focus();
+          costPriceInputRef.current.select();
+        }
+      }, 120);
+      return () => clearTimeout(timer);
+    }
+  }, [formSection]);
   
   const {
     productName, setProductName,
@@ -319,6 +336,105 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
     influencers, setInfluencers,
     affiliates, setAffiliates
   } = useDropshippingCalculator();
+
+  // Determine pricing theme key ('healthy' | 'warning' | 'excellent' | 'danger') to match ResultsPanel
+  const pricingColorTheme = useMemo<'healthy' | 'warning' | 'excellent' | 'danger'>(() => {
+    if (!calculations) return 'healthy';
+    const { marginStatus, actualMargin, recommendedMargin } = calculations;
+    const currentMargin = typeof actualMargin === 'string'
+      ? parseFloat(actualMargin.replace(',', '.'))
+      : Number(actualMargin);
+    const recommended = Number(recommendedMargin) || 25;
+
+    if (marginStatus === 'negative' || currentMargin < 0) return 'danger';
+    if (currentMargin >= recommended + 5) return 'excellent';
+    if (currentMargin >= recommended) return 'healthy';
+    return 'warning';
+  }, [calculations]);
+
+  const hasCostValue = Boolean(costPrice && parseCurrency(costPrice) > 0);
+  const isCostHighlighted = isCostFocused || hasCostValue;
+
+  // GSAP animation for highlight entrance and theme transitions
+  useEffect(() => {
+    if (!costBoxRef.current) return;
+    if (isCostHighlighted && !prevCostHighlightedRef.current) {
+      gsap.fromTo(
+        costBoxRef.current,
+        { scale: 0.985, opacity: 0.9 },
+        { scale: 1, opacity: 1, duration: 0.35, ease: 'back.out(1.8)' }
+      );
+    }
+    prevCostHighlightedRef.current = isCostHighlighted;
+  }, [isCostHighlighted]);
+
+  useEffect(() => {
+    if (!costBoxRef.current || !isCostHighlighted) return;
+    if (prevCostThemeRef.current && prevCostThemeRef.current !== pricingColorTheme) {
+      gsap.fromTo(
+        costBoxRef.current,
+        { filter: 'brightness(1.2)' },
+        { filter: 'brightness(1)', duration: 0.3, ease: 'power2.out' }
+      );
+    }
+    prevCostThemeRef.current = pricingColorTheme;
+  }, [pricingColorTheme, isCostHighlighted]);
+
+  const costThemeStyles = {
+    healthy: {
+      border: 'border-emerald-500/70',
+      glow: 'shadow-[0_0_25px_rgba(16,185,129,0.22)]',
+      bg: 'bg-gradient-to-br from-emerald-950/30 via-zinc-900/60 to-background',
+      label: 'text-emerald-400',
+      prefix: 'text-emerald-400',
+      focusRing: 'focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-500/40',
+      dot: 'bg-emerald-400',
+      inputBorder: 'border-emerald-500/40 focus:border-emerald-400',
+    },
+    warning: {
+      border: 'border-amber-500/70',
+      glow: 'shadow-[0_0_25px_rgba(245,158,11,0.22)]',
+      bg: 'bg-gradient-to-br from-amber-950/30 via-zinc-900/60 to-background',
+      label: 'text-amber-400',
+      prefix: 'text-amber-400',
+      focusRing: 'focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-amber-500/40',
+      dot: 'bg-amber-400',
+      inputBorder: 'border-amber-500/40 focus:border-amber-400',
+    },
+    excellent: {
+      border: 'border-cyan-500/70',
+      glow: 'shadow-[0_0_25px_rgba(6,182,212,0.22)]',
+      bg: 'bg-gradient-to-br from-cyan-950/30 via-zinc-900/60 to-background',
+      label: 'text-cyan-400',
+      prefix: 'text-cyan-400',
+      focusRing: 'focus-within:border-cyan-400 focus-within:ring-2 focus-within:ring-cyan-500/40',
+      dot: 'bg-cyan-400',
+      inputBorder: 'border-cyan-500/40 focus:border-cyan-400',
+    },
+    danger: {
+      border: 'border-rose-500/70',
+      glow: 'shadow-[0_0_25px_rgba(244,63,94,0.22)]',
+      bg: 'bg-gradient-to-br from-rose-950/30 via-zinc-900/60 to-background',
+      label: 'text-rose-400',
+      prefix: 'text-rose-400',
+      focusRing: 'focus-within:border-rose-400 focus-within:ring-2 focus-within:ring-rose-500/40',
+      dot: 'bg-rose-400',
+      inputBorder: 'border-rose-500/40 focus:border-rose-400',
+    },
+  };
+
+  const currentCostStyle = isCostHighlighted
+    ? costThemeStyles[pricingColorTheme]
+    : {
+        border: 'border-border/60 hover:border-border',
+        glow: 'shadow-sm',
+        bg: 'bg-muted/10',
+        label: 'text-muted-foreground',
+        prefix: 'text-muted-foreground',
+        focusRing: 'focus-within:border-border',
+        dot: 'bg-muted-foreground',
+        inputBorder: 'border-border focus:border-foreground/50',
+      };
 
   const { organizationId, workingCapital: contextWorkingCapital, emergencyReserve: contextEmergencyReserve, capitalMarketing: contextCapitalMarketing, grossInvestment: contextGrossInvestment, lastUpdated } = useSettings();
 
@@ -2561,7 +2677,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
              </Link>
           </div>
           <div className="text-center md:text-right">
-             <p className="text-gray-300 text-xl font-medium font-iceland">Calculadora de Precificação Dropshipping Nacional <span className="text-sm text-gray-500 font-normal">v3.0.0</span></p>
+             <p className="text-gray-300 text-xl font-medium font-iceland">Calculadora de Precificação Dropshipping Nacional <span className="text-sm text-gray-500 font-normal">v3.4.0</span></p>
              <p className="text-sm text-gray-400 mt-1">Taxas reais atualizadas de Marketplaces 2026</p>
           </div>
         </div>
@@ -2693,28 +2809,68 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                 {/* TAB 2: PRECIFICAÇÃO */}
                 <TabsContent value="pricing" forceMount className={formSection === 'pricing' ? 'space-y-5' : 'hidden'}>
                   <div className="space-y-4">
-              <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn mt-6">
-                <Label htmlFor="costPrice" className="text-base font-bold !text-red-500">
-                  Preço de Custo do Fornecedor
-                </Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-semibold">
+              {/* Preço de Custo do Fornecedor */}
+              <div
+                ref={costBoxRef}
+                className={`relative w-full max-w-sm rounded-xl p-3.5 border transition-all duration-300 ${currentCostStyle.border} ${currentCostStyle.bg} ${currentCostStyle.glow} ${currentCostStyle.focusRing} mt-4 animate-fadeIn`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="costPrice" className={`text-sm font-bold flex items-center gap-2 cursor-pointer transition-colors duration-200 ${currentCostStyle.label}`}>
+                    {isCostHighlighted && (
+                      <span className="relative flex h-2 w-2">
+                        <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${currentCostStyle.dot} opacity-75`}></span>
+                        <span className={`relative inline-flex rounded-full h-2 w-2 ${currentCostStyle.dot}`}></span>
+                      </span>
+                    )}
+                    Preço de Custo do Fornecedor
+                  </Label>
+                </div>
+                <div className="relative flex items-center">
+                  <span className={`absolute left-3.5 top-1/2 -translate-y-1/2 font-extrabold text-lg select-none pointer-events-none transition-colors duration-200 ${currentCostStyle.prefix}`}>
                     R$
                   </span>
                   <Input
+                    ref={costPriceInputRef}
                     id="costPrice"
                     type="text"
                     inputMode="decimal"
                     value={costPrice}
                     onChange={handleCostPriceChange}
-                    className="pl-10 text-xl font-bold border border-red-400 focus:border-red-500"
+                    onFocus={() => setIsCostFocused(true)}
+                    onBlur={(e) => {
+                      setIsCostFocused(false);
+                      handleCurrencyBlur(e, (formatted) => {
+                        setCostPrice(formatted);
+                        setVariations((prev) => {
+                          if (prev.length === 0) return prev;
+                          return prev.map((item) => ({ ...item, cost: formatted }));
+                        });
+                      });
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.currentTarget.blur();
+                      }
+                    }}
+                    className={`pl-12 pr-4 py-2.5 text-2xl font-black text-white bg-zinc-950/80 rounded-lg focus-visible:ring-0 focus-visible:ring-offset-0 shadow-inner placeholder:text-zinc-600 transition-all h-13 ${currentCostStyle.inputBorder}`}
                     placeholder="0,00"
                     step="0.01"
+                    autoFocus
                   />
                 </div>
+                {isCostHighlighted ? (
+                  <p className="text-[11px] text-zinc-400 mt-2 flex items-center gap-1.5 transition-opacity">
+                    <span className="text-xs">✨</span>
+                    <span>Margem e lucro sincronizados com o resultado da precificação</span>
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground mt-2">
+                    Insira o custo do produto fornecido para iniciar a precificação
+                  </p>
+                )}
                 {/* Aviso de dimensões obrigatórias para Mercado Livre */}
                 {marketplace === 'mercadolivre' && parseCurrency(costPrice) >= 79 && (!weight || !width || !height || !depth) && (
-                  <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-3 mt-2 animate-fadeIn">
+                  <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-3 mt-3 animate-fadeIn">
                     <p className="text-xs text-blue-800 dark:text-blue-200 font-semibold flex items-start gap-2">
                       <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                       <span>
@@ -2727,7 +2883,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
 
               {/* Preço de Venda Manual */}
               <div className="grid w-full max-w-sm items-center gap-1.5 animate-fadeIn">
-                <Label htmlFor="manualSellingPrice" className="text-base font-bold !text-blue-600">
+                <Label htmlFor="manualSellingPrice" className="text-base font-bold !text-blue-500">
                   Preço de venda
                 </Label>
                 <div className="relative">
@@ -2740,6 +2896,23 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                     inputMode="decimal"
                     value={manualSellingPrice}
                     onChange={handleManualSellingPriceChange}
+                    onBlur={(e) => {
+                      handleCurrencyBlur(e, (formatted) => {
+                        setManualSellingPrice(formatted);
+                        setVariations((prev) => {
+                          if (prev.length === 0) return prev;
+                          return prev.map((item) => {
+                            if (item.manualPriceLocked) return item;
+                            return { ...item, manualPrice: formatted };
+                          });
+                        });
+                      });
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.currentTarget.blur();
+                      }
+                    }}
                     className="pl-10 text-xl border border-blue-400 focus:border-blue-600 font-bold"
                     placeholder="0,00"
                     step="0.01"

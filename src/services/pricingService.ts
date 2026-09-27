@@ -278,7 +278,7 @@ export const calculateMetrics = (
     manualPriceVal: number,
     competitorPriceVal: number,
     competitorMarkupVal: number,
-    _tiktokCommVal: number,
+    tiktokCommVal: number,
     wpShippingVal: number,
     emergencyReserveVal: number,
     returnRateVal: number,
@@ -730,10 +730,10 @@ export const calculateMetrics = (
           currentMarketplaceFee = rates.commission;
           currentFixedFee = currentPrice < 10 ? (currentPrice * 0.5) : rates.fixed;
       } else if (currentMarketplace === 'tiktok') {
-          // TikTok Shop rates effective 15 Jul 2026:
+          // TikTok Shop: if custom commission is set (> 0), use it; else use policy based on price:
           // price < R$50: 10% commission + R$4 fixed
           // price >= R$50: 6% commission + R$6 fixed
-          currentMarketplaceFee = currentPrice < 50 ? 10 : 6;
+          currentMarketplaceFee = (tiktokCommVal && tiktokCommVal > 0) ? tiktokCommVal : (currentPrice < 50 ? 10 : 6);
           currentFixedFee = currentPrice < 50 ? 4 : 6;
       } else if (currentMarketplace === 'wordpress') {
           currentMarketplaceFee = 0;
@@ -777,7 +777,7 @@ export const calculateMetrics = (
   } else if (currentMarketplace === 'tiktok') {
       // Initial estimate based on manual price or 2.5x cost
       const estimatedTiktokPrice = manualPriceVal > 0 ? manualPriceVal : (totalCost * 2.5);
-      marketplaceFee = estimatedTiktokPrice < 50 ? 10 : 6;
+      marketplaceFee = (tiktokCommVal && tiktokCommVal > 0) ? tiktokCommVal : (estimatedTiktokPrice < 50 ? 10 : 6);
       taxDescription = `${marketplaceFee}% (Comissão Tiktok Shop)`; // updated after finalFixedFee
   } else if (currentMarketplace === 'shein') {
       marketplaceFee = 16;
@@ -899,14 +899,16 @@ export const calculateMetrics = (
       marketplaceFee = realRates.commission;
       taxDescription = `Shopee: ${realRates.commission}% comissão + R$ ${realRates.fixed.toFixed(2)} (Taxa Fixa) — Frete Grátis incluso`;
   } else if (currentMarketplace === 'tiktok') {
-      const tempPriceWithFixed = calcPrice(totalCost, recommendedMargin, marketplaceFee, 2 + gatewayFixedFeeVal, gatewayFeeVal);
+      const commRate = (tiktokCommVal && tiktokCommVal > 0) ? tiktokCommVal : marketplaceFee;
+      const tempPriceWithFixed = calcPrice(totalCost, recommendedMargin, commRate, 6 + gatewayFixedFeeVal, gatewayFeeVal);
       
-      if (tempPriceWithFixed < 79) {
-          suggestedPrice = tempPriceWithFixed;
-          fixedFee = 2;
+      if (tempPriceWithFixed < 50) {
+          const lowTierComm = (tiktokCommVal && tiktokCommVal > 0) ? tiktokCommVal : 10;
+          suggestedPrice = calcPrice(totalCost, recommendedMargin, lowTierComm, 4 + gatewayFixedFeeVal, gatewayFeeVal);
+          fixedFee = 4;
       } else {
-          suggestedPrice = calcPrice(totalCost, recommendedMargin, marketplaceFee, 0 + gatewayFixedFeeVal, gatewayFeeVal);
-          fixedFee = 0;
+          suggestedPrice = tempPriceWithFixed;
+          fixedFee = 6;
       }
   } else {
       suggestedPrice = calcPrice(totalCost, recommendedMargin, marketplaceFee, gatewayFixedFeeVal, gatewayFeeVal);
@@ -950,8 +952,8 @@ export const calculateMetrics = (
 
   // Update TikTok taxDescription now that finalFixedFee is known
   if (currentMarketplace === 'tiktok') {
-    const finalTiktokComm = finalFees.rate;
-    marketplaceFee = finalTiktokComm; // update with price-based rate
+    const finalTiktokComm = (tiktokCommVal && tiktokCommVal > 0) ? tiktokCommVal : finalFees.rate;
+    marketplaceFee = finalTiktokComm; // update with price-based or custom rate
     taxDescription = finalFixedFee > 0
       ? `${finalTiktokComm}% (Comissão Tiktok Shop) + R$ ${finalFixedFee.toFixed(2)} (Taxa Fixa)`
       : `${finalTiktokComm}% (Comissão Tiktok Shop)`;
