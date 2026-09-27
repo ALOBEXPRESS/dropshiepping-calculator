@@ -337,5 +337,54 @@ describe('Pricing Service', () => {
       expect(Number(fixedResult.paidTrafficCost)).toBeCloseTo(20, 2);
       expect(fixedResult.paidTrafficType).toBe('fixed');
     });
+
+    it('should recalculate net revenue and margin when supplier fee percent changes', () => {
+      const result3Percent = calculateMetrics(
+        12.00, // baseCost
+        0,     // pkgCost
+        3,     // supplierFeeVal (3%)
+        0,     // markup
+        'mercadolivre',
+        'eletronicos',
+        'classico',
+        'without',
+        'cnpj',
+        0,
+        false, 0, 0, 0, 0,
+        32.90, // manualPriceVal
+        0, 0, 0, 0, 0, 0, 0, 0, 'percent', 0, 0, 0, 'classico', 0, '', '', '', '', false,
+        'percent', // supplierFeeType
+        0,
+        2.00, // supplierGatewayFixedFee
+        'fixed' // supplierGatewayFeeType
+      );
+
+      const result6Percent = calculateMetrics(
+        12.00, // baseCost
+        0,     // pkgCost
+        6,     // supplierFeeVal (6%)
+        0,     // markup
+        'mercadolivre',
+        'eletronicos',
+        'classico',
+        'without',
+        'cnpj',
+        0,
+        false, 0, 0, 0, 0,
+        32.90, // manualPriceVal
+        0, 0, 0, 0, 0, 0, 0, 0, 'percent', 0, 0, 0, 'classico', 0, '', '', '', '', false,
+        'percent', // supplierFeeType
+        0,
+        2.00, // supplierGatewayFixedFee
+        'fixed' // supplierGatewayFeeType
+      );
+
+      expect(result3Percent.supplierFeeCost).toBe('0.36');
+      expect(result6Percent.supplierFeeCost).toBe('0.72');
+      expect(Number(result3Percent.netRevenue)).toBeCloseTo(7.76, 2);
+      expect(Number(result6Percent.netRevenue)).toBeCloseTo(7.40, 2);
+      expect(Number(result3Percent.netRevenue) - Number(result6Percent.netRevenue)).toBeCloseTo(0.36, 2);
+      expect(Number(result3Percent.actualMargin)).toBeGreaterThan(Number(result6Percent.actualMargin));
+    });
   });
 });

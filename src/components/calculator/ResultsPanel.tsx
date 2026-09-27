@@ -146,59 +146,113 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
     return num.toLocaleString('pt-BR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
   };
 
-  // Status and color metadata based on margin
-  const getMarginMeta = () => {
+  // ── Margin theme: drives ALL color of the entire card ─────────────────────
+  const getMarginTheme = () => {
     if (!calculations) {
       return {
+        key: 'idle',
         badge: 'Calculando',
-        badgeClass: 'bg-muted text-muted-foreground border-border',
-        profitColor: 'text-muted-foreground',
-        marginColor: 'text-muted-foreground',
+        cardBg: 'bg-card',
+        cardBorder: 'border-border',
+        cardGlow: '',
+        accentBar: 'bg-muted',
+        headerBg: 'bg-muted/20',
+        heroBg: 'bg-muted/30',
+        heroBorder: 'border-border',
+        heroGlow: '',
+        badgeBg: 'bg-muted/50 text-muted-foreground border-border',
+        kpiColor: 'text-muted-foreground',
+        kpiBorder: 'border-border',
+        kpiBg: 'bg-card',
       };
     }
 
     const { marginStatus, actualMargin, recommendedMargin } = calculations;
-    const currentMargin = typeof actualMargin === 'string' 
-      ? parseFloat(actualMargin.replace(',', '.')) 
+    const currentMargin = typeof actualMargin === 'string'
+      ? parseFloat(actualMargin.replace(',', '.'))
       : Number(actualMargin);
     const recommended = Number(recommendedMargin) || 25;
 
+    // 1. Vermelho — Prejuízo (margem negativa)
     if (marginStatus === 'negative' || currentMargin < 0) {
       return {
-        badge: 'Prejuízo / Margem Negativa',
-        badgeClass: 'bg-destructive/15 text-destructive border-destructive/30',
-        profitColor: 'text-destructive',
-        marginColor: 'text-destructive',
+        key: 'danger',
+        badge: 'Prejuízo',
+        cardBg: 'bg-gradient-to-b from-rose-950/80 via-zinc-950/95 to-red-950/50',
+        cardBorder: 'border-rose-500/60',
+        cardGlow: 'shadow-[0_0_35px_-5px_rgba(244,63,94,0.35),0_0_15px_rgba(244,63,94,0.2)]',
+        accentBar: 'bg-gradient-to-r from-rose-600 via-red-500 to-rose-600',
+        headerBg: 'bg-rose-500/15',
+        heroBg: 'bg-gradient-to-br from-rose-500/20 via-rose-950/40 to-zinc-900/40',
+        heroBorder: 'border-rose-500/40',
+        heroGlow: 'shadow-[inset_0_1px_0_rgba(244,63,94,0.25)]',
+        badgeBg: 'bg-rose-500/20 text-rose-300 border-rose-500/50 shadow-[0_0_12px_rgba(244,63,94,0.25)]',
+        kpiColor: 'text-rose-400',
+        kpiBorder: 'border-rose-500/35',
+        kpiBg: 'bg-rose-950/40',
       };
     }
 
+    // 2. Azul — Alta Rentabilidade (margem >= recomendada + 5%)
     if (currentMargin >= recommended + 5) {
       return {
+        key: 'excellent',
         badge: 'Alta Rentabilidade',
-        badgeClass: 'bg-brand/15 text-brand border-brand/30',
-        profitColor: 'text-brand',
-        marginColor: 'text-brand',
+        cardBg: 'bg-gradient-to-b from-cyan-950/80 via-zinc-950/95 to-blue-950/50',
+        cardBorder: 'border-cyan-500/60',
+        cardGlow: 'shadow-[0_0_35px_-5px_rgba(6,182,212,0.35),0_0_15px_rgba(6,182,212,0.2)]',
+        accentBar: 'bg-gradient-to-r from-cyan-500 via-sky-400 to-blue-500',
+        headerBg: 'bg-cyan-500/15',
+        heroBg: 'bg-gradient-to-br from-cyan-500/20 via-cyan-950/40 to-zinc-900/40',
+        heroBorder: 'border-cyan-500/40',
+        heroGlow: 'shadow-[inset_0_1px_0_rgba(6,182,212,0.25)]',
+        badgeBg: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-[0_0_12px_rgba(6,182,212,0.25)]',
+        kpiColor: 'text-cyan-400',
+        kpiBorder: 'border-cyan-500/35',
+        kpiBg: 'bg-cyan-950/40',
       };
     }
 
+    // 3. Verde — Margem Saudável (margem >= recomendada)
     if (currentMargin >= recommended) {
       return {
+        key: 'healthy',
         badge: 'Margem Saudável',
-        badgeClass: 'bg-success/15 text-success border-success/30',
-        profitColor: 'text-success',
-        marginColor: 'text-success',
+        cardBg: 'bg-gradient-to-b from-emerald-950/80 via-zinc-950/95 to-green-950/50',
+        cardBorder: 'border-emerald-500/60',
+        cardGlow: 'shadow-[0_0_35px_-5px_rgba(16,185,129,0.35),0_0_15px_rgba(16,185,129,0.2)]',
+        accentBar: 'bg-gradient-to-r from-emerald-500 via-green-400 to-emerald-500',
+        headerBg: 'bg-emerald-500/15',
+        heroBg: 'bg-gradient-to-br from-emerald-500/20 via-emerald-950/40 to-zinc-900/40',
+        heroBorder: 'border-emerald-500/40',
+        heroGlow: 'shadow-[inset_0_1px_0_rgba(16,185,129,0.25)]',
+        badgeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.25)]',
+        kpiColor: 'text-emerald-400',
+        kpiBorder: 'border-emerald-500/35',
+        kpiBg: 'bg-emerald-950/40',
       };
     }
 
+    // 4. Amarelo — Margem Baixa (positiva, porém abaixo da recomendada)
     return {
+      key: 'warning',
       badge: 'Margem Baixa',
-      badgeClass: 'bg-warning/15 text-warning border-warning/30',
-      profitColor: 'text-warning',
-      marginColor: 'text-warning',
+      cardBg: 'bg-gradient-to-b from-amber-950/80 via-zinc-950/95 to-yellow-950/50',
+      cardBorder: 'border-amber-500/60',
+      cardGlow: 'shadow-[0_0_35px_-5px_rgba(245,158,11,0.35),0_0_15px_rgba(245,158,11,0.2)]',
+      accentBar: 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500',
+      headerBg: 'bg-amber-500/15',
+      heroBg: 'bg-gradient-to-br from-amber-500/20 via-amber-950/40 to-zinc-900/40',
+      heroBorder: 'border-amber-500/40',
+      heroGlow: 'shadow-[inset_0_1px_0_rgba(245,158,11,0.25)]',
+      badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-[0_0_12px_rgba(245,158,11,0.25)]',
+      kpiColor: 'text-amber-400',
+      kpiBorder: 'border-amber-500/35',
+      kpiBg: 'bg-amber-950/40',
     };
   };
 
-  const meta = getMarginMeta();
+  const theme = getMarginTheme();
 
   const handleClose = () => {
     if (!onClose) return;
@@ -218,14 +272,17 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
   };
 
   return (
-    <Card 
-      ref={cardRef} 
-      className="rounded-2xl border border-border bg-card text-card-foreground shadow-2xl overflow-hidden transition-all duration-300"
+    <Card
+      ref={cardRef}
+      className={`rounded-2xl border text-card-foreground shadow-2xl overflow-hidden transition-all duration-300 ${theme.cardBg} ${theme.cardBorder} ${theme.cardGlow}`}
     >
+      {/* Accent bar — 3px colored line at very top */}
+      <div className={`h-[3px] w-full ${theme.accentBar} transition-colors duration-300`} />
+
       {/* Header */}
-      <CardHeader className="p-4 sm:p-5 border-b border-border bg-muted/20 flex flex-row items-center justify-between gap-3 space-y-0">
+      <CardHeader className={`p-4 sm:p-5 border-b border-border flex flex-row items-center justify-between gap-3 space-y-0 transition-colors duration-300 ${theme.headerBg}`}>
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="h-9 w-9 rounded-xl bg-brand/10 text-brand flex items-center justify-center shrink-0 border border-brand/20">
+          <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 border transition-colors duration-300 ${theme.kpiBg} ${theme.kpiBorder} ${theme.kpiColor}`}>
             <TrendingUp className="w-5 h-5" />
           </div>
           <div className="min-w-0">
@@ -259,19 +316,19 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
 
       <CardContent className="p-4 sm:p-6 space-y-5">
         {/* Top Hero: Preço de Venda Sugerido */}
-        <div className="rounded-xl p-4 sm:p-5 border border-border bg-muted/30 relative overflow-hidden">
+        <div className={`rounded-xl p-4 sm:p-5 border relative overflow-hidden transition-colors duration-300 ${theme.heroBg} ${theme.heroBorder} ${theme.heroGlow}`}>
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-xs uppercase font-bold tracking-wider text-muted-foreground">
               Preço de Venda Sugerido
             </span>
-            <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${meta.badgeClass}`}>
-              {meta.badge}
+            <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border transition-colors duration-300 ${theme.badgeBg}`}>
+              {theme.badge}
             </span>
           </div>
 
           <div className="flex items-baseline gap-1 my-1">
             <span className="text-lg sm:text-xl font-bold text-muted-foreground">R$</span>
-            <span className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-foreground tabular-nums">
+            <span className={`text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight tabular-nums transition-colors duration-300 ${theme.kpiColor}`}>
               {formatMoney(calculations.suggestedPrice)}
             </span>
           </div>
@@ -325,24 +382,24 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
 
         {/* Hero KPIs: Lucro Líquido & Margem Real */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          <div className="rounded-xl p-3.5 sm:p-4 border border-border bg-card shadow-sm">
+          <div className={`rounded-xl p-3.5 sm:p-4 border shadow-sm transition-colors duration-300 ${theme.kpiBg} ${theme.kpiBorder}`}>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
               Lucro Líquido
             </p>
             <div className="flex items-baseline gap-1">
               <span className="text-xs sm:text-sm font-bold text-muted-foreground">R$</span>
-              <span className={`text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums ${meta.profitColor}`}>
+              <span className={`text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums transition-colors duration-300 ${theme.kpiColor}`}>
                 {formatMoney(calculations.netRevenue)}
               </span>
             </div>
           </div>
 
-          <div className="rounded-xl p-3.5 sm:p-4 border border-border bg-card shadow-sm text-right">
+          <div className={`rounded-xl p-3.5 sm:p-4 border shadow-sm text-right transition-colors duration-300 ${theme.kpiBg} ${theme.kpiBorder}`}>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
               Margem Real
             </p>
             <div className="flex items-baseline justify-end">
-              <span className={`text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums ${meta.marginColor}`}>
+              <span className={`text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums transition-colors duration-300 ${theme.kpiColor}`}>
                 {formatPercent(calculations.actualMargin)}%
               </span>
             </div>
@@ -376,6 +433,7 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
 
         {/* Comparação com Concorrente (se preenchido e sem preço manual) */}
         {calculations.competitor > 0 && !calculations.manualPrice && (
+
           <div className="rounded-xl p-3.5 sm:p-4 border border-border bg-muted/20 space-y-2">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
               <div>
