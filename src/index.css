@@ -559,10 +559,6 @@ button:active,
 }
 
 /* Dark mode - Ajustes de contraste */
-.dark {
-  /* Garantir contraste adequado em dark mode */
-}
-
 .dark .text-muted-foreground {
   /* Aumentar contraste em dark mode */
   opacity: 0.9;
@@ -681,3 +677,42 @@ th {
     align-items: start !important;
   }
 }
+
+/* ── Sonner Toaster High-Contrast Styling ──────────────────────── */
+[data-sonner-toaster] {
+  font-family: inherit;
+}
+
+[data-sonner-toast] {
+  border-radius: 0.75rem !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 0 1px hsl(var(--border)) !important;
+}
+
+[data-sonner-toast] [data-title] {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+}
+
+/* Descrição com alto contraste: zinc-300 nítido no tema dark */
+.dark [data-sonner-toast] [data-description],
+[data-sonner-toast][data-theme="dark"] [data-description],
+.dark .sonner-toast [data-description],
+[data-sonner-toast] [data-description] {
+  color: #e4e4e7 !important; /* Zinc-200 / Zinc-300 para contraste perfeito e legibilidade imediata */
+  font-size: 0.8125rem !important;
+  line-height: 1.2rem !important;
+  opacity: 1 !important;
+  font-weight: 400 !important;
+}
+
+:root:not(.dark) [data-sonner-toast] [data-title] {
+  color: #09090b !important;
+}
+
+:root:not(.dark) [data-sonner-toast][data-theme="light"] [data-description],
+:root:not(.dark) [data-sonner-toast]:not([data-theme="dark"]) [data-description] {
+  color: #3f3f46 !important; /* Zinc-700 para tema light */
+}
+

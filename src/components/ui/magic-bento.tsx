@@ -275,8 +275,8 @@ const ParticleCard: React.FC<{
   return (
     <div
       ref={cardRef}
-      className={`${className} relative overflow-hidden`}
-      style={{ ...style, position: 'relative', overflow: 'hidden' }}
+      className={`${className} relative overflow-hidden rounded-2xl`}
+      style={{ ...style, position: 'relative', overflow: 'hidden', borderRadius: '1rem' }}
     >
       {children}
     </div>
@@ -459,20 +459,31 @@ const MagicBento: React.FC<BentoProps> = ({
           --glow-intensity: 0;
           --glow-radius: 200px;
           --glow-color: ${glowColor};
+          position: relative;
+        }
+
+        .bento-section .card {
+          position: relative;
+          border-radius: 1rem;
+        }
+
+        .card--border-glow {
+          position: relative;
+          border-radius: 1rem;
         }
 
         .card--border-glow::after {
           content: '';
           position: absolute;
           inset: 0;
-          padding: 3px;
+          padding: 2px;
           background: radial-gradient(
             var(--glow-radius) circle at var(--glow-x) var(--glow-y),
             rgba(${glowColor}, calc(var(--glow-intensity) * 1.2)) 0%,
             rgba(${glowColor}, calc(var(--glow-intensity) * 0.6)) 30%,
             transparent 60%
           );
-          border-radius: inherit;
+          border-radius: 1rem;
           -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
           -webkit-mask-composite: xor;
           mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -480,7 +491,7 @@ const MagicBento: React.FC<BentoProps> = ({
           pointer-events: none;
           opacity: 1;
           transition: opacity 0.3s ease;
-          z-index: 1;
+          z-index: 20;
         }
 
         .card--border-glow:hover::after {
@@ -488,7 +499,8 @@ const MagicBento: React.FC<BentoProps> = ({
         }
 
         .card--border-glow:hover {
-          box-shadow: 0 8px 32px rgba(37, 244, 238, 0.4), 0 0 60px rgba(${glowColor}, 0.3);
+          border-radius: 1rem;
+          box-shadow: 0 8px 32px rgba(${glowColor}, 0.35), 0 0 50px rgba(${glowColor}, 0.2);
         }
       `}</style>
       {enableSpotlight && (
@@ -503,7 +515,7 @@ const MagicBento: React.FC<BentoProps> = ({
       <div className="bento-section" ref={gridRef}>
         {enableStars ? (
           <ParticleCard
-            className={`card ${enableBorderGlow ? 'card--border-glow' : ''}`}
+            className={`card rounded-2xl ${enableBorderGlow ? 'card--border-glow' : ''}`}
             disableAnimations={shouldDisableAnimations}
             particleCount={particleCount}
             glowColor={glowColor}
@@ -514,7 +526,7 @@ const MagicBento: React.FC<BentoProps> = ({
             {children}
           </ParticleCard>
         ) : (
-          <div className={`card ${enableBorderGlow ? 'card--border-glow' : ''}`}>{children}</div>
+          <div className={`card rounded-2xl ${enableBorderGlow ? 'card--border-glow' : ''}`}>{children}</div>
         )}
       </div>
     </>

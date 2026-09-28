@@ -5,13 +5,32 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import Layout from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdminRoute } from './components/AdminRoute';
-import { ThemeProvider } from './components/ThemeProvider';
+import { ThemeProvider, useTheme } from './components/ThemeProvider';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { UserProvider } from './contexts/UserContext';
 import { DateRangeProvider } from './contexts/DateRangeContext';
 import { queryClient } from './lib/react-query';
 import { Toaster } from 'sonner';
 import { LoadingState } from './components/ui/LoadingState';
+
+const ThemedToaster = () => {
+  const { theme } = useTheme();
+  return (
+    <Toaster 
+      position="top-right"
+      theme={theme as 'light' | 'dark' | 'system'}
+      toastOptions={{
+        style: {
+          background: 'hsl(var(--card))',
+          color: 'hsl(var(--card-foreground))',
+          border: '1px solid hsl(var(--border))',
+        },
+        className: 'sonner-toast',
+        duration: 3000,
+      }}
+    />
+  );
+};
 
 // Lazy load components for code splitting
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
@@ -111,19 +130,7 @@ function App() {
           <UserProvider>
           <DateRangeProvider>
             <BrowserRouter>
-          <Toaster 
-            position="top-right"
-            theme="system"
-            toastOptions={{
-              style: {
-                background: 'hsl(var(--card))',
-                color: 'hsl(var(--card-foreground))',
-                border: '1px solid hsl(var(--border))',
-              },
-              className: 'sonner-toast',
-              duration: 3000,
-            }}
-          />
+          <ThemedToaster />
           <Suspense fallback={<LoadingState />}>
             <Routes>
               <Route path="/login" element={<LoginPremium />} />

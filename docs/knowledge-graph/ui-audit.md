@@ -1,7 +1,7 @@
 # UI Audit — dropshipping-calculator-app
 
-> **Gerado em:** 2026-09-24  
-> **Grafo CRG:** HEAD `1711d205` → rebuild incremental executado, 2159 nós / 28075 arestas  
+> **Gerado em:** 2026-09-28  
+> **Grafo CRG:** Branch `feat/ad-accounts` | HEAD `355cd6c` → full rebuild executado, 2549 nós / 27902 arestas  
 > **Fontes:** code-review-graph MCP (primária) + leitura direta de arquivos (confirmação)  
 > **Regra:** apenas análise e documentação. Nenhum código foi alterado.
 
@@ -11,14 +11,14 @@
 
 | Campo | Valor |
 |---|---|
-| Arquivos analisados | 308 |
-| Nós totais | 2159 |
-| Arestas totais | 28075 |
-| Linguagens | TypeScript, TSX, JavaScript, Bash |
-| Comunidades detectadas | 16 |
-| Fluxos de execução | 107 |
+| Arquivos analisados | 326 |
+| Nós totais | 2549 |
+| Arestas totais | 27902 |
+| Linguagens | TypeScript, TSX, JavaScript, Bash, SQL |
+| Comunidades detectadas | 11 |
+| Fluxos de execução | 142 |
 | Embeddings semânticos | 0 (sentence-transformers não instalado) |
-| Head SHA | 1711d205 |
+| Head SHA | 355cd6c (feat/ad-accounts) |
 
 ---
 
@@ -28,30 +28,32 @@
 
 ```
 src/
-├── App.tsx                        # Roteador raiz, providers globais
+├── App.tsx                        # Roteador raiz, providers globais, Toaster com tema
 ├── main.tsx                       # Entry point React
-├── index.css                      # Tokens CSS / Tailwind base
+├── index.css                      # Tokens CSS / Tailwind base / Contrast rules
 ├── App.css                        # Estilos globais complementares
 ├── vite-env.d.ts                  # Tipos Vite
 │
-├── pages/                         # Páginas (thin wrappers)
+├── pages/                         # Páginas (thin wrappers e views de domínio)
 │   ├── Dashboard.tsx              # Página do dashboard financeiro
 │   ├── Sales.tsx                  # Página de vendas/relatórios
 │   ├── Leads.tsx                  # Página de leads (wrapper fino, 541 bytes)
-│   ├── CampaignsPage.tsx          # Página de campanhas (807 linhas — NÃO é thin)
+│   ├── CampaignsPage.tsx          # Página de campanhas vinculadas a contas de anúncios
+│   ├── AdAccountsPage.tsx         # Listagem e gestão de Contas de Anúncios (Admin)
+│   ├── AdAccountDetailPage.tsx    # Detalhes, visão geral, campanhas e config da conta (Admin)
 │   ├── ProfilePage.tsx            # Perfil do usuário
 │   └── RepasePage.tsx             # Repasse financeiro
 │
 ├── components/                    # Componentes (raiz e subdiretórios)
 │   ├── DropshippingCalculator.tsx # MEGACOMPONENTE (4554 linhas)
-│   ├── Layout.tsx                 # Layout principal com nav (17170 bytes)
+│   ├── Layout.tsx                 # Layout principal com nav (link para Contas de Anúncios)
 │   ├── NavigationBar.tsx          # Barra de navegação (8912 bytes)
 │   ├── ProtectedRoute.tsx         # Guard de autenticação
 │   ├── AdminRoute.tsx             # Guard de admin (410 bytes)
 │   ├── ThemeProvider.tsx          # Contexto de tema dark/light (1666 bytes)
 │   ├── SettingsDialog.tsx         # Modal de configurações (911 linhas)
 │   ├── PendingOrders.tsx          # Pedidos pendentes (1003 linhas)
-│   ├── LoginPremium.tsx           # Tela de login (framer-motion)
+│   ├── LoginPremium.tsx           # Tela de login (framer-motion + magic-bento)
 │   ├── Login.tsx                  # Login simples alternativo
 │   ├── KPICard.tsx                # Card de KPI (compartilhado, com testes)
 │   ├── LeadsDashboard.tsx         # Dashboard de leads (bridge node)
@@ -65,6 +67,12 @@ src/
 │   ├── FreeSampleCard.tsx         # Card de amostra grátis
 │   ├── FreeSampleLane.tsx         # Faixa de amostras
 │   ├── PersonalPurchaseLane.tsx   # Faixa de compras pessoais
+│   │
+│   ├── ad-accounts/               # Módulo de Contas de Anúncios (TikTok Ads)
+│   │   ├── AdAccountCard.tsx      # Card de conta com métricas, status e ações
+│   │   ├── AdAccountFormDialog.tsx# Setup Wizard 5-step com validação Zod e stepper
+│   │   ├── AdAccountStatusBadge.tsx # Badge semântico de status
+│   │   └── AdAccountSummaryCards.tsx # KPIs agregados (Total, Ativas, Investimento, Campanhas)
 │   │
 │   ├── calculator/                # Subcomponentes da calculadora
 │   │   ├── EditProductDialog.tsx  # Dialog de edição (3348 linhas)
@@ -104,20 +112,22 @@ src/
 │   │   └── FilterIntegration.test.tsx
 │   │
 │   ├── campaigns/                 # Componentes de campanhas
-│   │   ├── CampaignFormDialog.tsx
+│   │   ├── CampaignFormDialog.tsx # Dialog com seletor obrigatório de Conta de Anúncios
+│   │   ├── CampaignSettingsStep.tsx # Step com associação de Ad Account
 │   │   ├── AdSetSettingsStep.tsx
 │   │   └── ProductLinkingStep.tsx
 │   │
 │   ├── ui/                        # Primitivos de UI (62 arquivos)
 │   │   ├── [shadcn-ui primitivos] # button, card, dialog, select, tabs...
-│   │   └── [customizados]         # AnimatedTabs, MagneticButton, CollapsibleSection...
+│   │   └── [customizados]         # AnimatedTabs, MagneticButton, MagicBento...
 │   │
 │   └── skeletons/                 # Skeletons de loading
 │
 ├── hooks/                         # Custom hooks
 │   ├── useDropshippingCalculator.ts # Hook principal (1418 linhas)
+│   ├── useAdAccounts.ts           # CRUD e filtros de Contas de Anúncios (TanStack Query)
+│   ├── useCampaigns.ts            # CRUD de campanhas com filtro por ad_account_id (TanStack Query)
 │   ├── useLeads.ts                # CRUD de leads (TanStack Query)
-│   ├── useCampaigns.ts            # CRUD de campanhas (TanStack Query)
 │   ├── useMarketplaces.ts         # Marketplaces (TanStack Query)
 │   ├── useDashboardData.ts        # Dados do dashboard (TanStack Query)
 │   ├── useDashboardCharts.ts      # Gráficos do dashboard (TanStack Query)
@@ -130,6 +140,8 @@ src/
 │       └── useHeroStats.ts        # KPIs hero section
 │
 ├── services/                      # Camada de acesso a dados
+│   ├── adAccountsService.ts       # Acesso ao Supabase para Contas de Anúncios (RLS + multi-tenant)
+│   ├── adAccountsService.test.ts  # Testes unitários com Vitest
 │   ├── pricingService.ts          # Cálculo de preços (1128 linhas)
 │   ├── productService.ts          # CRUD de produtos (2040 linhas)
 │   ├── dashboardService.ts        # Serviço do dashboard (582 linhas)
@@ -158,6 +170,8 @@ src/
 │   └── dateRangeCalculator.ts     # Cálculo de intervalos
 │
 └── types/                         # Tipos TypeScript
+    ├── adAccounts.ts              # Tipos e Schemas Zod de Contas de Anúncios
+    ├── campaigns.ts               # Tipos de campanhas estendidos com ad_account_id
     ├── calculator.ts
     ├── leads.ts
     └── pendingOrder.ts
@@ -169,7 +183,7 @@ src/
 /login
 └── (sem layout, sem proteção)
     └── LoginPremium
-        ├── Hooks: framer-motion (animações)
+        ├── Hooks: framer-motion (animações), magic-bento
         └── API: supabase.auth.signInWithPassword
 
 /  (calculadora principal)
@@ -199,6 +213,38 @@ src/
             ├── Component: WeeklyConversionChart (recharts)
             └── Component: KPICard
 
+/contas-anuncios  (admin only)
+└── ProtectedRoute
+    └── AdminRoute
+        └── Layout
+            └── AdAccountsPage
+                ├── Hook: useAdAccounts (TanStack Query → adAccountsService → supabase) ✅
+                ├── Component: AdAccountSummaryCards
+                ├── Component: AdAccountCard
+                ├── Component: AdAccountFormDialog (Setup Wizard 5-step)
+                └── Context: SettingsContext (organizationId)
+
+/contas-anuncios/:id  (admin only)
+└── ProtectedRoute
+    └── AdminRoute
+        └── Layout
+            └── AdAccountDetailPage
+                ├── Hook: useAdAccount, useAdAccountStats, useCampaigns
+                ├── Component: AdAccountStatusBadge
+                ├── Component: AdAccountFormDialog (edição)
+                └── Context: SettingsContext (organizationId)
+
+/campanhas  (admin only)
+└── ProtectedRoute
+    └── AdminRoute
+        └── Layout
+            └── CampaignsPage (807 linhas)
+                ├── Hook: useCampaigns (TanStack Query, filtro por ad_account_id) ✅
+                ├── Hook: useAdAccounts (seletor de conta de contexto) ✅
+                ├── Component: CampaignFormDialog (vínculo obrigatório a Ad Account)
+                ├── Context: SettingsContext
+                └── Lib: gsap
+
 /vendas  (admin only)
 └── ProtectedRoute
     └── AdminRoute
@@ -221,16 +267,6 @@ src/
                 ├── Component: FilterBar (821 linhas)
                 ├── Component: LeadFormDialog
                 └── Hook: useLeads (TanStack Query → leadsService → supabase) ✅
-
-/campanhas  (admin only)
-└── ProtectedRoute
-    └── AdminRoute
-        └── Layout
-            └── CampaignsPage (807 linhas — não é thin wrapper)
-                ├── Hook: useCampaigns (TanStack Query) ✅
-                ├── Component: CampaignFormDialog
-                ├── Context: SettingsContext
-                └── Lib: gsap
 
 /profile
 └── ProtectedRoute
@@ -1038,16 +1074,33 @@ TESTS
 
 ---
 
+## 7. Módulo Adicionado: Contas de Anúncios (TikTok Ads & Multi-Tenant)
+
+> **Branch:** `feat/ad-accounts` | **Auditoria de Conformidade Arquitetural**
+
+| Dimensão | Implementação | Conformidade |
+|---|---|---|
+| **Data Pattern** | `adAccountsService.ts` (Supabase) + `useAdAccounts.ts` (TanStack Query) + UI components | ✅ 100% alinhado com `useLeads` e `leadsService` |
+| **Segurança & RLS** | Composite FK `(ad_account_id, organization_id)`, RLS `ad_accounts_org_access`, sem client secrets | ✅ Alta |
+| **Proteção de Rotas** | `/contas-anuncios` e `/contas-anuncios/:id` sob `ProtectedRoute` + `AdminRoute` | ✅ Conforme |
+| **Multi-Tenancy** | `organization_id` propagado via `SettingsContext` | ✅ Isolado por tenant |
+| **Migração DB** | `20260928_add_ad_accounts.sql` com backfill idempotente e tabela `ad_accounts` | ✅ Sem regressão |
+| **Validação** | Zod 4 (`adAccountSchema`) com tipagem estrita e Setup Wizard 5-step | ✅ Validado |
+| **Testes Unitários** | `adAccountsService.test.ts` (10/10 testes) + `NavigationBar.test.tsx` (17/17) = 27/27 passing | ✅ Vitest |
+
+---
+
 ## Resumo Executivo
 
 1. A arquitetura é funcional mas monolítica: dois megacomponentes (`RevenueReportChart` 4752L, `DropshippingCalculator` 4554L) concentram lógica de negócio, fetching e UI, com out-degrees de 773 e 953 respectivamente confirmados pelo grafo.
 2. Principal hotspot: `DropshippingCalculator.tsx` (hub #1, grau total 956) e `RevenueReportChart.tsx` (hub #3, grau 775) — qualquer mudança nesses componentes propaga-se para centenas de dependências.
-3. Principal problema de UI: ausência de design system coeso — cores hardcoded (`#0F172A`, `#E2E8F0`) coexistem com tokens CSS em `index.css`, especialmente nos estilos inline do `Toaster` em `App.tsx` e em múltiplos componentes de vendas.
+3. Novo módulo de Contas de Anúncios (`feat/ad-accounts`): implementado seguindo estritamente a convenção `services/*` + `hooks/*` (TanStack Query) + `types/*` (Zod), com testes unitários cobrindo o serviço e validação E2E via Playwright.
 4. Maior ponto de acoplamento: `SettingsContext.tsx` — `organizationId` é o gate para todos os fetches e é importado por 13 arquivos diretamente (confirmado pelo grafo), incluindo outros contextos, hooks e páginas.
 5. Principal duplicação: duas bibliotecas de gráficos (ApexCharts em 2 arquivos, Recharts em 5) e dois componentes `ElectricBorder` no mesmo diretório `ui/`, além de `ProgressBar` duplicando `progress` shadcn.
 6. Maior risco para reforma de UI: `RevenueReportChart.tsx` mistura lógica de cálculo de lucro/reembolso com renderização — refatorar a UI sem isolar a lógica financeira pode quebrar relatórios silenciosamente.
-7. Principal problema de data fetching: inconsistência de padrão — TanStack Query adotado em hooks modernos mas `RevenueReportChart` e `PendingOrders` usam Supabase direto com `useState`/`useEffect`, sem cache nem retry padronizado.
+7. Principal problema de data fetching: inconsistência de padrão — TanStack Query adotado em hooks modernos (`useCampaigns`, `useAdAccounts`, `useLeads`), mas `RevenueReportChart` e `PendingOrders` ainda usam Supabase direto com `useState`/`useEffect`.
 8. Principal problema de dependências: `@playwright/test` em `dependencies` em vez de `devDependencies`; `mercadopago`, `react-loading-skeleton` e `@dicebear` instalados sem nenhum import ativo em `src/`.
 9. Primeira fase sugerida: Fase 1 (Design System) — menor risco, não interfere com lógica de negócio, cria base consistente para todas as mudanças visuais subsequentes.
 10. Próximo passo sugerido: adicionar testes unitários para `calcOrderProfit.ts` e `parseCurrency` (260 callers, zero testes) antes de qualquer reforma, criando rede de segurança mínima para os cálculos financeiros críticos.
+
 
