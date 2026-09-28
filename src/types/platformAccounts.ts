@@ -10,6 +10,7 @@ export type PlatformAccountSignupMethod = 'google' | 'apple' | 'email';
 
 export const platformMetadataGoogleSchema = z.object({
   signup_method: z.literal('google'),
+  email: z.string().email('E-mail inválido').optional().nullable(),
   account_age_years: z
     .number()
     .min(0, 'Deve ser 0 ou mais')
@@ -21,14 +22,17 @@ export const platformMetadataGoogleSchema = z.object({
     .min(0, 'Deve ser 0 ou mais')
     .nullable()
     .optional(),
+  google_ads_currency: z.string().optional().nullable(),
 });
 
 export const platformMetadataAppleSchema = z.object({
   signup_method: z.literal('apple'),
+  email: z.string().email('E-mail inválido').optional().nullable(),
 });
 
 export const platformMetadataEmailSchema = z.object({
   signup_method: z.literal('email'),
+  email: z.string().email('E-mail inválido').optional().nullable(),
 });
 
 export const platformMetadataSchema = z.discriminatedUnion('signup_method', [
@@ -56,6 +60,7 @@ export interface PlatformAccount {
   phone: string | null;
   birth_date: string | null;
   platform_metadata: PlatformMetadata | null;
+  email?: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -77,9 +82,12 @@ export const platformAccountSchema = z.object({
   }),
   phone: z.string().trim().optional().or(z.literal('')),
   birth_date: z.string().optional().or(z.literal('')),
-  // Campo condicional para signup_method = 'google'
+  // Campo email presente nos cadastros (opcional no schema base para compatibilidade)
+  email: z.string().email('Informe um e-mail válido').optional().or(z.literal('')),
+  // Campos condicionais para signup_method = 'google'
   google_account_age_years: z.number().min(0).max(30).nullable().optional(),
   google_ads_invested_brl: z.number().min(0).nullable().optional(),
+  google_ads_currency: z.string().optional().nullable(),
 });
 
 export type PlatformAccountFormData = z.infer<typeof platformAccountSchema>;
@@ -96,13 +104,34 @@ export interface PlatformAccountFilters {
 export function buildPlatformMetadata(
   data: PlatformAccountFormData
 ): PlatformMetadata | null {
+  const emailValue = data.email?.trim() || null;
+
   if (data.signup_method === 'google') {
     return {
       signup_method: 'google',
+      email: emailValue,
       account_age_years: data.google_account_age_years ?? null,
       google_ads_invested_brl: data.google_ads_invested_brl ?? null,
+      google_ads_currency: data.google_ads_currency ?? 'BRL',
     };
   }
-  // apple e email não têm metadados extras por ora
+  if (data.signup_method === 'apple') {
+    if (emailValue) {
+      return {
+        signup_method: 'apple',
+        email: emailValue,
+      };
+    }
+    return null;
+  }
+  if (data.signup_method === 'email') {
+    if (emailValue) {
+      return {
+        signup_method: 'email',
+        email: emailValue,
+      };
+    }
+    return null;
+  }
   return null;
 }

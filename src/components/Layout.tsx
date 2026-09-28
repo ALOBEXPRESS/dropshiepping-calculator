@@ -57,6 +57,7 @@ const NAV_ROUTES: {
     { to: '/repasse',   label: 'Repasse',     adminOnly: true,  accent: 'text-[hsl(var(--chart-6))]',  dot: 'bg-[hsl(var(--chart-6))]',  dotMuted: 'bg-[hsl(var(--chart-6)/0.4)]',  active: 'bg-[hsl(var(--chart-6)/0.08)] text-[hsl(var(--chart-6))] font-semibold' },
   ],
   painel: [
+    { to: '/contas',          label: 'Contas',            adminOnly: true,  accent: 'text-[hsl(var(--brand))]',    dot: 'bg-[hsl(var(--brand))]',    dotMuted: 'bg-[hsl(var(--brand)/0.4)]',    active: 'bg-[hsl(var(--brand)/0.08)] text-[hsl(var(--brand))] font-semibold' },
     { to: '/contas-anuncios', label: 'Contas de Anúncios', adminOnly: true,  accent: 'text-[hsl(var(--warning))]',  dot: 'bg-[hsl(var(--warning))]',  dotMuted: 'bg-[hsl(var(--warning)/0.4)]',  active: 'bg-[hsl(var(--warning)/0.08)] text-[hsl(var(--warning))] font-semibold' },
   ],
 };

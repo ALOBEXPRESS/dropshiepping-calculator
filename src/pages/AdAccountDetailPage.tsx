@@ -13,7 +13,9 @@ import {
   Sparkles,
   PlayCircle,
   PauseCircle,
+  User,
 } from 'lucide-react';
+import ReactCountryFlag from 'react-country-flag';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -162,7 +164,7 @@ export const AdAccountDetailPage: React.FC = () => {
 
             <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1.5 flex-wrap">
               <span className="font-mono bg-background/80 px-2 py-0.5 rounded border border-border/80">
-                ID: {account.platform_account_id || 'Não configurado'}
+                ID: {account.advertiser_id || 'Não configurado'}
               </span>
               <span className="flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5" />
@@ -493,14 +495,14 @@ export const AdAccountDetailPage: React.FC = () => {
                     Advertiser ID (ID do Anunciante)
                   </p>
                   <p className="text-sm font-mono text-foreground mt-0.5">
-                    {account.platform_account_id || 'Não configurado'}
+                    {account.advertiser_id || 'Não configurado'}
                   </p>
                 </div>
-                {account.platform_account_id && (
+                {account.advertiser_id && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleCopy(account.platform_account_id!, 'advertiser_id')}
+                    onClick={() => handleCopy(account.advertiser_id!, 'advertiser_id')}
                     className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
                   >
                     {copiedKey === 'advertiser_id' ? (
@@ -511,6 +513,49 @@ export const AdAccountDetailPage: React.FC = () => {
                     <span>Copiar</span>
                   </Button>
                 )}
+              </div>
+
+              {/* Perfil TikTok Vinculado */}
+              <div className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
+                <div className="flex items-center gap-3 min-w-0">
+                  {account.platform_account?.profile_photo_url ? (
+                    <img
+                      src={account.platform_account.profile_photo_url}
+                      alt={account.platform_account.name}
+                      className="w-10 h-10 rounded-full object-cover border border-border flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-muted border border-border flex items-center justify-center flex-shrink-0">
+                      <User className="w-5 h-5 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-medium text-muted-foreground">
+                      Perfil TikTok Vinculado
+                    </p>
+                    {account.platform_account ? (
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-sm font-semibold text-foreground truncate">
+                          {account.platform_account.name}
+                        </span>
+                        <ReactCountryFlag
+                          countryCode={account.platform_account.country}
+                          svg
+                          style={{ width: '1em', height: '1em' }}
+                        />
+                        {account.platform_account.nickname && (
+                          <span className="text-xs text-muted-foreground font-mono truncate">
+                            @{account.platform_account.nickname}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground mt-0.5 italic">
+                        Nenhum perfil TikTok vinculado
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Business Center ID */}

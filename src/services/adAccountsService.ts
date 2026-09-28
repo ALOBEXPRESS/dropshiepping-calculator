@@ -19,7 +19,7 @@ export class AdAccountsService {
 
     let query = supabase
       .from('ad_accounts')
-      .select('*')
+      .select('*, platform_account:platform_accounts(*)')
       .eq('organization_id', organizationId)
       .order('created_at', { ascending: false });
 
@@ -86,7 +86,7 @@ export class AdAccountsService {
 
     const { data: account, error } = await supabase
       .from('ad_accounts')
-      .select('*')
+      .select('*, platform_account:platform_accounts(*)')
       .eq('organization_id', organizationId)
       .eq('id', id)
       .maybeSingle();

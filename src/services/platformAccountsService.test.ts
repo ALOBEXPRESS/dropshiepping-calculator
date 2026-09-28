@@ -243,5 +243,46 @@ describe('PlatformAccountsService', () => {
       // Confirms second eq on ad_accounts is by platform_account_id
       expect(mockCountEq2).toHaveBeenCalledWith('platform_account_id', platformAccountId);
     });
+
+    it('getLinkedAdAccounts returns list of ad accounts matching org and platformAccountId', async () => {
+      const mockEq2 = vi.fn().mockResolvedValue({ data: [{ id: 'ad-1', name: 'Conta 1' }], error: null });
+      const mockEq1 = vi.fn().mockReturnValue({ eq: mockEq2 });
+      const mockSelect = vi.fn().mockReturnValue({ eq: mockEq1 });
+
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === 'ad_accounts') return { select: mockSelect } as unknown as SupabaseFromReturn;
+        return {} as unknown as SupabaseFromReturn;
+      });
+
+      const result = await PlatformAccountsService.getLinkedAdAccounts(orgId, platformAccountId);
+      expect(result).toEqual([{ id: 'ad-1', name: 'Conta 1' }]);
+      expect(mockSelect).toHaveBeenCalledWith('id, name');
+      expect(mockEq1).toHaveBeenCalledWith('organization_id', orgId);
+      expect(mockEq2).toHaveBeenCalledWith('platform_account_id', platformAccountId);
+    });
+
+    it('deleteAndUnlink sets platform_account_id to null and deletes the platform account', async () => {
+      // Step 1: update ad_accounts
+      const mockSelect = vi.fn().mockResolvedValue({ data: [{ id: 'ad-1' }, { id: 'ad-2' }], error: null });
+      const mockUpdateEq2 = vi.fn().mockReturnValue({ select: mockSelect });
+      const mockUpdateEq1 = vi.fn().mockReturnValue({ eq: mockUpdateEq2 });
+      const mockUpdate = vi.fn().mockReturnValue({ eq: mockUpdateEq1 });
+
+      // Step 2: delete platform_accounts
+      const mockDelEq2 = vi.fn().mockResolvedValue({ error: null });
+      const mockDelEq1 = vi.fn().mockReturnValue({ eq: mockDelEq2 });
+      const mockDelete = vi.fn().mockReturnValue({ eq: mockDelEq1 });
+
+      vi.mocked(supabase.from).mockImplementation((table: string) => {
+        if (table === 'ad_accounts') return { update: mockUpdate } as unknown as SupabaseFromReturn;
+        if (table === 'platform_accounts') return { delete: mockDelete } as unknown as SupabaseFromReturn;
+        return {} as unknown as SupabaseFromReturn;
+      });
+
+      const res = await PlatformAccountsService.deleteAndUnlink(orgId, platformAccountId);
+      expect(res.unlinkedCount).toBe(2);
+      expect(mockUpdate).toHaveBeenCalledWith({ platform_account_id: null });
+      expect(mockDelete).toHaveBeenCalled();
+    });
   });
 });

@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
@@ -303,6 +304,9 @@ export const CampaignFormDialog: React.FC<CampaignFormDialogProps> = ({
           <DialogTitle className="text-lg font-semibold text-white">
             {campaign ? 'Editar Campanha' : 'Nova Campanha'}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Configurações e parâmetros da campanha de tráfego pago
+          </DialogDescription>
         </DialogHeader>
 
         {/* Step indicator */}

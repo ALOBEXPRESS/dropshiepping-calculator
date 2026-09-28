@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -36,7 +36,9 @@ import {
   Youtube,
   Instagram,
   ShoppingBag,
+  User,
 } from 'lucide-react';
+import ReactCountryFlag from 'react-country-flag';
 import { toast } from 'sonner';
 import {
   adAccountSchema,
@@ -47,6 +49,13 @@ import type { PlatformAccount } from '@/types/platformAccounts';
 import { PlatformAccountStep } from '@/components/ad-accounts/PlatformAccountStep';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useUser } from '@/contexts/UserContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { AdAccountsService } from '@/services/adAccountsService';
+import {
+  formatCentsToCurrencyString,
+  formatCpfCnpj,
+  formatPhoneByCountry,
+} from '@/utils/inputMasks';
 import tiktokImg from '@/imgs/tiktok-shop-seller-cent-icon-filled-256.png';
 
 interface AdAccountFormDialogProps {
@@ -73,12 +82,14 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
 }) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [canSubmitReview, setCanSubmitReview] = useState(false);
   const [selectedPlatformAccount, setSelectedPlatformAccount] =
     useState<PlatformAccount | null>(null);
   const isEditing = !!account;
 
   const { organizationId } = useSettings();
   const { userId } = useUser();
+  const queryClient = useQueryClient();
 
   const defaultValues: AdAccountFormData = {
     name: '',
@@ -104,6 +115,7 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
 
   const {
     register,
+    control,
     handleSubmit,
     setValue,
     watch,
@@ -139,6 +151,7 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
         catalog_id: (account.platform_config?.catalog_id as string) ?? '',
         platform_account_id: account.platform_account_id ?? null,
       });
+      setSelectedPlatformAccount(account.platform_account ?? null);
       setCurrentStep(isEditing ? 3 : 1);
     } else {
       reset(defaultValues);
@@ -153,6 +166,19 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
   const billingType = watch('billing_type');
 
   const TOTAL_STEPS = 6;
+
+  // Previne que cliques rápidos ou Enter na etapa 5 acionem instantaneamente a submissão da etapa 6
+  useEffect(() => {
+    if (currentStep === TOTAL_STEPS) {
+      setCanSubmitReview(false);
+      const timer = setTimeout(() => {
+        setCanSubmitReview(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    } else {
+      setCanSubmitReview(false);
+    }
+  }, [currentStep]);
 
   const handleNext = async () => {
     let isValid = false;
@@ -291,7 +317,22 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
 
         {/* Conteúdo Principal */}
         <div className="flex-1 overflow-y-auto px-8 py-7">
-          <form id="ad-account-setup-form" onSubmit={handleSubmit(handleFormSubmit)}>
+          <form
+            id="ad-account-setup-form"
+            method="POST"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (currentStep === TOTAL_STEPS && canSubmitReview && !isSubmitting) {
+                handleSubmit(handleFormSubmit)(e);
+              }
+            }}
+            onKeyDown={(e) => {
+              // Impede submissão involuntária por Enter
+              if (e.key === 'Enter') {
+                e.preventDefault();
+              }
+            }}
+          >
             <AnimatePresence mode="wait">
 
               {/* ── ETAPA 1: Plataforma de Anúncios ── */}
@@ -396,7 +437,25 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                   <PlatformAccountStep
                     platform="tiktok"
                     selectedAccount={selectedPlatformAccount}
-                    onAccountSelected={setSelectedPlatformAccount}
+                    initialAccountId={account?.platform_account_id ?? null}
+                    onAccountSelected={(newAcc) => {
+                      setSelectedPlatformAccount(newAcc);
+                      setValue('platform_account_id', newAcc?.id ?? null);
+                    }}
+                    onDirectUnlink={
+                      isEditing && account
+                        ? async () => {
+                            await AdAccountsService.update(organizationId!, account.id, {
+                              platform_account_id: null,
+                            });
+                            queryClient.invalidateQueries({ queryKey: ['ad_accounts'] });
+                            queryClient.invalidateQueries({ queryKey: ['platform_accounts'] });
+                            setSelectedPlatformAccount(null);
+                            setValue('platform_account_id', null);
+                            toast.success('Perfil TikTok desvinculado desta conta de anúncios com sucesso!');
+                          }
+                        : undefined
+                    }
                     organizationId={organizationId!}
                     userId={userId}
                   />
@@ -486,23 +545,48 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="spending_limit" className="text-xs font-semibold text-zinc-200">Limite de Gasto Mensal (Opcional)</Label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-2.5 text-xs text-zinc-500 font-semibold">
-                            {currency === 'USD' ? '$' : currency === 'EUR' ? '€' : 'R$'}
-                          </span>
-                          <Input
-                            id="spending_limit"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="Sem limite definido"
-                            {...register('spending_limit', {
-                              setValueAs: (v) => (v === '' || v === null ? null : parseFloat(v)),
-                            })}
-                            className="bg-zinc-950 border-zinc-800 text-xs pl-9 h-10 text-white"
-                          />
-                        </div>
+                        <Label htmlFor="spending_limit" className="text-xs font-semibold text-zinc-200">
+                          Limite de Gasto Mensal (Opcional)
+                        </Label>
+                        <Controller
+                          name="spending_limit"
+                          control={control}
+                          render={({ field }) => {
+                            const currentFloat = field.value ?? 0;
+                            const displayStr =
+                              field.value != null && field.value > 0
+                                ? formatCentsToCurrencyString(
+                                    Math.round(currentFloat * 100),
+                                    currency
+                                  )
+                                : '';
+
+                            return (
+                              <div className="relative">
+                                <span className="absolute left-3 top-2.5 text-xs text-zinc-400 font-bold select-none">
+                                  {currency === 'USD' ? '$' : currency === 'EUR' ? '€' : 'R$'}
+                                </span>
+                                <Input
+                                  id="spending_limit"
+                                  type="text"
+                                  inputMode="numeric"
+                                  placeholder="0,00 (sem limite definido)"
+                                  value={displayStr}
+                                  onChange={(e) => {
+                                    const digits = e.target.value.replace(/\D/g, '');
+                                    if (!digits) {
+                                      field.onChange(null);
+                                      return;
+                                    }
+                                    const cents = parseInt(digits, 10);
+                                    field.onChange(cents / 100);
+                                  }}
+                                  className="bg-zinc-950 border-zinc-800 text-xs pl-10 h-10 text-white font-mono placeholder:text-zinc-600 focus-visible:ring-brand"
+                                />
+                              </div>
+                            );
+                          }}
+                        />
                         {errors.spending_limit && (
                           <p className="text-xs text-rose-400 font-medium">{errors.spending_limit.message}</p>
                         )}
@@ -667,25 +751,49 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                   <div className="p-6 rounded-2xl border border-zinc-800/80 bg-zinc-900/50 space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="legal_name" className="text-xs font-semibold text-zinc-200">Razão Social / Nome Legal</Label>
+                        <Label htmlFor="legal_name" className="text-xs font-semibold text-zinc-200">
+                          Razão Social / Nome Legal
+                        </Label>
                         <Input
                           id="legal_name"
                           placeholder="Ex: Alob Express Comércio Digital Ltda"
                           {...register('legal_name')}
                           className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white"
                         />
+                        {errors.legal_name && (
+                          <p className="text-xs text-rose-400 font-medium">{errors.legal_name.message}</p>
+                        )}
                       </div>
+
                       <div className="space-y-2">
-                        <Label htmlFor="tax_id" className="text-xs font-semibold text-zinc-200">CNPJ / CPF do Titular</Label>
-                        <Input
-                          id="tax_id"
-                          placeholder="00.000.000/0000-00"
-                          {...register('tax_id')}
-                          className="bg-zinc-950 border-zinc-800 text-xs font-mono h-10 text-white"
+                        <Label htmlFor="tax_id" className="text-xs font-semibold text-zinc-200">
+                          CNPJ / CPF do Titular
+                        </Label>
+                        <Controller
+                          name="tax_id"
+                          control={control}
+                          render={({ field }) => (
+                            <Input
+                              id="tax_id"
+                              placeholder="00.000.000/0000-00"
+                              value={field.value ?? ''}
+                              onChange={(e) => {
+                                const masked = formatCpfCnpj(e.target.value);
+                                field.onChange(masked);
+                              }}
+                              className="bg-zinc-950 border-zinc-800 text-xs font-mono h-10 text-white placeholder:text-zinc-600 focus-visible:ring-brand"
+                            />
+                          )}
                         />
+                        {errors.tax_id && (
+                          <p className="text-xs text-rose-400 font-medium">{errors.tax_id.message}</p>
+                        )}
                       </div>
+
                       <div className="space-y-2">
-                        <Label htmlFor="email" className="text-xs font-semibold text-zinc-200">E-mail de Notificação Financeira</Label>
+                        <Label htmlFor="email" className="text-xs font-semibold text-zinc-200">
+                          E-mail de Notificação Financeira
+                        </Label>
                         <Input
                           id="email"
                           type="email"
@@ -693,16 +801,45 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                           {...register('email')}
                           className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white"
                         />
-                        {errors.email && <p className="text-xs text-rose-400 font-medium">{errors.email.message}</p>}
+                        {errors.email && (
+                          <p className="text-xs text-rose-400 font-medium">{errors.email.message}</p>
+                        )}
                       </div>
+
                       <div className="space-y-2">
-                        <Label htmlFor="phone" className="text-xs font-semibold text-zinc-200">Telefone / WhatsApp de Contato</Label>
-                        <Input
-                          id="phone"
-                          placeholder="(11) 98765-4321"
-                          {...register('phone')}
-                          className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white"
+                        <Label htmlFor="phone" className="text-xs font-semibold text-zinc-200">
+                          Telefone / WhatsApp de Contato
+                        </Label>
+                        <Controller
+                          name="phone"
+                          control={control}
+                          render={({ field }) => (
+                            <Input
+                              id="phone"
+                              placeholder={
+                                watch('country') === 'BR'
+                                  ? '(11) 98765-4321'
+                                  : watch('country') === 'US'
+                                  ? '(555) 123-4567'
+                                  : watch('country') === 'PT'
+                                  ? '912 345 678'
+                                  : '(11) 98765-4321'
+                              }
+                              value={field.value ?? ''}
+                              onChange={(e) => {
+                                const masked = formatPhoneByCountry(
+                                  e.target.value,
+                                  watch('country') || 'BR'
+                                );
+                                field.onChange(masked);
+                              }}
+                              className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white font-mono placeholder:text-zinc-600 focus-visible:ring-brand"
+                            />
+                          )}
                         />
+                        {errors.phone && (
+                          <p className="text-xs text-rose-400 font-medium">{errors.phone.message}</p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -744,13 +881,53 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                       <div className="space-y-2 text-xs">
                         {selectedPlatformAccount ? (
                           <>
-                            <div className="flex justify-between">
-                              <span className="text-zinc-400">Conta:</span>
-                              <span className="font-semibold text-white">{selectedPlatformAccount.name}</span>
+                            <div className="flex items-center gap-2.5 pb-2 border-b border-zinc-800/60">
+                              {selectedPlatformAccount.profile_photo_url ? (
+                                <img
+                                  src={selectedPlatformAccount.profile_photo_url}
+                                  alt={selectedPlatformAccount.name}
+                                  className="w-8 h-8 rounded-full object-cover border border-zinc-700 flex-shrink-0"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center flex-shrink-0">
+                                  <User className="w-4 h-4 text-zinc-400" />
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-semibold text-white truncate">
+                                    {selectedPlatformAccount.name}
+                                  </span>
+                                  <ReactCountryFlag
+                                    countryCode={selectedPlatformAccount.country}
+                                    svg
+                                    style={{ width: '1em', height: '1em' }}
+                                  />
+                                </div>
+                                {selectedPlatformAccount.nickname && (
+                                  <p className="text-[11px] text-zinc-400 font-mono truncate">
+                                    @{selectedPlatformAccount.nickname}
+                                  </p>
+                                )}
+                              </div>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-zinc-400">Titular:</span>
-                              <span className="text-zinc-300">{selectedPlatformAccount.holder_name}</span>
+                              <span className="text-zinc-200">{selectedPlatformAccount.holder_name}</span>
+                            </div>
+                            {selectedPlatformAccount.email && (
+                              <div className="flex justify-between">
+                                <span className="text-zinc-400">E-mail:</span>
+                                <span className="text-zinc-200 font-mono truncate max-w-[150px]">
+                                  {selectedPlatformAccount.email}
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex justify-between">
+                              <span className="text-zinc-400">Método de Cadastro:</span>
+                              <span className="uppercase text-[11px] text-zinc-300 font-medium">
+                                {selectedPlatformAccount.signup_method}
+                              </span>
                             </div>
                           </>
                         ) : (
@@ -905,10 +1082,20 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
               </Button>
             ) : (
               <Button
-                type="submit"
-                form="ad-account-setup-form"
-                disabled={isSubmitting}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs gap-2 h-10 px-6 font-semibold shadow-lg shadow-emerald-600/25"
+                type="button"
+                id="btn-concluir-setup-ad-account"
+                disabled={isSubmitting || !canSubmitReview}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!canSubmitReview || isSubmitting) return;
+                  handleSubmit(handleFormSubmit)();
+                }}
+                className={`text-white text-xs gap-2 h-10 px-6 font-semibold shadow-lg transition-all ${
+                  canSubmitReview
+                    ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/25 cursor-pointer'
+                    : 'bg-emerald-800/60 opacity-70 cursor-wait'
+                }`}
               >
                 {isSubmitting ? (
                   <>

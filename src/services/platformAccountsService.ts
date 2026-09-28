@@ -34,7 +34,10 @@ export class PlatformAccountsService {
 
     const { data, error } = await query;
     if (error) throw new Error(error.message);
-    return (data ?? []) as PlatformAccount[];
+    return ((data ?? []) as PlatformAccount[]).map((a) => ({
+      ...a,
+      email: a.platform_metadata?.email ?? null,
+    }));
   }
 
   /**
@@ -54,7 +57,12 @@ export class PlatformAccountsService {
       .maybeSingle();
 
     if (error) throw new Error(error.message);
-    return data as PlatformAccount | null;
+    if (!data) return null;
+    const acc = data as PlatformAccount;
+    return {
+      ...acc,
+      email: acc.platform_metadata?.email ?? null,
+    };
   }
 
   /**
@@ -91,7 +99,11 @@ export class PlatformAccountsService {
       .single();
 
     if (error) throw new Error(error.message);
-    return data as PlatformAccount;
+    const created = data as PlatformAccount;
+    return {
+      ...created,
+      email: created.platform_metadata?.email ?? null,
+    };
   }
 
   /**
@@ -120,8 +132,10 @@ export class PlatformAccountsService {
     // Reconstruir platform_metadata se signup_method ou campos condicionais mudaram
     if (
       formData.signup_method !== undefined ||
+      formData.email !== undefined ||
       formData.google_account_age_years !== undefined ||
-      formData.google_ads_invested_brl !== undefined
+      formData.google_ads_invested_brl !== undefined ||
+      formData.google_ads_currency !== undefined
     ) {
       // Busca valores atuais para merge
       const current = await PlatformAccountsService.getById(organizationId, id);
@@ -131,9 +145,11 @@ export class PlatformAccountsService {
         name: formData.name ?? (current?.name ?? ''),
         holder_name: formData.holder_name ?? (current?.holder_name ?? ''),
         niche: formData.niche ?? (current?.niche ?? 'outro'),
-        signup_method: formData.signup_method ?? (current?.signup_method ?? 'email'),
+        signup_method: formData.signup_method ?? (current?.signup_method ?? 'google'),
+        email: formData.email ?? (current?.email ?? ''),
         google_account_age_years: formData.google_account_age_years,
         google_ads_invested_brl: formData.google_ads_invested_brl,
+        google_ads_currency: formData.google_ads_currency,
       };
       updatePayload.platform_metadata = buildPlatformMetadata(merged) ?? null;
     }
@@ -147,7 +163,11 @@ export class PlatformAccountsService {
       .single();
 
     if (error) throw new Error(error.message);
-    return data as PlatformAccount;
+    const updated = data as PlatformAccount;
+    return {
+      ...updated,
+      email: updated.platform_metadata?.email ?? null,
+    };
   }
 
   /**
@@ -183,6 +203,50 @@ export class PlatformAccountsService {
       }
       throw new Error(error.message);
     }
+  }
+
+  /**
+   * Retorna os nomes e IDs das contas de anúncios vinculadas a este perfil.
+   */
+  static async getLinkedAdAccounts(
+    organizationId: string,
+    platformAccountId: string
+  ): Promise<Array<{ id: string; name: string }>> {
+    const { data, error } = await supabase
+      .from('ad_accounts')
+      .select('id, name')
+      .eq('organization_id', organizationId)
+      .eq('platform_account_id', platformAccountId);
+
+    if (error) throw new Error(error.message);
+    return data || [];
+  }
+
+  /**
+   * Desvincula todas as contas de anúncios e exclui a conta de plataforma em sequência.
+   */
+  static async deleteAndUnlink(
+    organizationId: string,
+    platformAccountId: string
+  ): Promise<{ unlinkedCount: number }> {
+    const { data: updated, error: unlinkErr } = await supabase
+      .from('ad_accounts')
+      .update({ platform_account_id: null })
+      .eq('organization_id', organizationId)
+      .eq('platform_account_id', platformAccountId)
+      .select('id');
+
+    if (unlinkErr) throw new Error(unlinkErr.message);
+
+    const { error: delErr } = await supabase
+      .from('platform_accounts')
+      .delete()
+      .eq('organization_id', organizationId)
+      .eq('id', platformAccountId);
+
+    if (delErr) throw new Error(delErr.message);
+
+    return { unlinkedCount: updated?.length || 0 };
   }
 
   /**

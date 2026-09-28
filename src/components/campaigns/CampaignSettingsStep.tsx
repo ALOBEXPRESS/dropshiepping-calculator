@@ -94,7 +94,14 @@ export const CampaignSettingsStep: React.FC<CampaignSettingsStepProps> = ({
               <SelectItem value="none">Nenhuma conta vinculada (avulsa)</SelectItem>
               {adAccounts.map((acc) => (
                 <SelectItem key={acc.id} value={acc.id}>
-                  {acc.name} ({acc.platform})
+                  <span className="flex items-center gap-1.5">
+                    <span>{acc.name}</span>
+                    {acc.platform_account && (
+                      <span className="text-[11px] text-zinc-400 font-mono">
+                        (@{acc.platform_account.nickname || acc.platform_account.name})
+                      </span>
+                    )}
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>

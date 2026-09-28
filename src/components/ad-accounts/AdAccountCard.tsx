@@ -27,7 +27,10 @@ import {
   PlayCircle,
   Archive,
   Wallet,
+  User,
+  Unlink,
 } from 'lucide-react';
+import ReactCountryFlag from 'react-country-flag';
 import { AdAccountStatusBadge } from './AdAccountStatusBadge';
 import type { AdAccountWithStats, AdAccountStatus } from '@/types/adAccounts';
 import tiktokImg from '@/imgs/tiktok-shop-seller-cent-icon-filled-256.png';
@@ -37,6 +40,7 @@ interface AdAccountCardProps {
   onEdit: (account: AdAccountWithStats) => void;
   onStatusChange: (id: string, status: AdAccountStatus) => void;
   onDelete: (account: AdAccountWithStats) => void;
+  onUnlinkPlatformAccount?: (accountId: string) => void | Promise<void>;
 }
 
 export const AdAccountCard: React.FC<AdAccountCardProps> = ({
@@ -44,6 +48,7 @@ export const AdAccountCard: React.FC<AdAccountCardProps> = ({
   onEdit,
   onStatusChange,
   onDelete,
+  onUnlinkPlatformAccount,
 }) => {
   const navigate = useNavigate();
 
@@ -80,7 +85,7 @@ export const AdAccountCard: React.FC<AdAccountCardProps> = ({
                   </CardTitle>
                 </div>
                 <p className="text-xs text-muted-foreground truncate font-mono mt-0.5">
-                  ID: {account.platform_account_id || 'Não configurado'}
+                  ID: {account.advertiser_id || 'Não configurado'}
                 </p>
               </div>
             </div>
@@ -137,6 +142,19 @@ export const AdAccountCard: React.FC<AdAccountCardProps> = ({
                     </DropdownMenuItem>
                   )}
 
+                  {account.platform_account_id && onUnlinkPlatformAccount && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => onUnlinkPlatformAccount(account.id)}
+                        className="gap-2 text-zinc-300 hover:text-white cursor-pointer"
+                      >
+                        <Unlink className="w-4 h-4 text-zinc-400" />
+                        Desvincular Perfil TikTok
+                      </DropdownMenuItem>
+                    </>
+                  )}
+
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => onDelete(account)}
@@ -153,6 +171,54 @@ export const AdAccountCard: React.FC<AdAccountCardProps> = ({
 
         {/* Content Details */}
         <CardContent className="px-5 py-3 space-y-3.5 text-xs">
+          {/* Perfil TikTok Vinculado */}
+          {account.platform_account ? (
+            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-zinc-900/80 border border-zinc-800 text-[11px] text-zinc-300">
+              {account.platform_account.profile_photo_url ? (
+                <img
+                  src={account.platform_account.profile_photo_url}
+                  alt={account.platform_account.name}
+                  className="w-4 h-4 rounded-full object-cover border border-zinc-700 flex-shrink-0"
+                />
+              ) : (
+                <div className="w-4 h-4 rounded-full bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                  <User className="w-2.5 h-2.5 text-zinc-400" />
+                </div>
+              )}
+              <span className="font-semibold text-white truncate max-w-[130px]">
+                {account.platform_account.name}
+              </span>
+              <ReactCountryFlag
+                countryCode={account.platform_account.country}
+                svg
+                style={{ width: '0.9em', height: '0.9em' }}
+              />
+              {account.platform_account.nickname && (
+                <span className="text-[10px] text-zinc-500 font-mono truncate">
+                  @{account.platform_account.nickname}
+                </span>
+              )}
+              {onUnlinkPlatformAccount && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onUnlinkPlatformAccount(account.id);
+                  }}
+                  title="Desvincular perfil TikTok desta conta de anúncios"
+                  className="ml-auto text-zinc-500 hover:text-rose-400 p-0.5 rounded transition-colors"
+                >
+                  <Unlink className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="px-2.5 py-1 rounded-md bg-zinc-900/40 border border-zinc-800/60 text-[10px] text-zinc-500 flex items-center justify-between">
+              <span>Perfil TikTok: Não vinculado</span>
+              <span className="text-[9px] text-zinc-600">Opcional</span>
+            </div>
+          )}
+
           {/* Business Center & Fuso */}
           <div className="grid grid-cols-2 gap-2 text-muted-foreground">
             <div className="flex items-center gap-1.5 min-w-0">

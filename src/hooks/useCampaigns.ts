@@ -29,7 +29,7 @@ export function useCampaigns(
           *,
           campaign_ad_sets(*),
           campaign_products(*),
-          ad_account:ad_accounts(*)
+          ad_account:ad_accounts(*, platform_account:platform_accounts(*))
         `)
         .eq('organization_id', organizationId);
 

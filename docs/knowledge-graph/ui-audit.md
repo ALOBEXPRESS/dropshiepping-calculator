@@ -1074,19 +1074,22 @@ TESTS
 
 ---
 
-## 7. Módulo Adicionado: Contas de Anúncios (TikTok Ads & Multi-Tenant)
+## 7. Módulo Adicionado: Contas de Anúncios e Contas de Plataforma (TikTok Ads & Multi-Tenant)
 
 > **Branch:** `feat/ad-accounts` | **Auditoria de Conformidade Arquitetural**
 
 | Dimensão | Implementação | Conformidade |
 |---|---|---|
-| **Data Pattern** | `adAccountsService.ts` (Supabase) + `useAdAccounts.ts` (TanStack Query) + UI components | ✅ 100% alinhado com `useLeads` e `leadsService` |
-| **Segurança & RLS** | Composite FK `(ad_account_id, organization_id)`, RLS `ad_accounts_org_access`, sem client secrets | ✅ Alta |
+| **Data Pattern** | `adAccountsService.ts`, `platformAccountsService.ts` (Supabase) + `useAdAccounts.ts`, `usePlatformAccounts.ts` (TanStack Query) + UI components | ✅ 100% alinhado com `useLeads` e `leadsService` |
+| **Segurança & RLS** | Composite FK `(ad_account_id, organization_id)`, `fk_ad_accounts_platform_account` (FK RESTRICT para integridade), RLS isolado por tenant | ✅ Alta |
 | **Proteção de Rotas** | `/contas-anuncios` e `/contas-anuncios/:id` sob `ProtectedRoute` + `AdminRoute` | ✅ Conforme |
-| **Multi-Tenancy** | `organization_id` propagado via `SettingsContext` | ✅ Isolado por tenant |
-| **Migração DB** | `20260928_add_ad_accounts.sql` com backfill idempotente e tabela `ad_accounts` | ✅ Sem regressão |
-| **Validação** | Zod 4 (`adAccountSchema`) com tipagem estrita e Setup Wizard 5-step | ✅ Validado |
-| **Testes Unitários** | `adAccountsService.test.ts` (10/10 testes) + `NavigationBar.test.tsx` (17/17) = 27/27 passing | ✅ Vitest |
+| **Multi-Tenancy** | `organization_id` propagado via `SettingsContext` em todas as queries e mutações | ✅ Isolado por tenant |
+| **Entidade Conta de Plataforma** | Perfil TikTok independente (`platform_accounts`) com foto, titular, nickname, email, bio e metadados contextuais (Google/Apple/Email) | ✅ Implementado e testado |
+| **Upload Resiliente de Foto** | Canvas compression (máx 600px, 82%), regras explícitas (JPG/PNG/WEBP, máx 10MB), fallback automático para Data URL se bucket Storage não existir | ✅ Sem falhas ou erros |
+| **Máscara & Moeda Dinâmica** | Moeda sincronizada automaticamente com o País selecionado (BRL, USD, EUR, GBP), com máscara de centavos autocomplementando decimais | ✅ UX Financeira Fluida |
+| **Prevenção de GET Submit** | Formulário de criação de conta de plataforma desacoplado de submissões nativas, interceptação de Enter e `method="POST"` | ✅ Zero recarregamentos |
+| **Exibição & Vinculação** | Exibição de `advertiser_id` correto e badge visual do Perfil TikTok vinculado no card e na página de detalhes | ✅ Total visibilidade |
+| **Testes Unitários** | `adAccountsService.test.ts` (10/10) + `platformAccountsService.test.ts` (17/17) = 27/27 passing | ✅ Vitest Passing |
 
 ---
 

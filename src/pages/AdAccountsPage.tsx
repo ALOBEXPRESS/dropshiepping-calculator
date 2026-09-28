@@ -122,6 +122,16 @@ export const AdAccountsPage: React.FC = () => {
     }
   };
 
+  const handleUnlinkPlatform = async (accountId: string) => {
+    try {
+      await updateAccount(accountId, { platform_account_id: null });
+      toast.success('Perfil TikTok desvinculado com sucesso desta conta!');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erro ao desvincular perfil';
+      toast.error(msg);
+    }
+  };
+
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6 text-foreground">
       {/* Top Header & Breadcrumb */}
@@ -262,6 +272,7 @@ export const AdAccountsPage: React.FC = () => {
               onEdit={handleEditAccount}
               onStatusChange={handleStatusChange}
               onDelete={(target) => setDeleteAccountTarget(target)}
+              onUnlinkPlatformAccount={handleUnlinkPlatform}
             />
           ))}
         </div>

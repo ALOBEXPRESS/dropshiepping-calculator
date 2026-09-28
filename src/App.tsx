@@ -41,6 +41,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Sales = lazy(() => import('./pages/Sales'));
 const Leads = lazy(() => import('./pages/Leads'));
 const Campaigns = lazy(() => import('./pages/CampaignsPage'));
+const PlatformAccounts = lazy(() => import('./pages/PlatformAccountsPage'));
 const AdAccounts = lazy(() => import('./pages/AdAccountsPage'));
 const AdAccountDetail = lazy(() => import('./pages/AdAccountDetailPage'));
 
@@ -98,6 +99,18 @@ const CampaignsPage = () => (
   </ProtectedRoute>
 );
 
+const PlatformAccountsRoutePage = () => (
+  <ProtectedRoute>
+    <AdminRoute>
+    <Layout>
+      <Suspense fallback={<LoadingState />}>
+        <PlatformAccounts />
+      </Suspense>
+    </Layout>
+    </AdminRoute>
+  </ProtectedRoute>
+);
+
 const AdAccountsRoutePage = () => (
   <ProtectedRoute>
     <AdminRoute>
@@ -149,6 +162,7 @@ function App() {
               <Route path="/vendas" element={<SalesPage />} />
               <Route path="/leads" element={<LeadsPage />} />
               <Route path="/campanhas" element={<CampaignsPage />} />
+              <Route path="/contas" element={<PlatformAccountsRoutePage />} />
               <Route path="/contas-anuncios" element={<AdAccountsRoutePage />} />
               <Route path="/contas-anuncios/:id" element={<AdAccountDetailRoutePage />} />
               <Route path="/profile" element={
