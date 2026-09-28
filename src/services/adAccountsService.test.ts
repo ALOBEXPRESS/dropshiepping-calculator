@@ -27,7 +27,7 @@ describe('adAccountSchema', () => {
     industry: 'E-commerce',
     email: 'financeiro@empresa.com',
     phone: '+55 11 99999-8888',
-    platform_account_id: '7123456789012345678',
+    advertiser_id: '7123456789012345678',
     business_center_id: '8123456789012345678',
     pixel_id: 'C9ABC123XYZ',
     catalog_id: 'CAT-456',
@@ -39,7 +39,7 @@ describe('adAccountSchema', () => {
     if (result.success) {
       expect(result.data.name).toBe('TikTok Ads Brasil');
       expect(result.data.platform).toBe('tiktok');
-      expect(result.data.platform_account_id).toBe('7123456789012345678');
+      expect(result.data.advertiser_id).toBe('7123456789012345678');
       expect(result.data.currency).toBe('BRL');
     }
   });

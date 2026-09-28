@@ -15,6 +15,7 @@ import {
   Mail,
   X,
   ShoppingCart,
+  Wallet,
 } from 'lucide-react';
 import { 
   DropdownMenu, 
@@ -83,6 +84,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [ecommerceOpen, setEcommerceOpen] = useState(true);
   const [painelOpen, setPainelOpen] = useState(true);
+  const [contasOpen, setContasOpen] = useState(true);
   const [blingNotifications, setBlingNotifications] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
@@ -193,17 +195,41 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${painelOpen ? 'grid-rows-[1fr] opacity-100 mt-0.5' : 'grid-rows-[0fr] opacity-0 pointer-events-none'}`}>
                   <div className="overflow-hidden">
                     <ul className="space-y-0.5 pl-3 pb-1">
-                      {NAV_ROUTES.painel.filter(r => !r.adminOnly || isAdmin).length === 0 ? (
+
+                      {/* Subgrupo: Contas */}
+                      {isAdmin && (
+                        <li>
+                          <button
+                            type="button"
+                            onClick={() => setContasOpen(v => !v)}
+                            className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
+                            data-testid="nav-contas-subgroup"
+                          >
+                            <Wallet className="w-3.5 h-3.5 text-[hsl(var(--warning))] flex-shrink-0" />
+                            <span className="flex-1 text-left text-[10px] font-semibold uppercase tracking-widest">Contas</span>
+                            <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${contasOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                          <div className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out ${contasOpen ? 'grid-rows-[1fr] opacity-100 mt-0.5' : 'grid-rows-[0fr] opacity-0 pointer-events-none'}`}>
+                            <div className="overflow-hidden">
+                              <ul className="space-y-0.5 pl-3">
+                                {NAV_ROUTES.painel
+                                  .filter(r => !r.adminOnly || isAdmin)
+                                  .map(r => (
+                                    <NavLink key={r.to} route={r} pathname={location.pathname} e2eSearch={e2eSearch} />
+                                  ))}
+                              </ul>
+                            </div>
+                          </div>
+                        </li>
+                      )}
+
+                      {/* Fallback se não houver rotas para o usuário */}
+                      {!isAdmin && (
                         <li className="px-3 py-1.5 text-xs text-muted-foreground/60 italic">
                           Em breve
                         </li>
-                      ) : (
-                        NAV_ROUTES.painel
-                          .filter(r => !r.adminOnly || isAdmin)
-                          .map(r => (
-                            <NavLink key={r.to} route={r} pathname={location.pathname} e2eSearch={e2eSearch} />
-                          ))
                       )}
+
                     </ul>
                   </div>
                 </div>

@@ -34,7 +34,7 @@ export class AdAccountsService {
     if (filters?.search && filters.search.trim() !== '') {
       const term = `%${filters.search.trim()}%`;
       query = query.or(
-        `name.ilike.${term},platform_account_id.ilike.${term},business_center_id.ilike.${term}`
+        `name.ilike.${term},advertiser_id.ilike.${term},business_center_id.ilike.${term}`
       );
     }
 
@@ -143,8 +143,9 @@ export class AdAccountsService {
       industry,
       email,
       phone,
-      platform_account_id,
+      advertiser_id,
       business_center_id,
+      platform_account_id,
     } = data;
 
     const platform_config = {
@@ -168,9 +169,10 @@ export class AdAccountsService {
       industry: industry || null,
       email: email || null,
       phone: phone || null,
-      platform_account_id: platform_account_id || null,
+      advertiser_id: advertiser_id || null,
       business_center_id: business_center_id || null,
       platform_config,
+      platform_account_id: platform_account_id ?? null,
       created_by: userId || null,
     };
 
@@ -209,10 +211,12 @@ export class AdAccountsService {
     if (data.industry !== undefined) updatePayload.industry = data.industry || null;
     if (data.email !== undefined) updatePayload.email = data.email || null;
     if (data.phone !== undefined) updatePayload.phone = data.phone || null;
-    if (data.platform_account_id !== undefined)
-      updatePayload.platform_account_id = data.platform_account_id || null;
+    if (data.advertiser_id !== undefined)
+      updatePayload.advertiser_id = data.advertiser_id || null;
     if (data.business_center_id !== undefined)
       updatePayload.business_center_id = data.business_center_id || null;
+    if (data.platform_account_id !== undefined)
+      updatePayload.platform_account_id = data.platform_account_id ?? null;
 
     if (data.pixel_id !== undefined || data.catalog_id !== undefined) {
       // Buscar platform_config atual para mesclar

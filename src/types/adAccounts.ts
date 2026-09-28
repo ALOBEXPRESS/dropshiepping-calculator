@@ -18,7 +18,8 @@ export interface AdAccount {
   organization_id: string;
   platform: AdAccountPlatform;
   name: string;
-  platform_account_id: string | null;
+  /** ID numérico do Advertiser no TikTok Ads Manager (texto, anteriormente 'platform_account_id') */
+  advertiser_id: string | null;
   business_center_id: string | null;
   status: AdAccountStatus;
   country: string;
@@ -34,6 +35,8 @@ export interface AdAccount {
   spending_limit: number | null;
   platform_config: TikTokConfigData;
   last_synced_at: string | null;
+  /** FK UUID para platform_accounts.id — nullable (expand/contract) */
+  platform_account_id: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -65,10 +68,13 @@ export const adAccountSchema = z.object({
   industry: z.string().trim().optional().or(z.literal('')),
   email: z.string().email('E-mail inválido').optional().or(z.literal('')),
   phone: z.string().trim().optional().or(z.literal('')),
-  platform_account_id: z.string().trim().optional().or(z.literal('')),
+  /** ID numérico do Advertiser no TikTok (texto livre) */
+  advertiser_id: z.string().trim().optional().or(z.literal('')),
   business_center_id: z.string().trim().optional().or(z.literal('')),
   pixel_id: z.string().trim().optional().or(z.literal('')),
   catalog_id: z.string().trim().optional().or(z.literal('')),
+  /** FK UUID para platform_accounts — opcional no wizard, propagado pelo passo 2 */
+  platform_account_id: z.string().uuid().nullable().optional(),
 });
 
 export type AdAccountFormData = z.infer<typeof adAccountSchema>;
@@ -88,9 +94,9 @@ export interface AdPlatformProvider {
 
   /**
    * Obtém saldo em tempo real para contas pré-pagas (futuro).
-   * @param platformAccountId ID externo da conta no anunciante
+   * @param advertiserId ID externo do anunciante no TikTok
    */
-  getBalance?(platformAccountId: string): Promise<number | null>;
+  getBalance?(advertiserId: string): Promise<number | null>;
 
   /**
    * Testa a conectividade ou valida o token de autenticação (futuro).

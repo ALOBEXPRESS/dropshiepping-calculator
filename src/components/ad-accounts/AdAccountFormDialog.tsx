@@ -29,11 +29,13 @@ import {
   ChevronRight,
   ChevronLeft,
   Globe,
-  Radio,
   ShieldCheck,
   Check,
   CreditCard,
   Wallet,
+  Youtube,
+  Instagram,
+  ShoppingBag,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -41,6 +43,10 @@ import {
   type AdAccountFormData,
   type AdAccountWithStats,
 } from '@/types/adAccounts';
+import type { PlatformAccount } from '@/types/platformAccounts';
+import { PlatformAccountStep } from '@/components/ad-accounts/PlatformAccountStep';
+import { useSettings } from '@/contexts/SettingsContext';
+import { useUser } from '@/contexts/UserContext';
 import tiktokImg from '@/imgs/tiktok-shop-seller-cent-icon-filled-256.png';
 
 interface AdAccountFormDialogProps {
@@ -52,10 +58,11 @@ interface AdAccountFormDialogProps {
 
 const STEPS = [
   { id: 1, title: 'Plataforma', label: '01. Rede de Anúncios', icon: Globe },
-  { id: 2, title: 'Identificação', label: '02. Dados da Conta', icon: Layers },
-  { id: 3, title: 'Identificadores', label: '03. IDs & Rastreamento', icon: Sparkles },
-  { id: 4, title: 'Faturamento', label: '04. Faturamento & Titular', icon: CreditCard },
-  { id: 5, title: 'Revisão', label: '05. Revisão & Ativação', icon: ShieldCheck },
+  { id: 2, title: 'Conta TikTok', label: '02. Conta da Plataforma', icon: Sparkles },
+  { id: 3, title: 'Identificação', label: '03. Dados da Conta', icon: Layers },
+  { id: 4, title: 'Identificadores', label: '04. IDs & Rastreamento', icon: Info },
+  { id: 5, title: 'Faturamento', label: '05. Faturamento & Titular', icon: CreditCard },
+  { id: 6, title: 'Revisão', label: '06. Revisão & Ativação', icon: ShieldCheck },
 ] as const;
 
 export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
@@ -66,7 +73,12 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
 }) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedPlatformAccount, setSelectedPlatformAccount] =
+    useState<PlatformAccount | null>(null);
   const isEditing = !!account;
+
+  const { organizationId } = useSettings();
+  const { userId } = useUser();
 
   const defaultValues: AdAccountFormData = {
     name: '',
@@ -83,10 +95,11 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
     industry: 'E-commerce',
     email: '',
     phone: '',
-    platform_account_id: '',
+    advertiser_id: '',
     business_center_id: '',
     pixel_id: '',
     catalog_id: '',
+    platform_account_id: null,
   };
 
   const {
@@ -120,15 +133,17 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
         industry: account.industry ?? 'E-commerce',
         email: account.email ?? '',
         phone: account.phone ?? '',
-        platform_account_id: account.platform_account_id ?? '',
+        advertiser_id: account.advertiser_id ?? '',
         business_center_id: account.business_center_id ?? '',
         pixel_id: (account.platform_config?.pixel_id as string) ?? '',
         catalog_id: (account.platform_config?.catalog_id as string) ?? '',
+        platform_account_id: account.platform_account_id ?? null,
       });
-      setCurrentStep(isEditing ? 2 : 1);
+      setCurrentStep(isEditing ? 3 : 1);
     } else {
       reset(defaultValues);
       setCurrentStep(1);
+      setSelectedPlatformAccount(null);
     }
   }, [account, open, reset, isEditing]);
 
@@ -137,34 +152,44 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
   const currency = watch('currency');
   const billingType = watch('billing_type');
 
+  const TOTAL_STEPS = 6;
+
   const handleNext = async () => {
     let isValid = false;
 
     if (currentStep === 1) {
       isValid = true;
     } else if (currentStep === 2) {
-      isValid = await trigger(['name', 'status', 'currency', 'timezone', 'spending_limit', 'country']);
+      // Passo opcional — sempre pode avançar
+      isValid = true;
     } else if (currentStep === 3) {
-      isValid = await trigger(['platform_account_id', 'business_center_id', 'pixel_id', 'catalog_id']);
+      isValid = await trigger(['name', 'status', 'currency', 'timezone', 'spending_limit', 'country']);
     } else if (currentStep === 4) {
+      isValid = await trigger(['advertiser_id', 'business_center_id', 'pixel_id', 'catalog_id']);
+    } else if (currentStep === 5) {
       isValid = await trigger(['legal_name', 'tax_id', 'industry', 'billing_type', 'payment_status', 'email', 'phone']);
     }
 
-    if (isValid && currentStep < 5) {
-      setCurrentStep(prev => prev + 1);
+    if (isValid && currentStep < TOTAL_STEPS) {
+      setCurrentStep((prev) => prev + 1);
     }
   };
 
   const handlePrev = () => {
     if (currentStep > 1) {
-      setCurrentStep(prev => prev - 1);
+      setCurrentStep((prev) => prev - 1);
     }
   };
 
   const handleFormSubmit = async (data: AdAccountFormData) => {
     setIsSubmitting(true);
     try {
-      await onSubmit(data);
+      // Propaga o platform_account_id selecionado no passo 2
+      const finalData: AdAccountFormData = {
+        ...data,
+        platform_account_id: selectedPlatformAccount?.id ?? null,
+      };
+      await onSubmit(finalData);
       toast.success(
         isEditing
           ? 'Conta de anúncios atualizada com sucesso!'
@@ -196,21 +221,22 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                     {isEditing ? 'Editar Conta de Anúncios' : 'Setup de Conta de Anúncios'}
                   </DialogTitle>
                   <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wide bg-brand/15 text-brand border border-brand/30">
-                    Etapa {currentStep} de 5
+                    Etapa {currentStep} de {TOTAL_STEPS}
                   </span>
                 </div>
                 <DialogDescription className="text-xs text-zinc-400">
                   {currentStep === 1 && 'Selecione a plataforma de anúncios para veiculação das campanhas.'}
-                  {currentStep === 2 && 'Defina o nome de exibição, moeda e parâmetros da conta.'}
-                  {currentStep === 3 && 'Conecte os identificadores do TikTok Ads Manager e Pixel.'}
-                  {currentStep === 4 && 'Configure o modelo de cobrança e dados fiscais da empresa.'}
-                  {currentStep === 5 && 'Revise as configurações antes de ativar a conta no sistema.'}
+                  {currentStep === 2 && 'Vincule ou crie o perfil TikTok associado a esta conta de anúncios.'}
+                  {currentStep === 3 && 'Defina o nome de exibição, moeda e parâmetros da conta.'}
+                  {currentStep === 4 && 'Conecte os identificadores do TikTok Ads Manager e Pixel.'}
+                  {currentStep === 5 && 'Configure o modelo de cobrança e dados fiscais da empresa.'}
+                  {currentStep === 6 && 'Revise as configurações antes de ativar a conta no sistema.'}
                 </DialogDescription>
               </div>
             </div>
 
-            {/* Stepper Visual Elegante */}
-            <div className="flex items-center gap-1.5 self-start md:self-center">
+            {/* Stepper Visual */}
+            <div className="flex items-center gap-1 self-start md:self-center flex-wrap">
               {STEPS.map((step, idx) => {
                 const isPassed = currentStep > step.id;
                 const isCurrent = currentStep === step.id;
@@ -226,7 +252,7 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                       }}
                       disabled={step.id > currentStep && !isEditing}
                       title={step.label}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
                         isCurrent
                           ? 'bg-zinc-800/90 text-white border border-brand/40 shadow-sm shadow-brand/10'
                           : isPassed
@@ -245,13 +271,13 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                       >
                         {isPassed ? <Check className="w-3 h-3 stroke-[3]" /> : step.id}
                       </div>
-                      <span className={`hidden xl:inline ${isCurrent ? 'font-semibold text-white' : ''}`}>
+                      <span className={`hidden 2xl:inline ${isCurrent ? 'font-semibold text-white' : ''}`}>
                         {step.title}
                       </span>
                     </button>
                     {idx < STEPS.length - 1 && (
                       <div
-                        className={`w-3 h-0.5 rounded-full transition-colors ${
+                        className={`w-2.5 h-0.5 rounded-full transition-colors ${
                           isPassed ? 'bg-emerald-500/70' : 'bg-zinc-800'
                         }`}
                       />
@@ -263,10 +289,11 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
           </div>
         </DialogHeader>
 
-        {/* Conteúdo Principal com Espaçamento Amplo */}
+        {/* Conteúdo Principal */}
         <div className="flex-1 overflow-y-auto px-8 py-7">
           <form id="ad-account-setup-form" onSubmit={handleSubmit(handleFormSubmit)}>
             <AnimatePresence mode="wait">
+
               {/* ── ETAPA 1: Plataforma de Anúncios ── */}
               {currentStep === 1 && (
                 <motion.div
@@ -287,7 +314,7 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                     </p>
                   </div>
 
-                  {/* Card Principal TikTok Ads com Destaque e Espaço */}
+                  {/* Card Principal TikTok Ads */}
                   <div
                     onClick={() => setValue('platform', 'tiktok')}
                     className="relative rounded-2xl border-2 border-brand bg-gradient-to-br from-brand/12 via-zinc-900/90 to-zinc-950 p-6 cursor-pointer shadow-xl shadow-brand/10 transition-all hover:border-brand"
@@ -309,95 +336,77 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                           </p>
                         </div>
                       </div>
-
-                      {/* Badge de Selecionado */}
                       <div className="flex items-center gap-2 self-end sm:self-center px-3.5 py-1.5 rounded-xl bg-brand text-white text-xs font-semibold shadow-md shadow-brand/30">
                         <Check className="w-3.5 h-3.5 stroke-[3]" />
                         <span>Selecionado</span>
                       </div>
                     </div>
 
-                    {/* Features Grid Espaçoso */}
                     <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <div className="p-3 rounded-xl bg-zinc-900/70 border border-zinc-800/80 flex items-center gap-2.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                        <span className="text-xs font-medium text-zinc-200">Pixel & Web Events</span>
-                      </div>
-                      <div className="p-3 rounded-xl bg-zinc-900/70 border border-zinc-800/80 flex items-center gap-2.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                        <span className="text-xs font-medium text-zinc-200">Business Center ID</span>
-                      </div>
-                      <div className="p-3 rounded-xl bg-zinc-900/70 border border-zinc-800/80 flex items-center gap-2.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                        <span className="text-xs font-medium text-zinc-200">Múltiplas Campanhas</span>
-                      </div>
-                      <div className="p-3 rounded-xl bg-zinc-900/70 border border-zinc-800/80 flex items-center gap-2.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                        <span className="text-xs font-medium text-zinc-200">Gestão de Orçamento</span>
-                      </div>
+                      {['Pixel & Web Events', 'Business Center ID', 'Múltiplas Campanhas', 'Gestão de Orçamento'].map((feat) => (
+                        <div key={feat} className="p-3 rounded-xl bg-zinc-900/70 border border-zinc-800/80 flex items-center gap-2.5">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                          <span className="text-xs font-medium text-zinc-200">{feat}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
-                  {/* Outras Redes de Anúncios (Futuro / Clean Grid) */}
+                  {/* Próximas Integrações — conforme spec */}
                   <div className="space-y-2.5 pt-2">
                     <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                       Próximas Integrações de Tráfego
                     </span>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                      <div className="rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-4 opacity-60 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-lg bg-zinc-800/80 border border-zinc-700/50 flex items-center justify-center text-blue-400">
-                            <Radio className="w-4 h-4" />
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {[
+                        { name: 'Youtube', sub: 'Em breve', icon: Youtube, color: 'text-red-400', badge: 'Em breve' },
+                        { name: 'Instagram', sub: 'Em breve', icon: Instagram, color: 'text-pink-400', badge: 'Em breve' },
+                        { name: 'Kwai', sub: 'Em breve', icon: Sparkles, color: 'text-yellow-400', badge: 'Em breve' },
+                        { name: 'Marketplaces', sub: 'Planejado', icon: ShoppingBag, color: 'text-orange-400', badge: 'Planejado' },
+                      ].map(({ name, icon: Icon, color, badge }) => (
+                        <div
+                          key={name}
+                          className="rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-4 opacity-55 flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-lg bg-zinc-800/80 border border-zinc-700/50 flex items-center justify-center ${color}`}>
+                              <Icon className="w-4 h-4" />
+                            </div>
+                            <span className="text-xs font-semibold text-zinc-300">{name}</span>
                           </div>
-                          <div>
-                            <h5 className="text-xs font-semibold text-zinc-300">Meta Ads</h5>
-                            <p className="text-[11px] text-zinc-500">Facebook & Instagram</p>
-                          </div>
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-zinc-800 text-zinc-400 border border-zinc-700/60 whitespace-nowrap">
+                            {badge}
+                          </span>
                         </div>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-800 text-zinc-400 border border-zinc-700/60">
-                          Em breve
-                        </span>
-                      </div>
-
-                      <div className="rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-4 opacity-60 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-lg bg-zinc-800/80 border border-zinc-700/50 flex items-center justify-center text-amber-400">
-                            <Layers className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <h5 className="text-xs font-semibold text-zinc-300">Google Ads</h5>
-                            <p className="text-[11px] text-zinc-500">Search & PMax</p>
-                          </div>
-                        </div>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-800 text-zinc-400 border border-zinc-700/60">
-                          Em breve
-                        </span>
-                      </div>
-
-                      <div className="rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-4 opacity-60 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-lg bg-zinc-800/80 border border-zinc-700/50 flex items-center justify-center text-orange-400">
-                            <Sparkles className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <h5 className="text-xs font-semibold text-zinc-300">Shopee & Kwai</h5>
-                            <p className="text-[11px] text-zinc-500">Marketplaces</p>
-                          </div>
-                        </div>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-800 text-zinc-400 border border-zinc-700/60">
-                          Planejado
-                        </span>
-                      </div>
+                      ))}
                     </div>
                   </div>
                 </motion.div>
               )}
 
-              {/* ── ETAPA 2: Informações Básicas ── */}
+              {/* ── ETAPA 2: Conta TikTok (nova) ── */}
               {currentStep === 2 && (
                 <motion.div
                   key="step-2"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.22 }}
+                >
+                  <PlatformAccountStep
+                    platform="tiktok"
+                    selectedAccount={selectedPlatformAccount}
+                    onAccountSelected={setSelectedPlatformAccount}
+                    organizationId={organizationId!}
+                    userId={userId}
+                  />
+                </motion.div>
+              )}
+
+              {/* ── ETAPA 3: Informações Básicas ── */}
+              {currentStep === 3 && (
+                <motion.div
+                  key="step-3"
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
@@ -415,7 +424,6 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                   </div>
 
                   <div className="p-6 rounded-2xl border border-zinc-800/80 bg-zinc-900/50 space-y-5">
-                    {/* Nome da Conta */}
                     <div className="space-y-2">
                       <Label htmlFor="name" className="text-xs font-semibold text-zinc-200 flex items-center justify-between">
                         <span>Nome da Conta de Anúncios <span className="text-rose-400">*</span></span>
@@ -427,17 +435,12 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                         {...register('name')}
                         className="bg-zinc-950 border-zinc-800 text-sm h-11 text-white placeholder:text-zinc-600 focus-visible:ring-brand"
                       />
-                      {errors.name && (
-                        <p className="text-xs text-rose-400 font-medium">{errors.name.message}</p>
-                      )}
+                      {errors.name && <p className="text-xs text-rose-400 font-medium">{errors.name.message}</p>}
                     </div>
 
-                    {/* Grid 2x2 com Moeda, Status, Fuso e Limite */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
                       <div className="space-y-2">
-                        <Label htmlFor="status" className="text-xs font-semibold text-zinc-200">
-                          Status Operacional
-                        </Label>
+                        <Label htmlFor="status" className="text-xs font-semibold text-zinc-200">Status Operacional</Label>
                         <Select
                           value={status}
                           onValueChange={(val: AdAccountFormData['status']) => setValue('status', val)}
@@ -455,9 +458,7 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="currency" className="text-xs font-semibold text-zinc-200">
-                          Moeda da Conta
-                        </Label>
+                        <Label htmlFor="currency" className="text-xs font-semibold text-zinc-200">Moeda da Conta</Label>
                         <Select
                           value={currency}
                           onValueChange={(val: AdAccountFormData['currency']) => setValue('currency', val)}
@@ -474,24 +475,18 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="timezone" className="text-xs font-semibold text-zinc-200">
-                          Fuso Horário (Timezone)
-                        </Label>
+                        <Label htmlFor="timezone" className="text-xs font-semibold text-zinc-200">Fuso Horário (Timezone)</Label>
                         <Input
                           id="timezone"
                           placeholder="America/Sao_Paulo"
                           {...register('timezone')}
                           className="bg-zinc-950 border-zinc-800 text-xs h-10 font-mono text-white"
                         />
-                        {errors.timezone && (
-                          <p className="text-xs text-rose-400 font-medium">{errors.timezone.message}</p>
-                        )}
+                        {errors.timezone && <p className="text-xs text-rose-400 font-medium">{errors.timezone.message}</p>}
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="spending_limit" className="text-xs font-semibold text-zinc-200">
-                          Limite de Gasto Mensal (Opcional)
-                        </Label>
+                        <Label htmlFor="spending_limit" className="text-xs font-semibold text-zinc-200">Limite de Gasto Mensal (Opcional)</Label>
                         <div className="relative">
                           <span className="absolute left-3 top-2.5 text-xs text-zinc-500 font-semibold">
                             {currency === 'USD' ? '$' : currency === 'EUR' ? '€' : 'R$'}
@@ -509,9 +504,7 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                           />
                         </div>
                         {errors.spending_limit && (
-                          <p className="text-xs text-rose-400 font-medium">
-                            {errors.spending_limit.message}
-                          </p>
+                          <p className="text-xs text-rose-400 font-medium">{errors.spending_limit.message}</p>
                         )}
                       </div>
                     </div>
@@ -519,10 +512,10 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                 </motion.div>
               )}
 
-              {/* ── ETAPA 3: Identificadores TikTok Ads ── */}
-              {currentStep === 3 && (
+              {/* ── ETAPA 4: Identificadores TikTok Ads ── */}
+              {currentStep === 4 && (
                 <motion.div
-                  key="step-3"
+                  key="step-4"
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
@@ -539,7 +532,6 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                     </p>
                   </div>
 
-                  {/* Banner de Ajuda Rápida */}
                   <div className="p-4 rounded-2xl border border-cyan-500/25 bg-cyan-500/8 flex items-start gap-3.5">
                     <Info className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-0.5" />
                     <div className="space-y-1 text-xs text-zinc-300 leading-relaxed">
@@ -552,13 +544,13 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
 
                   <div className="p-6 rounded-2xl border border-zinc-800/80 bg-zinc-900/50 grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div className="space-y-2">
-                      <Label htmlFor="platform_account_id" className="text-xs font-semibold text-zinc-200">
+                      <Label htmlFor="advertiser_id" className="text-xs font-semibold text-zinc-200">
                         ID do Anunciante (Advertiser ID)
                       </Label>
                       <Input
-                        id="platform_account_id"
+                        id="advertiser_id"
                         placeholder="Ex: 7381234567890123456"
-                        {...register('platform_account_id')}
+                        {...register('advertiser_id')}
                         className="bg-zinc-950 border-zinc-800 text-xs font-mono h-10 text-white"
                       />
                       <p className="text-[11px] text-zinc-500">ID numérico da conta TikTok Ads.</p>
@@ -606,10 +598,10 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                 </motion.div>
               )}
 
-              {/* ── ETAPA 4: Faturamento & Titularidade ── */}
-              {currentStep === 4 && (
+              {/* ── ETAPA 5: Faturamento & Titularidade ── */}
+              {currentStep === 5 && (
                 <motion.div
-                  key="step-4"
+                  key="step-5"
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
@@ -626,7 +618,6 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                     </p>
                   </div>
 
-                  {/* Seleção Interativa de Modelo de Cobrança */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div
                       onClick={() => setValue('billing_type', 'postpaid')}
@@ -642,9 +633,7 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-2">
                           <h5 className="text-xs font-bold text-white">Pós-pago (Faturado / Cartão)</h5>
-                          {billingType === 'postpaid' && (
-                            <Check className="w-3.5 h-3.5 text-brand stroke-[3]" />
-                          )}
+                          {billingType === 'postpaid' && <Check className="w-3.5 h-3.5 text-brand stroke-[3]" />}
                         </div>
                         <p className="text-[11px] text-zinc-400">
                           Cobrança automática por limite de gastos ou ciclo mensal no cartão de crédito.
@@ -666,9 +655,7 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-2">
                           <h5 className="text-xs font-bold text-white">Pré-pago (Recarga de Saldo)</h5>
-                          {billingType === 'prepaid' && (
-                            <Check className="w-3.5 h-3.5 text-brand stroke-[3]" />
-                          )}
+                          {billingType === 'prepaid' && <Check className="w-3.5 h-3.5 text-brand stroke-[3]" />}
                         </div>
                         <p className="text-[11px] text-zinc-400">
                           Créditos pré-carregados via Boleto, Pix ou Transferência no TikTok Ads.
@@ -677,13 +664,10 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                     </div>
                   </div>
 
-                  {/* Dados da Empresa / Titular */}
                   <div className="p-6 rounded-2xl border border-zinc-800/80 bg-zinc-900/50 space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="legal_name" className="text-xs font-semibold text-zinc-200">
-                          Razão Social / Nome Legal
-                        </Label>
+                        <Label htmlFor="legal_name" className="text-xs font-semibold text-zinc-200">Razão Social / Nome Legal</Label>
                         <Input
                           id="legal_name"
                           placeholder="Ex: Alob Express Comércio Digital Ltda"
@@ -691,11 +675,8 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                           className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white"
                         />
                       </div>
-
                       <div className="space-y-2">
-                        <Label htmlFor="tax_id" className="text-xs font-semibold text-zinc-200">
-                          CNPJ / CPF do Titular
-                        </Label>
+                        <Label htmlFor="tax_id" className="text-xs font-semibold text-zinc-200">CNPJ / CPF do Titular</Label>
                         <Input
                           id="tax_id"
                           placeholder="00.000.000/0000-00"
@@ -703,11 +684,8 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                           className="bg-zinc-950 border-zinc-800 text-xs font-mono h-10 text-white"
                         />
                       </div>
-
                       <div className="space-y-2">
-                        <Label htmlFor="email" className="text-xs font-semibold text-zinc-200">
-                          E-mail de Notificação Financeira
-                        </Label>
+                        <Label htmlFor="email" className="text-xs font-semibold text-zinc-200">E-mail de Notificação Financeira</Label>
                         <Input
                           id="email"
                           type="email"
@@ -715,15 +693,10 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                           {...register('email')}
                           className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white"
                         />
-                        {errors.email && (
-                          <p className="text-xs text-rose-400 font-medium">{errors.email.message}</p>
-                        )}
+                        {errors.email && <p className="text-xs text-rose-400 font-medium">{errors.email.message}</p>}
                       </div>
-
                       <div className="space-y-2">
-                        <Label htmlFor="phone" className="text-xs font-semibold text-zinc-200">
-                          Telefone / WhatsApp de Contato
-                        </Label>
+                        <Label htmlFor="phone" className="text-xs font-semibold text-zinc-200">Telefone / WhatsApp de Contato</Label>
                         <Input
                           id="phone"
                           placeholder="(11) 98765-4321"
@@ -736,10 +709,10 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                 </motion.div>
               )}
 
-              {/* ── ETAPA 5: Revisão & Conclusão ── */}
-              {currentStep === 5 && (
+              {/* ── ETAPA 6: Revisão & Conclusão ── */}
+              {currentStep === 6 && (
                 <motion.div
-                  key="step-5"
+                  key="step-6"
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
@@ -757,24 +730,46 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Card 1: Geral & Identificação */}
+                    {/* Card 1: Conta de Plataforma */}
                     <div className="p-5 rounded-2xl border border-zinc-800/80 bg-zinc-900/60 space-y-3">
                       <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
                         <div className="flex items-center gap-2">
                           <img src={tiktokImg} alt="TikTok" className="w-4 h-4 object-contain" />
-                          <span className="text-xs font-bold text-white">Identificação & Rede</span>
+                          <span className="text-xs font-bold text-white">Conta TikTok Vinculada</span>
                         </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setCurrentStep(2)}
-                          className="h-6 text-[11px] text-brand hover:text-brand px-2"
-                        >
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setCurrentStep(2)} className="h-6 text-[11px] text-brand hover:text-brand px-2">
                           Editar
                         </Button>
                       </div>
+                      <div className="space-y-2 text-xs">
+                        {selectedPlatformAccount ? (
+                          <>
+                            <div className="flex justify-between">
+                              <span className="text-zinc-400">Conta:</span>
+                              <span className="font-semibold text-white">{selectedPlatformAccount.name}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-zinc-400">Titular:</span>
+                              <span className="text-zinc-300">{selectedPlatformAccount.holder_name}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <span className="text-zinc-500 italic text-[11px]">Nenhuma conta vinculada (opcional)</span>
+                        )}
+                      </div>
+                    </div>
 
+                    {/* Card 2: Geral & Identificação */}
+                    <div className="p-5 rounded-2xl border border-zinc-800/80 bg-zinc-900/60 space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
+                        <div className="flex items-center gap-2">
+                          <Layers className="w-4 h-4 text-orange-400" />
+                          <span className="text-xs font-bold text-white">Identificação & Rede</span>
+                        </div>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setCurrentStep(3)} className="h-6 text-[11px] text-brand hover:text-brand px-2">
+                          Editar
+                        </Button>
+                      </div>
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between">
                           <span className="text-zinc-400">Plataforma:</span>
@@ -790,35 +785,26 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                         </div>
                         <div className="flex justify-between">
                           <span className="text-zinc-400">Moeda / Fuso:</span>
-                          <span className="font-mono text-zinc-300">
-                            {formValues.currency} • {formValues.timezone}
-                          </span>
+                          <span className="font-mono text-zinc-300">{formValues.currency} • {formValues.timezone}</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Card 2: Identificadores TikTok */}
+                    {/* Card 3: Identificadores TikTok */}
                     <div className="p-5 rounded-2xl border border-zinc-800/80 bg-zinc-900/60 space-y-3">
                       <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
                         <div className="flex items-center gap-2">
                           <Sparkles className="w-4 h-4 text-cyan-400" />
                           <span className="text-xs font-bold text-white">Rastreamento & IDs</span>
                         </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setCurrentStep(3)}
-                          className="h-6 text-[11px] text-brand hover:text-brand px-2"
-                        >
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setCurrentStep(4)} className="h-6 text-[11px] text-brand hover:text-brand px-2">
                           Editar
                         </Button>
                       </div>
-
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between">
                           <span className="text-zinc-400">Advertiser ID:</span>
-                          <span className="font-mono text-zinc-300">{formValues.platform_account_id || 'Não informado'}</span>
+                          <span className="font-mono text-zinc-300">{formValues.advertiser_id || 'Não informado'}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-zinc-400">Business Center:</span>
@@ -828,47 +814,36 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                           <span className="text-zinc-400">Pixel TikTok:</span>
                           <span className="font-mono text-zinc-300">{formValues.pixel_id || 'Não informado'}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-zinc-400">Catálogo:</span>
-                          <span className="font-mono text-zinc-300">{formValues.catalog_id || 'Não informado'}</span>
-                        </div>
                       </div>
                     </div>
 
-                    {/* Card 3: Faturamento */}
-                    <div className="p-5 rounded-2xl border border-zinc-800/80 bg-zinc-900/60 space-y-3 md:col-span-2">
+                    {/* Card 4: Faturamento */}
+                    <div className="p-5 rounded-2xl border border-zinc-800/80 bg-zinc-900/60 space-y-3">
                       <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
                         <div className="flex items-center gap-2">
                           <CreditCard className="w-4 h-4 text-emerald-400" />
                           <span className="text-xs font-bold text-white">Faturamento & Titular</span>
                         </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setCurrentStep(4)}
-                          className="h-6 text-[11px] text-brand hover:text-brand px-2"
-                        >
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setCurrentStep(5)} className="h-6 text-[11px] text-brand hover:text-brand px-2">
                           Editar
                         </Button>
                       </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                        <div>
-                          <span className="text-zinc-400 block text-[11px]">Modelo de Cobrança</span>
-                          <span className="font-semibold text-white capitalize mt-0.5 block">
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-zinc-400">Modelo:</span>
+                          <span className="font-semibold text-white capitalize">
                             {formValues.billing_type === 'prepaid' ? 'Pré-pago (Recarga)' : 'Pós-pago (Cartão/Faturado)'}
                           </span>
                         </div>
-                        <div>
-                          <span className="text-zinc-400 block text-[11px]">Empresa / CNPJ</span>
-                          <span className="font-semibold text-white mt-0.5 block">
+                        <div className="flex justify-between">
+                          <span className="text-zinc-400">Empresa / CNPJ:</span>
+                          <span className="font-semibold text-white">
                             {formValues.legal_name || '—'} {formValues.tax_id ? `(${formValues.tax_id})` : ''}
                           </span>
                         </div>
-                        <div>
-                          <span className="text-zinc-400 block text-[11px]">Notificações</span>
-                          <span className="font-semibold text-white mt-0.5 block truncate">
+                        <div className="flex justify-between">
+                          <span className="text-zinc-400">Notificações:</span>
+                          <span className="font-semibold text-white truncate max-w-[140px]">
                             {formValues.email || formValues.phone || '—'}
                           </span>
                         </div>
@@ -885,11 +860,12 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                   </div>
                 </motion.div>
               )}
+
             </AnimatePresence>
           </form>
         </div>
 
-        {/* Footer Espaçoso com Navegação Clara */}
+        {/* Footer */}
         <DialogFooter className="px-8 py-5 border-t border-zinc-800/80 bg-zinc-950/90 flex items-center justify-between sm:justify-between w-full">
           <div>
             <Button
@@ -917,7 +893,7 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
               </Button>
             )}
 
-            {currentStep < 5 ? (
+            {currentStep < TOTAL_STEPS ? (
               <Button
                 type="button"
                 onClick={handleNext}
