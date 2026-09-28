@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCampaigns } from '@/hooks/useCampaigns';
+import { useAdAccounts } from '@/hooks/useAdAccounts';
 import { CampaignSettingsStep } from './CampaignSettingsStep';
 import { AdSetSettingsStep } from './AdSetSettingsStep';
 import { DirectioningStep } from './DirectioningStep';
@@ -26,6 +27,7 @@ interface CampaignFormDialogProps {
   campaign?: CampaignWithRelations;
   organizationId: string;
   marketplace?: CampaignMarketplace;
+  defaultAdAccountId?: string;
   onSaved: () => void;
 }
 
@@ -36,7 +38,11 @@ const STEPS = [
   'Vincular Produtos',
 ];
 
-const buildDefault = (organizationId: string, marketplace: CampaignMarketplace = 'tiktok'): CampaignFormPayload => {
+const buildDefault = (
+  organizationId: string,
+  marketplace: CampaignMarketplace = 'tiktok',
+  defaultAdAccountId?: string
+): CampaignFormPayload => {
   const defaultAdSet: CampaignFormPayload['adSet'] = {
     name: null,
     conversion_type: null,
@@ -64,6 +70,7 @@ const buildDefault = (organizationId: string, marketplace: CampaignMarketplace =
   return {
     campaign: {
       organization_id: organizationId,
+      ad_account_id: defaultAdAccountId ?? null,
       marketplace,
       name: '',
       objective: 'sales' as CampaignObjective,
@@ -122,6 +129,7 @@ const fromExisting = (c: CampaignWithRelations): CampaignFormPayload => {
   return {
     campaign: {
       organization_id: c.organization_id,
+      ad_account_id: c.ad_account_id ?? null,
       marketplace: c.marketplace,
       name: c.name,
       objective: c.objective,
@@ -145,12 +153,14 @@ export const CampaignFormDialog: React.FC<CampaignFormDialogProps> = ({
   campaign,
   organizationId,
   marketplace = 'tiktok',
+  defaultAdAccountId,
   onSaved,
 }) => {
   const { createCampaign, updateCampaign } = useCampaigns(organizationId);
+  const { adAccounts } = useAdAccounts(organizationId);
   const [step, setStep] = useState(1);
   const [payload, setPayload] = useState<CampaignFormPayload>(() =>
-    campaign ? fromExisting(campaign) : buildDefault(organizationId, marketplace)
+    campaign ? fromExisting(campaign) : buildDefault(organizationId, marketplace, defaultAdAccountId)
   );
   const [selectedAdSetIndex, setSelectedAdSetIndex] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -161,9 +171,9 @@ export const CampaignFormDialog: React.FC<CampaignFormDialogProps> = ({
       setStep(1);
       setErrors({});
       setSelectedAdSetIndex(0);
-      setPayload(campaign ? fromExisting(campaign) : buildDefault(organizationId, marketplace));
+      setPayload(campaign ? fromExisting(campaign) : buildDefault(organizationId, marketplace, defaultAdAccountId));
     }
-  }, [open, campaign, organizationId, marketplace]);
+  }, [open, campaign, organizationId, marketplace, defaultAdAccountId]);
 
   const setCampaignField = (
     field: keyof CampaignFormPayload['campaign'],
@@ -341,6 +351,7 @@ export const CampaignFormDialog: React.FC<CampaignFormDialogProps> = ({
               data={payload.campaign}
               onChange={setCampaignField}
               errors={errors}
+              adAccounts={adAccounts}
             />
           )}
           {step === 2 && (

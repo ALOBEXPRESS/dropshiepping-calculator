@@ -15,8 +15,11 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
+import { useSearchParams } from 'react-router-dom';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useCampaigns } from '@/hooks/useCampaigns';
+import { useAdAccounts } from '@/hooks/useAdAccounts';
+import type { AdAccountWithStats } from '@/types/adAccounts';
 import { CampaignFormDialog } from '@/components/campaigns/CampaignFormDialog';
 import { MarketplacePickerModal } from '@/components/campaigns/MarketplacePickerModal';
 import { getObjectiveLabel } from '@/types/campaigns';
@@ -474,6 +477,11 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSe
             <span className="flex-shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full bg-pink-500/15 text-pink-400 border border-pink-500/30">
               {marketplaceLabel[c.marketplace] ?? c.marketplace}
             </span>
+            {c.ad_account && (
+              <span className="flex-shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                {c.ad_account.name}
+              </span>
+            )}
             <span className={`flex-shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full border ${sc.className}`}>
               {sc.label}
             </span>
@@ -523,6 +531,9 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSe
                 {totalCusto > 0 && (
                   <> · Custo: <span className="text-orange-400 font-medium">R$ {formatBRL(totalCusto)}</span></>
                 )}
+                {c.ad_account && (
+                  <> · Conta: <span className="text-cyan-300 font-medium">{c.ad_account.name}</span></>
+                )}
               </p>
               {periodStr && (
                 <p className="text-xs text-muted-foreground flex items-center gap-1.5">
@@ -554,13 +565,41 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSe
 
 const CampaignsPage: React.FC = () => {
   const { organizationId } = useSettings();
-  const { campaigns, isLoading, isError, deleteCampaign } = useCampaigns(organizationId ?? '');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedAccountId = searchParams.get('conta') ?? 'all';
+  const shouldOpenNew = searchParams.get('nova') === 'true';
+
+  const { adAccounts } = useAdAccounts(organizationId ?? '');
+  const { campaigns, isLoading, isError, deleteCampaign } = useCampaigns(
+    organizationId ?? '',
+    selectedAccountId
+  );
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<CampaignWithRelations | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [marketplacePickerOpen, setMarketplacePickerOpen] = useState(false);
   const [selectedMarketplace, setSelectedMarketplace] = useState<CampaignMarketplace>('tiktok');
+
+  useEffect(() => {
+    if (shouldOpenNew) {
+      setMarketplacePickerOpen(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete('nova');
+      setSearchParams(next, { replace: true });
+    }
+  }, [shouldOpenNew, searchParams, setSearchParams]);
+
+  const handleAccountChange = (val: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (val === 'all') {
+      next.delete('conta');
+    } else {
+      next.set('conta', val);
+    }
+    setSearchParams(next);
+  };
 
   const handleNew = () => { setMarketplacePickerOpen(true); };
   const handleMarketplaceSelect = (mp: CampaignMarketplace) => {
@@ -612,7 +651,23 @@ const CampaignsPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-white">Campanhas</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Gerencie suas campanhas de tráfego pago</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {adAccounts.length > 0 && (
+            <Select value={selectedAccountId} onValueChange={handleAccountChange}>
+              <SelectTrigger className="w-48 bg-card border-input text-foreground text-xs h-9">
+                <SelectValue placeholder="Todas as Contas" />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-input text-foreground">
+                <SelectItem value="all">Todas as Contas</SelectItem>
+                {adAccounts.map((acc: AdAccountWithStats) => (
+                  <SelectItem key={acc.id} value={acc.id}>
+                    {acc.name}
+                  </SelectItem>
+                ))}
+                <SelectItem value="unassigned">Sem Conta Vinculada</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
           <Select value={sortKey} onValueChange={(v) => setSortKey(v as typeof sortKey)}>
             <SelectTrigger className="w-48 bg-card border-input text-foreground text-xs h-9">
               <SelectValue placeholder="Ordenar por" />
@@ -772,6 +827,7 @@ const CampaignsPage: React.FC = () => {
           campaign={editingCampaign ?? undefined}
           organizationId={organizationId}
           marketplace={editingCampaign?.marketplace ?? selectedMarketplace}
+          defaultAdAccountId={selectedAccountId !== 'all' && selectedAccountId !== 'unassigned' ? selectedAccountId : undefined}
           onSaved={() => {}}
         />
       )}

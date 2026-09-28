@@ -4,14 +4,21 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ObjectivePicker } from './ObjectivePicker';
 import type { CampaignFormPayload, CampaignObjective } from '@/types/campaigns';
+import type { AdAccount } from '@/types/adAccounts';
 
 interface CampaignSettingsStepProps {
   data: CampaignFormPayload['campaign'];
   onChange: (field: keyof CampaignFormPayload['campaign'], value: string | number | null) => void;
   errors: Record<string, string>;
+  adAccounts?: AdAccount[];
 }
 
-export const CampaignSettingsStep: React.FC<CampaignSettingsStepProps> = ({ data, onChange, errors }) => {
+export const CampaignSettingsStep: React.FC<CampaignSettingsStepProps> = ({
+  data,
+  onChange,
+  errors,
+  adAccounts = [],
+}) => {
   // Raw string state for budget — avoids cursor-jump on every keystroke from format-on-change
   const [rawBudget, setRawBudget] = useState<string>(() =>
     data.budget_amount != null ? String(data.budget_amount).replace('.', ',') : ''
@@ -69,6 +76,32 @@ export const CampaignSettingsStep: React.FC<CampaignSettingsStepProps> = ({ data
               <SelectItem value="ended">Encerrado</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        {/* Conta de Anúncios */}
+        <div className="space-y-1.5 md:col-span-2">
+          <Label htmlFor="ad-account" className="text-zinc-300 text-sm">
+            Conta de Anúncios
+          </Label>
+          <Select
+            value={data.ad_account_id ?? 'none'}
+            onValueChange={(v) => onChange('ad_account_id', v === 'none' ? null : v)}
+          >
+            <SelectTrigger id="ad-account" className="bg-zinc-900 border-zinc-700 text-white">
+              <SelectValue placeholder="Selecione uma conta de anúncios" />
+            </SelectTrigger>
+            <SelectContent className="bg-zinc-900 border-zinc-700">
+              <SelectItem value="none">Nenhuma conta vinculada (avulsa)</SelectItem>
+              {adAccounts.map((acc) => (
+                <SelectItem key={acc.id} value={acc.id}>
+                  {acc.name} ({acc.platform})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-zinc-500">
+            Associe esta campanha a uma conta de anúncios para agrupar métricas e orçamentos.
+          </p>
         </div>
       </div>
 

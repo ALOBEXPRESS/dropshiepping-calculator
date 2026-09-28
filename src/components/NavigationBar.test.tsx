@@ -7,6 +7,7 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import '@testing-library/jest-dom/vitest';
 import NavigationBar from './NavigationBar';
 
 describe('NavigationBar', () => {
@@ -21,7 +22,7 @@ describe('NavigationBar', () => {
       />
     );
 
-    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Painel')).toBeInTheDocument();
     expect(screen.getByText('Leads')).toBeInTheDocument();
     expect(screen.getByText('Calculadora')).toBeInTheDocument();
     expect(screen.getByText('Configurações')).toBeInTheDocument();
@@ -100,7 +101,7 @@ describe('NavigationBar', () => {
       />
     );
 
-    const menuButton = screen.getByLabelText('Toggle mobile menu');
+    const menuButton = screen.getByLabelText('Alternar menu mobile');
     expect(menuButton).toHaveAttribute('aria-expanded', 'false');
 
     fireEvent.click(menuButton);

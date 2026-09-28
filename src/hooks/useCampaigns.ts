@@ -13,22 +13,35 @@ export interface UseCampaignsReturn {
   refetch: () => void;
 }
 
-export function useCampaigns(organizationId: string): UseCampaignsReturn {
+export function useCampaigns(
+  organizationId: string,
+  adAccountId?: string | null
+): UseCampaignsReturn {
   const queryClient = useQueryClient();
-  const queryKey = ['campaigns', organizationId];
+  const queryKey = ['campaigns', organizationId, adAccountId ?? 'all'];
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('campaigns')
         .select(`
           *,
           campaign_ad_sets(*),
-          campaign_products(*)
+          campaign_products(*),
+          ad_account:ad_accounts(*)
         `)
-        .eq('organization_id', organizationId)
-        .order('created_at', { ascending: false });
+        .eq('organization_id', organizationId);
+
+      if (adAccountId && adAccountId !== 'all') {
+        if (adAccountId === 'unassigned') {
+          query = query.is('ad_account_id', null);
+        } else {
+          query = query.eq('ad_account_id', adAccountId);
+        }
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw new Error(error.message);
       return (data ?? []) as CampaignWithRelations[];
@@ -37,7 +50,10 @@ export function useCampaigns(organizationId: string): UseCampaignsReturn {
     staleTime: 5 * 60 * 1000,
   });
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey });
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['campaigns', organizationId] });
+    queryClient.invalidateQueries({ queryKey: ['ad_accounts', organizationId] });
+  };
 
   const createCampaign = async (payload: CampaignFormPayload) => {
     // 1. Insert campaign
@@ -46,6 +62,7 @@ export function useCampaigns(organizationId: string): UseCampaignsReturn {
       .insert({
         ...payload.campaign,
         organization_id: organizationId,
+        ad_account_id: payload.campaign.ad_account_id ?? (adAccountId && adAccountId !== 'all' ? adAccountId : null),
       })
       .select('id')
       .single();
@@ -109,6 +126,7 @@ export function useCampaigns(organizationId: string): UseCampaignsReturn {
         budget_type: payload.campaign.budget_type,
         budget_amount: payload.campaign.budget_amount,
         status: payload.campaign.status,
+        ...(payload.campaign.ad_account_id !== undefined ? { ad_account_id: payload.campaign.ad_account_id } : {}),
         updated_at: new Date().toISOString(),
       })
       .eq('id', id);

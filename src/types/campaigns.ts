@@ -17,9 +17,12 @@ export type CampaignStatus = 'active' | 'paused' | 'ended';
 
 export type AudienceGender = 'all' | 'male' | 'female';
 
+import type { AdAccount } from './adAccounts';
+
 export interface Campaign {
   id: string;
   organization_id: string;
+  ad_account_id?: string | null;
   marketplace: CampaignMarketplace;
   name: string;
   objective: CampaignObjective;
@@ -72,6 +75,7 @@ export interface CampaignProduct {
 export interface CampaignWithRelations extends Campaign {
   campaign_ad_sets: CampaignAdSet[];
   campaign_products: CampaignProduct[];
+  ad_account?: AdAccount | null;
 }
 
 /** Payload used by the create/edit form */

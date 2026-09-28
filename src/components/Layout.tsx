@@ -55,7 +55,9 @@ const NAV_ROUTES: {
     { to: '/campanhas', label: 'Campanhas',   adminOnly: true,  accent: 'text-[hsl(var(--warning))]',  dot: 'bg-[hsl(var(--warning))]',  dotMuted: 'bg-[hsl(var(--warning)/0.4)]',  active: 'bg-[hsl(var(--warning)/0.08)] text-[hsl(var(--warning))] font-semibold' },
     { to: '/repasse',   label: 'Repasse',     adminOnly: true,  accent: 'text-[hsl(var(--chart-6))]',  dot: 'bg-[hsl(var(--chart-6))]',  dotMuted: 'bg-[hsl(var(--chart-6)/0.4)]',  active: 'bg-[hsl(var(--chart-6)/0.08)] text-[hsl(var(--chart-6))] font-semibold' },
   ],
-  painel: [],
+  painel: [
+    { to: '/contas-anuncios', label: 'Contas de Anúncios', adminOnly: true,  accent: 'text-[hsl(var(--warning))]',  dot: 'bg-[hsl(var(--warning))]',  dotMuted: 'bg-[hsl(var(--warning)/0.4)]',  active: 'bg-[hsl(var(--warning)/0.08)] text-[hsl(var(--warning))] font-semibold' },
+  ],
 };
 
 // ── Reusable NavLink ──────────────────────────────────────────────────────────
@@ -191,14 +193,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${painelOpen ? 'grid-rows-[1fr] opacity-100 mt-0.5' : 'grid-rows-[0fr] opacity-0 pointer-events-none'}`}>
                   <div className="overflow-hidden">
                     <ul className="space-y-0.5 pl-3 pb-1">
-                      {NAV_ROUTES.painel.length === 0 ? (
+                      {NAV_ROUTES.painel.filter(r => !r.adminOnly || isAdmin).length === 0 ? (
                         <li className="px-3 py-1.5 text-xs text-muted-foreground/60 italic">
                           Em breve
                         </li>
                       ) : (
-                        NAV_ROUTES.painel.map(r => (
-                          <NavLink key={r.to} route={r} pathname={location.pathname} e2eSearch={e2eSearch} />
-                        ))
+                        NAV_ROUTES.painel
+                          .filter(r => !r.adminOnly || isAdmin)
+                          .map(r => (
+                            <NavLink key={r.to} route={r} pathname={location.pathname} e2eSearch={e2eSearch} />
+                          ))
                       )}
                     </ul>
                   </div>

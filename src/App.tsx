@@ -22,6 +22,8 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Sales = lazy(() => import('./pages/Sales'));
 const Leads = lazy(() => import('./pages/Leads'));
 const Campaigns = lazy(() => import('./pages/CampaignsPage'));
+const AdAccounts = lazy(() => import('./pages/AdAccountsPage'));
+const AdAccountDetail = lazy(() => import('./pages/AdAccountDetailPage'));
 
 const ProductsPage = () => (
   <ProtectedRoute>
@@ -77,6 +79,30 @@ const CampaignsPage = () => (
   </ProtectedRoute>
 );
 
+const AdAccountsRoutePage = () => (
+  <ProtectedRoute>
+    <AdminRoute>
+    <Layout>
+      <Suspense fallback={<LoadingState />}>
+        <AdAccounts />
+      </Suspense>
+    </Layout>
+    </AdminRoute>
+  </ProtectedRoute>
+);
+
+const AdAccountDetailRoutePage = () => (
+  <ProtectedRoute>
+    <AdminRoute>
+    <Layout>
+      <Suspense fallback={<LoadingState />}>
+        <AdAccountDetail />
+      </Suspense>
+    </Layout>
+    </AdminRoute>
+  </ProtectedRoute>
+);
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -116,6 +142,8 @@ function App() {
               <Route path="/vendas" element={<SalesPage />} />
               <Route path="/leads" element={<LeadsPage />} />
               <Route path="/campanhas" element={<CampaignsPage />} />
+              <Route path="/contas-anuncios" element={<AdAccountsRoutePage />} />
+              <Route path="/contas-anuncios/:id" element={<AdAccountDetailRoutePage />} />
               <Route path="/profile" element={
                 <ProtectedRoute>
                   <Layout>
