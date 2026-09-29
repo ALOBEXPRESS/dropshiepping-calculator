@@ -58,8 +58,8 @@ const NAV_ROUTES: {
   ],
   painel: [
     { to: '/proxies',            label: 'Proxies',              adminOnly: true,  accent: 'text-orange-400',            dot: 'bg-orange-400',            dotMuted: 'bg-orange-400/40',              active: 'bg-orange-400/10 text-orange-400 font-semibold' },
-    { to: '/contas',             label: 'Contas',               adminOnly: true,  accent: 'text-[hsl(var(--brand))]',    dot: 'bg-[hsl(var(--brand))]',    dotMuted: 'bg-[hsl(var(--brand)/0.4)]',    active: 'bg-[hsl(var(--brand)/0.08)] text-[hsl(var(--brand))] font-semibold' },
-    { to: '/contas-anuncios',    label: 'Contas de Anúncios',    adminOnly: true,  accent: 'text-[hsl(var(--warning))]',  dot: 'bg-[hsl(var(--warning))]',  dotMuted: 'bg-[hsl(var(--warning)/0.4)]',  active: 'bg-[hsl(var(--warning)/0.08)] text-[hsl(var(--warning))] font-semibold' },
+    { to: '/contas',             label: 'Conta',                adminOnly: true,  accent: 'text-[hsl(var(--brand))]',    dot: 'bg-[hsl(var(--brand))]',    dotMuted: 'bg-[hsl(var(--brand)/0.4)]',    active: 'bg-[hsl(var(--brand)/0.08)] text-[hsl(var(--brand))] font-semibold' },
+    { to: '/contas-anuncios',    label: 'Conta de Anúncio',     adminOnly: true,  accent: 'text-[hsl(var(--warning))]',  dot: 'bg-[hsl(var(--warning))]',  dotMuted: 'bg-[hsl(var(--warning)/0.4)]',  active: 'bg-[hsl(var(--warning)/0.08)] text-[hsl(var(--warning))] font-semibold' },
     { to: '/perfis-navegador',   label: 'Perfis de Navegador',  adminOnly: true,  accent: 'text-cyan-400',              dot: 'bg-cyan-400',              dotMuted: 'bg-cyan-400/40',                active: 'bg-cyan-400/10 text-cyan-400 font-semibold' },
     { to: '/business-centers',   label: 'Business Centers',     adminOnly: true,  accent: 'text-purple-400',            dot: 'bg-purple-400',            dotMuted: 'bg-purple-400/40',              active: 'bg-purple-400/10 text-purple-400 font-semibold' },
   ],

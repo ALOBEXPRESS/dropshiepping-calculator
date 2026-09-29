@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useProxies } from '@/hooks/useProxies';
+import { PLATFORM_COUNTRIES } from '@/constants/niches';
 import type { PlatformAccount } from '@/types/platformAccounts';
 import type { Proxy, ProxyFormData } from '@/types/proxies';
 import {
@@ -45,33 +46,17 @@ import {
   PROXY_STATUS_COLORS,
 } from '@/types/proxies';
 
-const COUNTRY_NAMES: Record<string, string> = {
-  BR: 'Brasil',
-  US: 'Estados Unidos',
-  GB: 'Reino Unido',
-  DE: 'Alemanha',
-  FR: 'França',
-  ES: 'Espanha',
-  PT: 'Portugal',
-  CA: 'Canadá',
-  MX: 'México',
-  IT: 'Itália',
-  NL: 'Holanda',
-  JP: 'Japão',
-  AU: 'Austrália',
-  AR: 'Argentina',
-  CO: 'Colômbia',
-  CL: 'Chile',
-  CN: 'China',
-  RU: 'Rússia',
-  SG: 'Cingapura',
-  IN: 'Índia',
-};
-
-function getCountryLabel(code?: string | null): string {
-  if (!code) return 'Sem país especificado';
-  const upper = code.toUpperCase();
-  return COUNTRY_NAMES[upper] ? `${COUNTRY_NAMES[upper]} (${upper})` : upper;
+export function getCountryName(code: string | null | undefined): string {
+  if (!code) return 'Sem país definido';
+  const upper = code.trim().toUpperCase();
+  const found = PLATFORM_COUNTRIES.find((c) => c.code === upper);
+  if (found) return found.name;
+  try {
+    const displayNames = new Intl.DisplayNames(['pt-BR'], { type: 'region' });
+    return displayNames.of(upper) || upper;
+  } catch {
+    return upper;
+  }
 }
 
 // ── ProxyFormDialog ───────────────────────────────────────────────────────────
@@ -606,7 +591,7 @@ export const ProxiesManager: React.FC<ProxiesManagerProps> = ({
   const [formOpen, setFormOpen] = useState(false);
   const [editingProxy, setEditingProxy] = useState<Proxy | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [selectedCountry, setSelectedCountry] = useState<string>('all');
+  const [selectedCountryFilter, setSelectedCountryFilter] = useState<string>('all');
 
   // Mapeia proxy_id → platform_account para exibir vinculação
   const proxyToAccount = useMemo(() => {
@@ -629,43 +614,32 @@ export const ProxiesManager: React.FC<ProxiesManagerProps> = ({
     return proxies;
   }, [proxies, filterByAccountId, proxyToAccount]);
 
-  // Agrupa proxies visíveis por país
-  const countryGroups = useMemo(() => {
-    const groups = new Map<string, Proxy[]>();
+  // Agrupa proxies por país
+  const groupedByCountry = useMemo(() => {
+    const groupsMap = new Map<string, { code: string; name: string; proxies: Proxy[] }>();
+
     for (const proxy of visibleProxies) {
-      const countryKey = proxy.country ? proxy.country.toUpperCase() : 'UNKNOWN';
-      if (!groups.has(countryKey)) {
-        groups.set(countryKey, []);
+      const code = proxy.country ? proxy.country.trim().toUpperCase() : 'OTHER';
+      const name = proxy.country ? getCountryName(proxy.country) : 'Sem país definido';
+
+      if (!groupsMap.has(code)) {
+        groupsMap.set(code, { code, name, proxies: [] });
       }
-      groups.get(countryKey)!.push(proxy);
+      groupsMap.get(code)!.proxies.push(proxy);
     }
 
-    // Ordena: códigos conhecidos em ordem alfabética, 'UNKNOWN' no fim
-    return Array.from(groups.entries()).sort(([a], [b]) => {
-      if (a === 'UNKNOWN') return 1;
-      if (b === 'UNKNOWN') return -1;
-      return a.localeCompare(b);
+    return Array.from(groupsMap.values()).sort((a, b) => {
+      if (a.code === 'OTHER') return 1;
+      if (b.code === 'OTHER') return -1;
+      return a.name.localeCompare(b.name, 'pt-BR');
     });
   }, [visibleProxies]);
 
-  // Contagem por país para as pílulas de filtro
-  const countriesWithCount = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const p of visibleProxies) {
-      const code = p.country ? p.country.toUpperCase() : 'UNKNOWN';
-      counts.set(code, (counts.get(code) ?? 0) + 1);
-    }
-    return Array.from(counts.entries()).sort(([a], [b]) => {
-      if (a === 'UNKNOWN') return 1;
-      if (b === 'UNKNOWN') return -1;
-      return a.localeCompare(b);
-    });
-  }, [visibleProxies]);
-
+  // Grupos filtrados para exibição
   const displayedGroups = useMemo(() => {
-    if (selectedCountry === 'all') return countryGroups;
-    return countryGroups.filter(([code]) => code === selectedCountry);
-  }, [countryGroups, selectedCountry]);
+    if (selectedCountryFilter === 'all') return groupedByCountry;
+    return groupedByCountry.filter((g) => g.code === selectedCountryFilter);
+  }, [groupedByCountry, selectedCountryFilter]);
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -693,7 +667,7 @@ export const ProxiesManager: React.FC<ProxiesManagerProps> = ({
   const currentEditingLinkedAccount = editingProxy ? proxyToAccount.get(editingProxy.id) : null;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div>
@@ -707,48 +681,12 @@ export const ProxiesManager: React.FC<ProxiesManagerProps> = ({
         </div>
         <Button
           onClick={() => { setEditingProxy(null); setFormOpen(true); }}
-          className="bg-orange-600 hover:bg-orange-700 text-white gap-2 h-9 text-sm shadow-md"
+          className="bg-orange-600 hover:bg-orange-700 text-white gap-2 h-9 text-sm shadow-md shadow-orange-600/20"
         >
           <Plus className="w-4 h-4" />
           Novo Proxy
         </Button>
       </div>
-
-      {/* Country Filter Pills */}
-      {visibleProxies.length > 0 && countryGroups.length > 1 && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
-          <button
-            onClick={() => setSelectedCountry('all')}
-            className={`px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 ${
-              selectedCountry === 'all'
-                ? 'bg-orange-500/15 border-orange-500/50 text-orange-400 font-semibold shadow-sm'
-                : 'border-border/60 text-muted-foreground hover:bg-accent hover:text-foreground'
-            }`}
-          >
-            <span>Todos</span>
-            <span className="opacity-70 text-[10px]">({visibleProxies.length})</span>
-          </button>
-          {countriesWithCount.map(([code, count]) => (
-            <button
-              key={code}
-              onClick={() => setSelectedCountry(code)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all ${
-                selectedCountry === code
-                  ? 'bg-orange-500/15 border-orange-500/50 text-orange-400 font-semibold shadow-sm'
-                  : 'border-border/60 text-muted-foreground hover:bg-accent hover:text-foreground'
-              }`}
-            >
-              {code !== 'UNKNOWN' ? (
-                <ReactCountryFlag countryCode={code} svg style={{ width: '1.1em', height: '1.1em' }} />
-              ) : (
-                <Globe className="w-3.5 h-3.5 text-muted-foreground" />
-              )}
-              <span>{code !== 'UNKNOWN' ? code : 'Sem país'}</span>
-              <span className="opacity-70 text-[10px]">({count})</span>
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* Content */}
       {isLoading ? (
@@ -777,49 +715,104 @@ export const ProxiesManager: React.FC<ProxiesManagerProps> = ({
         </div>
       ) : (
         <div className="space-y-6">
-          {displayedGroups.map(([countryCode, groupProxies]) => (
-            <div key={countryCode} className="space-y-3">
-              {/* Country Section Header */}
-              <div className="flex items-center justify-between pb-2 border-b border-border/60">
-                <div className="flex items-center gap-2">
-                  {countryCode !== 'UNKNOWN' ? (
+          {/* Filtros de país (pills) */}
+          {groupedByCountry.length > 1 && (
+            <div className="flex flex-wrap items-center gap-2 pb-1 border-b border-border/40">
+              <button
+                type="button"
+                onClick={() => setSelectedCountryFilter('all')}
+                className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-2 ${
+                  selectedCountryFilter === 'all'
+                    ? 'bg-orange-500/15 text-orange-400 border border-orange-500/30 font-semibold'
+                    : 'bg-card/60 text-muted-foreground hover:bg-accent hover:text-foreground border border-border/50'
+                }`}
+              >
+                <span>Todos os países</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-background/60 font-mono">
+                  {visibleProxies.length}
+                </span>
+              </button>
+              {groupedByCountry.map((group) => {
+                const isSelected = selectedCountryFilter === group.code;
+                return (
+                  <button
+                    key={group.code}
+                    type="button"
+                    onClick={() => setSelectedCountryFilter(group.code)}
+                    className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-2 ${
+                      isSelected
+                        ? 'bg-orange-500/15 text-orange-400 border border-orange-500/30 font-semibold'
+                        : 'bg-card/60 text-muted-foreground hover:bg-accent hover:text-foreground border border-border/50'
+                    }`}
+                  >
+                    {group.code !== 'OTHER' ? (
+                      <ReactCountryFlag countryCode={group.code} svg style={{ width: '1.2em', height: '1.2em' }} />
+                    ) : (
+                      <Globe className="w-3.5 h-3.5" />
+                    )}
+                    <span>{group.name}</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-background/60 font-mono">
+                      {group.proxies.length}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Seções por País */}
+          <div className="space-y-8">
+            {displayedGroups.map((group) => (
+              <section key={group.code} className="space-y-3">
+                {/* Cabeçalho da Seção do País */}
+                <div className="flex items-center justify-between pb-2 border-b border-border/70">
+                  <div className="flex items-center gap-2.5">
+                    {group.code !== 'OTHER' ? (
+                      <div className="w-6 h-4.5 rounded overflow-hidden shadow-xs flex items-center justify-center bg-muted/40">
+                        <ReactCountryFlag
+                          countryCode={group.code}
+                          svg
+                          style={{ width: '1.25em', height: '1.25em' }}
+                          title={group.name}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-6 h-4.5 rounded flex items-center justify-center bg-muted/40 text-muted-foreground">
+                        <Globe className="w-3.5 h-3.5" />
+                      </div>
+                    )}
                     <div className="flex items-center gap-2">
-                      <ReactCountryFlag
-                        countryCode={countryCode}
-                        svg
-                        style={{ width: '1.3em', height: '1.3em', borderRadius: '2px' }}
-                      />
-                      <span className="text-sm font-semibold text-foreground">
-                        {getCountryLabel(countryCode)}
-                      </span>
+                      <h3 className="text-sm font-semibold text-foreground tracking-tight">
+                        {group.name}
+                      </h3>
+                      {group.code !== 'OTHER' && (
+                        <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                          {group.code}
+                        </span>
+                      )}
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Globe className="w-4 h-4" />
-                      <span className="text-sm font-semibold">Sem país especificado</span>
-                    </div>
-                  )}
-                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-accent text-muted-foreground font-mono">
-                    {groupProxies.length} {groupProxies.length === 1 ? 'proxy' : 'proxies'}
+                  </div>
+                  <span className="text-xs text-muted-foreground font-medium px-2.5 py-0.5 rounded-full bg-muted/60 border border-border/40">
+                    {group.proxies.length} {group.proxies.length === 1 ? 'proxy' : 'proxies'}
                   </span>
                 </div>
-              </div>
 
-              {/* Grid of Proxies */}
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {groupProxies.map((proxy) => (
-                  <ProxyCard
-                    key={proxy.id}
-                    proxy={proxy}
-                    linkedAccount={proxyToAccount.get(proxy.id) ?? null}
-                    onEdit={() => { setEditingProxy(proxy); setFormOpen(true); }}
-                    onDelete={() => setDeleteId(proxy.id)}
-                    onUnlink={() => handleUnlink(proxy)}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
+                {/* Grid de Cards de Proxies deste país */}
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {group.proxies.map((proxy) => (
+                    <ProxyCard
+                      key={proxy.id}
+                      proxy={proxy}
+                      linkedAccount={proxyToAccount.get(proxy.id) ?? null}
+                      onEdit={() => { setEditingProxy(proxy); setFormOpen(true); }}
+                      onDelete={() => setDeleteId(proxy.id)}
+                      onUnlink={() => handleUnlink(proxy)}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
         </div>
       )}
 

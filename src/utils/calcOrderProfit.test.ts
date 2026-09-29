@@ -313,5 +313,50 @@ describe('calcOrderProfit — Shopee with reembolso_fornecedor', () => {
     expect(r.totalProductCost).toBe(27.64);
     expect(r.realProfit).toBe(-1.25); // 26.39 - 27.64
   });
+
+  it('negative reembolso_marketplace_value properly abates profit as negative net revenue', () => {
+    const r = calcOrderProfit(
+      baseOrder({
+        total_amount: 100,
+        reembolso_marketplace_enabled: true,
+        reembolso_marketplace_value: -15.50,
+        products: [{ unit_cost: 20, quantity: 1 }],
+      })
+    );
+    expect(r.precoVendaLiquidoFinal).toBe(-15.50);
+    expect(r.totalProductCost).toBe(20);
+    expect(r.realProfit).toBe(-35.50); // -15.50 - 20 = -35.50
+  });
+
+  it('reembolso_marketplace_enabled with null/0 value abates profit to -totalProductCost', () => {
+    const r = calcOrderProfit(
+      baseOrder({
+        total_amount: 100,
+        reembolso_marketplace_enabled: true,
+        reembolso_marketplace_value: 0,
+        products: [{ unit_cost: 25, quantity: 1 }],
+      })
+    );
+    expect(r.precoVendaLiquidoFinal).toBe(0);
+    expect(r.totalProductCost).toBe(25);
+    expect(r.realProfit).toBe(-25); // 0 - 25 = -25
+  });
+
+  it('negative reembolso_fornecedor_value increases effective product cost and reduces profit', () => {
+    const r = calcOrderProfit(
+      baseOrder({
+        total_amount: 100,
+        reembolso_marketplace_enabled: true,
+        reembolso_marketplace_value: -10,
+        reembolso_fornecedor_enabled: true,
+        reembolso_fornecedor_value: -5,
+        products: [{ unit_cost: 20, quantity: 1 }],
+      })
+    );
+    expect(r.precoVendaLiquidoFinal).toBe(-10);
+    expect(r.effectiveProductCost).toBe(25); // 20 - (-5) = 25
+    expect(r.realProfit).toBe(-35); // -10 - 25 = -35
+  });
 });
+
 
