@@ -37,7 +37,10 @@ import {
   Instagram,
   ShoppingBag,
   User,
+  Building2,
+  Plus,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import ReactCountryFlag from 'react-country-flag';
 import { toast } from 'sonner';
 import {
@@ -50,6 +53,7 @@ import { PlatformAccountStep } from '@/components/ad-accounts/PlatformAccountSte
 import { useSettings } from '@/contexts/SettingsContext';
 import { useUser } from '@/contexts/UserContext';
 import { useQueryClient } from '@tanstack/react-query';
+import { useBusinessCenters } from '@/hooks/useBusinessCenters';
 import { AdAccountsService } from '@/services/adAccountsService';
 import {
   formatCentsToCurrencyString,
@@ -90,6 +94,7 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
   const { organizationId } = useSettings();
   const { userId } = useUser();
   const queryClient = useQueryClient();
+  const { centers: businessCenters = [] } = useBusinessCenters(organizationId);
 
   const defaultValues: AdAccountFormData = {
     name: '',
@@ -111,6 +116,7 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
     pixel_id: '',
     catalog_id: '',
     platform_account_id: null,
+    bc_entity_id: null,
   };
 
   const {
@@ -150,6 +156,7 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
         pixel_id: (account.platform_config?.pixel_id as string) ?? '',
         catalog_id: (account.platform_config?.catalog_id as string) ?? '',
         platform_account_id: account.platform_account_id ?? null,
+        bc_entity_id: account.bc_entity_id ?? null,
       });
       setSelectedPlatformAccount(account.platform_account ?? null);
       setCurrentStep(isEditing ? 3 : 1);
@@ -641,16 +648,81 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="business_center_id" className="text-xs font-semibold text-zinc-200">
-                        ID do Business Center (Opcional)
-                      </Label>
-                      <Input
-                        id="business_center_id"
-                        placeholder="Ex: 7123456789012345678"
-                        {...register('business_center_id')}
-                        className="bg-zinc-950 border-zinc-800 text-xs font-mono h-10 text-white"
-                      />
-                      <p className="text-[11px] text-zinc-500">ID da central de negócios organizadora.</p>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="business_center_select" className="text-xs font-semibold text-zinc-200 flex items-center gap-1.5">
+                          <Building2 className="w-3.5 h-3.5 text-purple-400" />
+                          Business Center (Opcional)
+                        </Label>
+                        <Link
+                          to="/business-centers"
+                          target="_blank"
+                          className="text-[11px] text-purple-400 hover:text-purple-300 flex items-center gap-1 hover:underline"
+                        >
+                          <Plus className="w-3 h-3" />
+                          Gerenciar BCs
+                        </Link>
+                      </div>
+
+                      {businessCenters.length > 0 && (
+                        <Select
+                          value={
+                            watch('bc_entity_id') ||
+                            (watch('business_center_id') ? 'manual' : 'none')
+                          }
+                          onValueChange={(val) => {
+                            if (val === 'none') {
+                              setValue('bc_entity_id', null);
+                              setValue('business_center_id', '');
+                            } else if (val === 'manual') {
+                              setValue('bc_entity_id', null);
+                            } else {
+                              const selectedBc = businessCenters.find((c) => c.id === val);
+                              if (selectedBc) {
+                                setValue('bc_entity_id', selectedBc.id);
+                                setValue('business_center_id', selectedBc.bc_id);
+                              }
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="bg-zinc-950 border-zinc-800 text-xs text-zinc-200 h-10">
+                            <SelectValue placeholder="Selecione um Business Center..." />
+                          </SelectTrigger>
+                          <SelectContent className="bg-zinc-900 border-zinc-800 text-white max-h-56">
+                            <SelectItem value="none">
+                              <span className="text-zinc-500 italic">Nenhum Business Center vinculado</span>
+                            </SelectItem>
+                            {businessCenters.map((bc) => (
+                              <SelectItem key={bc.id} value={bc.id}>
+                                {bc.name || `BC ${bc.bc_id}`} ({bc.bc_id})
+                              </SelectItem>
+                            ))}
+                            <SelectItem value="manual">
+                              <span className="text-purple-400">Digitar ID manualmente...</span>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+
+                      {/* Campo de texto para ID se não houver BCs ou se modo manual */}
+                      {(!businessCenters.length || !watch('bc_entity_id')) && (
+                        <div className="space-y-1 mt-1">
+                          <Input
+                            id="business_center_id"
+                            placeholder="Ex: 7123456789012345678"
+                            {...register('business_center_id')}
+                            className="bg-zinc-950 border-zinc-800 text-xs font-mono h-10 text-white"
+                          />
+                          <p className="text-[11px] text-zinc-500">
+                            ID numérico da central de negócios organizadora no TikTok.
+                          </p>
+                        </div>
+                      )}
+
+                      {watch('bc_entity_id') && (
+                        <p className="text-[11px] text-emerald-400">
+                          ✓ Vinculado ao Business Center ({watch('business_center_id')})
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2">

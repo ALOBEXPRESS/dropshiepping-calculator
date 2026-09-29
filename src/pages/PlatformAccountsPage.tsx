@@ -15,7 +15,9 @@ import {
   Unlink,
   Loader2,
   Shield,
+  Compass,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import ReactCountryFlag from 'react-country-flag';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -59,6 +61,7 @@ import {
   usePlatformAccountMutations,
 } from '@/hooks/usePlatformAccounts';
 import { useProxies } from '@/hooks/useProxies';
+import { useBrowserProfiles } from '@/hooks/useBrowserProfiles';
 import type {
   PlatformAccount,
   PlatformAccountFormData,
@@ -97,6 +100,17 @@ export const PlatformAccountsPage: React.FC = () => {
   const { update, remove } = usePlatformAccountMutations();
   const { proxies = [] } = useProxies(organizationId ?? '');
   const proxyMap = useMemo(() => new Map(proxies.map((p) => [p.id, p])), [proxies]);
+  const { profiles: browserProfiles = [] } = useBrowserProfiles(organizationId ?? '');
+  const profilesByAccount = useMemo(() => {
+    const map = new Map<string, typeof browserProfiles[0][]>();
+    for (const p of browserProfiles) {
+      if (!map.has(p.platform_account_id)) {
+        map.set(p.platform_account_id, []);
+      }
+      map.get(p.platform_account_id)!.push(p);
+    }
+    return map;
+  }, [browserProfiles]);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [countryFilter, setCountryFilter] = useState<string>('all');
@@ -563,6 +577,41 @@ export const PlatformAccountsPage: React.FC = () => {
                       <span className="text-zinc-500 italic text-[11px]">Nenhum</span>
                     )}
                   </div>
+
+                  {/* Perfil AdsPower vinculado */}
+                  {(() => {
+                    const accProfiles = profilesByAccount.get(account.id) ?? [];
+                    return (
+                      <div className="flex items-center justify-between">
+                        <span className="text-zinc-400 flex items-center gap-1">
+                          <Compass className="w-3 h-3 text-cyan-400" /> AdsPower:
+                        </span>
+                        {accProfiles.length > 0 ? (
+                          <Link
+                            to={`/perfis-navegador?account=${account.id}`}
+                            className="font-medium text-cyan-400 font-mono text-[11px] truncate max-w-[170px] hover:underline flex items-center gap-1"
+                            title={accProfiles.map((p) => p.name || p.external_profile_id).join(', ')}
+                          >
+                            <span className="truncate">
+                              {accProfiles[0].name || accProfiles[0].external_profile_id || 'Perfil AdsPower'}
+                            </span>
+                            {accProfiles.length > 1 && (
+                              <span className="text-[10px] text-cyan-300">
+                                (+{accProfiles.length - 1})
+                              </span>
+                            )}
+                          </Link>
+                        ) : (
+                          <Link
+                            to={`/perfis-navegador?newFor=${account.id}`}
+                            className="text-zinc-500 hover:text-cyan-400 italic text-[11px] hover:underline"
+                          >
+                            + Vincular perfil
+                          </Link>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* Informações adicionais Google Ads */}
                   {googleMeta && (

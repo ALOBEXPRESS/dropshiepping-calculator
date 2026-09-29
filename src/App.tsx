@@ -45,6 +45,8 @@ const PlatformAccounts = lazy(() => import('./pages/PlatformAccountsPage'));
 const AdAccounts = lazy(() => import('./pages/AdAccountsPage'));
 const AdAccountDetail = lazy(() => import('./pages/AdAccountDetailPage'));
 const Proxies = lazy(() => import('./pages/ProxiesPage'));
+const BrowserProfiles = lazy(() => import('./pages/BrowserProfilesPage'));
+const BusinessCenters = lazy(() => import('./pages/BusinessCentersPage'));
 
 const ProductsPage = () => (
   <ProtectedRoute>
@@ -148,6 +150,30 @@ const ProxiesRoutePage = () => (
   </ProtectedRoute>
 );
 
+const BrowserProfilesRoutePage = () => (
+  <ProtectedRoute>
+    <AdminRoute>
+    <Layout>
+      <Suspense fallback={<LoadingState />}>
+        <BrowserProfiles />
+      </Suspense>
+    </Layout>
+    </AdminRoute>
+  </ProtectedRoute>
+);
+
+const BusinessCentersRoutePage = () => (
+  <ProtectedRoute>
+    <AdminRoute>
+    <Layout>
+      <Suspense fallback={<LoadingState />}>
+        <BusinessCenters />
+      </Suspense>
+    </Layout>
+    </AdminRoute>
+  </ProtectedRoute>
+);
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -179,6 +205,8 @@ function App() {
               <Route path="/contas-anuncios" element={<AdAccountsRoutePage />} />
               <Route path="/contas-anuncios/:id" element={<AdAccountDetailRoutePage />} />
               <Route path="/proxies" element={<ProxiesRoutePage />} />
+              <Route path="/perfis-navegador" element={<BrowserProfilesRoutePage />} />
+              <Route path="/business-centers" element={<BusinessCentersRoutePage />} />
               <Route path="/profile" element={
                 <ProtectedRoute>
                   <Layout>

@@ -223,8 +223,15 @@ export const AdAccountCard: React.FC<AdAccountCardProps> = ({
           <div className="grid grid-cols-2 gap-2 text-muted-foreground">
             <div className="flex items-center gap-1.5 min-w-0">
               <Building2 className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground/70" />
-              <span className="truncate" title={account.business_center_id ?? 'Sem BC'}>
-                BC: {account.business_center_id || '—'}
+              <span
+                className="truncate"
+                title={
+                  account.business_center?.name
+                    ? `${account.business_center.name} (${account.business_center.bc_id})`
+                    : account.business_center_id ?? 'Sem BC'
+                }
+              >
+                BC: {account.business_center?.name || account.business_center_id || '—'}
               </span>
             </div>
             <div className="flex items-center gap-1.5 min-w-0 justify-end">

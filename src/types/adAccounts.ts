@@ -40,6 +40,14 @@ export interface AdAccount {
   platform_account_id: string | null;
   /** Objeto da conta de plataforma vinculada (populado via join) */
   platform_account?: PlatformAccount | null;
+  /** FK UUID para business_centers.id — nullable (expand/contract) */
+  bc_entity_id?: string | null;
+  /** Objeto do business center vinculado (populado via join) */
+  business_center?: {
+    id: string;
+    bc_id: string;
+    name: string | null;
+  } | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -101,6 +109,8 @@ export const adAccountSchema = z.object({
   catalog_id: z.string().trim().optional().or(z.literal('')),
   /** FK UUID para platform_accounts — opcional no wizard, propagado pelo passo 2 */
   platform_account_id: z.string().uuid().nullable().optional(),
+  /** FK UUID para business_centers — opcional no wizard, expand/contract */
+  bc_entity_id: z.string().uuid().nullable().optional(),
 });
 
 export type AdAccountFormData = z.infer<typeof adAccountSchema>;

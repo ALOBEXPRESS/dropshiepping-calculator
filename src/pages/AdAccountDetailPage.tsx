@@ -562,10 +562,19 @@ export const AdAccountDetailPage: React.FC = () => {
               <div className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
                 <div>
                   <p className="text-[11px] font-medium text-muted-foreground">
-                    ID do TikTok Business Center
+                    TikTok Business Center
                   </p>
-                  <p className="text-sm font-mono text-foreground mt-0.5">
-                    {account.business_center_id || 'Não configurado'}
+                  <p className="text-sm text-foreground mt-0.5">
+                    {account.business_center?.name ? (
+                      <span className="flex items-center gap-1.5 font-medium">
+                        <span>{account.business_center.name}</span>
+                        <span className="text-xs text-muted-foreground font-mono">
+                          ({account.business_center.bc_id})
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="font-mono">{account.business_center_id || 'Não configurado'}</span>
+                    )}
                   </p>
                 </div>
                 {account.business_center_id && (

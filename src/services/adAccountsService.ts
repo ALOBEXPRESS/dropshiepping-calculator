@@ -146,6 +146,7 @@ export class AdAccountsService {
       advertiser_id,
       business_center_id,
       platform_account_id,
+      bc_entity_id,
     } = data;
 
     const platform_config = {
@@ -173,6 +174,7 @@ export class AdAccountsService {
       business_center_id: business_center_id || null,
       platform_config,
       platform_account_id: platform_account_id ?? null,
+      bc_entity_id: bc_entity_id ?? null,
       created_by: userId || null,
     };
 
@@ -215,6 +217,8 @@ export class AdAccountsService {
       updatePayload.advertiser_id = data.advertiser_id || null;
     if (data.business_center_id !== undefined)
       updatePayload.business_center_id = data.business_center_id || null;
+    if (data.bc_entity_id !== undefined)
+      updatePayload.bc_entity_id = data.bc_entity_id ?? null;
     if (data.platform_account_id !== undefined)
       updatePayload.platform_account_id = data.platform_account_id ?? null;
 
