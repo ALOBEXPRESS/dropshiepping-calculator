@@ -202,11 +202,16 @@ function App() {
               <Route path="/leads" element={<LeadsPage />} />
               <Route path="/campanhas" element={<CampaignsPage />} />
               <Route path="/contas" element={<PlatformAccountsRoutePage />} />
+              <Route path="/contas/conta" element={<PlatformAccountsRoutePage />} />
               <Route path="/contas-anuncios" element={<AdAccountsRoutePage />} />
               <Route path="/contas-anuncios/:id" element={<AdAccountDetailRoutePage />} />
               <Route path="/proxies" element={<ProxiesRoutePage />} />
+              <Route path="/contas/proxies" element={<ProxiesRoutePage />} />
               <Route path="/perfis-navegador" element={<BrowserProfilesRoutePage />} />
+              <Route path="/contas/perfis-navegador" element={<BrowserProfilesRoutePage />} />
+              <Route path="/contas/perfis-de-navegador" element={<BrowserProfilesRoutePage />} />
               <Route path="/business-centers" element={<BusinessCentersRoutePage />} />
+              <Route path="/contas/business-centers" element={<BusinessCentersRoutePage />} />
               <Route path="/profile" element={
                 <ProtectedRoute>
                   <Layout>
