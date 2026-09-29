@@ -41,6 +41,7 @@ export interface NavRouteItem {
   dot: string;
   dotMuted: string;
   active: string;
+  children?: NavRouteItem[];
 }
 
 const NAV_ROUTES: {
@@ -57,11 +58,53 @@ const NAV_ROUTES: {
     { to: '/repasse',   label: 'Repasse',     adminOnly: true,  accent: 'text-[hsl(var(--chart-6))]',  dot: 'bg-[hsl(var(--chart-6))]',  dotMuted: 'bg-[hsl(var(--chart-6)/0.4)]',  active: 'bg-[hsl(var(--chart-6)/0.08)] text-[hsl(var(--chart-6))] font-semibold' },
   ],
   painel: [
-    { to: '/proxies',            label: 'Proxies',              adminOnly: true,  accent: 'text-orange-400',            dot: 'bg-orange-400',            dotMuted: 'bg-orange-400/40',              active: 'bg-orange-400/10 text-orange-400 font-semibold' },
-    { to: '/contas',             label: 'Conta',                adminOnly: true,  accent: 'text-[hsl(var(--brand))]',    dot: 'bg-[hsl(var(--brand))]',    dotMuted: 'bg-[hsl(var(--brand)/0.4)]',    active: 'bg-[hsl(var(--brand)/0.08)] text-[hsl(var(--brand))] font-semibold' },
-    { to: '/contas-anuncios',    label: 'Conta de Anúncio',     adminOnly: true,  accent: 'text-[hsl(var(--warning))]',  dot: 'bg-[hsl(var(--warning))]',  dotMuted: 'bg-[hsl(var(--warning)/0.4)]',  active: 'bg-[hsl(var(--warning)/0.08)] text-[hsl(var(--warning))] font-semibold' },
-    { to: '/perfis-navegador',   label: 'Perfis de Navegador',  adminOnly: true,  accent: 'text-cyan-400',              dot: 'bg-cyan-400',              dotMuted: 'bg-cyan-400/40',                active: 'bg-cyan-400/10 text-cyan-400 font-semibold' },
-    { to: '/business-centers',   label: 'Business Centers',     adminOnly: true,  accent: 'text-purple-400',            dot: 'bg-purple-400',            dotMuted: 'bg-purple-400/40',              active: 'bg-purple-400/10 text-purple-400 font-semibold' },
+    {
+      to: '/proxies',
+      label: 'Proxies',
+      adminOnly: true,
+      accent: 'text-orange-400',
+      dot: 'bg-orange-400',
+      dotMuted: 'bg-orange-400/40',
+      active: 'bg-orange-400/10 text-orange-400 font-semibold',
+      children: [
+        {
+          to: '/perfis-navegador',
+          label: 'Perfis de Navegador',
+          adminOnly: true,
+          accent: 'text-cyan-400',
+          dot: 'bg-cyan-400',
+          dotMuted: 'bg-cyan-400/40',
+          active: 'bg-cyan-400/10 text-cyan-400 font-semibold',
+        },
+      ],
+    },
+    {
+      to: '/business-centers',
+      label: 'Business Centers',
+      adminOnly: true,
+      accent: 'text-purple-400',
+      dot: 'bg-purple-400',
+      dotMuted: 'bg-purple-400/40',
+      active: 'bg-purple-400/10 text-purple-400 font-semibold',
+    },
+    {
+      to: '/contas',
+      label: 'Conta',
+      adminOnly: true,
+      accent: 'text-[hsl(var(--brand))]',
+      dot: 'bg-[hsl(var(--brand))]',
+      dotMuted: 'bg-[hsl(var(--brand)/0.4)]',
+      active: 'bg-[hsl(var(--brand)/0.08)] text-[hsl(var(--brand))] font-semibold',
+    },
+    {
+      to: '/contas-anuncios',
+      label: 'Conta de Anúncio',
+      adminOnly: true,
+      accent: 'text-[hsl(var(--warning))]',
+      dot: 'bg-[hsl(var(--warning))]',
+      dotMuted: 'bg-[hsl(var(--warning)/0.4)]',
+      active: 'bg-[hsl(var(--warning)/0.08)] text-[hsl(var(--warning))] font-semibold',
+    },
   ],
 };
 
@@ -88,7 +131,77 @@ function useLocalStorageBoolean(key: string, defaultValue: boolean): [boolean, R
 
 // ── Reusable NavLink ──────────────────────────────────────────────────────────
 function NavLink({ route, pathname, e2eSearch }: { route: NavRouteItem; pathname: string; e2eSearch: string }) {
-  const isActive = route.to === '/' ? pathname === '/' : pathname.startsWith(route.to);
+  const isDirectActive = route.to === '/' ? pathname === '/' : pathname.startsWith(route.to);
+  const isAnyChildActive = route.children?.some(c => pathname.startsWith(c.to));
+  const isActive = isDirectActive && !isAnyChildActive;
+
+  const [isOpen, setIsOpen] = useState<boolean>(() => {
+    return Boolean(isDirectActive || isAnyChildActive || true);
+  });
+
+  // Se rota atual estiver em um dos filhos, mantém o submenu aberto
+  useEffect(() => {
+    if (isDirectActive || isAnyChildActive) {
+      setIsOpen(true);
+    }
+  }, [isDirectActive, isAnyChildActive]);
+
+  if (route.children && route.children.length > 0) {
+    return (
+      <li className="space-y-0.5">
+        <div className="flex items-center justify-between group">
+          <Link
+            to={{ pathname: route.to, search: e2eSearch }}
+            className={`flex items-center flex-1 px-3 py-2 text-sm rounded-lg no-underline transition-all duration-150 ${
+              isActive ? route.active : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+            }`}
+          >
+            <span className={`w-1.5 h-1.5 mr-2.5 rounded-full flex-shrink-0 transition-colors ${isActive ? route.dot : route.dotMuted}`} />
+            <span className="flex-1">{route.label}</span>
+          </Link>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsOpen((prev) => !prev);
+            }}
+            className="p-1.5 mr-1 text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors cursor-pointer"
+            aria-label={`Alternar subitens de ${route.label}`}
+          >
+            <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+          </button>
+        </div>
+
+        {isOpen && (
+          <div className="ml-4 pl-2.5 border-l border-border/60 space-y-0.5 my-0.5">
+            {route.children.map((child) => {
+              const isChildActive = pathname.startsWith(child.to);
+              return (
+                <Link
+                  key={child.to}
+                  to={{ pathname: child.to, search: e2eSearch }}
+                  className={`flex items-center w-full px-2.5 py-1.5 text-xs rounded-md no-underline transition-all duration-150 ${
+                    isChildActive
+                      ? child.active
+                      : 'text-muted-foreground hover:bg-accent/70 hover:text-foreground'
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 mr-2 rounded-full flex-shrink-0 transition-colors ${
+                      isChildActive ? child.dot : child.dotMuted
+                    }`}
+                  />
+                  <span className="truncate">{child.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </li>
+    );
+  }
+
   return (
     <li>
       <Link
