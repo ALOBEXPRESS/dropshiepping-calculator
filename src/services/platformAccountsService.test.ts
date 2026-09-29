@@ -202,6 +202,14 @@ describe('PlatformAccountsService', () => {
       const mockCountEq1 = vi.fn().mockReturnValue({ eq: mockCountEq2 });
       const mockSelect = vi.fn().mockReturnValue({ eq: mockCountEq1 });
 
+      const createMockBrowserProfiles = () => ({
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        }),
+      });
+
       // Step 2: delete
       const mockDeleteEq2 = vi.fn().mockResolvedValue({ error: null });
       const mockDeleteEq1 = vi.fn().mockReturnValue({ eq: mockDeleteEq2 });
@@ -210,6 +218,9 @@ describe('PlatformAccountsService', () => {
       vi.mocked(supabase.from).mockImplementation((table: string) => {
         if (table === 'ad_accounts') {
           return { select: mockSelect } as unknown as SupabaseFromReturn;
+        }
+        if (table === 'browser_profiles') {
+          return createMockBrowserProfiles() as unknown as SupabaseFromReturn;
         }
         if (table === 'platform_accounts') {
           return { delete: mockDelete } as unknown as SupabaseFromReturn;
@@ -230,8 +241,17 @@ describe('PlatformAccountsService', () => {
       const mockDeleteEq1 = vi.fn().mockReturnValue({ eq: mockDeleteEq2 });
       const mockDelete = vi.fn().mockReturnValue({ eq: mockDeleteEq1 });
 
+      const createMockBrowserProfiles = () => ({
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        }),
+      });
+
       vi.mocked(supabase.from).mockImplementation((table: string) => {
         if (table === 'ad_accounts') return { select: mockSelect } as unknown as SupabaseFromReturn;
+        if (table === 'browser_profiles') return createMockBrowserProfiles() as unknown as SupabaseFromReturn;
         if (table === 'platform_accounts') return { delete: mockDelete } as unknown as SupabaseFromReturn;
         return {} as unknown as SupabaseFromReturn;
       });
@@ -268,6 +288,14 @@ describe('PlatformAccountsService', () => {
       const mockUpdateEq1 = vi.fn().mockReturnValue({ eq: mockUpdateEq2 });
       const mockUpdate = vi.fn().mockReturnValue({ eq: mockUpdateEq1 });
 
+      const createMockBrowserProfiles = () => ({
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        }),
+      });
+
       // Step 2: delete platform_accounts
       const mockDelEq2 = vi.fn().mockResolvedValue({ error: null });
       const mockDelEq1 = vi.fn().mockReturnValue({ eq: mockDelEq2 });
@@ -275,6 +303,7 @@ describe('PlatformAccountsService', () => {
 
       vi.mocked(supabase.from).mockImplementation((table: string) => {
         if (table === 'ad_accounts') return { update: mockUpdate } as unknown as SupabaseFromReturn;
+        if (table === 'browser_profiles') return createMockBrowserProfiles() as unknown as SupabaseFromReturn;
         if (table === 'platform_accounts') return { delete: mockDelete } as unknown as SupabaseFromReturn;
         return {} as unknown as SupabaseFromReturn;
       });

@@ -35,6 +35,7 @@ import { useUser } from '@/contexts/UserContext';
 
 export interface NavRouteItem {
   to: string;
+  aliases?: string[];
   label: string;
   adminOnly?: boolean;
   accent: string;
@@ -60,41 +61,45 @@ const NAV_ROUTES: {
   painel: [
     {
       to: '/proxies',
+      aliases: ['/contas/proxies'],
       label: 'Proxies',
       adminOnly: true,
       accent: 'text-orange-400',
       dot: 'bg-orange-400',
       dotMuted: 'bg-orange-400/40',
-      active: 'bg-orange-400/10 text-orange-400 font-semibold',
+      active: 'bg-orange-500/15 text-orange-400 font-semibold',
       children: [
         {
           to: '/perfis-navegador',
+          aliases: ['/contas/perfis-navegador', '/contas/perfis-de-navegador'],
           label: 'Perfis de Navegador',
           adminOnly: true,
           accent: 'text-cyan-400',
           dot: 'bg-cyan-400',
           dotMuted: 'bg-cyan-400/40',
-          active: 'bg-cyan-400/10 text-cyan-400 font-semibold',
+          active: 'bg-cyan-500/15 text-cyan-400 font-semibold',
         },
       ],
     },
     {
       to: '/business-centers',
+      aliases: ['/contas/business-centers'],
       label: 'Business Centers',
       adminOnly: true,
       accent: 'text-purple-400',
       dot: 'bg-purple-400',
       dotMuted: 'bg-purple-400/40',
-      active: 'bg-purple-400/10 text-purple-400 font-semibold',
+      active: 'bg-purple-500/15 text-purple-400 font-semibold',
     },
     {
       to: '/contas',
+      aliases: ['/contas/conta'],
       label: 'Conta',
       adminOnly: true,
       accent: 'text-[hsl(var(--brand))]',
       dot: 'bg-[hsl(var(--brand))]',
       dotMuted: 'bg-[hsl(var(--brand)/0.4)]',
-      active: 'bg-[hsl(var(--brand)/0.08)] text-[hsl(var(--brand))] font-semibold',
+      active: 'bg-[hsl(var(--brand)/0.12)] text-[hsl(var(--brand))] font-semibold',
     },
     {
       to: '/contas-anuncios',
@@ -103,10 +108,34 @@ const NAV_ROUTES: {
       accent: 'text-[hsl(var(--warning))]',
       dot: 'bg-[hsl(var(--warning))]',
       dotMuted: 'bg-[hsl(var(--warning)/0.4)]',
-      active: 'bg-[hsl(var(--warning)/0.08)] text-[hsl(var(--warning))] font-semibold',
+      active: 'bg-[hsl(var(--warning)/0.12)] text-[hsl(var(--warning))] font-semibold',
     },
   ],
 };
+
+function isRouteMatching(item: NavRouteItem, pathname: string): boolean {
+  const targets = [item.to, ...(item.aliases || [])];
+  return targets.some((target) => {
+    if (target === '/') {
+      return pathname === '/';
+    }
+    if (pathname === target) {
+      return true;
+    }
+    if (pathname.startsWith(target + '/')) {
+      if (target === '/contas') {
+        const isOtherModule =
+          pathname.startsWith('/contas/business-centers') ||
+          pathname.startsWith('/contas/proxies') ||
+          pathname.startsWith('/contas/perfis-navegador') ||
+          pathname.startsWith('/contas/perfis-de-navegador');
+        if (isOtherModule) return false;
+      }
+      return true;
+    }
+    return false;
+  });
+}
 
 function useLocalStorageBoolean(key: string, defaultValue: boolean): [boolean, React.Dispatch<React.SetStateAction<boolean>>] {
   const [value, setValue] = useState<boolean>(() => {
@@ -131,8 +160,8 @@ function useLocalStorageBoolean(key: string, defaultValue: boolean): [boolean, R
 
 // ── Reusable NavLink ──────────────────────────────────────────────────────────
 function NavLink({ route, pathname, e2eSearch }: { route: NavRouteItem; pathname: string; e2eSearch: string }) {
-  const isDirectActive = route.to === '/' ? pathname === '/' : pathname.startsWith(route.to);
-  const isAnyChildActive = route.children?.some(c => pathname.startsWith(c.to));
+  const isDirectActive = isRouteMatching(route, pathname);
+  const isAnyChildActive = Boolean(route.children?.some(c => isRouteMatching(c, pathname)));
   const isActive = isDirectActive && !isAnyChildActive;
 
   const [isOpen, setIsOpen] = useState<boolean>(() => {
@@ -176,7 +205,7 @@ function NavLink({ route, pathname, e2eSearch }: { route: NavRouteItem; pathname
         {isOpen && (
           <div className="ml-4 pl-2.5 border-l border-border/60 space-y-0.5 my-0.5">
             {route.children.map((child) => {
-              const isChildActive = pathname.startsWith(child.to);
+              const isChildActive = isRouteMatching(child, pathname);
               return (
                 <Link
                   key={child.to}

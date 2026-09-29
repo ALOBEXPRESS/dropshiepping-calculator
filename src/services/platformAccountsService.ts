@@ -174,10 +174,11 @@ export class PlatformAccountsService {
 
   /**
    * Exclui uma conta de plataforma.
-   * FK ON DELETE RESTRICT: falhará com erro 23503 se houver ad_accounts vinculadas.
+   * Desvincula preventivamente perfis de navegador associados (que são opcionais)
+   * e bloqueia caso haja contas de anúncios ativas vinculadas (FK ON DELETE RESTRICT).
    */
   static async delete(organizationId: string, id: string): Promise<void> {
-    // Verificação preventiva (melhor UX que depender só do erro de FK)
+    // Verificação preventiva de contas de anúncios
     const { count, error: countError } = await supabase
       .from('ad_accounts')
       .select('id', { count: 'exact', head: true })
@@ -191,6 +192,13 @@ export class PlatformAccountsService {
       );
     }
 
+    // Desvincula preventivamente perfis de navegador (AdsPower)
+    await supabase
+      .from('browser_profiles')
+      .update({ platform_account_id: null })
+      .eq('organization_id', organizationId)
+      .eq('platform_account_id', id);
+
     const { error } = await supabase
       .from('platform_accounts')
       .delete()
@@ -200,7 +208,7 @@ export class PlatformAccountsService {
     if (error) {
       if (error.code === '23503') {
         throw new Error(
-          'Não é possível excluir esta conta pois existem contas de anúncios associadas a ela.'
+          'Não é possível excluir esta conta pois existem contas de anúncios associadas a ela. Desvincule-as primeiro.'
         );
       }
       throw new Error(error.message);
@@ -225,7 +233,7 @@ export class PlatformAccountsService {
   }
 
   /**
-   * Desvincula todas as contas de anúncios e exclui a conta de plataforma em sequência.
+   * Desvincula todas as contas de anúncios e perfis de navegador e exclui a conta de plataforma em sequência.
    */
   static async deleteAndUnlink(
     organizationId: string,
@@ -239,6 +247,13 @@ export class PlatformAccountsService {
       .select('id');
 
     if (unlinkErr) throw new Error(unlinkErr.message);
+
+    // Desvincula perfis de navegador associados
+    await supabase
+      .from('browser_profiles')
+      .update({ platform_account_id: null })
+      .eq('organization_id', organizationId)
+      .eq('platform_account_id', platformAccountId);
 
     const { error: delErr } = await supabase
       .from('platform_accounts')

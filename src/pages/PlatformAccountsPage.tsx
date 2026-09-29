@@ -213,18 +213,13 @@ export const PlatformAccountsPage: React.FC = () => {
       await remove.mutateAsync(deleteTarget.id);
       queryClient.invalidateQueries({ queryKey: ['ad_accounts'] });
       queryClient.invalidateQueries({ queryKey: ['platform_accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['browser_profiles'] });
       toast.success(`Conta "${deleteTarget.name}" excluída com sucesso.`);
       setDeleteTarget(null);
     } catch (err: unknown) {
       const msg =
         err instanceof Error ? err.message : 'Erro ao excluir conta de plataforma';
-      if (msg.includes('foreign key') || msg.includes('ad_accounts')) {
-        toast.error(
-          'Esta conta está vinculada a uma Conta de Anúncios ativa. Desvincule-a antes de excluir.'
-        );
-      } else {
-        toast.error(msg);
-      }
+      toast.error(msg);
     } finally {
       setIsDeleting(false);
     }
@@ -240,6 +235,7 @@ export const PlatformAccountsPage: React.FC = () => {
       );
       queryClient.invalidateQueries({ queryKey: ['ad_accounts'] });
       queryClient.invalidateQueries({ queryKey: ['platform_accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['browser_profiles'] });
       toast.success(
         `Conta "${deleteTarget.name}" desvinculada de ${unlinkedCount} conta(s) e excluída com sucesso!`
       );
@@ -782,13 +778,21 @@ export const PlatformAccountsPage: React.FC = () => {
                 )}
               </Button>
             ) : (
-              <AlertDialogAction
+              <Button
+                type="button"
                 onClick={handleDelete}
                 disabled={isDeleting || isLoadingLinked}
-                className="bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold"
+                className="bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold h-9"
               >
-                {isDeleting ? 'Excluindo...' : 'Confirmar Exclusão'}
-              </AlertDialogAction>
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                    Excluindo...
+                  </>
+                ) : (
+                  'Confirmar Exclusão'
+                )}
+              </Button>
             )}
           </AlertDialogFooter>
         </AlertDialogContent>
