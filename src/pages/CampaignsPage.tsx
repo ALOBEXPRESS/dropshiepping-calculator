@@ -1134,7 +1134,7 @@ const CampaignsPage: React.FC = () => {
                     marketingCost={group.marketingCost}
                     budget={group.budget}
                     formatBRL={formatBRL}
-                    defaultOpen={true}
+                    defaultOpen={accountGroups.length === 1}
                   >
                     {group.campaigns.map((c) => {
                       const sc = statusConfig[c.status] ?? statusConfig.active;
