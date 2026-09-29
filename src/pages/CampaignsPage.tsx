@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import gsap from 'gsap';
-import { Megaphone, Plus, Pencil, Trash2, Loader2, ChevronDown, User, Layers, Sparkles } from 'lucide-react';
+import { Megaphone, Plus, Pencil, Trash2, Loader2, ChevronDown, User } from 'lucide-react';
 import ReactCountryFlag from 'react-country-flag';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -1042,10 +1042,6 @@ const CampaignsPage: React.FC = () => {
 
       {/* List */}
       {!isLoading && campaigns.length > 0 && (() => {
-        // Total cost across all campaigns
-        const totalCusto = campaigns.reduce((sum, c) =>
-          sum + c.campaign_products.reduce((s, p) => s + (p.marketing_cost_override != null ? Number(p.marketing_cost_override) : 0), 0)
-        , 0);
         const formatBRL = (v: number) => new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(v);
 
         // Group by objective category: Conversão vs Consideração/Conhecimento

@@ -24,7 +24,6 @@ import {
   User,
   Phone,
   Calendar,
-  FileText,
   Camera,
   Loader2,
   Mail,

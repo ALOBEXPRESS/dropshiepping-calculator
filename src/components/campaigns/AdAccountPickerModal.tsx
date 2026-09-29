@@ -15,9 +15,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Search,
-  CheckCircle2,
-  Building2,
-  Wallet,
 } from 'lucide-react';
 import ReactCountryFlag from 'react-country-flag';
 import { useAdAccounts } from '@/hooks/useAdAccounts';
