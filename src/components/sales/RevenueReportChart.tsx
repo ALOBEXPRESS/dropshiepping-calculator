@@ -2266,7 +2266,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     if (val == null) return 0;
     if (typeof val === 'number') return isNaN(val) ? 0 : val;
     const raw = String(val).trim();
-    if (!raw) return 0;
+    if (!raw || raw === '-') return 0;
     let normalized = raw;
     if (raw.includes(',') && raw.includes('.')) {
       normalized = raw.replace(/\./g, '').replace(',', '.');
@@ -2277,22 +2277,43 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     return isNaN(num) ? 0 : num;
   };
 
-  const formatCurrencyInputOnChange = (valStr: string): string => {
+  const formatCurrencyInputOnChange = (valStr: string, allowNegative: boolean = false): string => {
     if (!valStr || !valStr.trim()) return '';
+    const trimmed = valStr.trim();
+    if (allowNegative && trimmed === '-') return '-';
+
+    const isNegative = allowNegative && (valStr.match(/-/g) || []).length % 2 === 1;
     const digits = valStr.replace(/\D/g, '');
-    if (!digits) return '';
+    if (!digits) return isNegative ? '-' : '';
+
     const intVal = parseInt(digits, 10);
-    if (intVal === 0) return '';
-    const num = intVal / 100;
+    if (intVal === 0) return isNegative ? '-0,00' : '';
+
+    const num = (isNegative ? -1 : 1) * (intVal / 100);
     return new Intl.NumberFormat('pt-BR', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(num);
   };
 
-  const formatBRLInputOnBlur = (valStr: string): string => {
+  const formatBRLInputOnBlur = (valStr: string, allowNegative: boolean = false): string => {
     if (!valStr || !valStr.trim()) return '';
-    return formatCurrencyInputOnChange(valStr);
+    const trimmed = valStr.trim();
+    if (allowNegative && (trimmed === '-' || trimmed === '-0' || trimmed === '-0,00' || trimmed === '0,00')) return '';
+    return formatCurrencyInputOnChange(valStr, allowNegative);
+  };
+
+  const toggleSign = (val: string, setter: (v: string) => void) => {
+    const trimmed = (val ?? '').trim();
+    if (!trimmed || trimmed === '-') {
+      setter(trimmed === '-' ? '' : '-');
+      return;
+    }
+    if (trimmed.startsWith('-')) {
+      setter(trimmed.slice(1));
+    } else {
+      setter('-' + trimmed);
+    }
   };
 
   const handleSaveCosts = async (
@@ -3360,11 +3381,19 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               ? (precoVendaLiquidoFinal - totalProductCost - manualMarketingCostVal)
               : (precoVendaLiquidoFinal - totalProductCost + acrescimoManual - manualMarketingCostVal);
             // ── Reembolso Marketplace & Fornecedor ─────────────────────────────
-            const hasReembolsoMktActive = reembolsoMarketplaceEnabled && reembolsoMarketplaceValue.trim() !== '' && !isNaN(parseBRLFloat(reembolsoMarketplaceValue));
-            const reembolsoMktVal = hasReembolsoMktActive ? parseBRLFloat(reembolsoMarketplaceValue) : 0;
+            const hasReembolsoMktActive = Boolean(reembolsoMarketplaceEnabled);
+            const reembolsoMktVal = hasReembolsoMktActive
+              ? (reembolsoMarketplaceValue.trim() !== '' && reembolsoMarketplaceValue.trim() !== '-'
+                  ? parseBRLFloat(reembolsoMarketplaceValue)
+                  : 0)
+              : 0;
 
-            const hasReembolsoFornActive = reembolsoFornecedorEnabled && reembolsoFornecedorValue.trim() !== '' && !isNaN(parseBRLFloat(reembolsoFornecedorValue));
-            const reembolsoFornVal = hasReembolsoFornActive ? parseBRLFloat(reembolsoFornecedorValue) : 0;
+            const hasReembolsoFornActive = Boolean(reembolsoFornecedorEnabled);
+            const reembolsoFornVal = hasReembolsoFornActive
+              ? (reembolsoFornecedorValue.trim() !== '' && reembolsoFornecedorValue.trim() !== '-'
+                  ? parseBRLFloat(reembolsoFornecedorValue)
+                  : 0)
+              : 0;
 
             const effectiveProductCostModal = (isPersonalPurchase ? 0 : totalProductCost) - (hasReembolsoFornActive ? reembolsoFornVal : 0);
 
@@ -4512,23 +4541,35 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           {reembolsoMarketplaceEnabled && (
                             <div className="flex items-center gap-3 pt-1 pl-6.5">
                               <label className="text-zinc-400 text-xs whitespace-nowrap">Valor (R$)</label>
-                              <div className="flex-1 relative flex items-center">
-                                <input
-                                  type="text"
-                                  inputMode="text"
-                                  placeholder="0,00"
-                                  value={reembolsoMarketplaceValue}
-                                  onChange={(e) => setReembolsoMarketplaceValue(formatCurrencyInputOnChange(e.target.value))}
-                                  onBlur={() => setReembolsoMarketplaceValue(formatBRLInputOnBlur(reembolsoMarketplaceValue))}
-                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-rose-500 tabular-nums"
-                                />
-                                {reembolsoMarketplaceValue && (
-                                  <button onClick={() => setReembolsoMarketplaceValue('')} className="absolute right-2 text-zinc-500 hover:text-zinc-300 transition-colors">
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                  </button>
-                                )}
+                              <div className="flex-1 flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleSign(reembolsoMarketplaceValue, setReembolsoMarketplaceValue)}
+                                  className="h-8 px-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 text-xs font-mono font-bold transition-colors select-none flex items-center justify-center shrink-0 cursor-pointer"
+                                  title="Inverter sinal (+/-)"
+                                >
+                                  +/-
+                                </button>
+                                <div className="flex-1 relative flex items-center">
+                                  <input
+                                    type="text"
+                                    inputMode="text"
+                                    placeholder="0,00"
+                                    value={reembolsoMarketplaceValue}
+                                    onChange={(e) => setReembolsoMarketplaceValue(formatCurrencyInputOnChange(e.target.value, true))}
+                                    onBlur={() => setReembolsoMarketplaceValue(formatBRLInputOnBlur(reembolsoMarketplaceValue, true))}
+                                    className={`w-full bg-zinc-800 border rounded-lg px-3 py-1.5 text-sm placeholder-zinc-600 focus:outline-none focus:border-rose-500 tabular-nums ${
+                                      reembolsoMarketplaceValue.startsWith('-') ? 'text-rose-400 border-rose-500/50' : 'text-white border-zinc-700'
+                                    }`}
+                                  />
+                                  {reembolsoMarketplaceValue && (
+                                    <button onClick={() => setReembolsoMarketplaceValue('')} className="absolute right-2 text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer">
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                      </svg>
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           )}
@@ -4551,23 +4592,35 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           {reembolsoFornecedorEnabled && (
                             <div className="flex items-center gap-3 pt-1 pl-6.5">
                               <label className="text-zinc-400 text-xs whitespace-nowrap">Valor (R$)</label>
-                              <div className="flex-1 relative flex items-center">
-                                <input
-                                  type="text"
-                                  inputMode="text"
-                                  placeholder="0,00"
-                                  value={reembolsoFornecedorValue}
-                                  onChange={(e) => setReembolsoFornecedorValue(formatCurrencyInputOnChange(e.target.value))}
-                                  onBlur={() => setReembolsoFornecedorValue(formatBRLInputOnBlur(reembolsoFornecedorValue))}
-                                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500 tabular-nums"
-                                />
-                                {reembolsoFornecedorValue && (
-                                  <button onClick={() => setReembolsoFornecedorValue('')} className="absolute right-2 text-zinc-500 hover:text-zinc-300 transition-colors">
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                  </button>
-                                )}
+                              <div className="flex-1 flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleSign(reembolsoFornecedorValue, setReembolsoFornecedorValue)}
+                                  className="h-8 px-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 text-xs font-mono font-bold transition-colors select-none flex items-center justify-center shrink-0 cursor-pointer"
+                                  title="Inverter sinal (+/-)"
+                                >
+                                  +/-
+                                </button>
+                                <div className="flex-1 relative flex items-center">
+                                  <input
+                                    type="text"
+                                    inputMode="text"
+                                    placeholder="0,00"
+                                    value={reembolsoFornecedorValue}
+                                    onChange={(e) => setReembolsoFornecedorValue(formatCurrencyInputOnChange(e.target.value, true))}
+                                    onBlur={() => setReembolsoFornecedorValue(formatBRLInputOnBlur(reembolsoFornecedorValue, true))}
+                                    className={`w-full bg-zinc-800 border rounded-lg px-3 py-1.5 text-sm placeholder-zinc-600 focus:outline-none focus:border-emerald-500 tabular-nums ${
+                                      reembolsoFornecedorValue.startsWith('-') ? 'text-rose-400 border-rose-500/50' : 'text-white border-zinc-700'
+                                    }`}
+                                  />
+                                  {reembolsoFornecedorValue && (
+                                    <button onClick={() => setReembolsoFornecedorValue('')} className="absolute right-2 text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer">
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                      </svg>
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           )}
@@ -4613,10 +4666,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                               setSavingReembolsoPedido(true);
                               try {
                                 const parsedMkt = parseBRLFloat(reembolsoMarketplaceValue);
-                                const valMkt = reembolsoMarketplaceEnabled && reembolsoMarketplaceValue.trim() !== '' ? parsedMkt : (reembolsoMarketplaceEnabled ? 0 : null);
+                                const valMkt = reembolsoMarketplaceEnabled
+                                  ? (reembolsoMarketplaceValue.trim() !== '' && reembolsoMarketplaceValue.trim() !== '-' ? parsedMkt : 0)
+                                  : null;
 
                                 const parsedForn = parseBRLFloat(reembolsoFornecedorValue);
-                                const valForn = reembolsoFornecedorEnabled && reembolsoFornecedorValue.trim() !== '' ? parsedForn : (reembolsoFornecedorEnabled ? 0 : null);
+                                const valForn = reembolsoFornecedorEnabled
+                                  ? (reembolsoFornecedorValue.trim() !== '' && reembolsoFornecedorValue.trim() !== '-' ? parsedForn : 0)
+                                  : null;
 
                                 const effectiveCost = (isPersonalPurchase ? 0 : totalProductCost) - (valForn ?? 0);
                                 const calculatedProfit = valMkt !== null

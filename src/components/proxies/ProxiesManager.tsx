@@ -33,7 +33,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import ReactCountryFlag from 'react-country-flag';
 import { useProxies } from '@/hooks/useProxies';
+import { PLATFORM_COUNTRIES } from '@/constants/niches';
 import type { PlatformAccount } from '@/types/platformAccounts';
 import type { Proxy, ProxyFormData } from '@/types/proxies';
 import {
@@ -44,6 +46,19 @@ import {
   PROXY_STATUS_COLORS,
 } from '@/types/proxies';
 
+export function getCountryName(code: string | null | undefined): string {
+  if (!code) return 'Sem país definido';
+  const upper = code.trim().toUpperCase();
+  const found = PLATFORM_COUNTRIES.find((c) => c.code === upper);
+  if (found) return found.name;
+  try {
+    const displayNames = new Intl.DisplayNames(['pt-BR'], { type: 'region' });
+    return displayNames.of(upper) || upper;
+  } catch {
+    return upper;
+  }
+}
+
 // ── ProxyFormDialog ───────────────────────────────────────────────────────────
 
 interface ProxyFormDialogProps {
@@ -51,6 +66,7 @@ interface ProxyFormDialogProps {
   onOpenChange: (v: boolean) => void;
   proxy?: Proxy | null;
   organizationId: string;
+  platformAccounts?: PlatformAccount[];
   onSaved: (proxy: Proxy) => void;
 }
 
@@ -59,18 +75,33 @@ export const ProxyFormDialog: React.FC<ProxyFormDialogProps> = ({
   onOpenChange,
   proxy,
   organizationId,
+  platformAccounts = [],
   onSaved,
 }) => {
-  const { createProxy, updateProxy, isCreating, isUpdating } = useProxies(organizationId);
+  const { createProxy, updateProxy, linkProxy, isCreating, isUpdating, isLinking } = useProxies(organizationId);
   const [showPassword, setShowPassword] = useState(false);
   const isEditing = !!proxy;
-  const isBusy = isCreating || isUpdating;
+  const isBusy = isCreating || isUpdating || isLinking;
+
+  // Encontra a conta atualmente vinculada a este proxy
+  const currentLinkedAccount = React.useMemo(() => {
+    if (!proxy) return null;
+    return (
+      platformAccounts.find(
+        (a) => (a as PlatformAccount & { proxy_id?: string | null }).proxy_id === proxy.id
+      ) ?? null
+    );
+  }, [proxy, platformAccounts]);
+
+  const [selectedAccountId, setSelectedAccountId] = useState<string>('none');
 
   const {
     register,
     handleSubmit,
     control,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<ProxyFormData>({
     resolver: zodResolver(proxySchema),
@@ -97,28 +128,87 @@ export const ProxyFormDialog: React.FC<ProxyFormDialogProps> = ({
         },
   });
 
+  const watchedCountry = watch('country');
+
+  // Sincroniza formulário e conta vinculada ao abrir/trocar proxy
+  React.useEffect(() => {
+    if (open) {
+      if (proxy) {
+        reset({
+          label: proxy.label,
+          protocol: proxy.protocol,
+          host: proxy.host,
+          port: proxy.port,
+          username: proxy.username ?? '',
+          password: '',
+          country: proxy.country ?? '',
+          proxy_type: proxy.proxy_type,
+          provider: proxy.provider ?? '',
+          status: proxy.status,
+          expires_at: proxy.expires_at ? proxy.expires_at.slice(0, 10) : '',
+          notes: proxy.notes ?? '',
+        });
+        const linked = platformAccounts.find(
+          (a) => (a as PlatformAccount & { proxy_id?: string | null }).proxy_id === proxy.id
+        );
+        setSelectedAccountId(linked?.id ?? 'none');
+      } else {
+        reset({
+          protocol: 'http',
+          proxy_type: 'residential',
+          status: 'active',
+          port: 8080,
+          label: '',
+          host: '',
+          username: '',
+          password: '',
+          country: '',
+          provider: '',
+          expires_at: '',
+          notes: '',
+        });
+        setSelectedAccountId('none');
+      }
+    }
+  }, [open, proxy, reset, platformAccounts]);
+
+  const handleClose = () => {
+    reset();
+    setSelectedAccountId('none');
+    setShowPassword(false);
+    onOpenChange(false);
+  };
+
   const onSubmit = async (data: ProxyFormData) => {
     try {
       let saved: Proxy;
       if (isEditing && proxy) {
         saved = await updateProxy(proxy.id, data);
-        toast.success('Proxy atualizado com sucesso!');
       } else {
         saved = await createProxy(data);
-        toast.success('Proxy criado com sucesso!');
       }
+
+      // Sincroniza vinculação / desvinculação da conta de plataforma
+      const initialAccountId = currentLinkedAccount?.id ?? null;
+      const targetAccountId = selectedAccountId !== 'none' ? selectedAccountId : null;
+
+      if (initialAccountId !== targetAccountId) {
+        // Se havia uma conta vinculada diferente, desvincula primeiro
+        if (initialAccountId) {
+          await linkProxy(initialAccountId, null);
+        }
+        // Se uma nova conta foi selecionada, vincula ao proxy
+        if (targetAccountId) {
+          await linkProxy(targetAccountId, saved.id);
+        }
+      }
+
+      toast.success(isEditing ? 'Proxy atualizado com sucesso!' : 'Proxy criado com sucesso!');
       onSaved(saved);
-      reset();
-      onOpenChange(false);
+      handleClose();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Erro ao salvar proxy.');
     }
-  };
-
-  const handleClose = () => {
-    reset();
-    setShowPassword(false);
-    onOpenChange(false);
   };
 
   return (
@@ -259,14 +349,39 @@ export const ProxyFormDialog: React.FC<ProxyFormDialogProps> = ({
           {/* Country + Provider */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="proxy-country" className="text-sm font-medium">País (ISO-2)</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="proxy-country" className="text-sm font-medium">País (ISO-2)</Label>
+                {watchedCountry && watchedCountry.trim().length === 2 && (
+                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    <ReactCountryFlag countryCode={watchedCountry.trim().toUpperCase()} svg className="text-xs" />
+                    {getCountryName(watchedCountry)}
+                  </span>
+                )}
+              </div>
               <Input
                 id="proxy-country"
-                {...register('country')}
+                {...register('country', {
+                  onChange: (e) => {
+                    e.target.value = e.target.value.toUpperCase();
+                  },
+                })}
                 placeholder="BR"
                 maxLength={2}
-                className="bg-background border-input uppercase"
+                className="bg-background border-input uppercase font-mono"
               />
+              <div className="flex flex-wrap gap-1 pt-0.5">
+                {['BR', 'US', 'DE', 'GB', 'ES', 'FR', 'PT'].map((code) => (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => setValue('country', code, { shouldValidate: true })}
+                    className="text-[10px] px-1.5 py-0.5 rounded bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <ReactCountryFlag countryCode={code} svg className="text-[10px]" />
+                    {code}
+                  </button>
+                ))}
+              </div>
               {errors.country && <p className="text-xs text-red-400">{errors.country.message}</p>}
             </div>
             <div className="space-y-1.5">
@@ -310,6 +425,72 @@ export const ProxyFormDialog: React.FC<ProxyFormDialogProps> = ({
                 className="bg-background border-input"
               />
             </div>
+          </div>
+
+          {/* Conta de Plataforma Vinculada (Vincular / Desvincular) */}
+          <div className="space-y-1.5 p-3 rounded-lg border border-border/80 bg-accent/20">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium flex items-center gap-1.5 text-foreground">
+                <Link2 className="w-4 h-4 text-orange-400" />
+                Conta de Plataforma Vinculada
+              </Label>
+              {selectedAccountId !== 'none' && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedAccountId('none')}
+                  className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 cursor-pointer transition-colors"
+                  title="Desvincular conta deste proxy"
+                >
+                  <Unlink className="w-3.5 h-3.5" />
+                  Desvincular
+                </button>
+              )}
+            </div>
+            <Select
+              value={selectedAccountId}
+              onValueChange={setSelectedAccountId}
+            >
+              <SelectTrigger className="bg-background border-input">
+                <SelectValue placeholder="Selecione uma conta para vincular..." />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-input max-h-56">
+                <SelectItem value="none">
+                  <span className="text-muted-foreground flex items-center gap-2">
+                    <Unlink className="w-3.5 h-3.5 text-muted-foreground" />
+                    Nenhuma conta vinculada
+                  </span>
+                </SelectItem>
+                {platformAccounts.map((account) => {
+                  const isCurrent = account.id === currentLinkedAccount?.id;
+                  const hasOtherProxy = Boolean(
+                    (account as PlatformAccount & { proxy_id?: string | null }).proxy_id && !isCurrent
+                  );
+                  return (
+                    <SelectItem key={account.id} value={account.id}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-foreground">{account.name}</span>
+                        {account.holder_name && (
+                          <span className="text-xs text-muted-foreground">({account.holder_name})</span>
+                        )}
+                        {isCurrent && (
+                          <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20 font-medium">
+                            Vinculada
+                          </span>
+                        )}
+                        {hasOtherProxy && (
+                          <span className="text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20 font-medium">
+                            (Substituirá proxy atual)
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground">
+              Vincule ou desvincule este proxy de uma conta de plataforma para roteamento das requisições.
+            </p>
           </div>
 
           {/* Notes */}
@@ -361,9 +542,17 @@ const ProxyCard: React.FC<ProxyCardProps> = ({ proxy, linkedAccount, onEdit, onD
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground truncate">{proxy.label}</p>
-            <p className="text-[11px] text-muted-foreground">
-              {PROXY_PROTOCOL_LABELS[proxy.protocol]}·{PROXY_TYPE_LABELS[proxy.proxy_type]}
-              {proxy.country ? ` · ${proxy.country}` : ''}
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <span>{PROXY_PROTOCOL_LABELS[proxy.protocol]}·{PROXY_TYPE_LABELS[proxy.proxy_type]}</span>
+              {proxy.country && (
+                <>
+                  <span>·</span>
+                  <span className="inline-flex items-center gap-1 font-medium">
+                    <ReactCountryFlag countryCode={proxy.country.toUpperCase()} svg className="text-xs rounded-xs" />
+                    <span>{proxy.country.toUpperCase()}</span>
+                  </span>
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -427,7 +616,7 @@ const ProxyCard: React.FC<ProxyCardProps> = ({ proxy, linkedAccount, onEdit, onD
             {onUnlink && (
               <button
                 onClick={onUnlink}
-                className="text-[10px] flex items-center gap-1 text-muted-foreground hover:text-red-400 transition-colors"
+                className="text-[10px] flex items-center gap-1 text-muted-foreground hover:text-red-400 transition-colors cursor-pointer"
               >
                 <Unlink className="w-3 h-3" />
                 Desvincular
@@ -465,6 +654,7 @@ export const ProxiesManager: React.FC<ProxiesManagerProps> = ({
   const [formOpen, setFormOpen] = useState(false);
   const [editingProxy, setEditingProxy] = useState<Proxy | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [selectedCountryFilter, setSelectedCountryFilter] = useState<string>('all');
 
   // Mapeia proxy_id → platform_account para exibir vinculação
   const proxyToAccount = React.useMemo(() => {
@@ -483,6 +673,33 @@ export const ProxiesManager: React.FC<ProxiesManagerProps> = ({
         return acc?.id === filterByAccountId;
       })
     : proxies;
+
+  // Agrupa proxies por país
+  const groupedByCountry = React.useMemo(() => {
+    const groupsMap = new Map<string, { code: string; name: string; proxies: Proxy[] }>();
+
+    for (const proxy of visibleProxies) {
+      const code = proxy.country ? proxy.country.trim().toUpperCase() : 'OTHER';
+      const name = proxy.country ? getCountryName(proxy.country) : 'Sem país definido';
+
+      if (!groupsMap.has(code)) {
+        groupsMap.set(code, { code, name, proxies: [] });
+      }
+      groupsMap.get(code)!.proxies.push(proxy);
+    }
+
+    return Array.from(groupsMap.values()).sort((a, b) => {
+      if (a.code === 'OTHER') return 1;
+      if (b.code === 'OTHER') return -1;
+      return a.name.localeCompare(b.name, 'pt-BR');
+    });
+  }, [visibleProxies]);
+
+  // Grupos filtrados para exibição
+  const displayedGroups = React.useMemo(() => {
+    if (selectedCountryFilter === 'all') return groupedByCountry;
+    return groupedByCountry.filter((g) => g.code === selectedCountryFilter);
+  }, [groupedByCountry, selectedCountryFilter]);
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -508,7 +725,7 @@ export const ProxiesManager: React.FC<ProxiesManagerProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div>
@@ -517,12 +734,12 @@ export const ProxiesManager: React.FC<ProxiesManagerProps> = ({
             Proxies
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Gerencie os proxies vinculados às contas de plataforma
+            Gerencie e organize os proxies por país vinculados às contas de plataforma
           </p>
         </div>
         <Button
           onClick={() => { setEditingProxy(null); setFormOpen(true); }}
-          className="bg-orange-600 hover:bg-orange-700 text-white gap-2 h-9 text-sm"
+          className="bg-orange-600 hover:bg-orange-700 text-white gap-2 h-9 text-sm shadow-md shadow-orange-600/20"
         >
           <Plus className="w-4 h-4" />
           Novo Proxy
@@ -555,17 +772,105 @@ export const ProxiesManager: React.FC<ProxiesManagerProps> = ({
           </Button>
         </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {visibleProxies.map((proxy) => (
-            <ProxyCard
-              key={proxy.id}
-              proxy={proxy}
-              linkedAccount={proxyToAccount.get(proxy.id) ?? null}
-              onEdit={() => { setEditingProxy(proxy); setFormOpen(true); }}
-              onDelete={() => setDeleteId(proxy.id)}
-              onUnlink={() => handleUnlink(proxy)}
-            />
-          ))}
+        <div className="space-y-6">
+          {/* Filtros de país (pills) */}
+          {groupedByCountry.length > 1 && (
+            <div className="flex flex-wrap items-center gap-2 pb-1 border-b border-border/40">
+              <button
+                type="button"
+                onClick={() => setSelectedCountryFilter('all')}
+                className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-2 ${
+                  selectedCountryFilter === 'all'
+                    ? 'bg-orange-500/15 text-orange-400 border border-orange-500/30 font-semibold'
+                    : 'bg-card/60 text-muted-foreground hover:bg-accent hover:text-foreground border border-border/50'
+                }`}
+              >
+                <span>Todos os países</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-background/60 font-mono">
+                  {visibleProxies.length}
+                </span>
+              </button>
+              {groupedByCountry.map((group) => {
+                const isSelected = selectedCountryFilter === group.code;
+                return (
+                  <button
+                    key={group.code}
+                    type="button"
+                    onClick={() => setSelectedCountryFilter(group.code)}
+                    className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-2 ${
+                      isSelected
+                        ? 'bg-orange-500/15 text-orange-400 border border-orange-500/30 font-semibold'
+                        : 'bg-card/60 text-muted-foreground hover:bg-accent hover:text-foreground border border-border/50'
+                    }`}
+                  >
+                    {group.code !== 'OTHER' ? (
+                      <ReactCountryFlag countryCode={group.code} svg className="text-xs" />
+                    ) : (
+                      <Globe className="w-3.5 h-3.5" />
+                    )}
+                    <span>{group.name}</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-background/60 font-mono">
+                      {group.proxies.length}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Seções por País */}
+          <div className="space-y-8">
+            {displayedGroups.map((group) => (
+              <section key={group.code} className="space-y-3">
+                {/* Cabeçalho da Seção do País */}
+                <div className="flex items-center justify-between pb-2 border-b border-border/70">
+                  <div className="flex items-center gap-2.5">
+                    {group.code !== 'OTHER' ? (
+                      <div className="w-6 h-4.5 rounded overflow-hidden shadow-xs flex items-center justify-center bg-muted/40">
+                        <ReactCountryFlag
+                          countryCode={group.code}
+                          svg
+                          style={{ width: '1.25em', height: '1.25em' }}
+                          title={group.name}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-6 h-4.5 rounded flex items-center justify-center bg-muted/40 text-muted-foreground">
+                        <Globe className="w-3.5 h-3.5" />
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-semibold text-foreground tracking-tight">
+                        {group.name}
+                      </h3>
+                      {group.code !== 'OTHER' && (
+                        <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                          {group.code}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-xs text-muted-foreground font-medium px-2.5 py-0.5 rounded-full bg-muted/60 border border-border/40">
+                    {group.proxies.length} {group.proxies.length === 1 ? 'proxy' : 'proxies'}
+                  </span>
+                </div>
+
+                {/* Grid de Cards de Proxies deste país */}
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {group.proxies.map((proxy) => (
+                    <ProxyCard
+                      key={proxy.id}
+                      proxy={proxy}
+                      linkedAccount={proxyToAccount.get(proxy.id) ?? null}
+                      onEdit={() => { setEditingProxy(proxy); setFormOpen(true); }}
+                      onDelete={() => setDeleteId(proxy.id)}
+                      onUnlink={() => handleUnlink(proxy)}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
         </div>
       )}
 
@@ -575,6 +880,7 @@ export const ProxiesManager: React.FC<ProxiesManagerProps> = ({
         onOpenChange={setFormOpen}
         proxy={editingProxy}
         organizationId={organizationId}
+        platformAccounts={platformAccounts}
         onSaved={() => {}}
       />
 

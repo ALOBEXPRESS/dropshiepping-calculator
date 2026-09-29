@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { proxySchema, PROXY_PROTOCOL_LABELS, PROXY_STATUS_LABELS } from '../types/proxies';
 import { ProxiesService } from './proxiesService';
+import { getCountryName } from '../components/proxies/ProxiesManager';
 import { supabase } from '../lib/supabase';
 
 vi.mock('../lib/supabase', () => ({
@@ -313,5 +314,31 @@ describe('ProxiesService', () => {
         'Este proxy já está vinculado a outra conta de plataforma.'
       );
     });
+  });
+});
+
+// ── Testes de Auxiliares de País ──────────────────────────────────────────────
+
+describe('getCountryName', () => {
+  it('returns "Brasil" for "BR"', () => {
+    expect(getCountryName('BR')).toBe('Brasil');
+    expect(getCountryName('br')).toBe('Brasil');
+  });
+
+  it('returns "Estados Unidos" for "US"', () => {
+    expect(getCountryName('US')).toBe('Estados Unidos');
+    expect(getCountryName('us')).toBe('Estados Unidos');
+  });
+
+  it('returns "Sem país definido" for null or empty', () => {
+    expect(getCountryName(null)).toBe('Sem país definido');
+    expect(getCountryName(undefined)).toBe('Sem país definido');
+    expect(getCountryName('')).toBe('Sem país definido');
+  });
+
+  it('resolves other valid ISO-2 codes', () => {
+    const result = getCountryName('CA');
+    expect(typeof result).toBe('string');
+    expect(result.length).toBeGreaterThan(0);
   });
 });
