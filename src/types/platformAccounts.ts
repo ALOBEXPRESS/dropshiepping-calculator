@@ -88,14 +88,8 @@ export const platformAccountSchema = z.object({
   // Proxy vinculado
   proxy_id: z.string().uuid().nullable().optional().or(z.literal('')),
   // Campos condicionais para signup_method = 'google'
-  google_account_age_years: z.preprocess(
-    (val) => (val === '' || (typeof val === 'number' && Number.isNaN(val)) ? null : val),
-    z.number().min(0).max(30).nullable().optional()
-  ),
-  google_ads_invested_brl: z.preprocess(
-    (val) => (val === '' || (typeof val === 'number' && Number.isNaN(val)) ? null : val),
-    z.number().min(0).nullable().optional()
-  ),
+  google_account_age_years: z.number().min(0).max(30).nullable().optional(),
+  google_ads_invested_brl: z.number().min(0).nullable().optional(),
   google_ads_currency: z.string().optional().nullable(),
 });
 

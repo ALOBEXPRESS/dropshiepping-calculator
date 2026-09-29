@@ -61,6 +61,7 @@ import {
   formatPhoneByCountry,
 } from '@/utils/inputMasks';
 import tiktokImg from '@/imgs/tiktok-shop-seller-cent-icon-filled-256.png';
+import { PLATFORM_COUNTRIES, TIKTOK_INDUSTRIES } from '@/constants/niches';
 
 interface AdAccountFormDialogProps {
   open: boolean;
@@ -71,8 +72,8 @@ interface AdAccountFormDialogProps {
 
 const STEPS = [
   { id: 1, title: 'Plataforma', label: '01. Rede de Anúncios', icon: Globe },
-  { id: 2, title: 'Conta TikTok', label: '02. Conta da Plataforma', icon: Sparkles },
-  { id: 3, title: 'Identificação', label: '03. Dados da Conta', icon: Layers },
+  { id: 2, title: 'Perfil TikTok', label: '02. Perfil da Plataforma', icon: Sparkles },
+  { id: 3, title: 'Conta TikTok', label: '03. Dados da Conta TikTok', icon: Layers },
   { id: 4, title: 'Identificadores', label: '04. IDs & Rastreamento', icon: Info },
   { id: 5, title: 'Faturamento', label: '05. Faturamento & Titular', icon: CreditCard },
   { id: 6, title: 'Revisão', label: '06. Revisão & Ativação', icon: ShieldCheck },
@@ -108,7 +109,9 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
     payment_status: 'normal',
     legal_name: '',
     tax_id: '',
-    industry: 'E-commerce',
+    industry: 'E-commerce & Varejo',
+    website: '',
+    contact_name: '',
     email: '',
     phone: '',
     advertiser_id: '',
@@ -148,7 +151,9 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
         payment_status: account.payment_status ?? 'normal',
         legal_name: account.legal_name ?? '',
         tax_id: account.tax_id ?? '',
-        industry: account.industry ?? 'E-commerce',
+        industry: account.industry ?? 'E-commerce & Varejo',
+        website: account.website ?? '',
+        contact_name: account.contact_name ?? '',
         email: account.email ?? '',
         phone: account.phone ?? '',
         advertiser_id: account.advertiser_id ?? '',
@@ -196,7 +201,20 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
       // Passo opcional — sempre pode avançar
       isValid = true;
     } else if (currentStep === 3) {
-      isValid = await trigger(['name', 'status', 'currency', 'timezone', 'spending_limit', 'country']);
+      isValid = await trigger([
+        'name',
+        'country',
+        'legal_name',
+        'industry',
+        'website',
+        'contact_name',
+        'email',
+        'phone',
+        'timezone',
+        'currency',
+        'status',
+        'spending_limit',
+      ]);
     } else if (currentStep === 4) {
       isValid = await trigger(['advertiser_id', 'business_center_id', 'pixel_id', 'catalog_id']);
     } else if (currentStep === 5) {
@@ -469,7 +487,7 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                 </motion.div>
               )}
 
-              {/* ── ETAPA 3: Informações Básicas ── */}
+              {/* ── ETAPA 3: Dados da Conta de Anúncios TikTok ── */}
               {currentStep === 3 && (
                 <motion.div
                   key="step-3"
@@ -481,32 +499,212 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                 >
                   <div className="space-y-1">
                     <h3 className="text-base font-semibold text-white flex items-center gap-2">
-                      <Layers className="w-4 h-4 text-orange-400" />
-                      Identificação da Conta
+                      <Layers className="w-4 h-4 text-brand" />
+                      Conta de anúncios para TikTok
                     </h3>
                     <p className="text-xs text-zinc-400">
-                      Defina o nome da conta, moeda e limites operacionais.
+                      Preencha os dados cadastrais da sua conta de anúncios conforme o padrão oficial do TikTok Ads.
                     </p>
                   </div>
 
-                  <div className="p-6 rounded-2xl border border-zinc-800/80 bg-zinc-900/50 space-y-5">
-                    <div className="space-y-2">
-                      <Label htmlFor="name" className="text-xs font-semibold text-zinc-200 flex items-center justify-between">
-                        <span>Nome da Conta de Anúncios <span className="text-rose-400">*</span></span>
-                        <span className="text-[11px] text-zinc-500 font-normal">Ex: TikTok Ads - Principal (Loja Brasil)</span>
+                  <div className="p-6 rounded-2xl border border-zinc-800/80 bg-zinc-900/50 space-y-4">
+                    {/* Campo 1: Nome da conta de anúncios */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="name" className="text-xs font-medium text-zinc-300">
+                        Nome da conta de anúncios <span className="text-rose-400">*</span>
                       </Label>
                       <Input
                         id="name"
-                        placeholder="Ex: TikTok Ads - Principal (Loja Brasil)"
+                        placeholder="Ex.: Alob Express — Brasil 01"
                         {...register('name')}
-                        className="bg-zinc-950 border-zinc-800 text-sm h-11 text-white placeholder:text-zinc-600 focus-visible:ring-brand"
+                        className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white placeholder:text-zinc-600 focus-visible:ring-brand"
                       />
                       {errors.name && <p className="text-xs text-rose-400 font-medium">{errors.name.message}</p>}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="status" className="text-xs font-semibold text-zinc-200">Status Operacional</Label>
+                    {/* Campo 2: País ou região */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="country" className="text-xs font-medium text-zinc-300">
+                        País ou região <span className="text-rose-400">*</span>
+                      </Label>
+                      <Select
+                        value={watch('country')}
+                        onValueChange={(val) => setValue('country', val, { shouldValidate: true })}
+                      >
+                        <SelectTrigger id="country" className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white">
+                          <SelectValue placeholder="Selecione o país ou região" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                          {PLATFORM_COUNTRIES.map((c) => (
+                            <SelectItem key={c.code} value={c.code}>
+                              <div className="flex items-center gap-2">
+                                <ReactCountryFlag
+                                  countryCode={c.code}
+                                  svg
+                                  style={{ width: '1.2em', height: '1.2em' }}
+                                />
+                                <span>{c.name}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.country && <p className="text-xs text-rose-400 font-medium">{errors.country.message}</p>}
+                    </div>
+
+                    {/* Campo 3: Nome legal da empresa */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="legal_name" className="text-xs font-medium text-zinc-300">
+                        Nome legal da empresa
+                      </Label>
+                      <Input
+                        id="legal_name"
+                        placeholder="Nome conforme registro empresarial"
+                        {...register('legal_name')}
+                        className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white placeholder:text-zinc-600 focus-visible:ring-brand"
+                      />
+                      {errors.legal_name && <p className="text-xs text-rose-400 font-medium">{errors.legal_name.message}</p>}
+                    </div>
+
+                    {/* Campo 4: Setor / indústria */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="industry" className="text-xs font-medium text-zinc-300">
+                        Setor / indústria
+                      </Label>
+                      <Select
+                        value={watch('industry') || 'E-commerce & Varejo'}
+                        onValueChange={(val) => setValue('industry', val)}
+                      >
+                        <SelectTrigger id="industry" className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white">
+                          <SelectValue placeholder="Selecione o setor" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-zinc-900 border-zinc-800 text-white max-h-56">
+                          {TIKTOK_INDUSTRIES.map((ind) => (
+                            <SelectItem key={ind} value={ind}>
+                              {ind}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Campo 5: Site da empresa */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="website" className="text-xs font-medium text-zinc-300">
+                        Site da empresa
+                      </Label>
+                      <Input
+                        id="website"
+                        type="url"
+                        placeholder="https://www.alobexpress.com.br"
+                        {...register('website')}
+                        className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white placeholder:text-zinc-600 focus-visible:ring-brand"
+                      />
+                      {errors.website && <p className="text-xs text-rose-400 font-medium">{errors.website.message}</p>}
+                    </div>
+
+                    {/* Campo 6: Nome do contato */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="contact_name" className="text-xs font-medium text-zinc-300">
+                        Nome do contato
+                      </Label>
+                      <Input
+                        id="contact_name"
+                        placeholder="Nome do responsável"
+                        {...register('contact_name')}
+                        className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white placeholder:text-zinc-600 focus-visible:ring-brand"
+                      />
+                      {errors.contact_name && <p className="text-xs text-rose-400 font-medium">{errors.contact_name.message}</p>}
+                    </div>
+
+                    {/* Campo 7: E-mail de contato */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="email" className="text-xs font-medium text-zinc-300">
+                        E-mail de contato
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="contato@empresa.com.br"
+                        {...register('email')}
+                        className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white placeholder:text-zinc-600 focus-visible:ring-brand"
+                      />
+                      {errors.email && <p className="text-xs text-rose-400 font-medium">{errors.email.message}</p>}
+                    </div>
+
+                    {/* Campo 8: Telefone */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="phone" className="text-xs font-medium text-zinc-300">
+                        Telefone
+                      </Label>
+                      <Controller
+                        name="phone"
+                        control={control}
+                        render={({ field }) => (
+                          <Input
+                            id="phone"
+                            placeholder="+55 (DDD) número"
+                            value={field.value ?? ''}
+                            onChange={(e) => {
+                              const masked = formatPhoneByCountry(
+                                e.target.value,
+                                watch('country') || 'BR'
+                              );
+                              field.onChange(masked);
+                            }}
+                            className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white font-mono placeholder:text-zinc-600 focus-visible:ring-brand"
+                          />
+                        )}
+                      />
+                      {errors.phone && <p className="text-xs text-rose-400 font-medium">{errors.phone.message}</p>}
+                    </div>
+
+                    {/* Campo 9: Fuso horário */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="timezone" className="text-xs font-medium text-zinc-300">
+                        Fuso horário <span className="text-rose-400">*</span>
+                      </Label>
+                      <Input
+                        id="timezone"
+                        placeholder="Ex.: America/Sao_Paulo"
+                        {...register('timezone')}
+                        className="bg-zinc-950 border-zinc-800 text-xs h-10 font-mono text-white placeholder:text-zinc-600 focus-visible:ring-brand"
+                      />
+                      {errors.timezone && <p className="text-xs text-rose-400 font-medium">{errors.timezone.message}</p>}
+                    </div>
+
+                    {/* Campo 10: Moeda de faturamento */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="currency" className="text-xs font-medium text-zinc-300">
+                        Moeda de faturamento <span className="text-rose-400">*</span>
+                      </Label>
+                      <Select
+                        value={currency}
+                        onValueChange={(val: AdAccountFormData['currency']) => setValue('currency', val, { shouldValidate: true })}
+                      >
+                        <SelectTrigger id="currency" className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white">
+                          <SelectValue placeholder="Selecione a moeda" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                          <SelectItem value="BRL">BRL — Real Brasileiro (R$)</SelectItem>
+                          <SelectItem value="USD">USD — Dólar Americano ($)</SelectItem>
+                          <SelectItem value="EUR">EUR — Euro (€)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {errors.currency && <p className="text-xs text-rose-400 font-medium">{errors.currency.message}</p>}
+                    </div>
+                  </div>
+
+                  {/* Configurações Operacionais Adicionais */}
+                  <div className="p-5 rounded-2xl border border-zinc-800/80 bg-zinc-900/40 space-y-4">
+                    <h4 className="text-xs font-semibold text-zinc-200">
+                      Configurações Operacionais no Sistema
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="status" className="text-xs font-medium text-zinc-300">
+                          Status Operacional
+                        </Label>
                         <Select
                           value={status}
                           onValueChange={(val: AdAccountFormData['status']) => setValue('status', val)}
@@ -523,36 +721,8 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                         </Select>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="currency" className="text-xs font-semibold text-zinc-200">Moeda da Conta</Label>
-                        <Select
-                          value={currency}
-                          onValueChange={(val: AdAccountFormData['currency']) => setValue('currency', val)}
-                        >
-                          <SelectTrigger id="currency" className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white">
-                            <SelectValue placeholder="Selecione a moeda" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
-                            <SelectItem value="BRL">Real Brasileiro (BRL - R$)</SelectItem>
-                            <SelectItem value="USD">Dólar Americano (USD - $)</SelectItem>
-                            <SelectItem value="EUR">Euro (EUR - €)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="timezone" className="text-xs font-semibold text-zinc-200">Fuso Horário (Timezone)</Label>
-                        <Input
-                          id="timezone"
-                          placeholder="America/Sao_Paulo"
-                          {...register('timezone')}
-                          className="bg-zinc-950 border-zinc-800 text-xs h-10 font-mono text-white"
-                        />
-                        {errors.timezone && <p className="text-xs text-rose-400 font-medium">{errors.timezone.message}</p>}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="spending_limit" className="text-xs font-semibold text-zinc-200">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="spending_limit" className="text-xs font-medium text-zinc-300">
                           Limite de Gasto Mensal (Opcional)
                         </Label>
                         <Controller
@@ -600,6 +770,11 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                       </div>
                     </div>
                   </div>
+
+                  {/* Disclaimer Oficial idêntico à imagem */}
+                  <p className="text-[11px] text-zinc-500 italic px-1">
+                    Os campos ilustram o formulário para o seu sistema; não representam um cadastro real no TikTok.
+                  </p>
                 </motion.div>
               )}
 
@@ -1012,8 +1187,8 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                     <div className="p-5 rounded-2xl border border-zinc-800/80 bg-zinc-900/60 space-y-3">
                       <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
                         <div className="flex items-center gap-2">
-                          <Layers className="w-4 h-4 text-orange-400" />
-                          <span className="text-xs font-bold text-white">Identificação & Rede</span>
+                          <Layers className="w-4 h-4 text-brand" />
+                          <span className="text-xs font-bold text-white">Dados da Conta TikTok</span>
                         </div>
                         <Button type="button" variant="ghost" size="sm" onClick={() => setCurrentStep(3)} className="h-6 text-[11px] text-brand hover:text-brand px-2">
                           Editar
@@ -1021,20 +1196,46 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                       </div>
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-zinc-400">Plataforma:</span>
-                          <span className="font-semibold text-white">TikTok Ads</span>
+                          <span className="text-zinc-400">Nome da Conta:</span>
+                          <span className="font-semibold text-white truncate max-w-[200px]">{formValues.name || '—'}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-zinc-400">Nome da Conta:</span>
-                          <span className="font-semibold text-white">{formValues.name || '—'}</span>
+                          <span className="text-zinc-400">País / Região:</span>
+                          <span className="text-zinc-200">
+                            {PLATFORM_COUNTRIES.find((c) => c.code === formValues.country)?.name || formValues.country}
+                          </span>
+                        </div>
+                        {formValues.legal_name && (
+                          <div className="flex justify-between">
+                            <span className="text-zinc-400">Nome Legal:</span>
+                            <span className="text-zinc-200 truncate max-w-[200px]">{formValues.legal_name}</span>
+                          </div>
+                        )}
+                        {formValues.industry && (
+                          <div className="flex justify-between">
+                            <span className="text-zinc-400">Setor:</span>
+                            <span className="text-zinc-200 truncate max-w-[200px]">{formValues.industry}</span>
+                          </div>
+                        )}
+                        {formValues.website && (
+                          <div className="flex justify-between">
+                            <span className="text-zinc-400">Site:</span>
+                            <span className="text-cyan-400 truncate max-w-[200px]">{formValues.website}</span>
+                          </div>
+                        )}
+                        {formValues.contact_name && (
+                          <div className="flex justify-between">
+                            <span className="text-zinc-400">Responsável:</span>
+                            <span className="text-zinc-200">{formValues.contact_name}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span className="text-zinc-400">Moeda / Fuso:</span>
+                          <span className="font-mono text-zinc-300">{formValues.currency} • {formValues.timezone}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-zinc-400">Status Inicial:</span>
                           <span className="capitalize font-medium text-emerald-400">{formValues.status}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-zinc-400">Moeda / Fuso:</span>
-                          <span className="font-mono text-zinc-300">{formValues.currency} • {formValues.timezone}</span>
                         </div>
                       </div>
                     </div>

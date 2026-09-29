@@ -141,6 +141,8 @@ export class AdAccountsService {
       legal_name,
       tax_id,
       industry,
+      website,
+      contact_name,
       email,
       phone,
       advertiser_id,
@@ -168,6 +170,8 @@ export class AdAccountsService {
       legal_name: legal_name || null,
       tax_id: tax_id || null,
       industry: industry || null,
+      website: website || null,
+      contact_name: contact_name || null,
       email: email || null,
       phone: phone || null,
       advertiser_id: advertiser_id || null,
@@ -211,6 +215,8 @@ export class AdAccountsService {
     if (data.legal_name !== undefined) updatePayload.legal_name = data.legal_name || null;
     if (data.tax_id !== undefined) updatePayload.tax_id = data.tax_id || null;
     if (data.industry !== undefined) updatePayload.industry = data.industry || null;
+    if (data.website !== undefined) updatePayload.website = data.website || null;
+    if (data.contact_name !== undefined) updatePayload.contact_name = data.contact_name || null;
     if (data.email !== undefined) updatePayload.email = data.email || null;
     if (data.phone !== undefined) updatePayload.phone = data.phone || null;
     if (data.advertiser_id !== undefined)

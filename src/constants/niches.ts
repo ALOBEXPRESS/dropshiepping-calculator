@@ -42,3 +42,22 @@ export const PLATFORM_COUNTRIES = [
 ] as const;
 
 export type PlatformCountryCode = (typeof PLATFORM_COUNTRIES)[number]['code'];
+
+/** Setores / Indústrias oficiais do TikTok Ads Manager */
+export const TIKTOK_INDUSTRIES = [
+  'E-commerce & Varejo',
+  'Moda & Acessórios',
+  'Beleza & Cuidados Pessoais',
+  'Eletrônicos & Tecnologia',
+  'Casa & Decoração',
+  'Saúde & Fitness',
+  'Educação & Treinamento',
+  'Software & Aplicativos',
+  'Serviços Financeiros & Negócios',
+  'Jogos & Entretenimento',
+  'Alimentos & Bebidas',
+  'Viagens & Turismo',
+  'Automotivo',
+  'Mídia & Conteúdo',
+  'Outro / Serviços Gerais',
+] as const;

@@ -16,8 +16,13 @@ type SupabaseFromReturn = ReturnType<typeof supabase.from>;
 describe('businessCenterSchema', () => {
   const baseValid = {
     platform: 'tiktok' as const,
+    business_type: 'advertiser' as const,
+    company_legal_name: 'Alob Express',
+    name: 'Alob Express — Marketing',
+    country: 'BR',
+    timezone: 'America/Sao_Paulo',
+    currency: 'BRL',
     bc_id: '7123456789012345678',
-    name: 'BC Principal',
     notes: '',
   };
 
@@ -26,24 +31,27 @@ describe('businessCenterSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it('fails if bc_id is empty', () => {
+  it('fails if name is less than 2 characters', () => {
+    const result = businessCenterSchema.safeParse({ ...baseValid, name: 'A' });
+    expect(result.success).toBe(false);
+  });
+
+  it('allows bc_id to be empty (auto-generated in service)', () => {
     const result = businessCenterSchema.safeParse({ ...baseValid, bc_id: '' });
-    expect(result.success).toBe(false);
-  });
-
-  it('fails if bc_id contains non-numeric characters', () => {
-    const result = businessCenterSchema.safeParse({ ...baseValid, bc_id: 'abc123' });
-    expect(result.success).toBe(false);
-  });
-
-  it('allows name and notes to be empty strings', () => {
-    const result = businessCenterSchema.safeParse({
-      platform: 'tiktok' as const,
-      bc_id: '1234567890',
-      name: '',
-      notes: '',
-    });
     expect(result.success).toBe(true);
+  });
+
+  it('validates allowed business_type values', () => {
+    const invalidResult = businessCenterSchema.safeParse({ ...baseValid, business_type: 'invalid' as any });
+    expect(invalidResult.success).toBe(false);
+  });
+
+  it('accepts agency as business_type', () => {
+    const result = businessCenterSchema.safeParse({ ...baseValid, business_type: 'agency' });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.business_type).toBe('agency');
+    }
   });
 
   it('fails if notes exceed 500 characters', () => {
@@ -54,14 +62,16 @@ describe('businessCenterSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('trims whitespace from bc_id', () => {
+  it('trims whitespace from bc_id and name', () => {
     const result = businessCenterSchema.safeParse({
       ...baseValid,
       bc_id: '  1234567890  ',
+      name: '  Alob Marketing  ',
     });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.bc_id).toBe('1234567890');
+      expect(result.data.name).toBe('Alob Marketing');
     }
   });
 });

@@ -675,6 +675,27 @@ export const AdAccountDetailPage: React.FC = () => {
                 </span>
               </div>
               <div className="flex justify-between py-1.5 border-b border-border/40">
+                <span className="text-muted-foreground">Site da Empresa:</span>
+                {account.website ? (
+                  <a
+                    href={account.website.startsWith('http') ? account.website : `https://${account.website}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-medium text-cyan-400 hover:underline truncate max-w-[200px]"
+                  >
+                    {account.website}
+                  </a>
+                ) : (
+                  <span className="font-medium text-foreground">Não informado</span>
+                )}
+              </div>
+              <div className="flex justify-between py-1.5 border-b border-border/40">
+                <span className="text-muted-foreground">Nome do Contato:</span>
+                <span className="font-medium text-foreground">
+                  {account.contact_name || 'Não informado'}
+                </span>
+              </div>
+              <div className="flex justify-between py-1.5 border-b border-border/40">
                 <span className="text-muted-foreground">E-mail de Contato:</span>
                 <span className="font-medium text-foreground">
                   {account.email || 'Não informado'}

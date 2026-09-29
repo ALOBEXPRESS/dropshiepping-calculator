@@ -24,7 +24,9 @@ describe('adAccountSchema', () => {
     payment_status: 'normal' as const,
     legal_name: 'Minha Empresa Ltda',
     tax_id: '12.345.678/0001-90',
-    industry: 'E-commerce',
+    industry: 'E-commerce & Varejo',
+    website: 'https://www.alobexpress.com.br',
+    contact_name: 'Jonathan Pereira',
     email: 'financeiro@empresa.com',
     phone: '+55 11 99999-8888',
     advertiser_id: '7123456789012345678',
@@ -41,6 +43,8 @@ describe('adAccountSchema', () => {
       expect(result.data.platform).toBe('tiktok');
       expect(result.data.advertiser_id).toBe('7123456789012345678');
       expect(result.data.currency).toBe('BRL');
+      expect(result.data.website).toBe('https://www.alobexpress.com.br');
+      expect(result.data.contact_name).toBe('Jonathan Pereira');
     }
   });
 
@@ -219,4 +223,83 @@ describe('AdAccountsService', () => {
       expect(mockDeleteEq2).toHaveBeenCalledWith('id', accountId);
     });
   });
+
+  describe('create and update with TikTok fields', () => {
+    it('persists website and contact_name on create', async () => {
+      const mockSingle = vi.fn().mockResolvedValue({
+        data: {
+          id: accountId,
+          organization_id: orgId,
+          name: 'Nova Conta',
+          website: 'https://alobexpress.com.br',
+          contact_name: 'Jonathan',
+        },
+        error: null,
+      });
+      const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
+      const mockInsert = vi.fn().mockReturnValue({ select: mockSelect });
+
+      vi.mocked(supabase.from).mockReturnValue({
+        insert: mockInsert,
+      } as unknown as SupabaseFromReturn);
+
+      const created = await AdAccountsService.create(orgId, {
+        name: 'Nova Conta',
+        platform: 'tiktok',
+        status: 'active',
+        timezone: 'America/Sao_Paulo',
+        currency: 'BRL',
+        country: 'BR',
+        website: 'https://alobexpress.com.br',
+        contact_name: 'Jonathan',
+        billing_type: 'postpaid',
+        payment_status: 'normal',
+      });
+
+      expect(created.website).toBe('https://alobexpress.com.br');
+      expect(created.contact_name).toBe('Jonathan');
+      expect(mockInsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          website: 'https://alobexpress.com.br',
+          contact_name: 'Jonathan',
+        })
+      );
+    });
+
+    it('persists website and contact_name on update', async () => {
+      const mockSingle = vi.fn().mockResolvedValue({
+        data: {
+          id: accountId,
+          organization_id: orgId,
+          name: 'Conta Atualizada',
+          website: 'https://novo-site.com',
+          contact_name: 'Novo Responsavel',
+        },
+        error: null,
+      });
+      const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
+      const mockEq2 = vi.fn().mockReturnValue({ select: mockSelect });
+      const mockEq1 = vi.fn().mockReturnValue({ eq: mockEq2 });
+      const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq1 });
+
+      vi.mocked(supabase.from).mockReturnValue({
+        update: mockUpdate,
+      } as unknown as SupabaseFromReturn);
+
+      const updated = await AdAccountsService.update(orgId, accountId, {
+        website: 'https://novo-site.com',
+        contact_name: 'Novo Responsavel',
+      });
+
+      expect(updated.website).toBe('https://novo-site.com');
+      expect(updated.contact_name).toBe('Novo Responsavel');
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          website: 'https://novo-site.com',
+          contact_name: 'Novo Responsavel',
+        })
+      );
+    });
+  });
 });
+

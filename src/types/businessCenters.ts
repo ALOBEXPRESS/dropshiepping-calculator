@@ -3,6 +3,7 @@ import { z } from 'zod';
 // ── Tipos base ───────────────────────────────────────────────────────────────
 
 export type BusinessCenterPlatform = 'tiktok';
+export type BusinessCenterType = 'advertiser' | 'agency';
 
 // ── Interface principal (espelho do banco) ───────────────────────────────────
 
@@ -13,6 +14,11 @@ export interface BusinessCenter {
   /** ID externo do Business Center no TikTok Ads Manager */
   bc_id: string;
   name: string | null;
+  business_type: BusinessCenterType;
+  company_legal_name: string | null;
+  country: string;
+  timezone: string;
+  currency: string;
   notes: string | null;
   created_by: string | null;
   created_at: string;
@@ -28,12 +34,13 @@ export interface BusinessCenterWithStats extends BusinessCenter {
 
 export const businessCenterSchema = z.object({
   platform: z.literal('tiktok'),
-  bc_id: z
-    .string()
-    .trim()
-    .min(1, 'ID do Business Center é obrigatório')
-    .regex(/^\d+$/, 'O ID deve conter apenas números'),
-  name: z.string().trim().optional().or(z.literal('')),
+  business_type: z.enum(['advertiser', 'agency']),
+  company_legal_name: z.string().trim().optional().or(z.literal('')),
+  name: z.string().trim().min(2, 'Nome do Business Center deve ter no mínimo 2 caracteres'),
+  country: z.string().min(2, 'País é obrigatório'),
+  timezone: z.string().min(1, 'Fuso horário é obrigatório'),
+  currency: z.string().min(1, 'Moeda é obrigatória'),
+  bc_id: z.string().trim().optional().or(z.literal('')),
   notes: z.string().trim().max(500, 'Notas devem ter no máximo 500 caracteres').optional().or(z.literal('')),
 });
 

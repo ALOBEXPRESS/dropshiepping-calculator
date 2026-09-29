@@ -91,11 +91,21 @@ export class BusinessCentersService {
     data: BusinessCenterFormData,
     userId?: string | null
   ): Promise<BusinessCenter> {
+    // Se bc_id não for informado, gera um ID de 19 dígitos no padrão do TikTok
+    const finalBcId = data.bc_id && data.bc_id.trim() !== ''
+      ? data.bc_id.trim()
+      : `7${Date.now()}${Math.floor(10000 + Math.random() * 90000)}`;
+
     const payload = {
       organization_id: organizationId,
-      platform: data.platform,
-      bc_id: data.bc_id.trim(),
+      platform: data.platform || 'tiktok',
+      business_type: data.business_type || 'advertiser',
+      company_legal_name: data.company_legal_name?.trim() || null,
       name: data.name?.trim() || null,
+      country: data.country || 'BR',
+      timezone: data.timezone || 'America/Sao_Paulo',
+      currency: data.currency || 'BRL',
+      bc_id: finalBcId,
       notes: data.notes?.trim() || null,
       created_by: userId || null,
     };
@@ -127,7 +137,12 @@ export class BusinessCentersService {
       updated_at: new Date().toISOString(),
     };
 
-    if (data.bc_id !== undefined) payload.bc_id = data.bc_id.trim();
+    if (data.business_type !== undefined) payload.business_type = data.business_type;
+    if (data.company_legal_name !== undefined) payload.company_legal_name = data.company_legal_name?.trim() || null;
+    if (data.country !== undefined) payload.country = data.country;
+    if (data.timezone !== undefined) payload.timezone = data.timezone;
+    if (data.currency !== undefined) payload.currency = data.currency;
+    if (data.bc_id !== undefined && data.bc_id.trim() !== '') payload.bc_id = data.bc_id.trim();
     if (data.name !== undefined) payload.name = data.name?.trim() || null;
     if (data.notes !== undefined) payload.notes = data.notes?.trim() || null;
 

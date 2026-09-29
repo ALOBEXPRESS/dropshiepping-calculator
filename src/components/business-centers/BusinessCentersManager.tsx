@@ -42,6 +42,16 @@ import type {
 } from '@/types/businessCenters';
 import { businessCenterSchema } from '@/types/businessCenters';
 
+import { Controller } from 'react-hook-form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { PLATFORM_COUNTRIES } from '@/constants/niches';
+
 // ── BusinessCenterFormDialog ──────────────────────────────────────────────────
 
 interface BusinessCenterFormDialogProps {
@@ -65,39 +75,64 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
   const {
     register,
     handleSubmit,
+    control,
+    watch,
+    setValue,
     reset,
     formState: { errors },
   } = useForm<BusinessCenterFormData>({
     resolver: zodResolver(businessCenterSchema),
     defaultValues: center
       ? {
-          platform: center.platform,
-          bc_id: center.bc_id,
+          platform: center.platform ?? 'tiktok',
+          business_type: center.business_type ?? 'advertiser',
+          company_legal_name: center.company_legal_name ?? '',
           name: center.name ?? '',
+          country: center.country ?? 'BR',
+          timezone: center.timezone ?? 'America/Sao_Paulo',
+          currency: center.currency ?? 'BRL',
+          bc_id: center.bc_id ?? '',
           notes: center.notes ?? '',
         }
       : {
           platform: 'tiktok',
-          bc_id: '',
+          business_type: 'advertiser',
+          company_legal_name: '',
           name: '',
+          country: 'BR',
+          timezone: 'America/Sao_Paulo',
+          currency: 'BRL',
+          bc_id: '',
           notes: '',
         },
   });
+
+  const businessType = watch('business_type') || 'advertiser';
 
   React.useEffect(() => {
     if (open) {
       reset(
         center
           ? {
-              platform: center.platform,
-              bc_id: center.bc_id,
+              platform: center.platform ?? 'tiktok',
+              business_type: center.business_type ?? 'advertiser',
+              company_legal_name: center.company_legal_name ?? '',
               name: center.name ?? '',
+              country: center.country ?? 'BR',
+              timezone: center.timezone ?? 'America/Sao_Paulo',
+              currency: center.currency ?? 'BRL',
+              bc_id: center.bc_id ?? '',
               notes: center.notes ?? '',
             }
           : {
               platform: 'tiktok',
-              bc_id: '',
+              business_type: 'advertiser',
+              company_legal_name: '',
               name: '',
+              country: 'BR',
+              timezone: 'America/Sao_Paulo',
+              currency: 'BRL',
+              bc_id: '',
               notes: '',
             }
       );
@@ -129,64 +164,193 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="bg-card border-border text-foreground max-w-lg">
+      <DialogContent className="bg-card border-border text-foreground max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-base font-bold text-foreground">
             <Building2 className="w-5 h-5 text-purple-400" />
-            {isEditing ? 'Editar Business Center' : 'Novo Business Center'}
+            Dados da empresa e do Business Center
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-2">
-          {/* Platform (fixed to TikTok) */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-muted-foreground">
-              Plataforma
+          {/* Tipo de negócio */}
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold text-foreground">
+              Tipo de negócio
             </Label>
-            <div className="h-9 px-3 rounded-md bg-accent/40 border border-border flex items-center text-xs font-medium text-foreground">
-              TikTok Ads Manager
+            <div className="space-y-2">
+              <label
+                className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                  businessType === 'advertiser'
+                    ? 'border-purple-500 bg-purple-500/10 text-foreground'
+                    : 'border-border bg-background text-muted-foreground hover:border-border/80'
+                }`}
+              >
+                <input
+                  type="radio"
+                  value="advertiser"
+                  checked={businessType === 'advertiser'}
+                  onChange={() => setValue('business_type', 'advertiser')}
+                  className="sr-only"
+                />
+                <div
+                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                    businessType === 'advertiser'
+                      ? 'border-purple-500'
+                      : 'border-muted-foreground'
+                  }`}
+                >
+                  {businessType === 'advertiser' && (
+                    <div className="w-2 h-2 rounded-full bg-purple-500" />
+                  )}
+                </div>
+                <div className="text-xs font-medium">Anunciante (Advertiser)</div>
+              </label>
+
+              <label
+                className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                  businessType === 'agency'
+                    ? 'border-purple-500 bg-purple-500/10 text-foreground'
+                    : 'border-border bg-background text-muted-foreground hover:border-border/80'
+                }`}
+              >
+                <input
+                  type="radio"
+                  value="agency"
+                  checked={businessType === 'agency'}
+                  onChange={() => setValue('business_type', 'agency')}
+                  className="sr-only"
+                />
+                <div
+                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                    businessType === 'agency'
+                      ? 'border-purple-500'
+                      : 'border-muted-foreground'
+                  }`}
+                >
+                  {businessType === 'agency' && (
+                    <div className="w-2 h-2 rounded-full bg-purple-500" />
+                  )}
+                </div>
+                <div className="text-xs font-medium">Agência (Agency)</div>
+              </label>
             </div>
           </div>
 
-          {/* External BC ID */}
+          {/* Nome legal da empresa */}
           <div className="space-y-1.5">
-            <Label htmlFor="bc_id" className="text-xs font-semibold text-foreground">
-              ID do Business Center (TikTok) <span className="text-red-400">*</span>
+            <Label htmlFor="company_legal_name" className="text-xs font-semibold text-foreground">
+              Nome legal da empresa
             </Label>
+            <Input
+              id="company_legal_name"
+              {...register('company_legal_name')}
+              placeholder="Ex.: Alob Express"
+              className="bg-background border-input text-xs h-10"
+            />
+          </div>
+
+          {/* Nome do Business Center */}
+          <div className="space-y-1.5">
+            <Label htmlFor="name" className="text-xs font-semibold text-foreground">
+              Nome do Business Center <span className="text-red-400">*</span>
+            </Label>
+            <Input
+              id="name"
+              {...register('name')}
+              placeholder="Ex.: Alob Express — Marketing"
+              className="bg-background border-input text-xs h-10"
+            />
+            {errors.name && (
+              <p className="text-xs text-red-400">{errors.name.message}</p>
+            )}
+          </div>
+
+          {/* País ou região */}
+          <div className="space-y-1.5">
+            <Label htmlFor="country" className="text-xs font-semibold text-foreground">
+              País ou região
+            </Label>
+            <Controller
+              name="country"
+              control={control}
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger className="bg-background border-input text-xs h-10">
+                    <SelectValue placeholder="Selecione o país" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border">
+                    {PLATFORM_COUNTRIES.map((c) => (
+                      <SelectItem key={c.code} value={c.code}>
+                        {c.name} ({c.code})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+
+          {/* Fuso horário */}
+          <div className="space-y-1.5">
+            <Label htmlFor="timezone" className="text-xs font-semibold text-foreground">
+              Fuso horário
+            </Label>
+            <Input
+              id="timezone"
+              {...register('timezone')}
+              placeholder="Ex.: America/Sao_Paulo (UTC−03:00)"
+              className="bg-background border-input text-xs h-10"
+            />
+          </div>
+
+          {/* Moeda */}
+          <div className="space-y-1.5">
+            <Label htmlFor="currency" className="text-xs font-semibold text-foreground">
+              Moeda
+            </Label>
+            <Controller
+              name="currency"
+              control={control}
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger className="bg-background border-input text-xs h-10">
+                    <SelectValue placeholder="Selecione a moeda" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border">
+                    <SelectItem value="BRL">BRL (R$ - Real Brasileiro)</SelectItem>
+                    <SelectItem value="USD">USD ($ - Dólar Americano)</SelectItem>
+                    <SelectItem value="EUR">EUR (€ - Euro)</SelectItem>
+                    <SelectItem value="GBP">GBP (£ - Libra Esterlina)</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+
+          {/* ID do Business Center (TikTok) — Opcional */}
+          <div className="space-y-1.5 pt-2 border-t border-border">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="bc_id" className="text-xs font-semibold text-foreground">
+                ID do Business Center (TikTok)
+              </Label>
+              <span className="text-[10px] text-muted-foreground uppercase">Opcional</span>
+            </div>
             <Input
               id="bc_id"
               {...register('bc_id')}
-              placeholder="Ex: 7123456789012345678"
-              className="bg-background border-input font-mono text-xs"
+              placeholder="Ex: 7123456789012345678 (deixe vazio para gerar)"
+              className="bg-background border-input font-mono text-xs h-10"
             />
             {errors.bc_id && (
               <p className="text-xs text-red-400">{errors.bc_id.message}</p>
             )}
             <p className="text-[11px] text-muted-foreground">
-              ID numérico fornecido na URL ou painel do TikTok Business Center.
+              Se você já tem o ID do TikTok, informe aqui. Caso contrário, geraremos um identificador automático.
             </p>
           </div>
 
-          {/* Name */}
-          <div className="space-y-1.5">
-            <Label htmlFor="name" className="text-xs font-semibold text-foreground">
-              Nome de Identificação (Opcional)
-            </Label>
-            <Input
-              id="name"
-              {...register('name')}
-              placeholder="Ex: BC Principal - Escala Brasil"
-              className="bg-background border-input text-xs"
-            />
-            {errors.name && (
-              <p className="text-xs text-red-400">{errors.name.message}</p>
-            )}
-            <p className="text-[11px] text-muted-foreground">
-              Nome amigável para facilitar o reconhecimento no seletor das contas de anúncios.
-            </p>
-          </div>
-
-          {/* Notes */}
+          {/* Observações */}
           <div className="space-y-1.5">
             <Label htmlFor="notes" className="text-xs font-semibold text-foreground">
               Observações
@@ -194,7 +358,7 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
             <textarea
               id="notes"
               {...register('notes')}
-              rows={3}
+              rows={2}
               placeholder="Anotações internas, proprietário, finalidade ou limites deste BC..."
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring"
             />
@@ -202,6 +366,11 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
               <p className="text-xs text-red-400">{errors.notes.message}</p>
             )}
           </div>
+
+          {/* Disclaimer oficial TikTok como na imagem */}
+          <p className="text-[11px] text-muted-foreground italic pt-1">
+            Os campos ilustram o formulário para o seu sistema; não representam um cadastro real no TikTok.
+          </p>
 
           <div className="flex justify-end gap-2 pt-3 border-t border-border">
             <Button
@@ -263,9 +432,12 @@ const BusinessCenterCard: React.FC<BusinessCenterCardProps> = ({
             <h3 className="text-sm font-semibold text-foreground truncate">
               {center.name || `BC ${center.bc_id}`}
             </h3>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="inline-flex items-center text-[10px] font-semibold uppercase px-1.5 py-0.2 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
+            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+              <span className="inline-flex items-center text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
                 {center.platform}
+              </span>
+              <span className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
+                {center.business_type === 'agency' ? 'Agência' : 'Anunciante'}
               </span>
             </div>
           </div>
@@ -288,6 +460,25 @@ const BusinessCenterCard: React.FC<BusinessCenterCardProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Empresa & Metadados */}
+      {(center.company_legal_name || center.country) && (
+        <div className="text-xs space-y-1 bg-accent/20 p-2.5 rounded-xl border border-border/50">
+          {center.company_legal_name && (
+            <p className="text-foreground font-medium truncate">
+              <span className="text-muted-foreground font-normal">Empresa: </span>
+              {center.company_legal_name}
+            </p>
+          )}
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
+            <span>{center.country || 'BR'}</span>
+            <span>·</span>
+            <span>{center.currency || 'BRL'}</span>
+            <span>·</span>
+            <span className="font-mono">{center.timezone || 'America/Sao_Paulo'}</span>
+          </div>
+        </div>
+      )}
 
       {/* ID Badge with copy */}
       <div className="flex items-center justify-between p-2.5 rounded-xl bg-accent/30 border border-border/60">

@@ -506,7 +506,9 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
                     max={30}
                     step={0.5}
                     placeholder="Ex: 3"
-                    {...register('google_account_age_years', { valueAsNumber: true })}
+                    {...register('google_account_age_years', {
+                      setValueAs: (v) => (v === '' || Number.isNaN(Number(v)) ? null : Number(v)),
+                    })}
                     className="bg-zinc-900 border-zinc-800 text-xs h-10 text-white font-mono"
                   />
                 </div>

@@ -29,6 +29,8 @@ export interface AdAccount {
   legal_name: string | null;
   tax_id: string | null;
   industry: string | null;
+  website?: string | null;
+  contact_name?: string | null;
   email: string | null;
   phone: string | null;
   billing_type: AdAccountBillingType;
@@ -91,6 +93,8 @@ export const adAccountSchema = z.object({
     .optional()
     .or(z.literal('')),
   industry: z.string().trim().optional().or(z.literal('')),
+  website: z.string().trim().optional().or(z.literal('')),
+  contact_name: z.string().trim().optional().or(z.literal('')),
   email: z.string().email('E-mail inválido').optional().or(z.literal('')),
   phone: z
     .string()
