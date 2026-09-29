@@ -31,10 +31,12 @@ import {
   Coins,
   Check,
   Sparkles,
+  Shield,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useProxies } from '@/hooks/useProxies';
 import {
   platformAccountSchema,
   type PlatformAccountFormData,
@@ -67,6 +69,7 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
   onSave,
 }) => {
   const { organizationId } = useSettings();
+  const { proxies = [] } = useProxies(organizationId ?? '');
   const [isSaving, setIsSaving] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -95,6 +98,7 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
       phone: '',
       birth_date: '',
       email: '',
+      proxy_id: null,
       google_account_age_years: null,
       google_ads_invested_brl: null,
       google_ads_currency: 'BRL',
@@ -132,6 +136,7 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
         phone: account.phone ? formatPhoneByCountry(account.phone, account.country) : '',
         birth_date: account.birth_date || '',
         email: initialEmail,
+        proxy_id: account.proxy_id ?? null,
         google_account_age_years: googleMeta?.account_age_years ?? null,
         google_ads_invested_brl: googleMeta?.google_ads_invested_brl ?? null,
         google_ads_currency: googleMeta?.google_ads_currency ?? 'BRL',
@@ -578,6 +583,44 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
               </div>
             </div>
           )}
+
+          {/* Proxy de Conexão */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold text-zinc-200 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Shield className="w-3.5 h-3.5 text-orange-400" />
+                Proxy de Conexão
+              </span>
+              <span className="text-[10px] text-zinc-500 font-normal">Opcional · Para isolamento de rede</span>
+            </Label>
+            <Controller
+              name="proxy_id"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value || 'none'}
+                  onValueChange={(val) => field.onChange(val === 'none' ? null : val)}
+                >
+                  <SelectTrigger className="bg-zinc-900 border-zinc-800 h-10 text-xs text-white">
+                    <SelectValue placeholder="Selecione um proxy..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                    <SelectItem value="none">
+                      <span className="text-zinc-400">Nenhum proxy vinculado</span>
+                    </SelectItem>
+                    {proxies.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        <span className="font-medium text-white">{p.label}</span>
+                        <span className="text-zinc-400 font-mono text-[11px] ml-2">
+                          ({p.protocol.toUpperCase()} · {p.host}:{p.port})
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
 
           {/* Bio */}
           <div className="space-y-1.5">

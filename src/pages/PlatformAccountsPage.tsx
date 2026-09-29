@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   Unlink,
   Loader2,
+  Shield,
 } from 'lucide-react';
 import ReactCountryFlag from 'react-country-flag';
 import { useQueryClient } from '@tanstack/react-query';
@@ -57,6 +58,7 @@ import {
   usePlatformAccounts,
   usePlatformAccountMutations,
 } from '@/hooks/usePlatformAccounts';
+import { useProxies } from '@/hooks/useProxies';
 import type {
   PlatformAccount,
   PlatformAccountFormData,
@@ -93,6 +95,8 @@ export const PlatformAccountsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const { data: accounts = [], isLoading, isError, refetch } = usePlatformAccounts();
   const { update, remove } = usePlatformAccountMutations();
+  const { proxies = [] } = useProxies(organizationId ?? '');
+  const proxyMap = useMemo(() => new Map(proxies.map((p) => [p.id, p])), [proxies]);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [countryFilter, setCountryFilter] = useState<string>('all');
@@ -542,6 +546,23 @@ export const PlatformAccountsPage: React.FC = () => {
                       </span>
                     </div>
                   )}
+
+                  {/* Proxy vinculado */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-zinc-400 flex items-center gap-1">
+                      <Shield className="w-3 h-3 text-orange-400" /> Proxy:
+                    </span>
+                    {account.proxy_id && proxyMap.get(account.proxy_id) ? (
+                      <span
+                        className="font-medium text-orange-400 font-mono text-[11px] truncate max-w-[170px]"
+                        title={proxyMap.get(account.proxy_id)?.label}
+                      >
+                        {proxyMap.get(account.proxy_id)?.label}
+                      </span>
+                    ) : (
+                      <span className="text-zinc-500 italic text-[11px]">Nenhum</span>
+                    )}
+                  </div>
 
                   {/* Informações adicionais Google Ads */}
                   {googleMeta && (

@@ -44,6 +44,7 @@ const Campaigns = lazy(() => import('./pages/CampaignsPage'));
 const PlatformAccounts = lazy(() => import('./pages/PlatformAccountsPage'));
 const AdAccounts = lazy(() => import('./pages/AdAccountsPage'));
 const AdAccountDetail = lazy(() => import('./pages/AdAccountDetailPage'));
+const Proxies = lazy(() => import('./pages/ProxiesPage'));
 
 const ProductsPage = () => (
   <ProtectedRoute>
@@ -135,6 +136,18 @@ const AdAccountDetailRoutePage = () => (
   </ProtectedRoute>
 );
 
+const ProxiesRoutePage = () => (
+  <ProtectedRoute>
+    <AdminRoute>
+    <Layout>
+      <Suspense fallback={<LoadingState />}>
+        <Proxies />
+      </Suspense>
+    </Layout>
+    </AdminRoute>
+  </ProtectedRoute>
+);
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -165,6 +178,7 @@ function App() {
               <Route path="/contas" element={<PlatformAccountsRoutePage />} />
               <Route path="/contas-anuncios" element={<AdAccountsRoutePage />} />
               <Route path="/contas-anuncios/:id" element={<AdAccountDetailRoutePage />} />
+              <Route path="/proxies" element={<ProxiesRoutePage />} />
               <Route path="/profile" element={
                 <ProtectedRoute>
                   <Layout>

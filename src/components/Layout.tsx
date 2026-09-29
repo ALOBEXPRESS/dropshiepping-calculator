@@ -59,8 +59,30 @@ const NAV_ROUTES: {
   painel: [
     { to: '/contas',          label: 'Contas',            adminOnly: true,  accent: 'text-[hsl(var(--brand))]',    dot: 'bg-[hsl(var(--brand))]',    dotMuted: 'bg-[hsl(var(--brand)/0.4)]',    active: 'bg-[hsl(var(--brand)/0.08)] text-[hsl(var(--brand))] font-semibold' },
     { to: '/contas-anuncios', label: 'Contas de Anúncios', adminOnly: true,  accent: 'text-[hsl(var(--warning))]',  dot: 'bg-[hsl(var(--warning))]',  dotMuted: 'bg-[hsl(var(--warning)/0.4)]',  active: 'bg-[hsl(var(--warning)/0.08)] text-[hsl(var(--warning))] font-semibold' },
+    { to: '/proxies',         label: 'Proxies',           adminOnly: true,  accent: 'text-orange-400',            dot: 'bg-orange-400',            dotMuted: 'bg-orange-400/40',              active: 'bg-orange-400/10 text-orange-400 font-semibold' },
   ],
 };
+
+function useLocalStorageBoolean(key: string, defaultValue: boolean): [boolean, React.Dispatch<React.SetStateAction<boolean>>] {
+  const [value, setValue] = useState<boolean>(() => {
+    try {
+      const stored = localStorage.getItem(key);
+      return stored !== null ? JSON.parse(stored) : defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+      // ignore
+    }
+  }, [key, value]);
+
+  return [value, setValue];
+}
 
 // ── Reusable NavLink ──────────────────────────────────────────────────────────
 function NavLink({ route, pathname, e2eSearch }: { route: NavRouteItem; pathname: string; e2eSearch: string }) {
@@ -83,9 +105,9 @@ function NavLink({ route, pathname, e2eSearch }: { route: NavRouteItem; pathname
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [ecommerceOpen, setEcommerceOpen] = useState(true);
-  const [painelOpen, setPainelOpen] = useState(true);
-  const [contasOpen, setContasOpen] = useState(true);
+  const [ecommerceOpen, setEcommerceOpen] = useLocalStorageBoolean('nav_group_ecommerce_open', true);
+  const [painelOpen, setPainelOpen] = useLocalStorageBoolean('nav_group_painel_open', true);
+  const [contasOpen, setContasOpen] = useLocalStorageBoolean('nav_group_contas_open', true);
   const [blingNotifications, setBlingNotifications] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();

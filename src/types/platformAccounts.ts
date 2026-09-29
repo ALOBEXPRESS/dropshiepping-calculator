@@ -61,6 +61,7 @@ export interface PlatformAccount {
   birth_date: string | null;
   platform_metadata: PlatformMetadata | null;
   email?: string | null;
+  proxy_id?: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -84,6 +85,8 @@ export const platformAccountSchema = z.object({
   birth_date: z.string().optional().or(z.literal('')),
   // Campo email presente nos cadastros (opcional no schema base para compatibilidade)
   email: z.string().email('Informe um e-mail válido').optional().or(z.literal('')),
+  // Proxy vinculado
+  proxy_id: z.string().uuid().nullable().optional().or(z.literal('')),
   // Campos condicionais para signup_method = 'google'
   google_account_age_years: z.number().min(0).max(30).nullable().optional(),
   google_ads_invested_brl: z.number().min(0).nullable().optional(),

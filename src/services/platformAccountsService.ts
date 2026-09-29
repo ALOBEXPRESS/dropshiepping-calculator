@@ -89,6 +89,7 @@ export class PlatformAccountsService {
       phone: formData.phone?.trim() || null,
       birth_date: formData.birth_date || null,
       platform_metadata: platform_metadata ?? null,
+      proxy_id: formData.proxy_id || null,
       created_by: userId || null,
     };
 
@@ -128,6 +129,7 @@ export class PlatformAccountsService {
     if (formData.signup_method !== undefined) updatePayload.signup_method = formData.signup_method;
     if (formData.phone !== undefined) updatePayload.phone = formData.phone?.trim() || null;
     if (formData.birth_date !== undefined) updatePayload.birth_date = formData.birth_date || null;
+    if (formData.proxy_id !== undefined) updatePayload.proxy_id = formData.proxy_id || null;
 
     // Reconstruir platform_metadata se signup_method ou campos condicionais mudaram
     if (
