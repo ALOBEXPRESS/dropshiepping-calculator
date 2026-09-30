@@ -204,6 +204,7 @@ function App() {
               <Route path="/contas" element={<PlatformAccountsRoutePage />} />
               <Route path="/contas/conta" element={<PlatformAccountsRoutePage />} />
               <Route path="/contas-anuncios" element={<AdAccountsRoutePage />} />
+              <Route path="/contas/contas-anuncios" element={<AdAccountsRoutePage />} />
               <Route path="/contas-anuncios/:id" element={<AdAccountDetailRoutePage />} />
               <Route path="/proxies" element={<ProxiesRoutePage />} />
               <Route path="/contas/proxies" element={<ProxiesRoutePage />} />

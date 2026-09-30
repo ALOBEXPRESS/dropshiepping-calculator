@@ -22,7 +22,6 @@ import {
 } from '@/components/ui/select';
 import {
   Loader2,
-  Layers,
   Info,
   Sparkles,
   CheckCircle2,
@@ -47,6 +46,7 @@ import {
   adAccountSchema,
   type AdAccountFormData,
   type AdAccountWithStats,
+  type AdAccountCurrency,
 } from '@/types/adAccounts';
 import type { PlatformAccount } from '@/types/platformAccounts';
 import { PlatformAccountStep } from '@/components/ad-accounts/PlatformAccountStep';
@@ -61,7 +61,6 @@ import {
   formatPhoneByCountry,
 } from '@/utils/inputMasks';
 import tiktokImg from '@/imgs/tiktok-shop-seller-cent-icon-filled-256.png';
-import { PLATFORM_COUNTRIES, TIKTOK_INDUSTRIES } from '@/constants/niches';
 
 interface AdAccountFormDialogProps {
   open: boolean;
@@ -73,7 +72,7 @@ interface AdAccountFormDialogProps {
 const STEPS = [
   { id: 1, title: 'Plataforma', label: '01. Rede de Anúncios', icon: Globe },
   { id: 2, title: 'Perfil TikTok', label: '02. Perfil da Plataforma', icon: Sparkles },
-  { id: 3, title: 'Conta TikTok', label: '03. Dados da Conta TikTok', icon: Layers },
+  { id: 3, title: 'Business Account', label: '03. Business Account', icon: Building2 },
   { id: 4, title: 'Identificadores', label: '04. IDs & Rastreamento', icon: Info },
   { id: 5, title: 'Faturamento', label: '05. Faturamento & Titular', icon: CreditCard },
   { id: 6, title: 'Revisão', label: '06. Revisão & Ativação', icon: ShieldCheck },
@@ -139,17 +138,23 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
 
   useEffect(() => {
     if (account) {
+      const matchedBc = businessCenters.find(
+        (c) =>
+          c.id === account.bc_entity_id ||
+          (account.business_center_id && c.bc_id === account.business_center_id)
+      );
+
       reset({
         name: account.name ?? '',
         platform: account.platform ?? 'tiktok',
         status: account.status ?? 'active',
-        timezone: account.timezone ?? 'America/Sao_Paulo',
-        currency: account.currency ?? 'BRL',
-        country: account.country ?? 'BR',
+        timezone: account.timezone ?? matchedBc?.timezone ?? 'America/Sao_Paulo',
+        currency: account.currency ?? (matchedBc?.currency as AdAccountCurrency) ?? 'BRL',
+        country: account.country ?? matchedBc?.country ?? 'BR',
         spending_limit: account.spending_limit ?? null,
         billing_type: account.billing_type ?? 'postpaid',
         payment_status: account.payment_status ?? 'normal',
-        legal_name: account.legal_name ?? '',
+        legal_name: account.legal_name ?? matchedBc?.company_legal_name ?? '',
         tax_id: account.tax_id ?? '',
         industry: account.industry ?? 'E-commerce & Varejo',
         website: account.website ?? '',
@@ -157,11 +162,11 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
         email: account.email ?? '',
         phone: account.phone ?? '',
         advertiser_id: account.advertiser_id ?? '',
-        business_center_id: account.business_center_id ?? '',
+        business_center_id: account.business_center_id ?? matchedBc?.bc_id ?? '',
         pixel_id: (account.platform_config?.pixel_id as string) ?? '',
         catalog_id: (account.platform_config?.catalog_id as string) ?? '',
         platform_account_id: account.platform_account_id ?? null,
-        bc_entity_id: account.bc_entity_id ?? null,
+        bc_entity_id: account.bc_entity_id ?? matchedBc?.id ?? null,
       });
       setSelectedPlatformAccount(account.platform_account ?? null);
       setCurrentStep(isEditing ? 3 : 1);
@@ -170,7 +175,7 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
       setCurrentStep(1);
       setSelectedPlatformAccount(null);
     }
-  }, [account, open, reset, isEditing]);
+  }, [account, open, reset, isEditing, businessCenters]);
 
   const formValues = watch();
   const status = watch('status');
@@ -203,15 +208,6 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
     } else if (currentStep === 3) {
       isValid = await trigger([
         'name',
-        'country',
-        'legal_name',
-        'industry',
-        'website',
-        'contact_name',
-        'email',
-        'phone',
-        'timezone',
-        'currency',
         'status',
         'spending_limit',
       ]);
@@ -487,7 +483,7 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                 </motion.div>
               )}
 
-              {/* ── ETAPA 3: Dados da Conta de Anúncios TikTok ── */}
+              {/* ── ETAPA 3: Business Account & Configurações da Conta de Anúncios ── */}
               {currentStep === 3 && (
                 <motion.div
                   key="step-3"
@@ -499,15 +495,144 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                 >
                   <div className="space-y-1">
                     <h3 className="text-base font-semibold text-white flex items-center gap-2">
-                      <Layers className="w-4 h-4 text-brand" />
-                      Conta de anúncios para TikTok
+                      <Building2 className="w-4 h-4 text-purple-400" />
+                      Business Account
                     </h3>
                     <p className="text-xs text-zinc-400">
-                      Preencha os dados cadastrais da sua conta de anúncios conforme o padrão oficial do TikTok Ads.
+                      Vincule a Conta de Negócio (Business Center) e configure o nome e parâmetros operacionais da sua conta de anúncios.
                     </p>
                   </div>
 
-                  <div className="p-6 rounded-2xl border border-zinc-800/80 bg-zinc-900/50 space-y-4">
+                  {/* Card 1: Vínculo com a Conta de Negócio (Business Center) */}
+                  <div className="p-5 rounded-2xl border border-purple-500/20 bg-gradient-to-b from-purple-500/5 to-transparent space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="business_center_select" className="text-xs font-semibold text-white flex items-center gap-1.5">
+                          <Building2 className="w-3.5 h-3.5 text-purple-400" />
+                          Conta de Negócio (Business Center)
+                        </Label>
+                        <p className="text-[11px] text-zinc-400">
+                          Selecione o Business Center responsável pelos dados fiscais e contratuais.
+                        </p>
+                      </div>
+                      <Link
+                        to="/business-centers"
+                        target="_blank"
+                        className="text-[11px] text-purple-400 hover:text-purple-300 flex items-center gap-1 hover:underline flex-shrink-0"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Cadastrar no Business Center
+                      </Link>
+                    </div>
+
+                    {businessCenters.length > 0 ? (
+                      <div className="space-y-3">
+                        <Select
+                          value={watch('bc_entity_id') || 'none'}
+                          onValueChange={(val) => {
+                            if (val === 'none') {
+                              setValue('bc_entity_id', null, { shouldValidate: true });
+                              setValue('business_center_id', '', { shouldValidate: true });
+                            } else {
+                              const selectedBc = businessCenters.find((c) => c.id === val);
+                              if (selectedBc) {
+                                setValue('bc_entity_id', selectedBc.id, { shouldValidate: true });
+                                setValue('business_center_id', selectedBc.bc_id, { shouldValidate: true });
+                                if (selectedBc.company_legal_name) setValue('legal_name', selectedBc.company_legal_name);
+                                if (selectedBc.country) setValue('country', selectedBc.country);
+                                if (selectedBc.currency) setValue('currency', selectedBc.currency as AdAccountCurrency);
+                                if (selectedBc.timezone) setValue('timezone', selectedBc.timezone);
+                              }
+                            }
+                          }}
+                        >
+                          <SelectTrigger id="business_center_select" className="bg-zinc-950 border-zinc-800 text-xs text-zinc-200 h-11 focus-visible:ring-purple-500">
+                            <SelectValue placeholder="Selecione uma Conta de Negócio cadastrada..." />
+                          </SelectTrigger>
+                          <SelectContent className="bg-zinc-900 border-zinc-800 text-white max-h-60">
+                            <SelectItem value="none">
+                              <span className="text-zinc-500 italic">Nenhuma Conta de Negócio vinculada</span>
+                            </SelectItem>
+                            {businessCenters.map((bc) => (
+                              <SelectItem key={bc.id} value={bc.id}>
+                                <div className="flex items-center gap-2">
+                                  <Building2 className="w-3.5 h-3.5 text-purple-400" />
+                                  <span className="font-semibold text-white">{bc.name || `BC ${bc.bc_id}`}</span>
+                                  <span className="text-purple-300/80 font-mono text-[11px]">({bc.bc_id})</span>
+                                  {bc.company_legal_name && (
+                                    <span className="text-zinc-400 text-[11px] truncate max-w-[180px]">
+                                      • {bc.company_legal_name}
+                                    </span>
+                                  )}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+                        {/* Card com Detalhes do Business Center Selecionado */}
+                        {(() => {
+                          const currentBc = businessCenters.find(
+                            (c) => c.id === watch('bc_entity_id') || (watch('business_center_id') && c.bc_id === watch('business_center_id'))
+                          );
+                          if (!currentBc) return null;
+
+                          return (
+                            <div className="p-4 rounded-xl border border-purple-500/25 bg-zinc-950/80 space-y-2.5 text-xs">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                                    {currentBc.business_type === 'agency' ? 'Agência' : 'Anunciante'}
+                                  </span>
+                                  <span className="font-bold text-white text-xs">{currentBc.name || 'Conta de Negócio'}</span>
+                                </div>
+                                <span className="text-[11px] font-mono text-purple-400 font-semibold">
+                                  BC ID: {currentBc.bc_id}
+                                </span>
+                              </div>
+
+                              {currentBc.company_legal_name && (
+                                <div className="text-[11px] text-zinc-300 truncate">
+                                  <span className="text-zinc-500 font-medium">Razão Social:</span>{' '}
+                                  <span className="text-zinc-200 font-semibold">{currentBc.company_legal_name}</span>
+                                </div>
+                              )}
+
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-400 font-mono pt-1 border-t border-zinc-800/60">
+                                <span>País: <strong className="text-zinc-200">{currentBc.country}</strong></span>
+                                <span>•</span>
+                                <span>Moeda: <strong className="text-zinc-200">{currentBc.currency}</strong></span>
+                                <span>•</span>
+                                <span>Fuso: <strong className="text-zinc-200">{currentBc.timezone}</strong></span>
+                              </div>
+
+                              <p className="text-[10px] text-zinc-500 italic">
+                                * Razão social, setor, contatos, site e dados fiscais são editados exclusivamente em Business Centers.
+                              </p>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    ) : (
+                      <div className="p-4 rounded-xl border border-dashed border-zinc-800 bg-zinc-950/60 flex items-center justify-between gap-3 text-xs">
+                        <div className="space-y-0.5">
+                          <p className="font-medium text-zinc-300">Nenhum Business Center cadastrado ainda</p>
+                          <p className="text-[11px] text-zinc-500">Crie seu primeiro Business Center para centralizar as informações legais da empresa.</p>
+                        </div>
+                        <Link
+                          to="/business-centers"
+                          target="_blank"
+                          className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-1.5 flex-shrink-0 transition-colors"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          Criar BC
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Card 2: Dados Próprios da Conta de Anúncios */}
+                  <div className="p-6 rounded-2xl border border-zinc-800/80 bg-zinc-900/50 space-y-5">
                     {/* Campo 1: Nome da conta de anúncios */}
                     <div className="space-y-1.5">
                       <Label htmlFor="name" className="text-xs font-medium text-zinc-300">
@@ -515,192 +640,15 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                       </Label>
                       <Input
                         id="name"
-                        placeholder="Ex.: Alob Express — Brasil 01"
+                        placeholder="Ex.: TikTok Business Account — Principal"
                         {...register('name')}
                         className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white placeholder:text-zinc-600 focus-visible:ring-brand"
                       />
                       {errors.name && <p className="text-xs text-rose-400 font-medium">{errors.name.message}</p>}
                     </div>
 
-                    {/* Campo 2: País ou região */}
-                    <div className="space-y-1.5">
-                      <Label htmlFor="country" className="text-xs font-medium text-zinc-300">
-                        País ou região <span className="text-rose-400">*</span>
-                      </Label>
-                      <Select
-                        value={watch('country')}
-                        onValueChange={(val) => setValue('country', val, { shouldValidate: true })}
-                      >
-                        <SelectTrigger id="country" className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white">
-                          <SelectValue placeholder="Selecione o país ou região" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
-                          {PLATFORM_COUNTRIES.map((c) => (
-                            <SelectItem key={c.code} value={c.code}>
-                              <div className="flex items-center gap-2">
-                                <ReactCountryFlag
-                                  countryCode={c.code}
-                                  svg
-                                  style={{ width: '1.2em', height: '1.2em' }}
-                                />
-                                <span>{c.name}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.country && <p className="text-xs text-rose-400 font-medium">{errors.country.message}</p>}
-                    </div>
-
-                    {/* Campo 3: Nome legal da empresa */}
-                    <div className="space-y-1.5">
-                      <Label htmlFor="legal_name" className="text-xs font-medium text-zinc-300">
-                        Nome legal da empresa
-                      </Label>
-                      <Input
-                        id="legal_name"
-                        placeholder="Nome conforme registro empresarial"
-                        {...register('legal_name')}
-                        className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white placeholder:text-zinc-600 focus-visible:ring-brand"
-                      />
-                      {errors.legal_name && <p className="text-xs text-rose-400 font-medium">{errors.legal_name.message}</p>}
-                    </div>
-
-                    {/* Campo 4: Setor / indústria */}
-                    <div className="space-y-1.5">
-                      <Label htmlFor="industry" className="text-xs font-medium text-zinc-300">
-                        Setor / indústria
-                      </Label>
-                      <Select
-                        value={watch('industry') || 'E-commerce & Varejo'}
-                        onValueChange={(val) => setValue('industry', val)}
-                      >
-                        <SelectTrigger id="industry" className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white">
-                          <SelectValue placeholder="Selecione o setor" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800 text-white max-h-56">
-                          {TIKTOK_INDUSTRIES.map((ind) => (
-                            <SelectItem key={ind} value={ind}>
-                              {ind}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Campo 5: Site da empresa */}
-                    <div className="space-y-1.5">
-                      <Label htmlFor="website" className="text-xs font-medium text-zinc-300">
-                        Site da empresa
-                      </Label>
-                      <Input
-                        id="website"
-                        type="url"
-                        placeholder="https://www.alobexpress.com.br"
-                        {...register('website')}
-                        className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white placeholder:text-zinc-600 focus-visible:ring-brand"
-                      />
-                      {errors.website && <p className="text-xs text-rose-400 font-medium">{errors.website.message}</p>}
-                    </div>
-
-                    {/* Campo 6: Nome do contato */}
-                    <div className="space-y-1.5">
-                      <Label htmlFor="contact_name" className="text-xs font-medium text-zinc-300">
-                        Nome do contato
-                      </Label>
-                      <Input
-                        id="contact_name"
-                        placeholder="Nome do responsável"
-                        {...register('contact_name')}
-                        className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white placeholder:text-zinc-600 focus-visible:ring-brand"
-                      />
-                      {errors.contact_name && <p className="text-xs text-rose-400 font-medium">{errors.contact_name.message}</p>}
-                    </div>
-
-                    {/* Campo 7: E-mail de contato */}
-                    <div className="space-y-1.5">
-                      <Label htmlFor="email" className="text-xs font-medium text-zinc-300">
-                        E-mail de contato
-                      </Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="contato@empresa.com.br"
-                        {...register('email')}
-                        className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white placeholder:text-zinc-600 focus-visible:ring-brand"
-                      />
-                      {errors.email && <p className="text-xs text-rose-400 font-medium">{errors.email.message}</p>}
-                    </div>
-
-                    {/* Campo 8: Telefone */}
-                    <div className="space-y-1.5">
-                      <Label htmlFor="phone" className="text-xs font-medium text-zinc-300">
-                        Telefone
-                      </Label>
-                      <Controller
-                        name="phone"
-                        control={control}
-                        render={({ field }) => (
-                          <Input
-                            id="phone"
-                            placeholder="+55 (DDD) número"
-                            value={field.value ?? ''}
-                            onChange={(e) => {
-                              const masked = formatPhoneByCountry(
-                                e.target.value,
-                                watch('country') || 'BR'
-                              );
-                              field.onChange(masked);
-                            }}
-                            className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white font-mono placeholder:text-zinc-600 focus-visible:ring-brand"
-                          />
-                        )}
-                      />
-                      {errors.phone && <p className="text-xs text-rose-400 font-medium">{errors.phone.message}</p>}
-                    </div>
-
-                    {/* Campo 9: Fuso horário */}
-                    <div className="space-y-1.5">
-                      <Label htmlFor="timezone" className="text-xs font-medium text-zinc-300">
-                        Fuso horário <span className="text-rose-400">*</span>
-                      </Label>
-                      <Input
-                        id="timezone"
-                        placeholder="Ex.: America/Sao_Paulo"
-                        {...register('timezone')}
-                        className="bg-zinc-950 border-zinc-800 text-xs h-10 font-mono text-white placeholder:text-zinc-600 focus-visible:ring-brand"
-                      />
-                      {errors.timezone && <p className="text-xs text-rose-400 font-medium">{errors.timezone.message}</p>}
-                    </div>
-
-                    {/* Campo 10: Moeda de faturamento */}
-                    <div className="space-y-1.5">
-                      <Label htmlFor="currency" className="text-xs font-medium text-zinc-300">
-                        Moeda de faturamento <span className="text-rose-400">*</span>
-                      </Label>
-                      <Select
-                        value={currency}
-                        onValueChange={(val: AdAccountFormData['currency']) => setValue('currency', val, { shouldValidate: true })}
-                      >
-                        <SelectTrigger id="currency" className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white">
-                          <SelectValue placeholder="Selecione a moeda" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
-                          <SelectItem value="BRL">BRL — Real Brasileiro (R$)</SelectItem>
-                          <SelectItem value="USD">USD — Dólar Americano ($)</SelectItem>
-                          <SelectItem value="EUR">EUR — Euro (€)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {errors.currency && <p className="text-xs text-rose-400 font-medium">{errors.currency.message}</p>}
-                    </div>
-                  </div>
-
-                  {/* Configurações Operacionais Adicionais */}
-                  <div className="p-5 rounded-2xl border border-zinc-800/80 bg-zinc-900/40 space-y-4">
-                    <h4 className="text-xs font-semibold text-zinc-200">
-                      Configurações Operacionais no Sistema
-                    </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Campo 2: Status Operacional */}
                       <div className="space-y-1.5">
                         <Label htmlFor="status" className="text-xs font-medium text-zinc-300">
                           Status Operacional
@@ -721,9 +669,10 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                         </Select>
                       </div>
 
+                      {/* Campo 3: Limite de gastos Mensal */}
                       <div className="space-y-1.5">
                         <Label htmlFor="spending_limit" className="text-xs font-medium text-zinc-300">
-                          Limite de Gasto Mensal (Opcional)
+                          Limite de gastos Mensal (Opcional)
                         </Label>
                         <Controller
                           name="spending_limit"
@@ -770,11 +719,6 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                       </div>
                     </div>
                   </div>
-
-                  {/* Disclaimer Oficial idêntico à imagem */}
-                  <p className="text-[11px] text-zinc-500 italic px-1">
-                    Os campos ilustram o formulário para o seu sistema; não representam um cadastro real no TikTok.
-                  </p>
                 </motion.div>
               )}
 
@@ -1183,59 +1127,63 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                       </div>
                     </div>
 
-                    {/* Card 2: Geral & Identificação */}
+                    {/* Card 2: Business Account & Parâmetros */}
                     <div className="p-5 rounded-2xl border border-zinc-800/80 bg-zinc-900/60 space-y-3">
                       <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
                         <div className="flex items-center gap-2">
-                          <Layers className="w-4 h-4 text-brand" />
-                          <span className="text-xs font-bold text-white">Dados da Conta TikTok</span>
+                          <Building2 className="w-4 h-4 text-purple-400" />
+                          <span className="text-xs font-bold text-white">Business Account</span>
                         </div>
                         <Button type="button" variant="ghost" size="sm" onClick={() => setCurrentStep(3)} className="h-6 text-[11px] text-brand hover:text-brand px-2">
                           Editar
                         </Button>
                       </div>
                       <div className="space-y-2 text-xs">
+                        {(() => {
+                          const linkedBc = businessCenters.find(
+                            (c) =>
+                              c.id === formValues.bc_entity_id ||
+                              (formValues.business_center_id && c.bc_id === formValues.business_center_id)
+                          );
+                          return (
+                            <div className="flex justify-between">
+                              <span className="text-zinc-400">Conta de Negócio (BC):</span>
+                              <span className="font-semibold text-purple-300 truncate max-w-[200px]">
+                                {linkedBc
+                                  ? `${linkedBc.name || 'BC'} (${linkedBc.bc_id})`
+                                  : formValues.business_center_id || 'Não vinculado'}
+                              </span>
+                            </div>
+                          );
+                        })()}
                         <div className="flex justify-between">
                           <span className="text-zinc-400">Nome da Conta:</span>
                           <span className="font-semibold text-white truncate max-w-[200px]">{formValues.name || '—'}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-zinc-400">País / Região:</span>
-                          <span className="text-zinc-200">
-                            {PLATFORM_COUNTRIES.find((c) => c.code === formValues.country)?.name || formValues.country}
+                          <span className="text-zinc-400">Status Operacional:</span>
+                          <span className="capitalize font-medium text-emerald-400">{formValues.status}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-zinc-400">Limite Mensal:</span>
+                          <span className="font-mono text-zinc-300">
+                            {formValues.spending_limit && formValues.spending_limit > 0
+                              ? formatCentsToCurrencyString(
+                                  Math.round(formValues.spending_limit * 100),
+                                  formValues.currency
+                                )
+                              : 'Sem limite definido'}
                           </span>
                         </div>
                         {formValues.legal_name && (
-                          <div className="flex justify-between">
-                            <span className="text-zinc-400">Nome Legal:</span>
-                            <span className="text-zinc-200 truncate max-w-[200px]">{formValues.legal_name}</span>
-                          </div>
-                        )}
-                        {formValues.industry && (
-                          <div className="flex justify-between">
-                            <span className="text-zinc-400">Setor:</span>
-                            <span className="text-zinc-200 truncate max-w-[200px]">{formValues.industry}</span>
-                          </div>
-                        )}
-                        {formValues.website && (
-                          <div className="flex justify-between">
-                            <span className="text-zinc-400">Site:</span>
-                            <span className="text-cyan-400 truncate max-w-[200px]">{formValues.website}</span>
-                          </div>
-                        )}
-                        {formValues.contact_name && (
-                          <div className="flex justify-between">
-                            <span className="text-zinc-400">Responsável:</span>
-                            <span className="text-zinc-200">{formValues.contact_name}</span>
+                          <div className="flex justify-between pt-1 border-t border-zinc-800/60">
+                            <span className="text-zinc-400">Empresa (BC):</span>
+                            <span className="text-zinc-300 truncate max-w-[200px]">{formValues.legal_name}</span>
                           </div>
                         )}
                         <div className="flex justify-between">
                           <span className="text-zinc-400">Moeda / Fuso:</span>
                           <span className="font-mono text-zinc-300">{formValues.currency} • {formValues.timezone}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-zinc-400">Status Inicial:</span>
-                          <span className="capitalize font-medium text-emerald-400">{formValues.status}</span>
                         </div>
                       </div>
                     </div>
