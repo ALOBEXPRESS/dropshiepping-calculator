@@ -1,11 +1,41 @@
 import React from 'react';
 
-/** TikTok logo SVG — black & white compatible */
-export const TikTokLogo: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
-  <svg viewBox="0 0 48 48" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M34.145 13.696a10.26 10.26 0 0 1-2.39-3.56A10.11 10.11 0 0 1 31 6.5h-6.16v21.48a5.55 5.55 0 0 1-1.63 3.92 5.53 5.53 0 0 1-3.93 1.63 5.56 5.56 0 0 1-5.56-5.56 5.56 5.56 0 0 1 5.56-5.56c.58 0 1.14.09 1.67.26v-6.3a11.72 11.72 0 0 0-1.67-.12 11.72 11.72 0 0 0-11.72 11.72A11.72 11.72 0 0 0 19.28 39.7a11.72 11.72 0 0 0 11.72-11.72V16.46a16.32 16.32 0 0 0 9.56 3.08v-6.16a10.27 10.27 0 0 1-6.42.31Z" fill="currentColor" />
-  </svg>
-);
+/** TikTok logo SVG — black & white compatible or vibrant multi-color */
+export const TikTokLogo: React.FC<{ className?: string; colored?: boolean }> = ({
+  className = 'w-5 h-5',
+  colored = true,
+}) => {
+  if (!colored) {
+    return (
+      <svg viewBox="0 0 48 48" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M34.145 13.696a10.26 10.26 0 0 1-2.39-3.56A10.11 10.11 0 0 1 31 6.5h-6.16v21.48a5.55 5.55 0 0 1-1.63 3.92 5.53 5.53 0 0 1-3.93 1.63 5.56 5.56 0 0 1-5.56-5.56 5.56 5.56 0 0 1 5.56-5.56c.58 0 1.14.09 1.67.26v-6.3a11.72 11.72 0 0 0-1.67-.12 11.72 11.72 0 0 0-11.72 11.72A11.72 11.72 0 0 0 19.28 39.7a11.72 11.72 0 0 0 11.72-11.72V16.46a16.32 16.32 0 0 0 9.56 3.08v-6.16a10.27 10.27 0 0 1-6.42.31Z"
+          fill="currentColor"
+        />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 48 48" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M34.145 13.696a10.26 10.26 0 0 1-2.39-3.56A10.11 10.11 0 0 1 31 6.5h-6.16v21.48a5.55 5.55 0 0 1-1.63 3.92 5.53 5.53 0 0 1-3.93 1.63 5.56 5.56 0 0 1-5.56-5.56 5.56 5.56 0 0 1 5.56-5.56c.58 0 1.14.09 1.67.26v-6.3a11.72 11.72 0 0 0-1.67-.12 11.72 11.72 0 0 0-11.72 11.72A11.72 11.72 0 0 0 19.28 39.7a11.72 11.72 0 0 0 11.72-11.72V16.46a16.32 16.32 0 0 0 9.56 3.08v-6.16a10.27 10.27 0 0 1-6.42.31Z"
+        fill="#25F4EE"
+        transform="translate(-1.5, -1)"
+        opacity="0.95"
+      />
+      <path
+        d="M34.145 13.696a10.26 10.26 0 0 1-2.39-3.56A10.11 10.11 0 0 1 31 6.5h-6.16v21.48a5.55 5.55 0 0 1-1.63 3.92 5.53 5.53 0 0 1-3.93 1.63 5.56 5.56 0 0 1-5.56-5.56 5.56 5.56 0 0 1 5.56-5.56c.58 0 1.14.09 1.67.26v-6.3a11.72 11.72 0 0 0-1.67-.12 11.72 11.72 0 0 0-11.72 11.72A11.72 11.72 0 0 0 19.28 39.7a11.72 11.72 0 0 0 11.72-11.72V16.46a16.32 16.32 0 0 0 9.56 3.08v-6.16a10.27 10.27 0 0 1-6.42.31Z"
+        fill="#FE2C55"
+        transform="translate(1.5, 1)"
+        opacity="0.95"
+      />
+      <path
+        d="M34.145 13.696a10.26 10.26 0 0 1-2.39-3.56A10.11 10.11 0 0 1 31 6.5h-6.16v21.48a5.55 5.55 0 0 1-1.63 3.92 5.53 5.53 0 0 1-3.93 1.63 5.56 5.56 0 0 1-5.56-5.56 5.56 5.56 0 0 1 5.56-5.56c.58 0 1.14.09 1.67.26v-6.3a11.72 11.72 0 0 0-1.67-.12 11.72 11.72 0 0 0-11.72 11.72A11.72 11.72 0 0 0 19.28 39.7a11.72 11.72 0 0 0 11.72-11.72V16.46a16.32 16.32 0 0 0 9.56 3.08v-6.16a10.27 10.27 0 0 1-6.42.31Z"
+        fill="#FFFFFF"
+      />
+    </svg>
+  );
+};
 
 /** Meta logo SVG (infinity loop) */
 export const MetaLogo: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
@@ -58,7 +88,7 @@ export const ThreadsLogo: React.FC<{ className?: string }> = ({ className = 'w-5
 );
 
 /** Returns the appropriate logo component for a given platform */
-export function getPlatformLogo(platform: string): React.FC<{ className?: string }> {
+export function getPlatformLogo(platform: string): React.FC<{ className?: string; colored?: boolean }> {
   switch (platform) {
     case 'tiktok': return TikTokLogo;
     case 'meta': return MetaLogo;
@@ -85,4 +115,101 @@ export function getPlatformLabel(platform: string): string {
     case 'google': return 'Google';
     default: return platform;
   }
+}
+
+export interface SocialPlatformDetails {
+  key: 'tiktok' | 'instagram' | 'facebook' | 'threads' | 'google';
+  name: string;
+  Logo: React.FC<{ className?: string; colored?: boolean }>;
+  badgeBg: string;
+  badgeBorder: string;
+  badgeText: string;
+  badgePill: string;
+  tabActiveClass: string;
+  avatarBadgeBorder: string;
+}
+
+export function getSocialPlatformDetails(
+  platform: string,
+  metaType?: string | null
+): SocialPlatformDetails {
+  if (platform === 'tiktok') {
+    return {
+      key: 'tiktok',
+      name: 'TikTok',
+      Logo: TikTokLogo,
+      badgeBg: 'bg-cyan-500/10',
+      badgeBorder: 'border-cyan-500/30',
+      badgeText: 'text-cyan-300',
+      badgePill: 'bg-zinc-900 border-zinc-700/80 text-zinc-100 shadow-sm hover:border-cyan-500/50',
+      tabActiveClass: 'bg-zinc-900 border-cyan-500/50 text-cyan-300 shadow-md',
+      avatarBadgeBorder: 'border-cyan-500/50',
+    };
+  }
+
+  if (platform === 'meta') {
+    if (metaType === 'facebook') {
+      return {
+        key: 'facebook',
+        name: 'Facebook',
+        Logo: FacebookLogo,
+        badgeBg: 'bg-blue-500/10',
+        badgeBorder: 'border-blue-500/30',
+        badgeText: 'text-blue-300',
+        badgePill: 'bg-blue-950/40 border-blue-500/30 text-blue-300 shadow-sm hover:border-blue-400/60',
+        tabActiveClass: 'bg-blue-950/80 border-blue-500 text-blue-300 shadow-md',
+        avatarBadgeBorder: 'border-blue-400/50',
+      };
+    }
+    if (metaType === 'threads') {
+      return {
+        key: 'threads',
+        name: 'Threads',
+        Logo: ThreadsLogo,
+        badgeBg: 'bg-zinc-800',
+        badgeBorder: 'border-zinc-700',
+        badgeText: 'text-zinc-200',
+        badgePill: 'bg-zinc-900 border-zinc-700 text-zinc-200 shadow-sm hover:border-zinc-500',
+        tabActiveClass: 'bg-zinc-800 border-zinc-500 text-white shadow-md',
+        avatarBadgeBorder: 'border-zinc-500/50',
+      };
+    }
+    return {
+      key: 'instagram',
+      name: 'Instagram',
+      Logo: InstagramLogo,
+      badgeBg: 'bg-pink-500/10',
+      badgeBorder: 'border-pink-500/30',
+      badgeText: 'text-pink-300',
+      badgePill: 'bg-pink-950/30 border-pink-500/30 text-pink-300 shadow-sm hover:border-pink-400/60',
+      tabActiveClass: 'bg-pink-950/80 border-pink-500 text-pink-300 shadow-md',
+      avatarBadgeBorder: 'border-pink-400/50',
+    };
+  }
+
+  if (platform === 'google') {
+    return {
+      key: 'google',
+      name: 'Google',
+      Logo: GoogleLogo,
+      badgeBg: 'bg-amber-500/10',
+      badgeBorder: 'border-amber-500/30',
+      badgeText: 'text-amber-300',
+      badgePill: 'bg-amber-950/30 border-amber-500/30 text-amber-300 shadow-sm hover:border-amber-400/60',
+      tabActiveClass: 'bg-amber-950/80 border-amber-500 text-amber-300 shadow-md',
+      avatarBadgeBorder: 'border-amber-400/50',
+    };
+  }
+
+  return {
+    key: 'tiktok',
+    name: 'TikTok',
+    Logo: TikTokLogo,
+    badgeBg: 'bg-cyan-500/10',
+    badgeBorder: 'border-cyan-500/30',
+    badgeText: 'text-cyan-300',
+    badgePill: 'bg-zinc-900 border-zinc-700/80 text-zinc-100 shadow-sm hover:border-cyan-500/50',
+    tabActiveClass: 'bg-zinc-900 border-cyan-500/50 text-cyan-300 shadow-md',
+    avatarBadgeBorder: 'border-cyan-500/50',
+  };
 }

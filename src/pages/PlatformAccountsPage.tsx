@@ -81,6 +81,7 @@ import {
   InstagramLogo,
   FacebookLogo,
   ThreadsLogo,
+  getSocialPlatformDetails,
 } from '@/components/ui/PlatformLogos';
 import type { PlatformAccountPlatform, MetaAccountType } from '@/types/platformAccounts';
 
@@ -141,6 +142,7 @@ export const PlatformAccountsPage: React.FC = () => {
   }, [browserProfiles]);
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [socialFilter, setSocialFilter] = useState<string>('all');
   const [countryFilter, setCountryFilter] = useState<string>('all');
   const [methodFilter, setMethodFilter] = useState<string>('all');
   const [nicheFilter, setNicheFilter] = useState<string>('all');
@@ -155,6 +157,34 @@ export const PlatformAccountsPage: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [linkedAdAccounts, setLinkedAdAccounts] = useState<Array<{ id: string; name: string }>>([]);
   const [isLoadingLinked, setIsLoadingLinked] = useState(false);
+
+  // Contagem por rede social para categorização
+  const socialCounts = useMemo(() => {
+    const counts = {
+      all: accounts.length,
+      tiktok: 0,
+      instagram: 0,
+      facebook: 0,
+      threads: 0,
+      google: 0,
+    };
+    for (const a of accounts) {
+      if (a.platform === 'tiktok') {
+        counts.tiktok++;
+      } else if (a.platform === 'google') {
+        counts.google++;
+      } else if (a.platform === 'meta') {
+        if (a.meta_account_type === 'facebook') {
+          counts.facebook++;
+        } else if (a.meta_account_type === 'threads') {
+          counts.threads++;
+        } else {
+          counts.instagram++;
+        }
+      }
+    }
+    return counts;
+  }, [accounts]);
 
   // Busca contas de anúncios vinculadas quando o modal de exclusão é aberto
   React.useEffect(() => {
@@ -203,14 +233,28 @@ export const PlatformAccountsPage: React.FC = () => {
         email.toLowerCase().includes(s) ||
         (acc.phone && acc.phone.includes(s));
 
+      const matchesSocial =
+        socialFilter === 'all' ||
+        (socialFilter === 'tiktok' && acc.platform === 'tiktok') ||
+        (socialFilter === 'google' && acc.platform === 'google') ||
+        (socialFilter === 'instagram' &&
+          acc.platform === 'meta' &&
+          (!acc.meta_account_type || acc.meta_account_type === 'instagram')) ||
+        (socialFilter === 'facebook' &&
+          acc.platform === 'meta' &&
+          acc.meta_account_type === 'facebook') ||
+        (socialFilter === 'threads' &&
+          acc.platform === 'meta' &&
+          acc.meta_account_type === 'threads');
+
       const matchesCountry = countryFilter === 'all' || acc.country === countryFilter;
       const matchesMethod =
         methodFilter === 'all' || acc.signup_method === methodFilter;
       const matchesNiche = nicheFilter === 'all' || acc.niche === nicheFilter;
 
-      return matchesSearch && matchesCountry && matchesMethod && matchesNiche;
+      return matchesSearch && matchesSocial && matchesCountry && matchesMethod && matchesNiche;
     });
-  }, [accounts, searchTerm, countryFilter, methodFilter, nicheFilter]);
+  }, [accounts, searchTerm, socialFilter, countryFilter, methodFilter, nicheFilter]);
 
   // KPIs
   const stats = useMemo(() => {
@@ -362,6 +406,79 @@ export const PlatformAccountsPage: React.FC = () => {
         </div>
       </div>
 
+      {/* ── Categorização por Rede Social ── */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        {[
+          {
+            id: 'all',
+            label: 'Todas as Redes',
+            count: socialCounts.all,
+            Icon: null,
+            activeClass: 'bg-zinc-800 border-zinc-600 text-white shadow-md ring-1 ring-white/10',
+          },
+          {
+            id: 'tiktok',
+            label: 'TikTok',
+            count: socialCounts.tiktok,
+            Icon: TikTokLogo,
+            activeClass: 'bg-zinc-900 border-cyan-500/60 text-cyan-300 shadow-md ring-1 ring-cyan-500/20',
+          },
+          {
+            id: 'instagram',
+            label: 'Instagram',
+            count: socialCounts.instagram,
+            Icon: InstagramLogo,
+            activeClass: 'bg-pink-950/70 border-pink-500/60 text-pink-300 shadow-md ring-1 ring-pink-500/20',
+          },
+          {
+            id: 'facebook',
+            label: 'Facebook',
+            count: socialCounts.facebook,
+            Icon: FacebookLogo,
+            activeClass: 'bg-blue-950/70 border-blue-500/60 text-blue-300 shadow-md ring-1 ring-blue-500/20',
+          },
+          {
+            id: 'threads',
+            label: 'Threads',
+            count: socialCounts.threads,
+            Icon: ThreadsLogo,
+            activeClass: 'bg-zinc-800 border-zinc-500 text-zinc-100 shadow-md ring-1 ring-white/10',
+          },
+          {
+            id: 'google',
+            label: 'Google',
+            count: socialCounts.google,
+            Icon: GoogleLogo,
+            activeClass: 'bg-amber-950/70 border-amber-500/60 text-amber-300 shadow-md ring-1 ring-amber-500/20',
+          },
+        ].map((cat) => {
+          const isSelected = socialFilter === cat.id;
+          const Icon = cat.Icon;
+          return (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setSocialFilter(cat.id)}
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all border shrink-0 ${
+                isSelected
+                  ? cat.activeClass
+                  : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800/80 hover:border-zinc-700'
+              }`}
+            >
+              {Icon && <Icon className="w-3.5 h-3.5 flex-shrink-0" />}
+              <span>{cat.label}</span>
+              <span
+                className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono leading-none ${
+                  isSelected ? 'bg-white/20 text-white' : 'bg-zinc-800 text-zinc-500'
+                }`}
+              >
+                {cat.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* ── Filtros e Busca ── */}
       <div className="p-4 rounded-2xl border border-zinc-800/80 bg-zinc-900/40 flex flex-col md:flex-row items-center gap-3">
         <div className="relative flex-1 w-full">
@@ -375,6 +492,45 @@ export const PlatformAccountsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5 w-full md:w-auto flex-wrap">
+          <Select value={socialFilter} onValueChange={setSocialFilter}>
+            <SelectTrigger className="bg-zinc-950 border-zinc-800 h-10 text-xs text-zinc-300 w-[140px]">
+              <SelectValue placeholder="Rede Social" />
+            </SelectTrigger>
+            <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+              <SelectItem value="all">Todas as Redes</SelectItem>
+              <SelectItem value="tiktok">
+                <div className="flex items-center gap-1.5">
+                  <TikTokLogo className="w-3.5 h-3.5" />
+                  <span>TikTok ({socialCounts.tiktok})</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="instagram">
+                <div className="flex items-center gap-1.5">
+                  <InstagramLogo className="w-3.5 h-3.5" />
+                  <span>Instagram ({socialCounts.instagram})</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="facebook">
+                <div className="flex items-center gap-1.5">
+                  <FacebookLogo className="w-3.5 h-3.5" />
+                  <span>Facebook ({socialCounts.facebook})</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="threads">
+                <div className="flex items-center gap-1.5">
+                  <ThreadsLogo className="w-3.5 h-3.5" />
+                  <span>Threads ({socialCounts.threads})</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="google">
+                <div className="flex items-center gap-1.5">
+                  <GoogleLogo className="w-3.5 h-3.5" />
+                  <span>Google ({socialCounts.google})</span>
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+
           <Select value={countryFilter} onValueChange={setCountryFilter}>
             <SelectTrigger className="bg-zinc-950 border-zinc-800 h-10 text-xs text-zinc-300 w-[130px]">
               <SelectValue placeholder="País" />
@@ -393,7 +549,7 @@ export const PlatformAccountsPage: React.FC = () => {
           </Select>
 
           <Select value={methodFilter} onValueChange={setMethodFilter}>
-            <SelectTrigger className="bg-zinc-950 border-zinc-800 h-10 text-xs text-zinc-300 w-[140px]">
+            <SelectTrigger className="bg-zinc-950 border-zinc-800 h-10 text-xs text-zinc-300 w-[135px]">
               <SelectValue placeholder="Método" />
             </SelectTrigger>
             <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
@@ -405,7 +561,7 @@ export const PlatformAccountsPage: React.FC = () => {
           </Select>
 
           <Select value={nicheFilter} onValueChange={setNicheFilter}>
-            <SelectTrigger className="bg-zinc-950 border-zinc-800 h-10 text-xs text-zinc-300 w-[160px]">
+            <SelectTrigger className="bg-zinc-950 border-zinc-800 h-10 text-xs text-zinc-300 w-[155px]">
               <SelectValue placeholder="Nicho" />
             </SelectTrigger>
             <SelectContent className="bg-zinc-900 border-zinc-800 text-white max-h-56">
@@ -461,12 +617,13 @@ export const PlatformAccountsPage: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredAccounts.map((account) => {
+            const social = getSocialPlatformDetails(account.platform, account.meta_account_type);
             const meta = account.platform_metadata;
             const displayEmail =
               account.email ||
               (meta && 'email' in meta ? (meta.email as string | null) : null);
 
-            const isGoogle = account.signup_method === 'google';
+            const isGoogle = account.platform === 'google';
             const googleMeta = isGoogle && meta?.signup_method === 'google' ? meta : null;
 
             return (
@@ -489,6 +646,15 @@ export const PlatformAccountsPage: React.FC = () => {
                           <User className="w-6 h-6 text-zinc-400" />
                         )}
                       </div>
+
+                      {/* Mini Badge da Rede Social no topo esquerdo do avatar */}
+                      <div
+                        className={`absolute -top-1.5 -left-1.5 z-10 w-5 h-5 rounded-full bg-zinc-950 border ${social.avatarBadgeBorder} shadow-md flex items-center justify-center p-0.5`}
+                        title={`Rede Social: ${social.name}`}
+                      >
+                        <social.Logo className="w-3.5 h-3.5" />
+                      </div>
+
                       {/* Bandeira para fora, com z-index e sem corte pelo overflow */}
                       <div className="absolute -bottom-1 -right-1 z-10 bg-zinc-950 rounded-full p-0.5 border border-zinc-700 shadow-md flex items-center justify-center leading-none">
                         <ReactCountryFlag
@@ -503,10 +669,22 @@ export const PlatformAccountsPage: React.FC = () => {
                         />
                       </div>
                     </div>
+
                     <div className="min-w-0">
-                      <h4 className="text-sm font-bold text-white truncate group-hover:text-brand transition-colors">
-                        {account.name}
-                      </h4>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h4 className="text-sm font-bold text-white truncate group-hover:text-brand transition-colors">
+                          {account.name}
+                        </h4>
+                        {/* Badge da Rede Social */}
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${social.badgePill}`}
+                          title={`Conta ${social.name}`}
+                        >
+                          <social.Logo className="w-3 h-3 flex-shrink-0" />
+                          <span>{social.name}</span>
+                        </span>
+                      </div>
+
                       {account.nickname ? (
                         (() => {
                           const profileUrl = getSocialProfileUrl(account);
@@ -516,20 +694,20 @@ export const PlatformAccountsPage: React.FC = () => {
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
-                              className="text-xs text-zinc-400 hover:text-cyan-400 font-mono inline-flex items-center gap-1 hover:underline transition-colors group/link truncate max-w-full"
-                              title={`Abrir perfil @${account.nickname.replace(/^@/, '')} em nova aba`}
+                              className="text-xs text-zinc-400 hover:text-cyan-400 font-mono inline-flex items-center gap-1 hover:underline transition-colors group/link truncate max-w-full mt-0.5"
+                              title={`Abrir perfil @${account.nickname.replace(/^@/, '')} no ${social.name} em nova aba`}
                             >
                               <span>@{account.nickname.replace(/^@/, '')}</span>
                               <ExternalLink className="w-3 h-3 text-zinc-500 group-hover/link:text-cyan-400 opacity-80 group-hover/link:opacity-100 flex-shrink-0" />
                             </a>
                           ) : (
-                            <p className="text-xs text-zinc-400 truncate font-mono">
+                            <p className="text-xs text-zinc-400 truncate font-mono mt-0.5">
                               @{account.nickname.replace(/^@/, '')}
                             </p>
                           );
                         })()
                       ) : (
-                        <p className="text-xs text-zinc-500 italic">Sem apelido</p>
+                        <p className="text-xs text-zinc-500 italic mt-0.5">Sem apelido</p>
                       )}
                     </div>
                   </div>
@@ -568,6 +746,14 @@ export const PlatformAccountsPage: React.FC = () => {
 
                 {/* Dados da Conta */}
                 <div className="space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-zinc-400">Rede Social:</span>
+                    <span className={`font-semibold flex items-center gap-1.5 ${social.badgeText}`}>
+                      <social.Logo className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>{social.name}</span>
+                    </span>
+                  </div>
+
                   <div className="flex items-center justify-between">
                     <span className="text-zinc-400">Titular:</span>
                     <span className="font-semibold text-zinc-200 truncate max-w-[170px]">

@@ -53,7 +53,7 @@ import {
   formatCentsToCurrencyString,
   formatPhoneByCountry,
 } from '@/utils/inputMasks';
-import tiktokImg from '@/imgs/tiktok-shop-seller-cent-icon-filled-256.png';
+import { getSocialPlatformDetails } from '@/components/ui/PlatformLogos';
 
 interface EditPlatformAccountDialogProps {
   open: boolean;
@@ -230,20 +230,30 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
     }
   };
 
+  const social = account
+    ? getSocialPlatformDetails(account.platform, account.meta_account_type)
+    : null;
+  const SocialLogo = social?.Logo;
+  const socialName = social?.name || 'Plataforma';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden bg-zinc-950 border-zinc-800 text-foreground shadow-2xl rounded-2xl">
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-zinc-800/80 bg-zinc-900/60">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-brand/10 border border-brand/25 flex items-center justify-center p-2">
-              <img src={tiktokImg} alt="TikTok" className="w-full h-full object-contain" />
+            <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-700/80 flex items-center justify-center p-2 shadow-inner">
+              {SocialLogo ? (
+                <SocialLogo className="w-6 h-6" />
+              ) : (
+                <User className="w-5 h-5 text-zinc-400" />
+              )}
             </div>
             <div>
               <DialogTitle className="text-lg font-bold text-white flex items-center gap-2">
-                Editar Conta de Plataforma
+                Editar Conta {socialName}
               </DialogTitle>
               <DialogDescription className="text-xs text-zinc-400">
-                Altere os dados cadastrais, titularidade e vínculos do perfil TikTok.
+                Altere os dados cadastrais, titularidade e vínculos do perfil {socialName}.
               </DialogDescription>
             </div>
           </div>
