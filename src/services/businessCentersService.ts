@@ -107,6 +107,13 @@ export class BusinessCentersService {
       currency: data.currency || 'BRL',
       bc_id: finalBcId,
       notes: data.notes?.trim() || null,
+      holder_name: data.holder_name?.trim() || null,
+      holder_cpf: data.holder_cpf?.trim() || null,
+      holder_rg: data.holder_rg?.trim() || null,
+      holder_birth_date: data.holder_birth_date?.trim() || null,
+      company_cnpj: data.company_cnpj?.trim() || null,
+      company_state_registration: data.company_state_registration?.trim() || null,
+      company_status: data.company_status || 'Ativa',
       meta_linked_network: data.platform === 'meta' ? (data.meta_linked_network || null) : null,
       meta_linked_account_id: data.platform === 'meta' ? (data.meta_linked_account_id || null) : null,
       created_by: userId || null,
@@ -148,6 +155,13 @@ export class BusinessCentersService {
     if (data.bc_id !== undefined && data.bc_id.trim() !== '') payload.bc_id = data.bc_id.trim();
     if (data.name !== undefined) payload.name = data.name?.trim() || null;
     if (data.notes !== undefined) payload.notes = data.notes?.trim() || null;
+    if (data.holder_name !== undefined) payload.holder_name = data.holder_name?.trim() || null;
+    if (data.holder_cpf !== undefined) payload.holder_cpf = data.holder_cpf?.trim() || null;
+    if (data.holder_rg !== undefined) payload.holder_rg = data.holder_rg?.trim() || null;
+    if (data.holder_birth_date !== undefined) payload.holder_birth_date = data.holder_birth_date?.trim() || null;
+    if (data.company_cnpj !== undefined) payload.company_cnpj = data.company_cnpj?.trim() || null;
+    if (data.company_state_registration !== undefined) payload.company_state_registration = data.company_state_registration?.trim() || null;
+    if (data.company_status !== undefined) payload.company_status = data.company_status || 'Ativa';
     if (data.meta_linked_network !== undefined) payload.meta_linked_network = data.meta_linked_network || null;
     if (data.meta_linked_account_id !== undefined) payload.meta_linked_account_id = data.meta_linked_account_id || null;
 

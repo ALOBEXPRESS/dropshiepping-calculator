@@ -7,6 +7,8 @@ export type BusinessCenterType = 'advertiser' | 'agency';
 /** Sub-tipo para Meta Business Portfolio: qual rede social vinculada */
 export type MetaLinkedNetwork = 'instagram' | 'facebook';
 
+export type CompanyStatus = 'Ativa' | 'Suspensa' | 'Inapta' | 'Baixada' | 'Nula';
+
 // ── Interface principal (espelho do banco) ───────────────────────────────────
 
 export interface BusinessCenter {
@@ -22,6 +24,18 @@ export interface BusinessCenter {
   timezone: string;
   currency: string;
   notes: string | null;
+
+  // Dados do Titular / Responsável
+  holder_name?: string | null;
+  holder_cpf?: string | null;
+  holder_rg?: string | null;
+  holder_birth_date?: string | null;
+
+  // Dados da Empresa
+  company_cnpj?: string | null;
+  company_state_registration?: string | null;
+  company_status?: CompanyStatus | string | null;
+
   /** Para Meta: qual rede social está vinculada */
   meta_linked_network?: MetaLinkedNetwork | null;
   /** Para Meta: ID da conta de plataforma (Instagram/Facebook) vinculada */
@@ -41,13 +55,25 @@ export interface BusinessCenterWithStats extends BusinessCenter {
 export const businessCenterSchema = z.object({
   platform: z.enum(['tiktok', 'meta', 'google']),
   business_type: z.enum(['advertiser', 'agency']),
-  company_legal_name: z.string().trim().optional().or(z.literal('')),
   name: z.string().trim().min(2, 'Nome do Business Center deve ter no mínimo 2 caracteres'),
   country: z.string().min(2, 'País é obrigatório'),
   timezone: z.string().min(1, 'Fuso horário é obrigatório'),
   currency: z.string().min(1, 'Moeda é obrigatória'),
   bc_id: z.string().trim().optional().or(z.literal('')),
   notes: z.string().trim().max(500, 'Notas devem ter no máximo 500 caracteres').optional().or(z.literal('')),
+
+  // Dados do Titular
+  holder_name: z.string().trim().optional().or(z.literal('')),
+  holder_cpf: z.string().trim().optional().or(z.literal('')),
+  holder_rg: z.string().trim().optional().or(z.literal('')),
+  holder_birth_date: z.string().trim().optional().or(z.literal('')),
+
+  // Dados da Empresa
+  company_legal_name: z.string().trim().optional().or(z.literal('')),
+  company_cnpj: z.string().trim().optional().or(z.literal('')),
+  company_state_registration: z.string().trim().optional().or(z.literal('')),
+  company_status: z.enum(['Ativa', 'Suspensa', 'Inapta', 'Baixada', 'Nula']),
+
   /** Meta: rede social vinculada */
   meta_linked_network: z.enum(['instagram', 'facebook']).optional().nullable(),
   /** Meta: ID UUID da conta de plataforma vinculada */
