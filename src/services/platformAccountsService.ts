@@ -90,6 +90,7 @@ export class PlatformAccountsService {
       birth_date: formData.birth_date || null,
       platform_metadata: platform_metadata ?? null,
       proxy_id: formData.proxy_id || null,
+      meta_account_type: formData.platform === 'meta' ? (formData.meta_account_type || null) : null,
       created_by: userId || null,
     };
 
@@ -119,6 +120,8 @@ export class PlatformAccountsService {
       updated_at: new Date().toISOString(),
     };
 
+    if (formData.platform !== undefined) updatePayload.platform = formData.platform;
+    if (formData.meta_account_type !== undefined) updatePayload.meta_account_type = formData.meta_account_type || null;
     if (formData.country !== undefined) updatePayload.country = formData.country;
     if (formData.name !== undefined) updatePayload.name = formData.name.trim();
     if (formData.holder_name !== undefined) updatePayload.holder_name = formData.holder_name.trim();

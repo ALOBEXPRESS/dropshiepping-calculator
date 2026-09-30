@@ -73,6 +73,15 @@ import {
   formatCentsToCurrencyString,
 } from '@/utils/inputMasks';
 import tiktokImg from '@/imgs/tiktok-shop-seller-cent-icon-filled-256.png';
+import {
+  TikTokLogo,
+  MetaLogo,
+  GoogleLogo,
+  InstagramLogo,
+  FacebookLogo,
+  ThreadsLogo,
+} from '@/components/ui/PlatformLogos';
+import type { PlatformAccountPlatform, MetaAccountType } from '@/types/platformAccounts';
 
 const SkeletonCard = () => (
   <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 animate-pulse space-y-4">
@@ -120,6 +129,8 @@ export const PlatformAccountsPage: React.FC = () => {
   const [isEditOpen, setIsEditOpen] = useState(false);
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [createPlatform, setCreatePlatform] = useState<PlatformAccountPlatform | null>(null);
+  const [createMetaType, setCreateMetaType] = useState<MetaAccountType | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PlatformAccount | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [linkedAdAccounts, setLinkedAdAccounts] = useState<Array<{ id: string; name: string }>>([]);
@@ -674,38 +685,184 @@ export const PlatformAccountsPage: React.FC = () => {
       />
 
       {/* ── Modal de Criação de Nova Conta ── */}
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+      <Dialog open={createDialogOpen} onOpenChange={(open) => {
+        setCreateDialogOpen(open);
+        if (!open) {
+          setCreatePlatform(null);
+          setCreateMetaType(null);
+        }
+      }}>
         <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 overflow-hidden bg-zinc-950 border-zinc-800 text-foreground shadow-2xl rounded-2xl">
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-zinc-800/80 bg-zinc-900/60">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-brand/10 border border-brand/25 flex items-center justify-center p-2">
-                <img src={tiktokImg} alt="TikTok" className="w-full h-full object-contain" />
+                {createPlatform === 'meta' ? (
+                  <MetaLogo className="w-full h-full text-blue-400" />
+                ) : createPlatform === 'google' ? (
+                  <GoogleLogo className="w-full h-full" />
+                ) : (
+                  <img src={tiktokImg} alt="TikTok" className="w-full h-full object-contain" />
+                )}
               </div>
               <div>
                 <DialogTitle className="text-lg font-bold text-white">
                   Cadastrar Conta de Plataforma
                 </DialogTitle>
                 <DialogDescription className="text-xs text-zinc-400">
-                  Crie o perfil TikTok ou Google para associação às suas contas de anúncios.
+                  {!createPlatform
+                    ? 'Selecione a plataforma para criar o perfil.'
+                    : createPlatform === 'meta' && !createMetaType
+                      ? 'Selecione a rede social da Meta para criar o perfil.'
+                      : `Crie o perfil ${
+                          createPlatform === 'tiktok' ? 'TikTok' :
+                          createPlatform === 'google' ? 'Google' :
+                          createMetaType === 'instagram' ? 'Instagram' :
+                          createMetaType === 'facebook' ? 'Facebook' : 'Threads'
+                        } para associação às suas contas de anúncios.`
+                  }
                 </DialogDescription>
               </div>
             </div>
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto px-6 py-5">
-            <PlatformAccountStep
-              platform="tiktok"
-              selectedAccount={null}
-              defaultMode="create"
-              organizationId={organizationId!}
-              userId={userId}
-              onAccountSelected={(newAccount) => {
-                if (newAccount) {
-                  setCreateDialogOpen(false);
-                  refetch();
-                }
-              }}
-            />
+            {/* Etapa 1: Selecionar Plataforma */}
+            {!createPlatform && (
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-white">Selecione a Plataforma</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* TikTok */}
+                  <button
+                    type="button"
+                    onClick={() => setCreatePlatform('tiktok')}
+                    className="flex flex-col items-center gap-3 p-5 rounded-2xl border-2 border-zinc-800 bg-zinc-900/40 hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-all group"
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <TikTokLogo className="w-8 h-8 text-cyan-400" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-bold text-white">TikTok</p>
+                      <p className="text-[11px] text-zinc-400">Perfil TikTok para Ads</p>
+                    </div>
+                  </button>
+
+                  {/* Google */}
+                  <button
+                    type="button"
+                    onClick={() => setCreatePlatform('google')}
+                    className="flex flex-col items-center gap-3 p-5 rounded-2xl border-2 border-zinc-800 bg-zinc-900/40 hover:border-yellow-500/50 hover:bg-yellow-500/5 transition-all group"
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <GoogleLogo className="w-8 h-8" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-bold text-white">Google</p>
+                      <p className="text-[11px] text-zinc-400">Conta Google Ads</p>
+                    </div>
+                  </button>
+
+                  {/* Meta */}
+                  <button
+                    type="button"
+                    onClick={() => setCreatePlatform('meta')}
+                    className="flex flex-col items-center gap-3 p-5 rounded-2xl border-2 border-zinc-800 bg-zinc-900/40 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group"
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <MetaLogo className="w-8 h-8 text-blue-400" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-bold text-white">Meta</p>
+                      <p className="text-[11px] text-zinc-400">Instagram · Facebook · Threads</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Etapa 1.5: Meta — Selecionar rede social */}
+            {createPlatform === 'meta' && !createMetaType && (
+              <div className="space-y-4">
+                <button
+                  type="button"
+                  onClick={() => { setCreatePlatform(null); setCreateMetaType(null); }}
+                  className="text-xs text-zinc-400 hover:text-zinc-200 flex items-center gap-1 mb-2"
+                >
+                  ← Voltar para plataformas
+                </button>
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <MetaLogo className="w-4 h-4 text-blue-400" />
+                  Selecione a rede social
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setCreateMetaType('instagram')}
+                    className="flex flex-col items-center gap-3 p-5 rounded-2xl border-2 border-zinc-800 bg-zinc-900/40 hover:border-pink-500/50 hover:bg-pink-500/5 transition-all group"
+                  >
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <InstagramLogo className="w-10 h-10" />
+                    </div>
+                    <p className="text-sm font-bold text-white">Instagram</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCreateMetaType('facebook')}
+                    className="flex flex-col items-center gap-3 p-5 rounded-2xl border-2 border-zinc-800 bg-zinc-900/40 hover:border-blue-600/50 hover:bg-blue-600/5 transition-all group"
+                  >
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <FacebookLogo className="w-10 h-10" />
+                    </div>
+                    <p className="text-sm font-bold text-white">Facebook</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCreateMetaType('threads')}
+                    className="flex flex-col items-center gap-3 p-5 rounded-2xl border-2 border-zinc-800 bg-zinc-900/40 hover:border-zinc-500/50 hover:bg-zinc-500/5 transition-all group"
+                  >
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <ThreadsLogo className="w-10 h-10 text-white" />
+                    </div>
+                    <p className="text-sm font-bold text-white">Threads</p>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Etapa 2: Formulário de criação (TikTok / Google / Meta sub-types) */}
+            {((createPlatform === 'tiktok') || (createPlatform === 'google') || (createPlatform === 'meta' && createMetaType)) && (
+              <div className="space-y-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (createPlatform === 'meta') {
+                      setCreateMetaType(null);
+                    } else {
+                      setCreatePlatform(null);
+                    }
+                  }}
+                  className="text-xs text-zinc-400 hover:text-zinc-200 flex items-center gap-1 mb-2"
+                >
+                  ← Voltar
+                </button>
+                <PlatformAccountStep
+                  platform={createPlatform!}
+                  metaAccountType={createMetaType}
+                  selectedAccount={null}
+                  defaultMode="create"
+                  hideSelectExisting
+                  organizationId={organizationId!}
+                  userId={userId}
+                  onAccountSelected={(newAccount) => {
+                    if (newAccount) {
+                      setCreateDialogOpen(false);
+                      setCreatePlatform(null);
+                      setCreateMetaType(null);
+                      refetch();
+                    }
+                  }}
+                />
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

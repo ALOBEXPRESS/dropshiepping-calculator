@@ -38,6 +38,8 @@ import {
   platformAccountSchema,
   type PlatformAccountFormData,
   type PlatformAccount,
+  type PlatformAccountPlatform,
+  type MetaAccountType,
 } from '@/types/platformAccounts';
 import { NICHES, PLATFORM_COUNTRIES } from '@/constants/niches';
 import { usePlatformAccounts } from '@/hooks/usePlatformAccounts';
@@ -45,7 +47,14 @@ import {
   formatCentsToCurrencyString,
   formatPhoneByCountry,
 } from '@/utils/inputMasks';
-import tiktokImg from '@/imgs/tiktok-shop-seller-cent-icon-filled-256.png';
+import {
+  TikTokLogo,
+  MetaLogo,
+  GoogleLogo,
+  InstagramLogo,
+  FacebookLogo,
+  ThreadsLogo,
+} from '@/components/ui/PlatformLogos';
 
 // ── Moedas e Países ────────────────────────────────────────────────────────
 
@@ -259,7 +268,8 @@ interface PlatformAccountFormFieldsProps {
   onCreated: (account: PlatformAccount) => void;
   organizationId?: string;
   userId?: string | null;
-  platform: 'tiktok';
+  platform: PlatformAccountPlatform;
+  metaAccountType?: MetaAccountType | null;
 }
 
 export const PlatformAccountFormFields: React.FC<PlatformAccountFormFieldsProps> = ({
@@ -267,6 +277,7 @@ export const PlatformAccountFormFields: React.FC<PlatformAccountFormFieldsProps>
   organizationId: propOrgId,
   userId: propUserId,
   platform,
+  metaAccountType,
 }) => {
   const queryClient = useQueryClient();
   const settings = useSettings();
@@ -296,6 +307,7 @@ export const PlatformAccountFormFields: React.FC<PlatformAccountFormFieldsProps>
       email: '',
       google_account_age_years: undefined,
       google_ads_invested_brl: undefined,
+      meta_account_type: metaAccountType || null,
     },
     mode: 'onChange',
   });
@@ -633,13 +645,32 @@ export const PlatformAccountFormFields: React.FC<PlatformAccountFormFieldsProps>
         {/* Nome da Conta */}
         <div className="space-y-1.5">
           <Label className="text-xs font-semibold text-zinc-200">
-            Nome da Conta <span className="text-rose-400">*</span>
+            {metaAccountType === 'instagram'
+              ? 'Nome do Perfil Instagram'
+              : metaAccountType === 'facebook'
+              ? 'Nome da Página / Perfil Facebook'
+              : metaAccountType === 'threads'
+              ? 'Nome do Perfil Threads'
+              : platform === 'google'
+              ? 'Nome da Conta Google'
+              : 'Nome da Conta'}{' '}
+            <span className="text-rose-400">*</span>
           </Label>
           <div className="relative">
             <AtSign className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500" />
             <Input
               {...register('name')}
-              placeholder="Ex: TikTok Jonatan Principal"
+              placeholder={
+                metaAccountType === 'instagram'
+                  ? 'Ex: Loja Instagram Oficial'
+                  : metaAccountType === 'facebook'
+                  ? 'Ex: Página Facebook Loja'
+                  : metaAccountType === 'threads'
+                  ? 'Ex: Threads Loja'
+                  : platform === 'google'
+                  ? 'Ex: Google Ads Jonatan Principal'
+                  : 'Ex: TikTok Jonatan Principal'
+              }
               className="pl-9 bg-zinc-950 border-zinc-800 text-xs h-10 text-white placeholder:text-zinc-600 focus-visible:ring-brand"
             />
           </div>
@@ -974,7 +1005,7 @@ export const PlatformAccountFormFields: React.FC<PlatformAccountFormFieldsProps>
 // ── Componente Principal do Passo: PlatformAccountStep ─────────────────────
 
 interface PlatformAccountStepProps {
-  platform: 'tiktok';
+  platform: PlatformAccountPlatform;
   selectedAccount: PlatformAccount | null;
   onAccountSelected: (account: PlatformAccount | null) => void;
   organizationId?: string;
@@ -982,6 +1013,9 @@ interface PlatformAccountStepProps {
   initialAccountId?: string | null;
   onDirectUnlink?: () => Promise<void> | void;
   defaultMode?: 'pick' | 'create';
+  /** When true, hides the 'Selecionar existente' tab toggle and forces create mode */
+  hideSelectExisting?: boolean;
+  metaAccountType?: MetaAccountType | null;
 }
 
 export const PlatformAccountStep: React.FC<PlatformAccountStepProps> = ({
@@ -993,6 +1027,8 @@ export const PlatformAccountStep: React.FC<PlatformAccountStepProps> = ({
   initialAccountId,
   onDirectUnlink,
   defaultMode = 'pick',
+  hideSelectExisting = false,
+  metaAccountType,
 }) => {
   const settings = useSettings();
   const user = useUser();
@@ -1023,22 +1059,44 @@ export const PlatformAccountStep: React.FC<PlatformAccountStepProps> = ({
     }
   }, [selectedAccount, initialAccountId, existingAccounts, onAccountSelected]);
 
-  const platformLabel = platform === 'tiktok' ? 'TikTok' : platform;
+  const platformLabel =
+    platform === 'tiktok'
+      ? 'TikTok'
+      : platform === 'google'
+      ? 'Google'
+      : metaAccountType === 'instagram'
+      ? 'Instagram (Meta)'
+      : metaAccountType === 'facebook'
+      ? 'Facebook (Meta)'
+      : metaAccountType === 'threads'
+      ? 'Threads (Meta)'
+      : 'Meta';
 
   return (
     <div className="space-y-5">
       <div className="space-y-1">
         <h3 className="text-base font-semibold text-white flex items-center gap-2">
-          <img src={tiktokImg} alt="TikTok" className="w-4 h-4 object-contain" />
+          {platform === 'tiktok' && <TikTokLogo className="w-5 h-5 text-cyan-400" />}
+          {platform === 'google' && <GoogleLogo className="w-5 h-5" />}
+          {platform === 'meta' && (
+            metaAccountType === 'instagram' ? <InstagramLogo className="w-5 h-5" /> :
+            metaAccountType === 'facebook' ? <FacebookLogo className="w-5 h-5 text-blue-500" /> :
+            metaAccountType === 'threads' ? <ThreadsLogo className="w-5 h-5 text-white" /> :
+            <MetaLogo className="w-5 h-5 text-blue-400" />
+          )}
           Conta de Plataforma {platformLabel}
         </h3>
         <p className="text-xs text-zinc-400 leading-relaxed">
-          Vincule o perfil pessoal do TikTok que gerenciará esta conta de anúncios.
-          Você pode selecionar uma conta existente ou cadastrar uma nova diretamente aqui.
+          {platform === 'tiktok'
+            ? 'Vincule o perfil pessoal do TikTok que gerenciará esta conta de anúncios.'
+            : platform === 'google'
+            ? 'Vincule ou cadastre a conta Google Ads para gerenciamento.'
+            : `Cadastre o perfil ${metaAccountType || 'Meta'} para gerenciar ativos de anúncios.`}
         </p>
       </div>
 
       {/* Toggle de Navegação: Selecionar vs Criar */}
+      {!hideSelectExisting && (
       <div className="flex gap-2 p-1 bg-zinc-900/60 rounded-xl border border-zinc-800/60">
         <button
           type="button"
@@ -1063,6 +1121,7 @@ export const PlatformAccountStep: React.FC<PlatformAccountStepProps> = ({
           + Criar nova conta
         </button>
       </div>
+      )}
 
       {/* Modo 1: Selecionar Existente */}
       {mode === 'pick' && (
@@ -1166,6 +1225,7 @@ export const PlatformAccountStep: React.FC<PlatformAccountStepProps> = ({
         <div className="p-5 rounded-2xl border border-zinc-800/80 bg-zinc-900/50">
           <PlatformAccountFormFields
             platform={platform}
+            metaAccountType={metaAccountType}
             organizationId={organizationId}
             userId={userId}
             onCreated={(account) => {

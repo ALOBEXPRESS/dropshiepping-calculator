@@ -3,8 +3,10 @@ import { NICHE_VALUES } from '@/constants/niches';
 
 // ── Tipos base ──────────────────────────────────────────────────────────────
 
-export type PlatformAccountPlatform = 'tiktok';
+export type PlatformAccountPlatform = 'tiktok' | 'google' | 'meta';
 export type PlatformAccountSignupMethod = 'google' | 'apple' | 'email';
+/** Sub-tipo para contas Meta: qual rede social */
+export type MetaAccountType = 'instagram' | 'facebook' | 'threads';
 
 // ── platform_metadata discriminado por signup_method ───────────────────────
 
@@ -62,6 +64,7 @@ export interface PlatformAccount {
   platform_metadata: PlatformMetadata | null;
   email?: string | null;
   proxy_id?: string | null;
+  meta_account_type?: MetaAccountType | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -70,7 +73,7 @@ export interface PlatformAccount {
 // ── Schema Zod para o formulário do wizard ──────────────────────────────────
 
 export const platformAccountSchema = z.object({
-  platform: z.literal('tiktok'),
+  platform: z.enum(['tiktok', 'google', 'meta'] as const),
   country: z.string().min(2, 'País é obrigatório'),
   name: z.string().trim().min(2, 'Nome deve ter no mínimo 2 caracteres'),
   holder_name: z.string().trim().min(2, 'Nome do titular é obrigatório'),
@@ -91,6 +94,8 @@ export const platformAccountSchema = z.object({
   google_account_age_years: z.number().min(0).max(30).nullable().optional(),
   google_ads_invested_brl: z.number().min(0).nullable().optional(),
   google_ads_currency: z.string().optional().nullable(),
+  // Para Meta: qual rede social (instagram, facebook, threads)
+  meta_account_type: z.enum(['instagram', 'facebook', 'threads'] as const).optional().nullable(),
 });
 
 export type PlatformAccountFormData = z.infer<typeof platformAccountSchema>;

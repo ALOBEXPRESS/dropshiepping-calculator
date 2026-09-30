@@ -107,6 +107,8 @@ export class BusinessCentersService {
       currency: data.currency || 'BRL',
       bc_id: finalBcId,
       notes: data.notes?.trim() || null,
+      meta_linked_network: data.platform === 'meta' ? (data.meta_linked_network || null) : null,
+      meta_linked_account_id: data.platform === 'meta' ? (data.meta_linked_account_id || null) : null,
       created_by: userId || null,
     };
 
@@ -137,6 +139,7 @@ export class BusinessCentersService {
       updated_at: new Date().toISOString(),
     };
 
+    if (data.platform !== undefined) payload.platform = data.platform;
     if (data.business_type !== undefined) payload.business_type = data.business_type;
     if (data.company_legal_name !== undefined) payload.company_legal_name = data.company_legal_name?.trim() || null;
     if (data.country !== undefined) payload.country = data.country;
@@ -145,6 +148,8 @@ export class BusinessCentersService {
     if (data.bc_id !== undefined && data.bc_id.trim() !== '') payload.bc_id = data.bc_id.trim();
     if (data.name !== undefined) payload.name = data.name?.trim() || null;
     if (data.notes !== undefined) payload.notes = data.notes?.trim() || null;
+    if (data.meta_linked_network !== undefined) payload.meta_linked_network = data.meta_linked_network || null;
+    if (data.meta_linked_account_id !== undefined) payload.meta_linked_account_id = data.meta_linked_account_id || null;
 
     const { data: updated, error } = await supabase
       .from('business_centers')
