@@ -13,6 +13,7 @@ import {
   ExternalLink,
   User,
   FileText,
+  Hash,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
@@ -39,6 +40,47 @@ import {
 } from '@/components/ui/PlatformLogos';
 import { formatCpf, formatCnpj } from '@/utils/inputMasks';
 import { BusinessCenterFormDialog } from './BusinessCenterFormDialog';
+
+function getIdBoxTheme(platform: string) {
+  switch (platform) {
+    case 'tiktok':
+      return {
+        container:
+          'bg-gradient-to-r from-cyan-950/45 via-zinc-900/90 to-cyan-950/25 border-cyan-500/40 hover:border-cyan-400/70 shadow-[0_0_15px_rgba(37,244,238,0.08)]',
+        label: 'text-cyan-400',
+        idText: 'text-cyan-100 group-hover/id:text-white',
+        copyBtn:
+          'bg-cyan-500/15 hover:bg-cyan-500/30 text-cyan-300 hover:text-white border-cyan-500/30 shadow-sm',
+      };
+    case 'meta':
+      return {
+        container:
+          'bg-gradient-to-r from-blue-950/45 via-zinc-900/90 to-blue-950/25 border-blue-500/40 hover:border-blue-400/70 shadow-[0_0_15px_rgba(59,130,246,0.1)]',
+        label: 'text-blue-400',
+        idText: 'text-blue-100 group-hover/id:text-white',
+        copyBtn:
+          'bg-blue-500/15 hover:bg-blue-500/30 text-blue-300 hover:text-white border-blue-500/30 shadow-sm',
+      };
+    case 'google':
+      return {
+        container:
+          'bg-gradient-to-r from-amber-950/45 via-zinc-900/90 to-amber-950/25 border-amber-500/40 hover:border-amber-400/70 shadow-[0_0_15px_rgba(245,158,11,0.1)]',
+        label: 'text-amber-400',
+        idText: 'text-amber-100 group-hover/id:text-white',
+        copyBtn:
+          'bg-amber-500/15 hover:bg-amber-500/30 text-amber-300 hover:text-white border-amber-500/30 shadow-sm',
+      };
+    default:
+      return {
+        container:
+          'bg-gradient-to-r from-purple-950/45 via-zinc-900/90 to-purple-950/25 border-purple-500/40 hover:border-purple-400/70 shadow-[0_0_15px_rgba(168,85,247,0.1)]',
+        label: 'text-purple-400',
+        idText: 'text-purple-100 group-hover/id:text-white',
+        copyBtn:
+          'bg-purple-500/15 hover:bg-purple-500/30 text-purple-300 hover:text-white border-purple-500/30 shadow-sm',
+      };
+  }
+}
 
 // ── BusinessCenterCard ────────────────────────────────────────────────────────
 
@@ -108,35 +150,43 @@ const BusinessCenterCard: React.FC<BusinessCenterCardProps> = ({
         </div>
       </div>
 
-      {/* Empresa & Titular & Metadados */}
-      <div className="text-xs space-y-2 bg-accent/20 p-3 rounded-xl border border-border/50">
+      {/* ── Box 1: Empresa & Titular & Metadados (Legal & Compliance) ── */}
+      <div className="text-xs space-y-2.5 p-3.5 rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-950/25 via-zinc-900/85 to-zinc-950/95 shadow-sm hover:border-emerald-500/50 transition-colors">
         {/* Dados da Empresa */}
         {(center.company_legal_name || center.company_cnpj) && (
-          <div className="space-y-1 pb-2 border-b border-border/40">
+          <div className="space-y-1.5 pb-2.5 border-b border-emerald-500/15">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                <FileText className="w-3 h-3 text-emerald-400" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-emerald-400" />
                 Empresa
               </span>
               {center.company_status && (
-                <span className={`px-1.5 py-0.2 rounded text-[9px] font-semibold ${
-                  center.company_status === 'Ativa'
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                    : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                }`}>
+                <span
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wide ${
+                    center.company_status === 'Ativa'
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.25)]'
+                      : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                  }`}
+                >
                   {center.company_status}
                 </span>
               )}
             </div>
             {center.company_legal_name && (
-              <p className="text-foreground font-semibold truncate text-[11px]">
+              <p className="text-white font-bold truncate text-xs tracking-tight">
                 {center.company_legal_name}
               </p>
             )}
-            <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono flex-wrap">
-              {center.company_cnpj && <span>CNPJ: {formatCnpj(center.company_cnpj)}</span>}
+            <div className="flex items-center gap-2 text-[10px] text-zinc-400 font-mono flex-wrap">
+              {center.company_cnpj && (
+                <span className="bg-zinc-900/90 px-1.5 py-0.5 rounded border border-emerald-500/20 text-zinc-200">
+                  CNPJ: <span className="text-emerald-300 font-semibold">{formatCnpj(center.company_cnpj)}</span>
+                </span>
+              )}
               {center.company_state_registration && (
-                <span>· IE: {center.company_state_registration}</span>
+                <span className="bg-zinc-900/90 px-1.5 py-0.5 rounded border border-zinc-800 text-zinc-300">
+                  IE: {center.company_state_registration}
+                </span>
               )}
             </div>
           </div>
@@ -144,50 +194,68 @@ const BusinessCenterCard: React.FC<BusinessCenterCardProps> = ({
 
         {/* Dados do Titular */}
         {(center.holder_name || center.holder_cpf) && (
-          <div className="space-y-0.5 pb-2 border-b border-border/40 text-[11px]">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-              <User className="w-3 h-3 text-cyan-400" />
+          <div className="space-y-1 pb-2 border-b border-emerald-500/15 text-[11px]">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-cyan-400" />
               Titular Responsável
             </span>
-            <p className="text-foreground font-medium truncate">
+            <p className="text-zinc-200 font-semibold truncate">
               {center.holder_name || '—'}
-              {center.holder_cpf ? ` (${formatCpf(center.holder_cpf)})` : ''}
+              {center.holder_cpf && (
+                <span className="text-cyan-300/90 font-mono text-[10px] ml-1.5 font-normal">
+                  ({formatCpf(center.holder_cpf)})
+                </span>
+              )}
             </p>
           </div>
         )}
 
         {/* Metadados geográficos / moeda */}
-        <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap pt-0.5">
-          <span className="font-semibold text-foreground">{center.country || 'BR'}</span>
-          <span>·</span>
-          <span>{center.currency || 'BRL'}</span>
-          <span>·</span>
-          <span className="font-mono">{center.timezone || 'America/Sao_Paulo'}</span>
+        <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 flex-wrap pt-0.5">
+          <span className="bg-zinc-900/90 px-2 py-0.5 rounded text-zinc-200 border border-zinc-700/80 font-bold">
+            {center.country || 'BR'}
+          </span>
+          <span className="bg-amber-500/10 px-2 py-0.5 rounded text-amber-300 border border-amber-500/30 font-mono font-bold">
+            {center.currency || 'BRL'}
+          </span>
+          <span className="bg-zinc-900/90 px-2 py-0.5 rounded text-zinc-400 border border-zinc-800 font-mono">
+            {center.timezone || 'America/Sao_Paulo'}
+          </span>
         </div>
       </div>
 
-      {/* ID Badge with copy */}
-      <div className="flex items-center justify-between p-2.5 rounded-xl bg-accent/30 border border-border/60">
-        <div className="min-w-0">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-            {platformConfig.idLabel}
-          </p>
-          <p className="font-mono text-xs font-semibold text-foreground truncate select-all">
-            {center.bc_id}
-          </p>
-        </div>
-        <button
-          onClick={handleCopy}
-          className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-          title="Copiar ID"
-        >
-          {copied ? (
-            <Check className="w-3.5 h-3.5 text-emerald-400" />
-          ) : (
-            <Copy className="w-3.5 h-3.5" />
-          )}
-        </button>
-      </div>
+      {/* ── Box 2: ID Badge with copy (Identificador Destacado) ── */}
+      {(() => {
+        const idTheme = getIdBoxTheme(center.platform);
+        return (
+          <div
+            className={`group/id flex items-center justify-between p-3 rounded-xl border transition-all ${idTheme.container}`}
+          >
+            <div className="min-w-0 pr-2">
+              <p className={`text-[10px] uppercase tracking-wider font-bold flex items-center gap-1.5 ${idTheme.label}`}>
+                <Hash className="w-3 h-3 flex-shrink-0" />
+                {platformConfig.idLabel}
+              </p>
+              <p
+                className={`font-mono text-xs sm:text-sm font-bold truncate select-all tracking-wide mt-0.5 transition-colors ${idTheme.idText}`}
+              >
+                {center.bc_id}
+              </p>
+            </div>
+            <button
+              onClick={handleCopy}
+              className={`p-2 rounded-lg border transition-all flex-shrink-0 ${idTheme.copyBtn}`}
+              title="Copiar ID"
+            >
+              {copied ? (
+                <Check className="w-4 h-4 text-emerald-400" />
+              ) : (
+                <Copy className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+        );
+      })()}
 
       {/* Meta linked account info */}
       {center.platform === 'meta' && center.meta_linked_network && (
