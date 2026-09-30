@@ -33,7 +33,7 @@ import {
 import ReactCountryFlag from 'react-country-flag';
 import { AdAccountStatusBadge } from './AdAccountStatusBadge';
 import type { AdAccountWithStats, AdAccountStatus } from '@/types/adAccounts';
-import tiktokImg from '@/imgs/tiktok-shop-seller-cent-icon-filled-256.png';
+import { getPlatformLogo, getPlatformColor } from '@/components/ui/PlatformLogos';
 
 interface AdAccountCardProps {
   account: AdAccountWithStats;
@@ -51,6 +51,9 @@ export const AdAccountCard: React.FC<AdAccountCardProps> = ({
   onUnlinkPlatformAccount,
 }) => {
   const navigate = useNavigate();
+
+  const PlatformIcon = getPlatformLogo(account.platform);
+  const platformColor = getPlatformColor(account.platform);
 
   const formatBRL = (val: number | null | undefined) => {
     if (val === null || val === undefined) return '—';
@@ -72,11 +75,7 @@ export const AdAccountCard: React.FC<AdAccountCardProps> = ({
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center p-2 flex-shrink-0 shadow-inner">
-                <img
-                  src={tiktokImg}
-                  alt="TikTok Ads"
-                  className="w-full h-full object-contain"
-                />
+                <PlatformIcon className={`w-5 h-5 ${platformColor}`} />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">

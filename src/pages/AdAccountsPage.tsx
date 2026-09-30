@@ -215,6 +215,8 @@ export const AdAccountsPage: React.FC = () => {
             <SelectContent className="bg-card border-input">
               <SelectItem value="all">Todas Plataformas</SelectItem>
               <SelectItem value="tiktok">TikTok Ads</SelectItem>
+              <SelectItem value="meta">Meta Ads</SelectItem>
+              <SelectItem value="google">Google Ads</SelectItem>
             </SelectContent>
           </Select>
         </div>

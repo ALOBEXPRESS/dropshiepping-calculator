@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { PlatformAccount } from './platformAccounts';
 
-export type AdAccountPlatform = 'tiktok';
+export type AdAccountPlatform = 'tiktok' | 'meta' | 'google';
 export type AdAccountStatus = 'active' | 'paused' | 'disabled' | 'archived';
 export type AdAccountBillingType = 'prepaid' | 'postpaid';
 export type AdAccountPaymentStatus = 'normal' | 'overdue' | 'restricted';
@@ -68,7 +68,7 @@ export interface AdAccountFilters {
 
 export const adAccountSchema = z.object({
   name: z.string().trim().min(2, 'O nome deve ter no mínimo 2 caracteres'),
-  platform: z.literal('tiktok'),
+  platform: z.enum(['tiktok', 'meta', 'google']),
   status: z.enum(['active', 'paused', 'disabled', 'archived']),
   timezone: z.string().min(1, 'Fuso horário é obrigatório'),
   currency: z.enum(['BRL', 'USD', 'EUR']),

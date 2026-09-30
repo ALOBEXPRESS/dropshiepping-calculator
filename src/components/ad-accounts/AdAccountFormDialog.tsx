@@ -60,7 +60,13 @@ import {
   formatCpfCnpj,
   formatPhoneByCountry,
 } from '@/utils/inputMasks';
-import tiktokImg from '@/imgs/tiktok-shop-seller-cent-icon-filled-256.png';
+import {
+  TikTokLogo,
+  MetaLogo,
+  GoogleLogo,
+  getPlatformLogo,
+  getPlatformColor,
+} from '@/components/ui/PlatformLogos';
 
 interface AdAccountFormDialogProps {
   open: boolean;
@@ -69,10 +75,30 @@ interface AdAccountFormDialogProps {
   onSubmit: (data: AdAccountFormData) => Promise<void>;
 }
 
-const STEPS = [
+const getSteps = (platform: 'tiktok' | 'meta' | 'google') => [
   { id: 1, title: 'Plataforma', label: '01. Rede de Anúncios', icon: Globe },
-  { id: 2, title: 'Perfil TikTok', label: '02. Perfil da Plataforma', icon: Sparkles },
-  { id: 3, title: 'Business Account', label: '03. Business Account', icon: Building2 },
+  {
+    id: 2,
+    title: 'Business Account',
+    label:
+      platform === 'meta'
+        ? '02. Meta Business Portfolio'
+        : platform === 'google'
+        ? '02. Gerenciador MCC'
+        : '02. TikTok Business Center',
+    icon: Building2,
+  },
+  {
+    id: 3,
+    title:
+      platform === 'meta'
+        ? 'Conta Meta'
+        : platform === 'google'
+        ? 'Conta Google'
+        : 'Perfil TikTok',
+    label: '03. Perfil da Plataforma',
+    icon: Sparkles,
+  },
   { id: 4, title: 'Identificadores', label: '04. IDs & Rastreamento', icon: Info },
   { id: 5, title: 'Faturamento', label: '05. Faturamento & Titular', icon: CreditCard },
   { id: 6, title: 'Revisão', label: '06. Revisão & Ativação', icon: ShieldCheck },
@@ -136,6 +162,18 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
     mode: 'onChange',
   });
 
+  const currentPlatform = watch('platform') || 'tiktok';
+  const steps = getSteps(currentPlatform);
+  const PlatformIcon = getPlatformLogo(currentPlatform);
+  const platformColor = getPlatformColor(currentPlatform);
+
+  const platformLabel =
+    currentPlatform === 'tiktok'
+      ? 'TikTok'
+      : currentPlatform === 'meta'
+      ? 'Meta'
+      : 'Google';
+
   useEffect(() => {
     if (account) {
       const matchedBc = businessCenters.find(
@@ -169,7 +207,7 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
         bc_entity_id: account.bc_entity_id ?? matchedBc?.id ?? null,
       });
       setSelectedPlatformAccount(account.platform_account ?? null);
-      setCurrentStep(isEditing ? 3 : 1);
+      setCurrentStep(isEditing ? 2 : 1);
     } else {
       reset(defaultValues);
       setCurrentStep(1);
@@ -203,14 +241,9 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
     if (currentStep === 1) {
       isValid = true;
     } else if (currentStep === 2) {
-      // Passo opcional — sempre pode avançar
-      isValid = true;
+      isValid = await trigger(['name', 'status', 'spending_limit']);
     } else if (currentStep === 3) {
-      isValid = await trigger([
-        'name',
-        'status',
-        'spending_limit',
-      ]);
+      isValid = true;
     } else if (currentStep === 4) {
       isValid = await trigger(['advertiser_id', 'business_center_id', 'pixel_id', 'catalog_id']);
     } else if (currentStep === 5) {
@@ -231,7 +264,6 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
   const handleFormSubmit = async (data: AdAccountFormData) => {
     setIsSubmitting(true);
     try {
-      // Propaga o platform_account_id selecionado no passo 2
       const finalData: AdAccountFormData = {
         ...data,
         platform_account_id: selectedPlatformAccount?.id ?? null,
@@ -257,10 +289,10 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
         {/* Header com Stepper Conectado e Espaçoso */}
         <DialogHeader className="px-8 pt-7 pb-5 border-b border-zinc-800/60 bg-gradient-to-b from-zinc-900/60 to-zinc-950/90 text-left space-y-0">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
-            {/* Título & Identidade */}
+            {/* Título & Identidade da Plataforma */}
             <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-brand/10 border border-brand/25 flex items-center justify-center p-2.5 shadow-[0_0_15px_rgba(254,44,85,0.15)] flex-shrink-0">
-                <img src={tiktokImg} alt="TikTok" className="w-full h-full object-contain" />
+              <div className="w-11 h-11 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center p-2.5 shadow-inner flex-shrink-0">
+                <PlatformIcon className={`w-6 h-6 ${platformColor}`} />
               </div>
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2.5">
@@ -273,9 +305,9 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                 </div>
                 <DialogDescription className="text-xs text-zinc-400">
                   {currentStep === 1 && 'Selecione a plataforma de anúncios para veiculação das campanhas.'}
-                  {currentStep === 2 && 'Vincule ou crie o perfil TikTok associado a esta conta de anúncios.'}
-                  {currentStep === 3 && 'Defina o nome de exibição, moeda e parâmetros da conta.'}
-                  {currentStep === 4 && 'Conecte os identificadores do TikTok Ads Manager e Pixel.'}
+                  {currentStep === 2 && `Vincule a Business Account (${platformLabel}) e configure os parâmetros operacionais.`}
+                  {currentStep === 3 && `Vincule ou cadastre a conta da plataforma (${platformLabel}) associada aos anúncios.`}
+                  {currentStep === 4 && `Conecte os identificadores do ${platformLabel} e códigos de rastreamento.`}
                   {currentStep === 5 && 'Configure o modelo de cobrança e dados fiscais da empresa.'}
                   {currentStep === 6 && 'Revise as configurações antes de ativar a conta no sistema.'}
                 </DialogDescription>
@@ -284,7 +316,7 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
 
             {/* Stepper Visual */}
             <div className="flex items-center gap-1 self-start md:self-center flex-wrap">
-              {STEPS.map((step, idx) => {
+              {steps.map((step, idx) => {
                 const isPassed = currentStep > step.id;
                 const isCurrent = currentStep === step.id;
 
@@ -322,7 +354,7 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                         {step.title}
                       </span>
                     </button>
-                    {idx < STEPS.length - 1 && (
+                    {idx < steps.length - 1 && (
                       <div
                         className={`w-2.5 h-0.5 rounded-full transition-colors ${
                           isPassed ? 'bg-emerald-500/70' : 'bg-zinc-800'
@@ -348,7 +380,6 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
               }
             }}
             onKeyDown={(e) => {
-              // Impede submissão involuntária por Enter
               if (e.key === 'Enter') {
                 e.preventDefault();
               }
@@ -376,45 +407,110 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                     </p>
                   </div>
 
-                  {/* Card Principal TikTok Ads */}
-                  <div
-                    onClick={() => setValue('platform', 'tiktok')}
-                    className="relative rounded-2xl border-2 border-brand bg-gradient-to-br from-brand/12 via-zinc-900/90 to-zinc-950 p-6 cursor-pointer shadow-xl shadow-brand/10 transition-all hover:border-brand"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800/80">
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-700/60 flex items-center justify-center p-3 shadow-inner flex-shrink-0">
-                          <img src={tiktokImg} alt="TikTok Ads" className="w-full h-full object-contain" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2.5">
-                            <h4 className="text-base font-bold text-white">TikTok Ads Manager</h4>
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                              Disponível
-                            </span>
+                  {/* Cards de Plataformas Selecionáveis */}
+                  <div className="space-y-3.5">
+                    {[
+                      {
+                        id: 'tiktok' as const,
+                        name: 'TikTok Ads Manager',
+                        logo: TikTokLogo,
+                        logoColor: 'text-cyan-400',
+                        desc: 'Integração nativa com campanhas de conversão, Pixel TikTok, Catálogo e controle de ROI.',
+                        activeBorder: 'border-brand shadow-brand/15',
+                        activeBadge: 'bg-brand text-white shadow-brand/30',
+                        features: ['Pixel & Web Events', 'Business Center ID', 'Múltiplas Campanhas', 'Gestão de Orçamento'],
+                      },
+                      {
+                        id: 'meta' as const,
+                        name: 'Meta Ads Manager',
+                        logo: MetaLogo,
+                        logoColor: 'text-blue-400',
+                        desc: 'Anúncios no Instagram, Facebook, Reels e Threads com suporte à API de Conversões (CAPI) e Pixel.',
+                        activeBorder: 'border-blue-500 shadow-blue-500/15',
+                        activeBadge: 'bg-blue-600 text-white shadow-blue-500/30',
+                        features: ['Meta Pixel & CAPI', 'Business Portfolio', 'Instagram & Facebook', 'Catálogo de Produtos'],
+                      },
+                      {
+                        id: 'google' as const,
+                        name: 'Google Ads',
+                        logo: GoogleLogo,
+                        logoColor: '',
+                        desc: 'Campanhas de Search, Google Shopping, Performance Max, Merchant Center e YouTube Ads.',
+                        activeBorder: 'border-emerald-500 shadow-emerald-500/15',
+                        activeBadge: 'bg-emerald-600 text-white shadow-emerald-500/30',
+                        features: ['Google Tag / Conversões', 'MCC / Gerenciadora', 'Performance Max & Shopping', 'Catálogo Merchant'],
+                      },
+                    ].map((plat) => {
+                      const isSelected = currentPlatform === plat.id;
+                      const Icon = plat.logo;
+                      return (
+                        <div
+                          key={plat.id}
+                          onClick={() => {
+                            setValue('platform', plat.id, { shouldValidate: true });
+                            setValue('bc_entity_id', null);
+                            setValue('business_center_id', '');
+                            setSelectedPlatformAccount(null);
+                            setValue('platform_account_id', null);
+                          }}
+                          className={`relative rounded-2xl border-2 p-5 cursor-pointer transition-all ${
+                            isSelected
+                              ? `${plat.activeBorder} bg-gradient-to-br from-zinc-900/90 via-zinc-900 to-zinc-950 shadow-xl`
+                              : 'border-zinc-800/80 bg-zinc-900/40 hover:border-zinc-700 hover:bg-zinc-900/70'
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3.5 border-b border-zinc-800/80">
+                            <div className="flex items-center gap-4">
+                              <div className="w-13 h-13 rounded-2xl bg-zinc-950 border border-zinc-700/60 flex items-center justify-center p-3 shadow-inner flex-shrink-0">
+                                <Icon className={`w-7 h-7 ${plat.logoColor}`} />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2.5">
+                                  <h4 className="text-base font-bold text-white">{plat.name}</h4>
+                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                    Disponível
+                                  </span>
+                                </div>
+                                <p className="text-xs text-zinc-300 mt-1 leading-relaxed">
+                                  {plat.desc}
+                                </p>
+                              </div>
+                            </div>
+                            <div
+                              className={`flex items-center gap-1.5 self-end sm:self-center px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-md transition-all ${
+                                isSelected
+                                  ? plat.activeBadge
+                                  : 'bg-zinc-800/80 text-zinc-400 hover:text-white border border-zinc-700/60'
+                              }`}
+                            >
+                              {isSelected ? (
+                                <>
+                                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                  <span>Selecionado</span>
+                                </>
+                              ) : (
+                                <span>Selecionar</span>
+                              )}
+                            </div>
                           </div>
-                          <p className="text-xs text-zinc-300 mt-1 leading-relaxed">
-                            Integração nativa com campanhas de conversão, Pixel TikTok, Catálogo e controle de ROI.
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 self-end sm:self-center px-3.5 py-1.5 rounded-xl bg-brand text-white text-xs font-semibold shadow-md shadow-brand/30">
-                        <Check className="w-3.5 h-3.5 stroke-[3]" />
-                        <span>Selecionado</span>
-                      </div>
-                    </div>
 
-                    <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {['Pixel & Web Events', 'Business Center ID', 'Múltiplas Campanhas', 'Gestão de Orçamento'].map((feat) => (
-                        <div key={feat} className="p-3 rounded-xl bg-zinc-900/70 border border-zinc-800/80 flex items-center gap-2.5">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                          <span className="text-xs font-medium text-zinc-200">{feat}</span>
+                          <div className="mt-3.5 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                            {plat.features.map((feat) => (
+                              <div
+                                key={feat}
+                                className="p-2.5 rounded-xl bg-zinc-900/70 border border-zinc-800/80 flex items-center gap-2"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                                <span className="text-[11px] font-medium text-zinc-200">{feat}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      ))}
-                    </div>
+                      );
+                    })}
                   </div>
 
-                  {/* Próximas Integrações — conforme spec */}
+                  {/* Próximas Integrações */}
                   <div className="space-y-2.5 pt-2">
                     <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                       Próximas Integrações de Tráfego
@@ -446,47 +542,10 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                 </motion.div>
               )}
 
-              {/* ── ETAPA 2: Conta TikTok (nova) ── */}
+              {/* ── ETAPA 2: Business Account & Configurações da Conta de Anúncios ── */}
               {currentStep === 2 && (
                 <motion.div
                   key="step-2"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.22 }}
-                >
-                  <PlatformAccountStep
-                    platform="tiktok"
-                    selectedAccount={selectedPlatformAccount}
-                    initialAccountId={account?.platform_account_id ?? null}
-                    onAccountSelected={(newAcc) => {
-                      setSelectedPlatformAccount(newAcc);
-                      setValue('platform_account_id', newAcc?.id ?? null);
-                    }}
-                    onDirectUnlink={
-                      isEditing && account
-                        ? async () => {
-                            await AdAccountsService.update(organizationId!, account.id, {
-                              platform_account_id: null,
-                            });
-                            queryClient.invalidateQueries({ queryKey: ['ad_accounts'] });
-                            queryClient.invalidateQueries({ queryKey: ['platform_accounts'] });
-                            setSelectedPlatformAccount(null);
-                            setValue('platform_account_id', null);
-                            toast.success('Perfil TikTok desvinculado desta conta de anúncios com sucesso!');
-                          }
-                        : undefined
-                    }
-                    organizationId={organizationId!}
-                    userId={userId}
-                  />
-                </motion.div>
-              )}
-
-              {/* ── ETAPA 3: Business Account & Configurações da Conta de Anúncios ── */}
-              {currentStep === 3 && (
-                <motion.div
-                  key="step-3"
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
@@ -496,23 +555,27 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                   <div className="space-y-1">
                     <h3 className="text-base font-semibold text-white flex items-center gap-2">
                       <Building2 className="w-4 h-4 text-purple-400" />
-                      Business Account
+                      Business Account ({platformLabel})
                     </h3>
                     <p className="text-xs text-zinc-400">
-                      Vincule a Conta de Negócio (Business Center) e configure o nome e parâmetros operacionais da sua conta de anúncios.
+                      Vincule a Conta de Negócio ({currentPlatform === 'meta' ? 'Meta Business Portfolio' : currentPlatform === 'google' ? 'Google Ads MCC' : 'TikTok Business Center'}) e configure o nome e parâmetros operacionais da sua conta de anúncios.
                     </p>
                   </div>
 
-                  {/* Card 1: Vínculo com a Conta de Negócio (Business Center) */}
+                  {/* Card 1: Vínculo com a Conta de Negócio */}
                   <div className="p-5 rounded-2xl border border-purple-500/20 bg-gradient-to-b from-purple-500/5 to-transparent space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label htmlFor="business_center_select" className="text-xs font-semibold text-white flex items-center gap-1.5">
                           <Building2 className="w-3.5 h-3.5 text-purple-400" />
-                          Conta de Negócio (Business Center)
+                          {currentPlatform === 'meta'
+                            ? 'Meta Business Portfolio'
+                            : currentPlatform === 'google'
+                            ? 'Conta Gerenciadora MCC'
+                            : 'Conta de Negócio (Business Center)'}
                         </Label>
                         <p className="text-[11px] text-zinc-400">
-                          Selecione o Business Center responsável pelos dados fiscais e contratuais.
+                          Selecione o registro responsável pelos dados fiscais e contratuais.
                         </p>
                       </div>
                       <Link
@@ -521,114 +584,126 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                         className="text-[11px] text-purple-400 hover:text-purple-300 flex items-center gap-1 hover:underline flex-shrink-0"
                       >
                         <Plus className="w-3 h-3" />
-                        Cadastrar no Business Center
+                        {currentPlatform === 'meta'
+                          ? 'Cadastrar Business Portfolio'
+                          : currentPlatform === 'google'
+                          ? 'Cadastrar Gerenciador MCC'
+                          : 'Cadastrar no Business Center'}
                       </Link>
                     </div>
 
-                    {businessCenters.length > 0 ? (
-                      <div className="space-y-3">
-                        <Select
-                          value={watch('bc_entity_id') || 'none'}
-                          onValueChange={(val) => {
-                            if (val === 'none') {
-                              setValue('bc_entity_id', null, { shouldValidate: true });
-                              setValue('business_center_id', '', { shouldValidate: true });
-                            } else {
-                              const selectedBc = businessCenters.find((c) => c.id === val);
-                              if (selectedBc) {
-                                setValue('bc_entity_id', selectedBc.id, { shouldValidate: true });
-                                setValue('business_center_id', selectedBc.bc_id, { shouldValidate: true });
-                                if (selectedBc.company_legal_name) setValue('legal_name', selectedBc.company_legal_name);
-                                if (selectedBc.country) setValue('country', selectedBc.country);
-                                if (selectedBc.currency) setValue('currency', selectedBc.currency as AdAccountCurrency);
-                                if (selectedBc.timezone) setValue('timezone', selectedBc.timezone);
+                    {(() => {
+                      const platformCenters = businessCenters.filter(
+                        (c) => (c.platform || 'tiktok') === currentPlatform
+                      );
+
+                      return platformCenters.length > 0 ? (
+                        <div className="space-y-3">
+                          <Select
+                            value={watch('bc_entity_id') || 'none'}
+                            onValueChange={(val) => {
+                              if (val === 'none') {
+                                setValue('bc_entity_id', null, { shouldValidate: true });
+                                setValue('business_center_id', '', { shouldValidate: true });
+                              } else {
+                                const selectedBc = platformCenters.find((c) => c.id === val);
+                                if (selectedBc) {
+                                  setValue('bc_entity_id', selectedBc.id, { shouldValidate: true });
+                                  setValue('business_center_id', selectedBc.bc_id, { shouldValidate: true });
+                                  if (selectedBc.company_legal_name) setValue('legal_name', selectedBc.company_legal_name);
+                                  if (selectedBc.country) setValue('country', selectedBc.country);
+                                  if (selectedBc.currency) setValue('currency', selectedBc.currency as AdAccountCurrency);
+                                  if (selectedBc.timezone) setValue('timezone', selectedBc.timezone);
+                                }
                               }
-                            }
-                          }}
-                        >
-                          <SelectTrigger id="business_center_select" className="bg-zinc-950 border-zinc-800 text-xs text-zinc-200 h-11 focus-visible:ring-purple-500">
-                            <SelectValue placeholder="Selecione uma Conta de Negócio cadastrada..." />
-                          </SelectTrigger>
-                          <SelectContent className="bg-zinc-900 border-zinc-800 text-white max-h-60">
-                            <SelectItem value="none">
-                              <span className="text-zinc-500 italic">Nenhuma Conta de Negócio vinculada</span>
-                            </SelectItem>
-                            {businessCenters.map((bc) => (
-                              <SelectItem key={bc.id} value={bc.id}>
-                                <div className="flex items-center gap-2">
-                                  <Building2 className="w-3.5 h-3.5 text-purple-400" />
-                                  <span className="font-semibold text-white">{bc.name || `BC ${bc.bc_id}`}</span>
-                                  <span className="text-purple-300/80 font-mono text-[11px]">({bc.bc_id})</span>
-                                  {bc.company_legal_name && (
-                                    <span className="text-zinc-400 text-[11px] truncate max-w-[180px]">
-                                      • {bc.company_legal_name}
-                                    </span>
-                                  )}
-                                </div>
+                            }}
+                          >
+                            <SelectTrigger id="business_center_select" className="bg-zinc-950 border-zinc-800 text-xs text-zinc-200 h-11 focus-visible:ring-purple-500">
+                              <SelectValue placeholder={`Selecione uma Business Account de ${platformLabel}...`} />
+                            </SelectTrigger>
+                            <SelectContent className="bg-zinc-900 border-zinc-800 text-white max-h-60">
+                              <SelectItem value="none">
+                                <span className="text-zinc-500 italic">Nenhuma Conta de Negócio vinculada</span>
                               </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                              {platformCenters.map((bc) => (
+                                <SelectItem key={bc.id} value={bc.id}>
+                                  <div className="flex items-center gap-2">
+                                    <Building2 className="w-3.5 h-3.5 text-purple-400" />
+                                    <span className="font-semibold text-white">{bc.name || `BC ${bc.bc_id}`}</span>
+                                    <span className="text-purple-300/80 font-mono text-[11px]">({bc.bc_id})</span>
+                                    {bc.company_legal_name && (
+                                      <span className="text-zinc-400 text-[11px] truncate max-w-[180px]">
+                                        • {bc.company_legal_name}
+                                      </span>
+                                    )}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
 
-                        {/* Card com Detalhes do Business Center Selecionado */}
-                        {(() => {
-                          const currentBc = businessCenters.find(
-                            (c) => c.id === watch('bc_entity_id') || (watch('business_center_id') && c.bc_id === watch('business_center_id'))
-                          );
-                          if (!currentBc) return null;
+                          {/* Card com Detalhes do Business Center Selecionado */}
+                          {(() => {
+                            const currentBc = platformCenters.find(
+                              (c) => c.id === watch('bc_entity_id') || (watch('business_center_id') && c.bc_id === watch('business_center_id'))
+                            );
+                            if (!currentBc) return null;
 
-                          return (
-                            <div className="p-4 rounded-xl border border-purple-500/25 bg-zinc-950/80 space-y-2.5 text-xs">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                                    {currentBc.business_type === 'agency' ? 'Agência' : 'Anunciante'}
+                            return (
+                              <div className="p-4 rounded-xl border border-purple-500/25 bg-zinc-950/80 space-y-2.5 text-xs">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                                      {currentBc.business_type === 'agency' ? 'Agência' : 'Anunciante'}
+                                    </span>
+                                    <span className="font-bold text-white text-xs">{currentBc.name || 'Conta de Negócio'}</span>
+                                  </div>
+                                  <span className="text-[11px] font-mono text-purple-400 font-semibold">
+                                    ID: {currentBc.bc_id}
                                   </span>
-                                  <span className="font-bold text-white text-xs">{currentBc.name || 'Conta de Negócio'}</span>
                                 </div>
-                                <span className="text-[11px] font-mono text-purple-400 font-semibold">
-                                  BC ID: {currentBc.bc_id}
-                                </span>
-                              </div>
 
-                              {currentBc.company_legal_name && (
-                                <div className="text-[11px] text-zinc-300 truncate">
-                                  <span className="text-zinc-500 font-medium">Razão Social:</span>{' '}
-                                  <span className="text-zinc-200 font-semibold">{currentBc.company_legal_name}</span>
+                                {currentBc.company_legal_name && (
+                                  <div className="text-[11px] text-zinc-300 truncate">
+                                    <span className="text-zinc-500 font-medium">Razão Social:</span>{' '}
+                                    <span className="text-zinc-200 font-semibold">{currentBc.company_legal_name}</span>
+                                  </div>
+                                )}
+
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-400 font-mono pt-1 border-t border-zinc-800/60">
+                                  <span>País: <strong className="text-zinc-200">{currentBc.country}</strong></span>
+                                  <span>•</span>
+                                  <span>Moeda: <strong className="text-zinc-200">{currentBc.currency}</strong></span>
+                                  <span>•</span>
+                                  <span>Fuso: <strong className="text-zinc-200">{currentBc.timezone}</strong></span>
                                 </div>
-                              )}
 
-                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-400 font-mono pt-1 border-t border-zinc-800/60">
-                                <span>País: <strong className="text-zinc-200">{currentBc.country}</strong></span>
-                                <span>•</span>
-                                <span>Moeda: <strong className="text-zinc-200">{currentBc.currency}</strong></span>
-                                <span>•</span>
-                                <span>Fuso: <strong className="text-zinc-200">{currentBc.timezone}</strong></span>
+                                <p className="text-[10px] text-zinc-500 italic">
+                                  * Razão social, setor, contatos, site e dados fiscais são editados exclusivamente em Business Centers.
+                                </p>
                               </div>
-
-                              <p className="text-[10px] text-zinc-500 italic">
-                                * Razão social, setor, contatos, site e dados fiscais são editados exclusivamente em Business Centers.
-                              </p>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    ) : (
-                      <div className="p-4 rounded-xl border border-dashed border-zinc-800 bg-zinc-950/60 flex items-center justify-between gap-3 text-xs">
-                        <div className="space-y-0.5">
-                          <p className="font-medium text-zinc-300">Nenhum Business Center cadastrado ainda</p>
-                          <p className="text-[11px] text-zinc-500">Crie seu primeiro Business Center para centralizar as informações legais da empresa.</p>
+                            );
+                          })()}
                         </div>
-                        <Link
-                          to="/business-centers"
-                          target="_blank"
-                          className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-1.5 flex-shrink-0 transition-colors"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          Criar BC
-                        </Link>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="p-4 rounded-xl border border-dashed border-zinc-800 bg-zinc-950/60 flex items-center justify-between gap-3 text-xs">
+                          <div className="space-y-0.5">
+                            <p className="font-medium text-zinc-300">
+                              Nenhum {currentPlatform === 'meta' ? 'Meta Business Portfolio' : currentPlatform === 'google' ? 'MCC do Google' : 'Business Center'} cadastrado
+                            </p>
+                            <p className="text-[11px] text-zinc-500">Crie seu primeiro registro para centralizar as informações legais da empresa.</p>
+                          </div>
+                          <Link
+                            to="/business-centers"
+                            target="_blank"
+                            className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-1.5 flex-shrink-0 transition-colors"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            Criar
+                          </Link>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Card 2: Dados Próprios da Conta de Anúncios */}
@@ -640,7 +715,13 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                       </Label>
                       <Input
                         id="name"
-                        placeholder="Ex.: TikTok Business Account — Principal"
+                        placeholder={
+                          currentPlatform === 'meta'
+                            ? 'Ex.: Meta Ads — Principal (Instagram & Facebook)'
+                            : currentPlatform === 'google'
+                            ? 'Ex.: Google Ads — Campanhas Shopping & Search'
+                            : 'Ex.: TikTok Business Account — Principal'
+                        }
                         {...register('name')}
                         className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white placeholder:text-zinc-600 focus-visible:ring-brand"
                       />
@@ -722,7 +803,44 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                 </motion.div>
               )}
 
-              {/* ── ETAPA 4: Identificadores TikTok Ads ── */}
+              {/* ── ETAPA 3: Conta da Plataforma ── */}
+              {currentStep === 3 && (
+                <motion.div
+                  key="step-3"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.22 }}
+                >
+                  <PlatformAccountStep
+                    platform={currentPlatform}
+                    selectedAccount={selectedPlatformAccount}
+                    initialAccountId={account?.platform_account_id ?? null}
+                    onAccountSelected={(newAcc) => {
+                      setSelectedPlatformAccount(newAcc);
+                      setValue('platform_account_id', newAcc?.id ?? null);
+                    }}
+                    onDirectUnlink={
+                      isEditing && account
+                        ? async () => {
+                            await AdAccountsService.update(organizationId!, account.id, {
+                              platform_account_id: null,
+                            });
+                            queryClient.invalidateQueries({ queryKey: ['ad_accounts'] });
+                            queryClient.invalidateQueries({ queryKey: ['platform_accounts'] });
+                            setSelectedPlatformAccount(null);
+                            setValue('platform_account_id', null);
+                            toast.success(`Conta ${platformLabel} desvinculada com sucesso!`);
+                          }
+                        : undefined
+                    }
+                    organizationId={organizationId!}
+                    userId={userId}
+                  />
+                </motion.div>
+              )}
+
+              {/* ── ETAPA 4: Identificadores da Plataforma ── */}
               {currentStep === 4 && (
                 <motion.div
                   key="step-4"
@@ -735,10 +853,10 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                   <div className="space-y-1">
                     <h3 className="text-base font-semibold text-white flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-cyan-400" />
-                      Identificadores TikTok Ads
+                      Identificadores {platformLabel} Ads
                     </h3>
                     <p className="text-xs text-zinc-400">
-                      Vincule os códigos de rastreamento e eventos do TikTok Ads Manager.
+                      Vincule os códigos de rastreamento e eventos do {platformLabel} Ads.
                     </p>
                   </div>
 
@@ -747,7 +865,11 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                     <div className="space-y-1 text-xs text-zinc-300 leading-relaxed">
                       <p className="font-semibold text-white">Como encontrar os identificadores?</p>
                       <p>
-                        No TikTok Ads Manager, o <strong>Advertiser ID</strong> fica no topo superior direito. O <strong>Pixel ID</strong> pode ser criado ou copiado em <em>Assets &gt; Events &gt; Web Events</em>.
+                        {currentPlatform === 'meta'
+                          ? 'No Gerenciador de Anúncios Meta, o ID da Conta (act_...) fica no seletor de contas. O Pixel / Dataset ID fica no Gerenciador de Eventos.'
+                          : currentPlatform === 'google'
+                          ? 'No Google Ads, o Customer ID (10 dígitos) fica no canto superior direito. A Tag Global de Conversões fica em Ferramentas > Conversões.'
+                          : 'No TikTok Ads Manager, o Advertiser ID fica no topo superior direito. O Pixel ID pode ser copiado em Assets > Events > Web Events.'}
                       </p>
                     </div>
                   </div>
@@ -755,22 +877,42 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                   <div className="p-6 rounded-2xl border border-zinc-800/80 bg-zinc-900/50 grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div className="space-y-2">
                       <Label htmlFor="advertiser_id" className="text-xs font-semibold text-zinc-200">
-                        ID do Anunciante (Advertiser ID)
+                        {currentPlatform === 'meta'
+                          ? 'ID da Conta de Anúncios (Ad Account ID)'
+                          : currentPlatform === 'google'
+                          ? 'ID de Cliente Google Ads (Customer ID)'
+                          : 'ID do Anunciante (Advertiser ID)'}
                       </Label>
                       <Input
                         id="advertiser_id"
-                        placeholder="Ex: 7381234567890123456"
+                        placeholder={
+                          currentPlatform === 'meta'
+                            ? 'Ex: act_123456789012345'
+                            : currentPlatform === 'google'
+                            ? 'Ex: 123-456-7890'
+                            : 'Ex: 7381234567890123456'
+                        }
                         {...register('advertiser_id')}
                         className="bg-zinc-950 border-zinc-800 text-xs font-mono h-10 text-white"
                       />
-                      <p className="text-[11px] text-zinc-500">ID numérico da conta TikTok Ads.</p>
+                      <p className="text-[11px] text-zinc-500">
+                        {currentPlatform === 'meta'
+                          ? 'Identificador único da conta de anúncios Meta (com ou sem act_).'
+                          : currentPlatform === 'google'
+                          ? 'ID numérico de 10 dígitos do anunciante Google Ads.'
+                          : 'ID numérico da conta TikTok Ads.'}
+                      </p>
                     </div>
 
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <Label htmlFor="business_center_select" className="text-xs font-semibold text-zinc-200 flex items-center gap-1.5">
+                        <Label htmlFor="business_center_select_id" className="text-xs font-semibold text-zinc-200 flex items-center gap-1.5">
                           <Building2 className="w-3.5 h-3.5 text-purple-400" />
-                          Business Center (Opcional)
+                          {currentPlatform === 'meta'
+                            ? 'Business Portfolio ID'
+                            : currentPlatform === 'google'
+                            ? 'ID da Conta MCC'
+                            : 'Business Center ID'}
                         </Label>
                         <Link
                           to="/business-centers"
@@ -782,45 +924,51 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                         </Link>
                       </div>
 
-                      {businessCenters.length > 0 && (
-                        <Select
-                          value={
-                            watch('bc_entity_id') ||
-                            (watch('business_center_id') ? 'manual' : 'none')
-                          }
-                          onValueChange={(val) => {
-                            if (val === 'none') {
-                              setValue('bc_entity_id', null);
-                              setValue('business_center_id', '');
-                            } else if (val === 'manual') {
-                              setValue('bc_entity_id', null);
-                            } else {
-                              const selectedBc = businessCenters.find((c) => c.id === val);
-                              if (selectedBc) {
-                                setValue('bc_entity_id', selectedBc.id);
-                                setValue('business_center_id', selectedBc.bc_id);
-                              }
+                      {(() => {
+                        const platBcs = businessCenters.filter(
+                          (c) => (c.platform || 'tiktok') === currentPlatform
+                        );
+
+                        return platBcs.length > 0 ? (
+                          <Select
+                            value={
+                              watch('bc_entity_id') ||
+                              (watch('business_center_id') ? 'manual' : 'none')
                             }
-                          }}
-                        >
-                          <SelectTrigger className="bg-zinc-950 border-zinc-800 text-xs text-zinc-200 h-10">
-                            <SelectValue placeholder="Selecione um Business Center..." />
-                          </SelectTrigger>
-                          <SelectContent className="bg-zinc-900 border-zinc-800 text-white max-h-56">
-                            <SelectItem value="none">
-                              <span className="text-zinc-500 italic">Nenhum Business Center vinculado</span>
-                            </SelectItem>
-                            {businessCenters.map((bc) => (
-                              <SelectItem key={bc.id} value={bc.id}>
-                                {bc.name || `BC ${bc.bc_id}`} ({bc.bc_id})
+                            onValueChange={(val) => {
+                              if (val === 'none') {
+                                setValue('bc_entity_id', null);
+                                setValue('business_center_id', '');
+                              } else if (val === 'manual') {
+                                setValue('bc_entity_id', null);
+                              } else {
+                                const selectedBc = platBcs.find((c) => c.id === val);
+                                if (selectedBc) {
+                                  setValue('bc_entity_id', selectedBc.id);
+                                  setValue('business_center_id', selectedBc.bc_id);
+                                }
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="bg-zinc-950 border-zinc-800 text-xs text-zinc-200 h-10">
+                              <SelectValue placeholder="Selecione um Business Center..." />
+                            </SelectTrigger>
+                            <SelectContent className="bg-zinc-900 border-zinc-800 text-white max-h-56">
+                              <SelectItem value="none">
+                                <span className="text-zinc-500 italic">Nenhum vinculado</span>
                               </SelectItem>
-                            ))}
-                            <SelectItem value="manual">
-                              <span className="text-purple-400">Digitar ID manualmente...</span>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )}
+                              {platBcs.map((bc) => (
+                                <SelectItem key={bc.id} value={bc.id}>
+                                  {bc.name || `BC ${bc.bc_id}`} ({bc.bc_id})
+                                </SelectItem>
+                              ))}
+                              <SelectItem value="manual">
+                                <span className="text-purple-400">Digitar ID manualmente...</span>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : null;
+                      })()}
 
                       {/* Campo de texto para ID se não houver BCs ou se modo manual */}
                       {(!businessCenters.length || !watch('bc_entity_id')) && (
@@ -832,42 +980,62 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                             className="bg-zinc-950 border-zinc-800 text-xs font-mono h-10 text-white"
                           />
                           <p className="text-[11px] text-zinc-500">
-                            ID numérico da central de negócios organizadora no TikTok.
+                            ID numérico da central de negócios organizadora da conta.
                           </p>
                         </div>
                       )}
 
                       {watch('bc_entity_id') && (
                         <p className="text-[11px] text-emerald-400">
-                          ✓ Vinculado ao Business Center ({watch('business_center_id')})
+                          ✓ Vinculado à Business Account ({watch('business_center_id')})
                         </p>
                       )}
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="pixel_id" className="text-xs font-semibold text-zinc-200">
-                        ID do Pixel TikTok (Web Events)
+                        {currentPlatform === 'meta'
+                          ? 'ID do Pixel / Dataset Meta'
+                          : currentPlatform === 'google'
+                          ? 'Tag do Google / ID de Conversão'
+                          : 'ID do Pixel TikTok (Web Events)'}
                       </Label>
                       <Input
                         id="pixel_id"
-                        placeholder="Ex: C8XXXXXX9012"
+                        placeholder={
+                          currentPlatform === 'meta'
+                            ? 'Ex: 987654321098765'
+                            : currentPlatform === 'google'
+                            ? 'Ex: AW-123456789'
+                            : 'Ex: C8XXXXXX9012'
+                        }
                         {...register('pixel_id')}
                         className="bg-zinc-950 border-zinc-800 text-xs font-mono h-10 text-white"
                       />
-                      <p className="text-[11px] text-zinc-500">Pixel para disparo de conversões e checkout.</p>
+                      <p className="text-[11px] text-zinc-500">Código para disparo e rastreamento de compras e checkout.</p>
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="catalog_id" className="text-xs font-semibold text-zinc-200">
-                        ID do Catálogo de Produtos (Opcional)
+                        {currentPlatform === 'meta'
+                          ? 'ID do Catálogo Meta Commerce (Opcional)'
+                          : currentPlatform === 'google'
+                          ? 'ID do Google Merchant Center (Opcional)'
+                          : 'ID do Catálogo de Produtos TikTok (Opcional)'}
                       </Label>
                       <Input
                         id="catalog_id"
-                        placeholder="Ex: 17234567890"
+                        placeholder={
+                          currentPlatform === 'meta'
+                            ? 'Ex: 543210987654321'
+                            : currentPlatform === 'google'
+                            ? 'Ex: 123456789'
+                            : 'Ex: 17234567890'
+                        }
                         {...register('catalog_id')}
                         className="bg-zinc-950 border-zinc-800 text-xs font-mono h-10 text-white"
                       />
-                      <p className="text-[11px] text-zinc-500">ID do feed conectado ao TikTok Shop.</p>
+                      <p className="text-[11px] text-zinc-500">ID do feed de produtos conectado aos anúncios.</p>
                     </div>
                   </div>
                 </motion.div>
@@ -933,7 +1101,7 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                           {billingType === 'prepaid' && <Check className="w-3.5 h-3.5 text-brand stroke-[3]" />}
                         </div>
                         <p className="text-[11px] text-zinc-400">
-                          Créditos pré-carregados via Boleto, Pix ou Transferência no TikTok Ads.
+                          Créditos pré-carregados via Boleto, Pix ou Transferência na plataforma de anúncios.
                         </p>
                       </div>
                     </div>
@@ -1050,7 +1218,7 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                   <div className="space-y-1">
                     <h3 className="text-base font-semibold text-white flex items-center gap-2">
                       <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                      Revisão do Setup
+                      Revisão do Setup ({platformLabel} Ads)
                     </h3>
                     <p className="text-xs text-zinc-400">
                       Confirme os dados configurados para ativar a conta no sistema.
@@ -1058,14 +1226,75 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Card 1: Conta de Plataforma */}
+                    {/* Card 1: Business Account & Parâmetros */}
                     <div className="p-5 rounded-2xl border border-zinc-800/80 bg-zinc-900/60 space-y-3">
                       <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
                         <div className="flex items-center gap-2">
-                          <img src={tiktokImg} alt="TikTok" className="w-4 h-4 object-contain" />
-                          <span className="text-xs font-bold text-white">Conta TikTok Vinculada</span>
+                          <Building2 className="w-4 h-4 text-purple-400" />
+                          <span className="text-xs font-bold text-white">Business Account</span>
                         </div>
                         <Button type="button" variant="ghost" size="sm" onClick={() => setCurrentStep(2)} className="h-6 text-[11px] text-brand hover:text-brand px-2">
+                          Editar
+                        </Button>
+                      </div>
+                      <div className="space-y-2 text-xs">
+                        {(() => {
+                          const linkedBc = businessCenters.find(
+                            (c) =>
+                              c.id === formValues.bc_entity_id ||
+                              (formValues.business_center_id && c.bc_id === formValues.business_center_id)
+                          );
+                          return (
+                            <div className="flex justify-between">
+                              <span className="text-zinc-400">Conta de Negócio:</span>
+                              <span className="font-semibold text-purple-300 truncate max-w-[200px]">
+                                {linkedBc
+                                  ? `${linkedBc.name || 'BC'} (${linkedBc.bc_id})`
+                                  : formValues.business_center_id || 'Não vinculado'}
+                              </span>
+                            </div>
+                          );
+                        })()}
+                        <div className="flex justify-between">
+                          <span className="text-zinc-400">Nome da Conta:</span>
+                          <span className="font-semibold text-white truncate max-w-[200px]">{formValues.name || '—'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-zinc-400">Status Operacional:</span>
+                          <span className="capitalize font-medium text-emerald-400">{formValues.status}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-zinc-400">Limite Mensal:</span>
+                          <span className="font-mono text-zinc-300">
+                            {formValues.spending_limit && formValues.spending_limit > 0
+                              ? formatCentsToCurrencyString(
+                                  Math.round(formValues.spending_limit * 100),
+                                  formValues.currency
+                                )
+                              : 'Sem limite definido'}
+                          </span>
+                        </div>
+                        {formValues.legal_name && (
+                          <div className="flex justify-between pt-1 border-t border-zinc-800/60">
+                            <span className="text-zinc-400">Empresa (BC):</span>
+                            <span className="text-zinc-300 truncate max-w-[200px]">{formValues.legal_name}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span className="text-zinc-400">Moeda / Fuso:</span>
+                          <span className="font-mono text-zinc-300">{formValues.currency} • {formValues.timezone}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card 2: Conta de Plataforma Vinculada */}
+                    <div className="p-5 rounded-2xl border border-zinc-800/80 bg-zinc-900/60 space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
+                        <div className="flex items-center gap-2">
+                          <PlatformIcon className={`w-4 h-4 ${platformColor}`} />
+                          <span className="text-xs font-bold text-white">Conta {platformLabel} Vinculada</span>
+                        </div>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setCurrentStep(3)} className="h-6 text-[11px] text-brand hover:text-brand px-2">
                           Editar
                         </Button>
                       </div>
@@ -1127,68 +1356,7 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                       </div>
                     </div>
 
-                    {/* Card 2: Business Account & Parâmetros */}
-                    <div className="p-5 rounded-2xl border border-zinc-800/80 bg-zinc-900/60 space-y-3">
-                      <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
-                        <div className="flex items-center gap-2">
-                          <Building2 className="w-4 h-4 text-purple-400" />
-                          <span className="text-xs font-bold text-white">Business Account</span>
-                        </div>
-                        <Button type="button" variant="ghost" size="sm" onClick={() => setCurrentStep(3)} className="h-6 text-[11px] text-brand hover:text-brand px-2">
-                          Editar
-                        </Button>
-                      </div>
-                      <div className="space-y-2 text-xs">
-                        {(() => {
-                          const linkedBc = businessCenters.find(
-                            (c) =>
-                              c.id === formValues.bc_entity_id ||
-                              (formValues.business_center_id && c.bc_id === formValues.business_center_id)
-                          );
-                          return (
-                            <div className="flex justify-between">
-                              <span className="text-zinc-400">Conta de Negócio (BC):</span>
-                              <span className="font-semibold text-purple-300 truncate max-w-[200px]">
-                                {linkedBc
-                                  ? `${linkedBc.name || 'BC'} (${linkedBc.bc_id})`
-                                  : formValues.business_center_id || 'Não vinculado'}
-                              </span>
-                            </div>
-                          );
-                        })()}
-                        <div className="flex justify-between">
-                          <span className="text-zinc-400">Nome da Conta:</span>
-                          <span className="font-semibold text-white truncate max-w-[200px]">{formValues.name || '—'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-zinc-400">Status Operacional:</span>
-                          <span className="capitalize font-medium text-emerald-400">{formValues.status}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-zinc-400">Limite Mensal:</span>
-                          <span className="font-mono text-zinc-300">
-                            {formValues.spending_limit && formValues.spending_limit > 0
-                              ? formatCentsToCurrencyString(
-                                  Math.round(formValues.spending_limit * 100),
-                                  formValues.currency
-                                )
-                              : 'Sem limite definido'}
-                          </span>
-                        </div>
-                        {formValues.legal_name && (
-                          <div className="flex justify-between pt-1 border-t border-zinc-800/60">
-                            <span className="text-zinc-400">Empresa (BC):</span>
-                            <span className="text-zinc-300 truncate max-w-[200px]">{formValues.legal_name}</span>
-                          </div>
-                        )}
-                        <div className="flex justify-between">
-                          <span className="text-zinc-400">Moeda / Fuso:</span>
-                          <span className="font-mono text-zinc-300">{formValues.currency} • {formValues.timezone}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Card 3: Identificadores TikTok */}
+                    {/* Card 3: Identificadores da Plataforma */}
                     <div className="p-5 rounded-2xl border border-zinc-800/80 bg-zinc-900/60 space-y-3">
                       <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
                         <div className="flex items-center gap-2">
@@ -1205,13 +1373,19 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                           <span className="font-mono text-zinc-300">{formValues.advertiser_id || 'Não informado'}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-zinc-400">Business Center:</span>
+                          <span className="text-zinc-400">Business Center ID:</span>
                           <span className="font-mono text-zinc-300">{formValues.business_center_id || 'Não informado'}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-zinc-400">Pixel TikTok:</span>
+                          <span className="text-zinc-400">Pixel ID:</span>
                           <span className="font-mono text-zinc-300">{formValues.pixel_id || 'Não informado'}</span>
                         </div>
+                        {formValues.catalog_id && (
+                          <div className="flex justify-between">
+                            <span className="text-zinc-400">Catálogo ID:</span>
+                            <span className="font-mono text-zinc-300">{formValues.catalog_id}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1253,7 +1427,7 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                   <div className="p-4 rounded-2xl border border-emerald-500/25 bg-emerald-500/8 flex items-center gap-3.5">
                     <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
                     <p className="text-xs text-zinc-200">
-                      Tudo pronto! Ao clicar no botão abaixo, a conta de anúncios será cadastrada e estará disponível para associação de campanhas.
+                      Tudo pronto! Ao clicar no botão abaixo, a conta de anúncios ({platformLabel}) será cadastrada e estará disponível para veiculação e associação de campanhas.
                     </p>
                   </div>
                 </motion.div>

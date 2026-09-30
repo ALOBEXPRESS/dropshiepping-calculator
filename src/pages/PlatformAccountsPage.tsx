@@ -16,6 +16,7 @@ import {
   Loader2,
   Shield,
   Compass,
+  ExternalLink,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ReactCountryFlag from 'react-country-flag';
@@ -82,6 +83,25 @@ import {
   ThreadsLogo,
 } from '@/components/ui/PlatformLogos';
 import type { PlatformAccountPlatform, MetaAccountType } from '@/types/platformAccounts';
+
+function getSocialProfileUrl(account: PlatformAccount): string | null {
+  const username = account.nickname?.trim().replace(/^@/, '');
+  if (!username) return null;
+
+  if (account.platform === 'tiktok') {
+    return `https://www.tiktok.com/@${username}`;
+  }
+  if (account.platform === 'meta') {
+    if (account.meta_account_type === 'facebook') {
+      return `https://facebook.com/${username}`;
+    }
+    if (account.meta_account_type === 'threads') {
+      return `https://threads.net/@${username}`;
+    }
+    return `https://instagram.com/${username}`;
+  }
+  return `https://instagram.com/${username}`;
+}
 
 const SkeletonCard = () => (
   <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 animate-pulse space-y-4">
@@ -457,27 +477,60 @@ export const PlatformAccountsPage: React.FC = () => {
                 {/* Header do Card */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="relative w-12 h-12 rounded-full overflow-hidden bg-zinc-800 border-2 border-zinc-700 flex-shrink-0 flex items-center justify-center">
-                      {account.profile_photo_url ? (
-                        <img
-                          src={account.profile_photo_url}
-                          alt={account.name}
-                          className="w-full h-full object-cover"
+                    <div className="relative flex-shrink-0">
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center p-0.5 shadow-inner">
+                        {account.profile_photo_url ? (
+                          <img
+                            src={account.profile_photo_url}
+                            alt={account.name}
+                            className="w-full h-full object-cover rounded-full"
+                          />
+                        ) : (
+                          <User className="w-6 h-6 text-zinc-400" />
+                        )}
+                      </div>
+                      {/* Bandeira para fora, com z-index e sem corte pelo overflow */}
+                      <div className="absolute -bottom-1 -right-1 z-10 bg-zinc-950 rounded-full p-0.5 border border-zinc-700 shadow-md flex items-center justify-center leading-none">
+                        <ReactCountryFlag
+                          countryCode={account.country}
+                          svg
+                          style={{
+                            width: '15px',
+                            height: '15px',
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                          }}
                         />
-                      ) : (
-                        <User className="w-6 h-6 text-zinc-400" />
-                      )}
-                      <div className="absolute -bottom-1 -right-1 bg-zinc-900 rounded-full p-0.5 border border-zinc-700 shadow-sm">
-                        <ReactCountryFlag countryCode={account.country} svg className="text-xs" />
                       </div>
                     </div>
                     <div className="min-w-0">
                       <h4 className="text-sm font-bold text-white truncate group-hover:text-brand transition-colors">
                         {account.name}
                       </h4>
-                      <p className="text-xs text-zinc-400 truncate font-mono">
-                        {account.nickname ? `@${account.nickname}` : 'Sem apelido'}
-                      </p>
+                      {account.nickname ? (
+                        (() => {
+                          const profileUrl = getSocialProfileUrl(account);
+                          return profileUrl ? (
+                            <a
+                              href={profileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-xs text-zinc-400 hover:text-cyan-400 font-mono inline-flex items-center gap-1 hover:underline transition-colors group/link truncate max-w-full"
+                              title={`Abrir perfil @${account.nickname.replace(/^@/, '')} em nova aba`}
+                            >
+                              <span>@{account.nickname.replace(/^@/, '')}</span>
+                              <ExternalLink className="w-3 h-3 text-zinc-500 group-hover/link:text-cyan-400 opacity-80 group-hover/link:opacity-100 flex-shrink-0" />
+                            </a>
+                          ) : (
+                            <p className="text-xs text-zinc-400 truncate font-mono">
+                              @{account.nickname.replace(/^@/, '')}
+                            </p>
+                          );
+                        })()
+                      ) : (
+                        <p className="text-xs text-zinc-500 italic">Sem apelido</p>
+                      )}
                     </div>
                   </div>
 
