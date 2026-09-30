@@ -115,7 +115,9 @@ export class BusinessCentersService {
       company_state_registration: data.company_state_registration?.trim() || null,
       company_status: data.company_status || 'Ativa',
       meta_linked_network: data.platform === 'meta' ? (data.meta_linked_network || null) : null,
-      meta_linked_account_id: data.platform === 'meta' ? (data.meta_linked_account_id || null) : null,
+      meta_linked_account_id: data.platform === 'meta' ? (data.meta_linked_account_id || data.meta_instagram_account_id || data.meta_facebook_account_id || null) : null,
+      meta_instagram_account_id: data.platform === 'meta' ? (data.meta_instagram_account_id || null) : null,
+      meta_facebook_account_id: data.platform === 'meta' ? (data.meta_facebook_account_id || null) : null,
       created_by: userId || null,
     };
 
@@ -164,6 +166,8 @@ export class BusinessCentersService {
     if (data.company_status !== undefined) payload.company_status = data.company_status || 'Ativa';
     if (data.meta_linked_network !== undefined) payload.meta_linked_network = data.meta_linked_network || null;
     if (data.meta_linked_account_id !== undefined) payload.meta_linked_account_id = data.meta_linked_account_id || null;
+    if (data.meta_instagram_account_id !== undefined) payload.meta_instagram_account_id = data.meta_instagram_account_id || null;
+    if (data.meta_facebook_account_id !== undefined) payload.meta_facebook_account_id = data.meta_facebook_account_id || null;
 
     const { data: updated, error } = await supabase
       .from('business_centers')

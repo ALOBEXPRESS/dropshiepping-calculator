@@ -148,12 +148,16 @@ export class AdAccountsService {
       advertiser_id,
       business_center_id,
       platform_account_id,
+      meta_instagram_account_id,
+      meta_facebook_account_id,
       bc_entity_id,
     } = data;
 
     const platform_config = {
       ...(pixel_id ? { pixel_id } : {}),
       ...(catalog_id ? { catalog_id } : {}),
+      ...(meta_instagram_account_id ? { meta_instagram_account_id } : {}),
+      ...(meta_facebook_account_id ? { meta_facebook_account_id } : {}),
     };
 
     const insertPayload = {
@@ -177,7 +181,9 @@ export class AdAccountsService {
       advertiser_id: advertiser_id || null,
       business_center_id: business_center_id || null,
       platform_config,
-      platform_account_id: platform_account_id ?? null,
+      platform_account_id: platform_account_id ?? meta_instagram_account_id ?? meta_facebook_account_id ?? null,
+      meta_instagram_account_id: meta_instagram_account_id ?? null,
+      meta_facebook_account_id: meta_facebook_account_id ?? null,
       bc_entity_id: bc_entity_id ?? null,
       created_by: userId || null,
     };
@@ -227,6 +233,10 @@ export class AdAccountsService {
       updatePayload.bc_entity_id = data.bc_entity_id ?? null;
     if (data.platform_account_id !== undefined)
       updatePayload.platform_account_id = data.platform_account_id ?? null;
+    if (data.meta_instagram_account_id !== undefined)
+      updatePayload.meta_instagram_account_id = data.meta_instagram_account_id ?? null;
+    if (data.meta_facebook_account_id !== undefined)
+      updatePayload.meta_facebook_account_id = data.meta_facebook_account_id ?? null;
 
     if (data.pixel_id !== undefined || data.catalog_id !== undefined) {
       // Buscar platform_config atual para mesclar

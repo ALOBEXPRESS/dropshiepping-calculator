@@ -146,14 +146,18 @@ export async function compressImage(
 
 interface PlatformAccountPickerProps {
   accounts: PlatformAccount[];
-  selected: PlatformAccount | null;
+  selected?: PlatformAccount | null;
+  selectedAccounts?: PlatformAccount[];
   onSelect: (account: PlatformAccount) => void;
+  multiple?: boolean;
 }
 
 export const PlatformAccountPicker: React.FC<PlatformAccountPickerProps> = ({
   accounts,
   selected,
+  selectedAccounts = [],
   onSelect,
+  multiple = false,
 }) => {
   const [search, setSearch] = useState('');
 
@@ -194,7 +198,10 @@ export const PlatformAccountPicker: React.FC<PlatformAccountPickerProps> = ({
 
       <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
         {filtered.map((account) => {
-          const isSelected = selected?.id === account.id;
+          const isSelected = multiple
+            ? selectedAccounts.some((a) => a.id === account.id)
+            : selected?.id === account.id;
+
           return (
             <button
               key={account.id}
@@ -202,7 +209,7 @@ export const PlatformAccountPicker: React.FC<PlatformAccountPickerProps> = ({
               onClick={() => onSelect(account)}
               className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 text-left transition-all ${
                 isSelected
-                  ? 'border-brand bg-brand/10 shadow-sm shadow-brand/10'
+                  ? 'border-brand bg-brand/10 shadow-sm shadow-brand/10 ring-1 ring-brand/30'
                   : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
               }`}
             >
@@ -227,6 +234,15 @@ export const PlatformAccountPicker: React.FC<PlatformAccountPickerProps> = ({
                     svg
                     style={{ width: '1.1em', height: '1.1em' }}
                   />
+                  {account.platform === 'meta' && (
+                    account.meta_account_type === 'facebook' ? (
+                      <FacebookLogo className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                    ) : account.meta_account_type === 'threads' ? (
+                      <ThreadsLogo className="w-3.5 h-3.5 text-white flex-shrink-0" />
+                    ) : (
+                      <InstagramLogo className="w-3.5 h-3.5 flex-shrink-0" />
+                    )
+                  )}
                   {account.nickname && (
                     <span className="text-xs text-zinc-400 font-mono truncate">
                       @{account.nickname}
@@ -1006,8 +1022,12 @@ export const PlatformAccountFormFields: React.FC<PlatformAccountFormFieldsProps>
 
 interface PlatformAccountStepProps {
   platform: PlatformAccountPlatform;
-  selectedAccount: PlatformAccount | null;
-  onAccountSelected: (account: PlatformAccount | null) => void;
+  selectedAccount?: PlatformAccount | null;
+  selectedAccounts?: PlatformAccount[];
+  onAccountSelected?: (account: PlatformAccount | null) => void;
+  onAccountToggle?: (account: PlatformAccount) => void;
+  onAccountRemove?: (account: PlatformAccount) => void;
+  multiple?: boolean;
   organizationId?: string;
   userId?: string | null;
   initialAccountId?: string | null;
@@ -1021,7 +1041,11 @@ interface PlatformAccountStepProps {
 export const PlatformAccountStep: React.FC<PlatformAccountStepProps> = ({
   platform,
   selectedAccount,
+  selectedAccounts = [],
   onAccountSelected,
+  onAccountToggle,
+  onAccountRemove,
+  multiple = false,
   organizationId: propOrgId,
   userId: propUserId,
   initialAccountId,
@@ -1050,14 +1074,24 @@ export const PlatformAccountStep: React.FC<PlatformAccountStepProps> = ({
   }
 
   useEffect(() => {
-    if (!hasAutoSelectedRef.current && !selectedAccount && initialAccountId && existingAccounts.length > 0) {
+    if (
+      !hasAutoSelectedRef.current &&
+      !selectedAccount &&
+      (!selectedAccounts || selectedAccounts.length === 0) &&
+      initialAccountId &&
+      existingAccounts.length > 0
+    ) {
       hasAutoSelectedRef.current = true;
       const found = existingAccounts.find((a) => a.id === initialAccountId);
       if (found) {
-        onAccountSelected(found);
+        if (multiple && onAccountToggle) {
+          onAccountToggle(found);
+        } else if (onAccountSelected) {
+          onAccountSelected(found);
+        }
       }
     }
-  }, [selectedAccount, initialAccountId, existingAccounts, onAccountSelected]);
+  }, [selectedAccount, selectedAccounts, initialAccountId, existingAccounts, onAccountSelected, onAccountToggle, multiple]);
 
   const platformLabel =
     platform === 'tiktok'
@@ -1125,8 +1159,83 @@ export const PlatformAccountStep: React.FC<PlatformAccountStepProps> = ({
 
       {/* Modo 1: Selecionar Existente */}
       {mode === 'pick' && (
-        <div className="space-y-3">
-          {selectedAccount && (
+        <div className="space-y-4">
+          {/* Múltiplas Contas Vinculadas */}
+          {multiple && selectedAccounts && selectedAccounts.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs text-zinc-300 font-semibold px-1">
+                <span>Contas Vinculadas ({selectedAccounts.length})</span>
+                <span className="text-[11px] text-zinc-500 font-normal">
+                  Pode vincular mais de uma conta simultaneamente
+                </span>
+              </div>
+              <div className="space-y-2">
+                {selectedAccounts.map((acc) => (
+                  <div
+                    key={acc.id}
+                    className="flex items-center gap-3 p-3.5 rounded-xl bg-emerald-500/10 border-2 border-emerald-500/30"
+                  >
+                    {acc.profile_photo_url ? (
+                      <img
+                        src={acc.profile_photo_url}
+                        alt={acc.name}
+                        className="w-10 h-10 rounded-full object-cover border border-emerald-500/50 flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center flex-shrink-0">
+                        <Check className="w-4 h-4 text-emerald-400 stroke-[3]" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                          Conta Vinculada
+                        </span>
+                        <ReactCountryFlag
+                          countryCode={acc.country}
+                          svg
+                          style={{ width: '1em', height: '1em' }}
+                        />
+                        {acc.platform === 'meta' && (
+                          acc.meta_account_type === 'facebook' ? (
+                            <FacebookLogo className="w-3.5 h-3.5 text-blue-400" />
+                          ) : (
+                            <InstagramLogo className="w-3.5 h-3.5" />
+                          )
+                        )}
+                      </div>
+                      <p className="text-sm font-bold text-white truncate mt-0.5">
+                        {acc.name}
+                      </p>
+                      <p className="text-xs text-zinc-300 truncate">
+                        {acc.holder_name}
+                        {acc.nickname ? ` · @${acc.nickname}` : ''}
+                        {acc.email ? ` · ${acc.email}` : ''}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (onAccountRemove) {
+                          onAccountRemove(acc);
+                        } else if (onAccountToggle) {
+                          onAccountToggle(acc);
+                        }
+                      }}
+                      className="text-xs text-zinc-400 hover:text-rose-400 hover:bg-zinc-800 h-8 px-2.5 gap-1.5"
+                    >
+                      Desvincular
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Única Conta Vinculada (modo tradicional) */}
+          {!multiple && selectedAccount && (
             <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border-2 border-emerald-500/30">
               {selectedAccount.profile_photo_url ? (
                 <img
@@ -1149,6 +1258,13 @@ export const PlatformAccountStep: React.FC<PlatformAccountStepProps> = ({
                     svg
                     style={{ width: '1em', height: '1em' }}
                   />
+                  {selectedAccount.platform === 'meta' && (
+                    selectedAccount.meta_account_type === 'facebook' ? (
+                      <FacebookLogo className="w-3.5 h-3.5 text-blue-400" />
+                    ) : (
+                      <InstagramLogo className="w-3.5 h-3.5" />
+                    )
+                  )}
                 </div>
                 <p className="text-sm font-bold text-white truncate mt-0.5">
                   {selectedAccount.name}
@@ -1172,7 +1288,7 @@ export const PlatformAccountStep: React.FC<PlatformAccountStepProps> = ({
                     } finally {
                       setIsUnlinking(false);
                     }
-                  } else {
+                  } else if (onAccountSelected) {
                     onAccountSelected(null);
                   }
                 }}
@@ -1214,7 +1330,15 @@ export const PlatformAccountStep: React.FC<PlatformAccountStepProps> = ({
             <PlatformAccountPicker
               accounts={existingAccounts}
               selected={selectedAccount}
-              onSelect={onAccountSelected}
+              selectedAccounts={selectedAccounts}
+              multiple={multiple}
+              onSelect={(acc) => {
+                if (multiple && onAccountToggle) {
+                  onAccountToggle(acc);
+                } else if (onAccountSelected) {
+                  onAccountSelected(acc);
+                }
+              }}
             />
           )}
         </div>
@@ -1229,7 +1353,11 @@ export const PlatformAccountStep: React.FC<PlatformAccountStepProps> = ({
             organizationId={organizationId}
             userId={userId}
             onCreated={(account) => {
-              onAccountSelected(account);
+              if (multiple && onAccountToggle) {
+                onAccountToggle(account);
+              } else if (onAccountSelected) {
+                onAccountSelected(account);
+              }
               setMode('pick');
             }}
           />

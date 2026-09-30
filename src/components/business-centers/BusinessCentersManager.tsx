@@ -258,18 +258,33 @@ const BusinessCenterCard: React.FC<BusinessCenterCardProps> = ({
       })()}
 
       {/* Meta linked account info */}
-      {center.platform === 'meta' && center.meta_linked_network && (
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs">
-          {center.meta_linked_network === 'instagram' ? (
-            <InstagramLogo className="w-4 h-4 flex-shrink-0" />
-          ) : (
-            <FacebookLogo className="w-4 h-4 flex-shrink-0" />
-          )}
-          <span className="text-blue-300 font-medium capitalize">
-            {center.meta_linked_network} vinculado
-          </span>
-        </div>
-      )}
+      {center.platform === 'meta' &&
+        (center.meta_linked_network ||
+          center.meta_instagram_account_id ||
+          center.meta_facebook_account_id) && (
+          <div className="flex flex-wrap items-center gap-2 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs">
+            {(center.meta_linked_network === 'instagram' ||
+              center.meta_linked_network === 'both' ||
+              center.meta_instagram_account_id) && (
+              <span className="flex items-center gap-1.5 text-pink-300 font-medium">
+                <InstagramLogo className="w-3.5 h-3.5 flex-shrink-0" />
+                Instagram
+              </span>
+            )}
+            {center.meta_linked_network === 'both' && (
+              <span className="text-zinc-500">•</span>
+            )}
+            {(center.meta_linked_network === 'facebook' ||
+              center.meta_linked_network === 'both' ||
+              center.meta_facebook_account_id) && (
+              <span className="flex items-center gap-1.5 text-blue-300 font-medium">
+                <FacebookLogo className="w-3.5 h-3.5 flex-shrink-0" />
+                Facebook
+              </span>
+            )}
+            <span className="text-zinc-400 text-[11px]">vinculado(s)</span>
+          </div>
+        )}
 
       {/* Notes if any */}
       {center.notes && (

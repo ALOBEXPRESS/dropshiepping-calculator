@@ -54,6 +54,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { useUser } from '@/contexts/UserContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { useBusinessCenters } from '@/hooks/useBusinessCenters';
+import { usePlatformAccounts } from '@/hooks/usePlatformAccounts';
 import { AdAccountsService } from '@/services/adAccountsService';
 import {
   formatCentsToCurrencyString,
@@ -64,6 +65,8 @@ import {
   TikTokLogo,
   MetaLogo,
   GoogleLogo,
+  InstagramLogo,
+  FacebookLogo,
   getPlatformLogo,
   getPlatformColor,
 } from '@/components/ui/PlatformLogos';
@@ -113,14 +116,14 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [canSubmitReview, setCanSubmitReview] = useState(false);
-  const [selectedPlatformAccount, setSelectedPlatformAccount] =
-    useState<PlatformAccount | null>(null);
+  const [selectedPlatformAccounts, setSelectedPlatformAccounts] = useState<PlatformAccount[]>([]);
   const isEditing = !!account;
 
   const { organizationId } = useSettings();
   const { userId } = useUser();
   const queryClient = useQueryClient();
   const { centers: businessCenters = [] } = useBusinessCenters(organizationId);
+  const { data: allPlatformAccounts = [] } = usePlatformAccounts();
 
   const defaultValues: AdAccountFormData = {
     name: '',
@@ -144,6 +147,8 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
     pixel_id: '',
     catalog_id: '',
     platform_account_id: null,
+    meta_instagram_account_id: null,
+    meta_facebook_account_id: null,
     bc_entity_id: null,
   };
 
@@ -204,16 +209,36 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
         pixel_id: (account.platform_config?.pixel_id as string) ?? '',
         catalog_id: (account.platform_config?.catalog_id as string) ?? '',
         platform_account_id: account.platform_account_id ?? null,
+        meta_instagram_account_id: account.meta_instagram_account_id ?? null,
+        meta_facebook_account_id: account.meta_facebook_account_id ?? null,
         bc_entity_id: account.bc_entity_id ?? matchedBc?.id ?? null,
       });
-      setSelectedPlatformAccount(account.platform_account ?? null);
+
+      const linkedIds = new Set<string>();
+      if (account.platform_account_id) linkedIds.add(account.platform_account_id);
+      if (account.meta_instagram_account_id) linkedIds.add(account.meta_instagram_account_id);
+      if (account.meta_facebook_account_id) linkedIds.add(account.meta_facebook_account_id);
+      if (Array.isArray(account.platform_config?.linked_account_ids)) {
+        (account.platform_config.linked_account_ids as string[]).forEach((id) => linkedIds.add(id));
+      }
+
+      const initialSelected: PlatformAccount[] = [];
+      if (account.platform_account) {
+        initialSelected.push(account.platform_account);
+      }
+      allPlatformAccounts.forEach((pa) => {
+        if (linkedIds.has(pa.id) && !initialSelected.some((x) => x.id === pa.id)) {
+          initialSelected.push(pa);
+        }
+      });
+      setSelectedPlatformAccounts(initialSelected);
       setCurrentStep(isEditing ? 2 : 1);
     } else {
       reset(defaultValues);
       setCurrentStep(1);
-      setSelectedPlatformAccount(null);
+      setSelectedPlatformAccounts([]);
     }
-  }, [account, open, reset, isEditing, businessCenters]);
+  }, [account, open, reset, isEditing, businessCenters, allPlatformAccounts]);
 
   const formValues = watch();
   const status = watch('status');
@@ -234,6 +259,60 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
       setCanSubmitReview(false);
     }
   }, [currentStep]);
+
+  const handleAccountToggle = (acc: PlatformAccount) => {
+    setSelectedPlatformAccounts((prev) => {
+      const exists = prev.some((a) => a.id === acc.id);
+      const updated = exists ? prev.filter((a) => a.id !== acc.id) : [...prev, acc];
+
+      const primary = updated[0]?.id ?? null;
+      setValue('platform_account_id', primary);
+
+      const igAccount = updated.find(
+        (a) => a.platform === 'meta' && (!a.meta_account_type || a.meta_account_type === 'instagram')
+      );
+      const fbAccount = updated.find(
+        (a) => a.platform === 'meta' && a.meta_account_type === 'facebook'
+      );
+      setValue('meta_instagram_account_id', igAccount?.id ?? null);
+      setValue('meta_facebook_account_id', fbAccount?.id ?? null);
+
+      return updated;
+    });
+  };
+
+  const handleUnlinkSpecificAccount = async (accToUnlink: PlatformAccount) => {
+    if (isEditing && account) {
+      const remaining = selectedPlatformAccounts.filter((a) => a.id !== accToUnlink.id);
+      const primary = remaining[0]?.id ?? null;
+      const igAcc = remaining.find(
+        (a) => a.platform === 'meta' && (!a.meta_account_type || a.meta_account_type === 'instagram')
+      );
+      const fbAcc = remaining.find(
+        (a) => a.platform === 'meta' && a.meta_account_type === 'facebook'
+      );
+
+      await AdAccountsService.update(organizationId!, account.id, {
+        platform_account_id: primary,
+        meta_instagram_account_id: igAcc?.id ?? null,
+        meta_facebook_account_id: fbAcc?.id ?? null,
+        platform_config: {
+          ...(account.platform_config || {}),
+          linked_account_ids: remaining.map((r) => r.id),
+        },
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['ad_accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['platform_accounts'] });
+      setSelectedPlatformAccounts(remaining);
+      setValue('platform_account_id', primary);
+      setValue('meta_instagram_account_id', igAcc?.id ?? null);
+      setValue('meta_facebook_account_id', fbAcc?.id ?? null);
+      toast.success(`Conta "${accToUnlink.name}" desvinculada com sucesso!`);
+    } else {
+      handleAccountToggle(accToUnlink);
+    }
+  };
 
   const handleNext = async () => {
     let isValid = false;
@@ -264,9 +343,19 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
   const handleFormSubmit = async (data: AdAccountFormData) => {
     setIsSubmitting(true);
     try {
+      const primary = selectedPlatformAccounts[0]?.id ?? null;
+      const igAcc = selectedPlatformAccounts.find(
+        (a) => a.platform === 'meta' && (!a.meta_account_type || a.meta_account_type === 'instagram')
+      );
+      const fbAcc = selectedPlatformAccounts.find(
+        (a) => a.platform === 'meta' && a.meta_account_type === 'facebook'
+      );
+
       const finalData: AdAccountFormData = {
         ...data,
-        platform_account_id: selectedPlatformAccount?.id ?? null,
+        platform_account_id: primary,
+        meta_instagram_account_id: igAcc?.id ?? null,
+        meta_facebook_account_id: fbAcc?.id ?? null,
       };
       await onSubmit(finalData);
       toast.success(
@@ -728,6 +817,35 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                       {errors.name && <p className="text-xs text-rose-400 font-medium">{errors.name.message}</p>}
                     </div>
 
+                    {/* Campo: ID da conta de anúncios (Ad Account ID) */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="step2_advertiser_id" className="text-xs font-medium text-zinc-300">
+                          ID da conta de anúncios {currentPlatform === 'meta' ? '(act_...)' : currentPlatform === 'google' ? '(Customer ID)' : '(Advertiser ID)'}
+                        </Label>
+                        <span className="text-[10px] text-zinc-500 font-mono">Sincronizado com Identificadores</span>
+                      </div>
+                      <Input
+                        id="step2_advertiser_id"
+                        placeholder={
+                          currentPlatform === 'meta'
+                            ? 'Ex.: act_123456789012345'
+                            : currentPlatform === 'google'
+                            ? 'Ex.: 123-456-7890'
+                            : 'Ex.: 7381234567890123456'
+                        }
+                        {...register('advertiser_id')}
+                        className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white font-mono placeholder:text-zinc-600 focus-visible:ring-brand"
+                      />
+                      <p className="text-[11px] text-zinc-500">
+                        {currentPlatform === 'meta'
+                          ? 'Identificador único da conta de anúncios Meta. Já preenche automaticamente a etapa de Identificadores.'
+                          : currentPlatform === 'google'
+                          ? 'ID numérico de 10 dígitos do Google Ads. Já preenche automaticamente a etapa de Identificadores.'
+                          : 'ID numérico da conta TikTok Ads. Já preenche automaticamente a etapa de Identificadores.'}
+                      </p>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* Campo 2: Status Operacional */}
                       <div className="space-y-1.5">
@@ -814,26 +932,15 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                 >
                   <PlatformAccountStep
                     platform={currentPlatform}
-                    selectedAccount={selectedPlatformAccount}
+                    multiple={true}
+                    selectedAccounts={selectedPlatformAccounts}
+                    selectedAccount={selectedPlatformAccounts[0] ?? null}
                     initialAccountId={account?.platform_account_id ?? null}
+                    onAccountToggle={handleAccountToggle}
+                    onAccountRemove={handleUnlinkSpecificAccount}
                     onAccountSelected={(newAcc) => {
-                      setSelectedPlatformAccount(newAcc);
-                      setValue('platform_account_id', newAcc?.id ?? null);
+                      if (newAcc) handleAccountToggle(newAcc);
                     }}
-                    onDirectUnlink={
-                      isEditing && account
-                        ? async () => {
-                            await AdAccountsService.update(organizationId!, account.id, {
-                              platform_account_id: null,
-                            });
-                            queryClient.invalidateQueries({ queryKey: ['ad_accounts'] });
-                            queryClient.invalidateQueries({ queryKey: ['platform_accounts'] });
-                            setSelectedPlatformAccount(null);
-                            setValue('platform_account_id', null);
-                            toast.success(`Conta ${platformLabel} desvinculada com sucesso!`);
-                          }
-                        : undefined
-                    }
                     organizationId={organizationId!}
                     userId={userId}
                   />
@@ -1292,64 +1399,69 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                       <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
                         <div className="flex items-center gap-2">
                           <PlatformIcon className={`w-4 h-4 ${platformColor}`} />
-                          <span className="text-xs font-bold text-white">Conta {platformLabel} Vinculada</span>
+                          <span className="text-xs font-bold text-white">
+                            Contas {platformLabel} Vinculadas {selectedPlatformAccounts.length > 0 ? `(${selectedPlatformAccounts.length})` : ''}
+                          </span>
                         </div>
                         <Button type="button" variant="ghost" size="sm" onClick={() => setCurrentStep(3)} className="h-6 text-[11px] text-brand hover:text-brand px-2">
                           Editar
                         </Button>
                       </div>
-                      <div className="space-y-2 text-xs">
-                        {selectedPlatformAccount ? (
-                          <>
-                            <div className="flex items-center gap-2.5 pb-2 border-b border-zinc-800/60">
-                              {selectedPlatformAccount.profile_photo_url ? (
-                                <img
-                                  src={selectedPlatformAccount.profile_photo_url}
-                                  alt={selectedPlatformAccount.name}
-                                  className="w-8 h-8 rounded-full object-cover border border-zinc-700 flex-shrink-0"
-                                />
-                              ) : (
-                                <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center flex-shrink-0">
-                                  <User className="w-4 h-4 text-zinc-400" />
+                      <div className="space-y-3 text-xs">
+                        {selectedPlatformAccounts.length > 0 ? (
+                          selectedPlatformAccounts.map((acc) => (
+                            <div key={acc.id} className="p-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800/60 space-y-2">
+                              <div className="flex items-center gap-2.5 pb-1.5 border-b border-zinc-800/60">
+                                {acc.profile_photo_url ? (
+                                  <img
+                                    src={acc.profile_photo_url}
+                                    alt={acc.name}
+                                    className="w-8 h-8 rounded-full object-cover border border-zinc-700 flex-shrink-0"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center flex-shrink-0">
+                                    <User className="w-4 h-4 text-zinc-400" />
+                                  </div>
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-semibold text-white truncate text-xs">
+                                      {acc.name}
+                                    </span>
+                                    <ReactCountryFlag
+                                      countryCode={acc.country}
+                                      svg
+                                      style={{ width: '1em', height: '1em' }}
+                                    />
+                                    {acc.platform === 'meta' && (
+                                      acc.meta_account_type === 'facebook' ? (
+                                        <FacebookLogo className="w-3.5 h-3.5 text-blue-400" />
+                                      ) : (
+                                        <InstagramLogo className="w-3.5 h-3.5" />
+                                      )
+                                    )}
+                                  </div>
+                                  {acc.nickname && (
+                                    <p className="text-[11px] text-zinc-400 font-mono truncate">
+                                      @{acc.nickname}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex justify-between text-[11px]">
+                                <span className="text-zinc-400">Titular:</span>
+                                <span className="text-zinc-200">{acc.holder_name}</span>
+                              </div>
+                              {acc.email && (
+                                <div className="flex justify-between text-[11px]">
+                                  <span className="text-zinc-400">E-mail:</span>
+                                  <span className="text-zinc-200 font-mono truncate max-w-[150px]">
+                                    {acc.email}
+                                  </span>
                                 </div>
                               )}
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-semibold text-white truncate">
-                                    {selectedPlatformAccount.name}
-                                  </span>
-                                  <ReactCountryFlag
-                                    countryCode={selectedPlatformAccount.country}
-                                    svg
-                                    style={{ width: '1em', height: '1em' }}
-                                  />
-                                </div>
-                                {selectedPlatformAccount.nickname && (
-                                  <p className="text-[11px] text-zinc-400 font-mono truncate">
-                                    @{selectedPlatformAccount.nickname}
-                                  </p>
-                                )}
-                              </div>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-zinc-400">Titular:</span>
-                              <span className="text-zinc-200">{selectedPlatformAccount.holder_name}</span>
-                            </div>
-                            {selectedPlatformAccount.email && (
-                              <div className="flex justify-between">
-                                <span className="text-zinc-400">E-mail:</span>
-                                <span className="text-zinc-200 font-mono truncate max-w-[150px]">
-                                  {selectedPlatformAccount.email}
-                                </span>
-                              </div>
-                            )}
-                            <div className="flex justify-between">
-                              <span className="text-zinc-400">Método de Cadastro:</span>
-                              <span className="uppercase text-[11px] text-zinc-300 font-medium">
-                                {selectedPlatformAccount.signup_method}
-                              </span>
-                            </div>
-                          </>
+                          ))
                         ) : (
                           <span className="text-zinc-500 italic text-[11px]">Nenhuma conta vinculada (opcional)</span>
                         )}

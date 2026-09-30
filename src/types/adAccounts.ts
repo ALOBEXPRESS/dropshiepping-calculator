@@ -42,6 +42,10 @@ export interface AdAccount {
   platform_account_id: string | null;
   /** Objeto da conta de plataforma vinculada (populado via join) */
   platform_account?: PlatformAccount | null;
+  /** FK UUID para Instagram vinculado (Meta) */
+  meta_instagram_account_id?: string | null;
+  /** FK UUID para Facebook vinculado (Meta) */
+  meta_facebook_account_id?: string | null;
   /** FK UUID para business_centers.id — nullable (expand/contract) */
   bc_entity_id?: string | null;
   /** Objeto do business center vinculado (populado via join) */
@@ -106,13 +110,17 @@ export const adAccountSchema = z.object({
     }, 'Informe um telefone com formato válido')
     .optional()
     .or(z.literal('')),
-  /** ID numérico do Advertiser no TikTok (texto livre) */
+  /** ID numérico do Advertiser no TikTok ou act_... no Meta */
   advertiser_id: z.string().trim().optional().or(z.literal('')),
   business_center_id: z.string().trim().optional().or(z.literal('')),
   pixel_id: z.string().trim().optional().or(z.literal('')),
   catalog_id: z.string().trim().optional().or(z.literal('')),
   /** FK UUID para platform_accounts — opcional no wizard, propagado pelo passo 2 */
   platform_account_id: z.string().uuid().nullable().optional(),
+  /** FK UUID para Instagram vinculado (Meta) */
+  meta_instagram_account_id: z.string().uuid().nullable().optional(),
+  /** FK UUID para Facebook vinculado (Meta) */
+  meta_facebook_account_id: z.string().uuid().nullable().optional(),
   /** FK UUID para business_centers — opcional no wizard, expand/contract */
   bc_entity_id: z.string().uuid().nullable().optional(),
 });

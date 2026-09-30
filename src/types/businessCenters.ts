@@ -36,10 +36,14 @@ export interface BusinessCenter {
   company_state_registration?: string | null;
   company_status?: CompanyStatus | string | null;
 
-  /** Para Meta: qual rede social está vinculada */
-  meta_linked_network?: MetaLinkedNetwork | null;
-  /** Para Meta: ID da conta de plataforma (Instagram/Facebook) vinculada */
+  /** Para Meta: qual rede social está vinculada (ou 'both') */
+  meta_linked_network?: MetaLinkedNetwork | 'both' | null;
+  /** Para Meta: ID da conta de plataforma principal vinculada */
   meta_linked_account_id?: string | null;
+  /** Para Meta: ID da conta de Instagram vinculada */
+  meta_instagram_account_id?: string | null;
+  /** Para Meta: ID da página/perfil de Facebook vinculado */
+  meta_facebook_account_id?: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -75,9 +79,13 @@ export const businessCenterSchema = z.object({
   company_status: z.enum(['Ativa', 'Suspensa', 'Inapta', 'Baixada', 'Nula']),
 
   /** Meta: rede social vinculada */
-  meta_linked_network: z.enum(['instagram', 'facebook']).optional().nullable(),
+  meta_linked_network: z.enum(['instagram', 'facebook', 'both']).optional().nullable(),
   /** Meta: ID UUID da conta de plataforma vinculada */
   meta_linked_account_id: z.string().uuid().optional().nullable().or(z.literal('')),
+  /** Meta: ID da conta de Instagram vinculada */
+  meta_instagram_account_id: z.string().uuid().optional().nullable().or(z.literal('')),
+  /** Meta: ID da conta de Facebook vinculada */
+  meta_facebook_account_id: z.string().uuid().optional().nullable().or(z.literal('')),
 });
 
 export type BusinessCenterFormData = z.infer<typeof businessCenterSchema>;
