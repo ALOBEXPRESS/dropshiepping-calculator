@@ -22,6 +22,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { ProviderLogo } from '@/components/ui/ProviderLogo';
 
 interface ProxyProvidersManagerProps {
   organizationId: string;
@@ -167,9 +168,7 @@ export const ProxyProvidersManager: React.FC<ProxyProvidersManagerProps> = ({ or
                 {/* Top: Ícone, Nome e Ações */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/25 flex items-center justify-center shrink-0">
-                      <Server className="w-5 h-5 text-orange-400" />
-                    </div>
+                    <ProviderLogo name={provider.name} className="w-10 h-10" />
                     <div>
                       <h4 className="text-sm font-bold text-white group-hover:text-orange-400 transition-colors">
                         {provider.name}

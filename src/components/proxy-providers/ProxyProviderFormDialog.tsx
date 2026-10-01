@@ -13,7 +13,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Globe, Server, FileText } from 'lucide-react';
+import { Globe, FileText } from 'lucide-react';
+import { ProviderLogo } from '@/components/ui/ProviderLogo';
 
 interface ProxyProviderFormDialogProps {
   open: boolean;
@@ -36,6 +37,7 @@ export const ProxyProviderFormDialog: React.FC<ProxyProviderFormDialogProps> = (
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<ProxyProviderFormData>({
     resolver: zodResolver(proxyProviderSchema),
@@ -74,9 +76,7 @@ export const ProxyProviderFormDialog: React.FC<ProxyProviderFormDialogProps> = (
       <DialogContent className="max-w-md bg-zinc-950 border-zinc-800 text-white rounded-2xl shadow-2xl p-0 overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-zinc-800/80 bg-zinc-900/60">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center">
-              <Server className="w-5 h-5 text-orange-400" />
-            </div>
+            <ProviderLogo name={watch('name') || provider?.name || ''} className="w-10 h-10" />
             <div>
               <DialogTitle className="text-base font-bold text-white">
                 {isEditing ? 'Editar Provedor' : 'Novo Provedor de Proxy'}

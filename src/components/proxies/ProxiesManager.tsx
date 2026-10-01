@@ -3,7 +3,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Shield, Plus, Pencil, Trash2, Loader2, Eye, EyeOff,
-  Globe, Wifi, Clock, AlertTriangle, CheckCircle2, Server,
+  Globe, Clock, AlertTriangle, CheckCircle2, Server,
   Link2, Unlink,
 } from 'lucide-react';
 import ReactCountryFlag from 'react-country-flag';
@@ -37,6 +37,7 @@ import {
 import { useProxies } from '@/hooks/useProxies';
 import { useProxyProviders } from '@/hooks/useProxyProviders';
 import { ProxyProviderFormDialog } from '@/components/proxy-providers/ProxyProviderFormDialog';
+import { ProviderLogo } from '@/components/ui/ProviderLogo';
 import { PLATFORM_COUNTRIES } from '@/constants/niches';
 import type { PlatformAccount } from '@/types/platformAccounts';
 import type { Proxy, ProxyFormData } from '@/types/proxies';
@@ -437,9 +438,10 @@ export const ProxyFormDialog: React.FC<ProxyFormDialogProps> = ({
                       {providers.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
                           <div className="flex items-center gap-2">
+                            <ProviderLogo name={p.name} className="w-4 h-4 rounded" size="sm" />
                             <span className="font-medium">{p.name}</span>
                             {p.website && (
-                              <span className="text-[10px] text-muted-foreground">
+                              <span className="text-[10px] text-muted-foreground font-mono">
                                 ({p.website.replace(/^https?:\/\//, '')})
                               </span>
                             )}
@@ -637,7 +639,7 @@ const ProxyCard: React.FC<ProxyCardProps> = ({ proxy, providerName, linkedAccoun
         )}
         {displayProvider && (
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <Wifi className="w-3 h-3 flex-shrink-0" />
+            <ProviderLogo name={displayProvider} className="w-3.5 h-3.5 rounded" size="sm" />
             <span className="truncate">{displayProvider}</span>
           </div>
         )}
