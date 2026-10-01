@@ -14,15 +14,10 @@ import {
   Shield,
   AlertTriangle,
 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { ProviderLogo } from '@/components/ui/ProviderLogo';
+import { isSystemProvider } from '@/constants/proxyProviders';
+import { toast } from 'sonner';
 
 interface ProxyProvidersManagerProps {
   organizationId: string;
@@ -76,6 +71,11 @@ export const ProxyProvidersManager: React.FC<ProxyProvidersManagerProps> = ({ or
 
   const handleConfirmDelete = async () => {
     if (!deletingProvider) return;
+    if (isSystemProvider(deletingProvider.name)) {
+      toast.error('Provedores padrão do sistema não podem ser excluídos.');
+      setDeletingProvider(null);
+      return;
+    }
     setIsDeleting(true);
     try {
       await deleteProvider(deletingProvider.id);
@@ -200,14 +200,16 @@ export const ProxyProvidersManager: React.FC<ProxyProvidersManagerProps> = ({ or
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeletingProvider(provider)}
-                      className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                      title="Excluir provedor"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {!isSystemProvider(provider.name) && (
+                      <button
+                        type="button"
+                        onClick={() => setDeletingProvider(provider)}
+                        className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                        title="Excluir provedor"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
 

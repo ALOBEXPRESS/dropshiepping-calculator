@@ -187,7 +187,7 @@ function NavLink({ route, pathname, e2eSearch }: { route: NavRouteItem; pathname
   const isActive = isDirectActive && !isAnyChildActive;
 
   const [isOpen, setIsOpen] = useState<boolean>(() => {
-    return Boolean(isDirectActive || isAnyChildActive || true);
+    return Boolean(isDirectActive || isAnyChildActive);
   });
 
   // Se rota atual estiver em um dos filhos, mantém o submenu aberto
@@ -224,31 +224,37 @@ function NavLink({ route, pathname, e2eSearch }: { route: NavRouteItem; pathname
           </button>
         </div>
 
-        {isOpen && (
-          <div className="ml-4 pl-2.5 border-l border-border/60 space-y-0.5 my-0.5">
-            {route.children.map((child) => {
-              const isChildActive = isRouteMatching(child, pathname);
-              return (
-                <Link
-                  key={child.to}
-                  to={{ pathname: child.to, search: e2eSearch }}
-                  className={`flex items-center w-full px-2.5 py-1.5 text-xs rounded-md no-underline transition-all duration-150 ${
-                    isChildActive
-                      ? child.active
-                      : 'text-muted-foreground hover:bg-accent/70 hover:text-foreground'
-                  }`}
-                >
-                  <span
-                    className={`w-1.5 h-1.5 mr-2 rounded-full flex-shrink-0 transition-colors ${
-                      isChildActive ? child.dot : child.dotMuted
+        <div
+          className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${
+            isOpen ? 'grid-rows-[1fr] opacity-100 mt-0.5' : 'grid-rows-[0fr] opacity-0 pointer-events-none'
+          }`}
+        >
+          <div className="overflow-hidden">
+            <div className="ml-4 pl-2.5 border-l border-border/60 space-y-0.5 my-0.5">
+              {route.children.map((child) => {
+                const isChildActive = isRouteMatching(child, pathname);
+                return (
+                  <Link
+                    key={child.to}
+                    to={{ pathname: child.to, search: e2eSearch }}
+                    className={`flex items-center w-full px-2.5 py-1.5 text-xs rounded-md no-underline transition-all duration-150 ${
+                      isChildActive
+                        ? child.active
+                        : 'text-muted-foreground hover:bg-accent/70 hover:text-foreground'
                     }`}
-                  />
-                  <span className="truncate">{child.label}</span>
-                </Link>
-              );
-            })}
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 mr-2 rounded-full flex-shrink-0 transition-colors ${
+                        isChildActive ? child.dot : child.dotMuted
+                      }`}
+                    />
+                    <span className="truncate">{child.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-        )}
+        </div>
       </li>
     );
   }
@@ -273,7 +279,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [ecommerceOpen, setEcommerceOpen] = useLocalStorageBoolean('nav_group_ecommerce_open', true);
   const [painelOpen, setPainelOpen] = useLocalStorageBoolean('nav_group_painel_open', true);
-  const [contasOpen, setContasOpen] = useLocalStorageBoolean('nav_group_contas_open', true);
+  const [contasOpen, setContasOpen] = useLocalStorageBoolean('nav_group_contas_open', false);
   const [blingNotifications, setBlingNotifications] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
@@ -281,7 +287,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { organizationId } = useSettings();
   const { isAdmin, profile } = useUser();
   const e2eSearch = new URLSearchParams(location.search).get('e2e') === 'true' ? '?e2e=true' : '';
-
 
   // Bling real-time notifications
   useEffect(() => {
@@ -326,11 +331,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* ── Sidebar ──────────────────────────────────────────────────────── */}
       <aside
-        className={`fixed top-0 left-0 z-40 h-screen transition-all duration-300
+        className={`fixed top-0 left-0 z-40 h-screen transition-all duration-300 ease-out
           bg-card border-r border-border
+          animate-in fade-in duration-500
           ${sidebarOpen ? 'w-60 translate-x-0' : 'w-60 -translate-x-full lg:translate-x-0 lg:w-0 border-none'}`}
       >
-        <div className="h-full px-3 py-4 overflow-y-auto flex flex-col">
+        <div className="h-full px-3 py-4 overflow-y-auto flex flex-col transition-opacity duration-300">
           {/* Logo row */}
           <div className="flex items-center justify-between mb-6 h-10 px-1">
             {sidebarOpen && (

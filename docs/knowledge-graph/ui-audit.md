@@ -11,28 +11,28 @@
 
 | Campo | Valor |
 |---|---|
-| Arquivos analisados | 358 (anterior: 326) |
-| Nós totais | 2905 (anterior: 2549) |
-| Arestas totais | 32785 (anterior: 27902) |
+| Arquivos analisados | 376 (anterior: 358) |
+| Nós totais | 3016 (anterior: 2905) |
+| Arestas totais | 33888 (anterior: 32785) |
 | Linguagens | TypeScript, TSX, JavaScript, Bash, SQL |
 | Comunidades detectadas | 11 |
 | Fluxos de execução | 142 |
 | Embeddings semânticos | 0 (sentence-transformers não instalado) |
-| Head SHA | e7284d2 (main) |
+| Head SHA | 3647de8 (main) |
 
 ### 1.1 Distribuição de Nós por Tipo
-- **Class / Interfaces:** 470
-- **File:** 358
-- **Function:** 1376
-- **Test:** 701
+- **Class / Interfaces:** 497
+- **File:** 376
+- **Function:** 1419
+- **Test:** 724
 
 ### 1.2 Distribuição de Arestas por Tipo
-- **CALLS:** 22440 (3410 direct, 19030 unresolved)
-- **CONTAINS:** 2804
-- **IMPORTS_FROM:** 1781
-- **INHERITS:** 18
-- **REFERENCES:** 1483
-- **TESTED_BY:** 4259
+- **CALLS:** 23163 (3496 direct, 19667 unresolved)
+- **CONTAINS:** 2897
+- **IMPORTS_FROM:** 1868
+- **INHERITS:** 20
+- **REFERENCES:** 1567
+- **TESTED_BY:** 4373
 
 ---
 
@@ -103,8 +103,21 @@ src/
 │   ├── browser-profiles/          # Módulo de Perfis de Navegador Anti-Detect
 │   │   └── BrowserProfilesManager.tsx   # Gerenciador de instâncias e proxies vinculados
 │   │
+│   ├── devices/                   # Módulo de Dispositivos e Cloud Phones
+│   │   ├── DeviceFormDialog.tsx   # Wizard 2-step (tipo de ambiente, plataforma, hardware profile)
+│   │   └── DevicesManager.tsx     # Gestão de Cloud Phones (Douplus, GeeLark), emuladores e PCs
+│   │
+│   ├── proxy-providers/           # Módulo de Provedores de Proxy Reutilizáveis
+│   │   ├── ProxyProviderFormDialog.tsx # Modal de criação/edição com detecção de logo em tempo real
+│   │   └── ProxyProvidersManager.tsx   # Gestão de provedores com proteção para os 9 padrão
+│   │
 │   ├── proxies/                   # Módulo de Proxies
-│   │   └── ProxiesManager.tsx     # Gerenciador de proxies residenciais/móveis com testes
+│   │   └── ProxiesManager.tsx     # Agrupamento nativo por provedor, toggle para países e logos oficiais
+│   │
+│   ├── ui/                        # Componentes UI reutilizáveis do design system
+│   │   ├── ProviderLogo.tsx       # Logo normalizado de provedores de proxy com fallback
+│   │   ├── DeviceLogo.tsx         # Logo normalizado de plataformas de cloud phone com fallback
+│   │   └── PlatformLogos.tsx      # Logos de plataformas sociais (Meta, TikTok, Google)
 │   │
 │   ├── calculator/                # Subcomponentes da calculadora
 │   │   ├── EditProductDialog.tsx  # Dialog de edição (3348 linhas)
@@ -466,9 +479,9 @@ O `code-review-graph` identificou **11 comunidades** com acoplamento estrutural:
 
 ---
 
-## 5. Módulo Adicionado: Multiplataforma (TikTok, Meta, Google), Business Centers, Perfis e Proxies
+## 5. Módulo Adicionado: Multiplataforma, Business Centers, Perfis, Proxies e Dispositivos
 
-> **Branch:** `main` | **HEAD:** `e7284d2` | **Auditoria de Conformidade e Engenharia**
+> **Branch:** `main` | **HEAD:** `3647de8` | **Auditoria de Conformidade e Engenharia**
 
 | Dimensão | Implementação | Conformidade |
 |---|---|---|
@@ -476,9 +489,11 @@ O `code-review-graph` identificou **11 comunidades** com acoplamento estrutural:
 | **Business Centers com Redes Simultâneas** | Modal de 2 etapas (`BusinessCenterFormDialog.tsx`) com seleção de plataforma + dados de titular (CPF, RG, nascimento) e empresa (CNPJ, IE, situação cadastral). Na Seção 4 (Meta), toggles independentes permitem selecionar Instagram e Facebook simultaneamente. | ✅ 100% Funcional |
 | **Ad Account Wizard Multiplataforma** | Setup Wizard de 6 etapas (`AdAccountFormDialog.tsx`) com suporte a TikTok, Meta e Google. Campo "ID da conta de anúncios (act_...)" na Etapa 2 sincronizado automaticamente na Etapa 4 (`advertiser_id`). | ✅ UX Fluida |
 | **Multi-Vínculo de Perfis** | Na Etapa 3 do Wizard, `PlatformAccountStep` com `multiple={true}` permite vincular múltiplos perfis (ex.: Instagram + Facebook) com badges individuais e botão de desvincular. | ✅ Validado E2E |
-| **Atalho Direto para Perfil TikTok** | Em `/contas` (`PlatformAccountsPage.tsx`), o botão "Nova Conta" abre diretamente "Cadastrar Perfil TikTok", eliminando etapa redundante de seleção de plataforma. | ✅ UX Otimizada |
-| **Gestão Operacional de Contingência** | Criação de `/business-centers`, `/perfis-navegador` e `/proxies` com serviços Supabase dedicados e isolamento por tenant (`organization_id`). | ✅ Multi-Tenant |
-| **Validação com Testes Unitários** | Testes criados para `calcOrderProfit.test.ts` (28 testes), `currencyFormat.test.ts` (7 testes), `inputMasks.test.ts` (10 testes), `platformAccountsService.test.ts` (19 testes), `browserProfilesService.test.ts` (17 testes) e `proxiesService.test.ts` (23 testes). | ✅ Vitest Passing |
+| **Dispositivos e Cloud Phones** | Módulo dedicado (`DevicesManager.tsx`, `DeviceFormDialog.tsx`) com suporte a instâncias Android (Douplus, GeeLark, LDCloud, Redfinger, VMOS Cloud) e emuladores locais. Componente `DeviceLogo.tsx` com detecção de plataforma e perfis de hardware. | ✅ Alta Fidelidade |
+| **Logos e Provedores de Proxy Protegidos** | Módulo de provedores (`ProxyProvidersManager.tsx`, `ProxyProviderFormDialog.tsx`) com proteção ativa que impede a exclusão dos 9 provedores padrão oficiais (Bright Data, Decodo, IPRoyal, NetNut, Oxylabs, proxy-cheap, Rayobyte, SOAX, Webshare). Componente `ProviderLogo.tsx` com normalização de slug e fallback. | ✅ Protegido & Seguro |
+| **Agrupamento Nativo de Proxies por Provedor** | Em `/proxies` (`ProxiesManager.tsx`), os proxies agora são agrupados nativamente por provedor com seus logos oficiais nos cabeçalhos e dentro de cada card. Inclui alternador de visualização (Provedores | Países) e pills de filtro adaptativas. | ✅ UX Otimizada |
+| **Suavização e Polimento da Sidebar** | O grupo `Contas` na sidebar agora vem recolhido por padrão (`nav_group_contas_open = false`) e os submenus expandem suavemente via CSS Grid e `tailwindcss-animate`, eliminando o carregamento rígido e transições abruptas. | ✅ Transição Fluida |
+| **Validação com Testes Unitários** | Testes criados para `calcOrderProfit.test.ts` (28 testes), `currencyFormat.test.ts` (7 testes), `inputMasks.test.ts` (10 testes), `platformAccountsService.test.ts` (19 testes), `browserProfilesService.test.ts` (17 testes), `proxiesService.test.ts` (23 testes) e `proxyProvidersService.test.ts`. | ✅ Vitest Passing |
 
 ---
 
@@ -496,8 +511,8 @@ O `code-review-graph` identificou **11 comunidades** com acoplamento estrutural:
 
 ## Resumo Executivo Atualizado
 
-1. **Expansão Arquitetural:** O grafo de código cresceu de 2.549 para 2.905 nós e de 27.902 para 32.785 arestas, incorporando o suporte completo a multiplataforma (TikTok Ads, Meta Ads e Google Ads), Business Centers, perfis anti-detect e proxies.
-2. **Resolução dos Desafios de Vínculo:** O usuário agora tem controle granular completo para vincular perfis de redes sociais: no Business Center Meta, tanto Instagram quanto Facebook podem ser selecionados simultaneamente; no Wizard de Contas de Anúncios, múltiplos perfis podem ser associados à mesma conta de anúncios.
-3. **Sincronização de Identificadores:** O campo de ID da conta de anúncios (`advertiser_id`) preenchido na Etapa 2 agora é propagado e sincronizado de forma transparente para a Etapa 4 de Identificadores.
-4. **Agilidade no Fluxo de Contas:** Em `/contas`, o operador acessa diretamente o formulário de cadastro de perfil TikTok com um único clique.
-5. **Garantia de Qualidade:** Todas as implementações foram validadas via compilação TypeScript (`npx tsc --noEmit`), testes unitários Vitest e verificação visual automatizada de ponta a ponta com Playwright MCP.
+1. **Expansão Arquitetural:** O grafo de código (`code-review-graph`) expandiu para **376 arquivos**, **3.016 nós** e **33.888 arestas**, integrando a arquitetura completa de contingência (Contas de Anúncios Multiplataforma, Business Centers, Perfis de Navegador, Dispositivos/Cloud Phones, Provedores de Proxy e Proxies de Rede).
+2. **Proteção de Provedores do Sistema:** Os 9 provedores padrão essenciais para a operação foram blindados contra exclusão acidental na interface e na camada de controle.
+3. **Visualização por Provedor com Logos Oficiais:** A gestão de proxies adotou o agrupamento nativo por provedor, estampando seus logotipos em alta definição e permitindo alternância instantânea com a visão geográfica por país.
+4. **Experiência de Navegação Suave (Sidebar):** O carregamento rígido da barra lateral foi substituído por uma transição fluida com animação de entrada e sanfona CSS Grid, mantendo o bloco de contas recolhido por padrão conforme diretriz de design.
+5. **Garantia de Qualidade:** Código verificado via compilação TypeScript com 0 erros, testes E2E/visuais automatizados via Playwright e conformidade rastreada no grafo de arquitetura.
