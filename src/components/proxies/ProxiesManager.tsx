@@ -583,10 +583,12 @@ const ProxyCard: React.FC<ProxyCardProps> = ({ proxy, providerName, linkedAccoun
     <div className="rounded-xl border border-border bg-card/40 p-4 space-y-3 hover:border-input/60 transition-colors">
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-9 h-9 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center flex-shrink-0">
-            <Shield className="w-4 h-4 text-orange-400" />
-          </div>
+        <div className="flex items-center gap-3 min-w-0">
+          <ProviderLogo
+            name={displayProvider || ''}
+            className="w-10 h-10 rounded-xl"
+            size="md"
+          />
           <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground truncate">{proxy.label}</p>
             <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
@@ -711,6 +713,8 @@ export const ProxiesManager: React.FC<ProxiesManagerProps> = ({
   const [formOpen, setFormOpen] = useState(false);
   const [editingProxy, setEditingProxy] = useState<Proxy | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [groupBy, setGroupBy] = useState<'provider' | 'country'>('provider');
+  const [selectedProviderFilter, setSelectedProviderFilter] = useState<string>('all');
   const [selectedCountryFilter, setSelectedCountryFilter] = useState<string>('all');
 
   const providerMap = useMemo(() => {
@@ -742,6 +746,42 @@ export const ProxiesManager: React.FC<ProxiesManagerProps> = ({
     return proxies;
   }, [proxies, filterByAccountId, proxyToAccount]);
 
+  // Agrupa proxies por provedor
+  const groupedByProvider = useMemo(() => {
+    const groupsMap = new Map<string, { id: string; name: string; proxies: Proxy[] }>();
+
+    for (const proxy of visibleProxies) {
+      const pName =
+        (proxy.provider_id ? providerMap.get(proxy.provider_id) : null) ||
+        proxy.provider ||
+        'Sem Provedor';
+      const key = pName.trim().toLowerCase();
+
+      if (!groupsMap.has(key)) {
+        groupsMap.set(key, {
+          id: proxy.provider_id || key,
+          name: pName,
+          proxies: [],
+        });
+      }
+      groupsMap.get(key)!.proxies.push(proxy);
+    }
+
+    return Array.from(groupsMap.values()).sort((a, b) => {
+      if (a.name === 'Sem Provedor') return 1;
+      if (b.name === 'Sem Provedor') return -1;
+      return a.name.localeCompare(b.name, 'pt-BR');
+    });
+  }, [visibleProxies, providerMap]);
+
+  // Grupos filtrados por provedor
+  const displayedProviderGroups = useMemo(() => {
+    if (selectedProviderFilter === 'all') return groupedByProvider;
+    return groupedByProvider.filter(
+      (g) => g.name.toLowerCase() === selectedProviderFilter.toLowerCase()
+    );
+  }, [groupedByProvider, selectedProviderFilter]);
+
   // Agrupa proxies por país
   const groupedByCountry = useMemo(() => {
     const groupsMap = new Map<string, { code: string; name: string; proxies: Proxy[] }>();
@@ -763,7 +803,7 @@ export const ProxiesManager: React.FC<ProxiesManagerProps> = ({
     });
   }, [visibleProxies]);
 
-  // Grupos filtrados para exibição
+  // Grupos filtrados para exibição por país
   const displayedGroups = useMemo(() => {
     if (selectedCountryFilter === 'all') return groupedByCountry;
     return groupedByCountry.filter((g) => g.code === selectedCountryFilter);
@@ -843,108 +883,249 @@ export const ProxiesManager: React.FC<ProxiesManagerProps> = ({
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Filtros de país (pills) */}
-          {groupedByCountry.length > 1 && (
-            <div className="flex flex-wrap items-center gap-2 pb-1 border-b border-border/40">
-              <button
-                type="button"
-                onClick={() => setSelectedCountryFilter('all')}
-                className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-2 ${
-                  selectedCountryFilter === 'all'
-                    ? 'bg-orange-500/15 text-orange-400 border border-orange-500/30 font-semibold'
-                    : 'bg-card/60 text-muted-foreground hover:bg-accent hover:text-foreground border border-border/50'
-                }`}
-              >
-                <span>Todos os países</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-background/60 font-mono">
-                  {visibleProxies.length}
-                </span>
-              </button>
-              {groupedByCountry.map((group) => {
-                const isSelected = selectedCountryFilter === group.code;
-                return (
+          {/* Barra de Controles: Agrupamento + Filtros */}
+          <div className="space-y-3 pb-2 border-b border-border/40">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              {/* Toggle de Agrupamento */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground font-medium">Agrupar por:</span>
+                <div className="flex items-center p-0.5 rounded-lg bg-card/60 border border-border/60">
                   <button
-                    key={group.code}
                     type="button"
-                    onClick={() => setSelectedCountryFilter(group.code)}
+                    onClick={() => setGroupBy('provider')}
+                    className={`px-3 py-1.5 text-xs rounded-md font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      groupBy === 'provider'
+                        ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30 shadow-xs'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <Server className="w-3.5 h-3.5" />
+                    <span>Provedor</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setGroupBy('country')}
+                    className={`px-3 py-1.5 text-xs rounded-md font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      groupBy === 'country'
+                        ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30 shadow-xs'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <Globe className="w-3.5 h-3.5" />
+                    <span>País</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Informação de contagem */}
+              <div className="text-xs text-muted-foreground font-mono">
+                Total de {visibleProxies.length} {visibleProxies.length === 1 ? 'proxy' : 'proxies'}
+              </div>
+            </div>
+
+            {/* Pills de Filtro conforme o agrupamento ativo */}
+            {groupBy === 'provider' ? (
+              groupedByProvider.length > 1 && (
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedProviderFilter('all')}
                     className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-2 ${
-                      isSelected
+                      selectedProviderFilter === 'all'
                         ? 'bg-orange-500/15 text-orange-400 border border-orange-500/30 font-semibold'
                         : 'bg-card/60 text-muted-foreground hover:bg-accent hover:text-foreground border border-border/50'
                     }`}
                   >
-                    {group.code !== 'OTHER' ? (
-                      <ReactCountryFlag countryCode={group.code} svg style={{ width: '1.2em', height: '1.2em' }} />
-                    ) : (
-                      <Globe className="w-3.5 h-3.5" />
-                    )}
-                    <span>{group.name}</span>
+                    <span>Todos os provedores</span>
                     <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-background/60 font-mono">
-                      {group.proxies.length}
+                      {visibleProxies.length}
                     </span>
                   </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Seções por País */}
-          <div className="space-y-8">
-            {displayedGroups.map((group) => (
-              <section key={group.code} className="space-y-3">
-                {/* Cabeçalho da Seção do País */}
-                <div className="flex items-center justify-between pb-2 border-b border-border/70">
-                  <div className="flex items-center gap-2.5">
-                    {group.code !== 'OTHER' ? (
-                      <div className="w-6 h-4.5 rounded overflow-hidden shadow-xs flex items-center justify-center bg-muted/40">
-                        <ReactCountryFlag
-                          countryCode={group.code}
-                          svg
-                          style={{ width: '1.25em', height: '1.25em' }}
-                          title={group.name}
+                  {groupedByProvider.map((group) => {
+                    const isSelected =
+                      selectedProviderFilter.toLowerCase() === group.name.toLowerCase();
+                    return (
+                      <button
+                        key={group.name}
+                        type="button"
+                        onClick={() => setSelectedProviderFilter(group.name)}
+                        className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-2 ${
+                          isSelected
+                            ? 'bg-orange-500/15 text-orange-400 border border-orange-500/30 font-semibold'
+                            : 'bg-card/60 text-muted-foreground hover:bg-accent hover:text-foreground border border-border/50'
+                        }`}
+                      >
+                        <ProviderLogo
+                          name={group.name === 'Sem Provedor' ? '' : group.name}
+                          className="w-4 h-4 rounded"
+                          size="sm"
                         />
-                      </div>
-                    ) : (
-                      <div className="w-6 h-4.5 rounded flex items-center justify-center bg-muted/40 text-muted-foreground">
-                        <Globe className="w-3.5 h-3.5" />
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold text-foreground tracking-tight">
-                        {group.name}
-                      </h3>
-                      {group.code !== 'OTHER' && (
-                        <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                          {group.code}
+                        <span>{group.name}</span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-background/60 font-mono">
+                          {group.proxies.length}
                         </span>
-                      )}
-                    </div>
-                  </div>
-                  <span className="text-xs text-muted-foreground font-medium px-2.5 py-0.5 rounded-full bg-muted/60 border border-border/40">
-                    {group.proxies.length} {group.proxies.length === 1 ? 'proxy' : 'proxies'}
-                  </span>
+                      </button>
+                    );
+                  })}
                 </div>
+              )
+            ) : (
+              groupedByCountry.length > 1 && (
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCountryFilter('all')}
+                    className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-2 ${
+                      selectedCountryFilter === 'all'
+                        ? 'bg-orange-500/15 text-orange-400 border border-orange-500/30 font-semibold'
+                        : 'bg-card/60 text-muted-foreground hover:bg-accent hover:text-foreground border border-border/50'
+                    }`}
+                  >
+                    <span>Todos os países</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-background/60 font-mono">
+                      {visibleProxies.length}
+                    </span>
+                  </button>
+                  {groupedByCountry.map((group) => {
+                    const isSelected = selectedCountryFilter === group.code;
+                    return (
+                      <button
+                        key={group.code}
+                        type="button"
+                        onClick={() => setSelectedCountryFilter(group.code)}
+                        className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-2 ${
+                          isSelected
+                            ? 'bg-orange-500/15 text-orange-400 border border-orange-500/30 font-semibold'
+                            : 'bg-card/60 text-muted-foreground hover:bg-accent hover:text-foreground border border-border/50'
+                        }`}
+                      >
+                        {group.code !== 'OTHER' ? (
+                          <ReactCountryFlag countryCode={group.code} svg style={{ width: '1.2em', height: '1.2em' }} />
+                        ) : (
+                          <Globe className="w-3.5 h-3.5" />
+                        )}
+                        <span>{group.name}</span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-background/60 font-mono">
+                          {group.proxies.length}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )
+            )}
+          </div>
 
-                {/* Grid de Cards de Proxies deste país */}
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {group.proxies.map((proxy) => (
-                    <ProxyCard
-                      key={proxy.id}
-                      proxy={proxy}
-                      providerName={
-                        proxy.provider_id
-                          ? providerMap.get(proxy.provider_id) || proxy.provider
-                          : proxy.provider
-                      }
-                      linkedAccount={proxyToAccount.get(proxy.id) ?? null}
-                      onEdit={() => { setEditingProxy(proxy); setFormOpen(true); }}
-                      onDelete={() => setDeleteId(proxy.id)}
-                      onUnlink={() => handleUnlink(proxy)}
-                    />
-                  ))}
-                </div>
-              </section>
-            ))}
+          {/* Seções agrupadas (por Provedor ou por País) */}
+          <div className="space-y-8">
+            {groupBy === 'provider'
+              ? displayedProviderGroups.map((group) => (
+                  <section key={group.name} className="space-y-3">
+                    {/* Cabeçalho da Seção do Provedor */}
+                    <div className="flex items-center justify-between pb-2 border-b border-border/70">
+                      <div className="flex items-center gap-3">
+                        <ProviderLogo
+                          name={group.name === 'Sem Provedor' ? '' : group.name}
+                          className="w-8 h-8 rounded-xl"
+                          size="sm"
+                        />
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-bold text-white tracking-tight">
+                            {group.name}
+                          </h3>
+                          {group.name !== 'Sem Provedor' && (
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                              Provedor
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-xs text-muted-foreground font-mono font-medium px-2.5 py-0.5 rounded-full bg-muted/60 border border-border/40">
+                        {group.proxies.length} {group.proxies.length === 1 ? 'proxy' : 'proxies'}
+                      </span>
+                    </div>
+
+                    {/* Grid de Cards de Proxies deste Provedor */}
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {group.proxies.map((proxy) => (
+                        <ProxyCard
+                          key={proxy.id}
+                          proxy={proxy}
+                          providerName={
+                            proxy.provider_id
+                              ? providerMap.get(proxy.provider_id) || proxy.provider
+                              : proxy.provider
+                          }
+                          linkedAccount={proxyToAccount.get(proxy.id) ?? null}
+                          onEdit={() => {
+                            setEditingProxy(proxy);
+                            setFormOpen(true);
+                          }}
+                          onDelete={() => setDeleteId(proxy.id)}
+                          onUnlink={() => handleUnlink(proxy)}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                ))
+              : displayedGroups.map((group) => (
+                  <section key={group.code} className="space-y-3">
+                    {/* Cabeçalho da Seção do País */}
+                    <div className="flex items-center justify-between pb-2 border-b border-border/70">
+                      <div className="flex items-center gap-2.5">
+                        {group.code !== 'OTHER' ? (
+                          <div className="w-6 h-4.5 rounded overflow-hidden shadow-xs flex items-center justify-center bg-muted/40">
+                            <ReactCountryFlag
+                              countryCode={group.code}
+                              svg
+                              style={{ width: '1.25em', height: '1.25em' }}
+                              title={group.name}
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-6 h-4.5 rounded flex items-center justify-center bg-muted/40 text-muted-foreground">
+                            <Globe className="w-3.5 h-3.5" />
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-semibold text-foreground tracking-tight">
+                            {group.name}
+                          </h3>
+                          {group.code !== 'OTHER' && (
+                            <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                              {group.code}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-xs text-muted-foreground font-medium px-2.5 py-0.5 rounded-full bg-muted/60 border border-border/40">
+                        {group.proxies.length} {group.proxies.length === 1 ? 'proxy' : 'proxies'}
+                      </span>
+                    </div>
+
+                    {/* Grid de Cards de Proxies deste país */}
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {group.proxies.map((proxy) => (
+                        <ProxyCard
+                          key={proxy.id}
+                          proxy={proxy}
+                          providerName={
+                            proxy.provider_id
+                              ? providerMap.get(proxy.provider_id) || proxy.provider
+                              : proxy.provider
+                          }
+                          linkedAccount={proxyToAccount.get(proxy.id) ?? null}
+                          onEdit={() => {
+                            setEditingProxy(proxy);
+                            setFormOpen(true);
+                          }}
+                          onDelete={() => setDeleteId(proxy.id)}
+                          onUnlink={() => handleUnlink(proxy)}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                ))}
           </div>
         </div>
       )}
