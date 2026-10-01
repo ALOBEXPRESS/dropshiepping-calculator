@@ -180,6 +180,7 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
       : 'Google';
 
   useEffect(() => {
+    if (!open) return;
     if (account) {
       const matchedBc = businessCenters.find(
         (c) =>
