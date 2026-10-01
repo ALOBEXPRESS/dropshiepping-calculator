@@ -35,16 +35,22 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useProxies } from '@/hooks/useProxies';
+import { useProxyProviders } from '@/hooks/useProxyProviders';
+import { ProxyProviderFormDialog } from '@/components/proxy-providers/ProxyProviderFormDialog';
 import { PLATFORM_COUNTRIES } from '@/constants/niches';
 import type { PlatformAccount } from '@/types/platformAccounts';
 import type { Proxy, ProxyFormData } from '@/types/proxies';
+import type { ProxyProviderFormData } from '@/types/proxyProviders';
 import {
   proxySchema,
   PROXY_PROTOCOL_LABELS,
   PROXY_TYPE_LABELS,
+  IP_VERSION_LABELS,
   PROXY_STATUS_LABELS,
   PROXY_STATUS_COLORS,
 } from '@/types/proxies';
+
+let regionNamesFormatter: Intl.DisplayNames | null = null;
 
 export function getCountryName(code: string | null | undefined): string {
   if (!code) return 'Sem país definido';
@@ -52,8 +58,10 @@ export function getCountryName(code: string | null | undefined): string {
   const found = PLATFORM_COUNTRIES.find((c) => c.code === upper);
   if (found) return found.name;
   try {
-    const displayNames = new Intl.DisplayNames(['pt-BR'], { type: 'region' });
-    return displayNames.of(upper) || upper;
+    if (!regionNamesFormatter && typeof Intl !== 'undefined' && Intl.DisplayNames) {
+      regionNamesFormatter = new Intl.DisplayNames(['pt-BR'], { type: 'region' });
+    }
+    return regionNamesFormatter?.of(upper) || upper;
   } catch {
     return upper;
   }
@@ -82,8 +90,10 @@ export const ProxyFormDialog: React.FC<ProxyFormDialogProps> = ({
 }) => {
   const { createProxy, updateProxy, linkProxy, isCreating, isUpdating, isLinking } =
     useProxies(organizationId);
+  const { providers, createProvider, isCreating: isCreatingProvider } = useProxyProviders();
   const [showPassword, setShowPassword] = useState(false);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('none');
+  const [providerModalOpen, setProviderModalOpen] = useState(false);
   const isEditing = !!proxy;
   const isBusy = isCreating || isUpdating || isLinking;
 
@@ -91,10 +101,11 @@ export const ProxyFormDialog: React.FC<ProxyFormDialogProps> = ({
     register,
     handleSubmit,
     control,
+    setValue,
     reset,
     formState: { errors },
   } = useForm<ProxyFormData>({
-    resolver: zodResolver(proxySchema),
+    resolver: zodResolver(proxySchema) as any,
     defaultValues: proxy
       ? {
           label: proxy.label,
@@ -105,6 +116,8 @@ export const ProxyFormDialog: React.FC<ProxyFormDialogProps> = ({
           password: '',
           country: proxy.country ?? '',
           proxy_type: proxy.proxy_type,
+          ip_version: proxy.ip_version || 'ipv4',
+          provider_id: proxy.provider_id ?? '',
           provider: proxy.provider ?? '',
           status: proxy.status,
           expires_at: proxy.expires_at ? proxy.expires_at.slice(0, 10) : '',
@@ -112,9 +125,12 @@ export const ProxyFormDialog: React.FC<ProxyFormDialogProps> = ({
         }
       : {
           protocol: 'http',
-          proxy_type: 'residential',
+          proxy_type: 'static_residential_isp',
+          ip_version: 'ipv4',
           status: 'active',
           port: 8080,
+          provider_id: '',
+          provider: '',
         },
   });
 
@@ -134,6 +150,8 @@ export const ProxyFormDialog: React.FC<ProxyFormDialogProps> = ({
               password: '',
               country: proxy.country ?? '',
               proxy_type: proxy.proxy_type,
+              ip_version: proxy.ip_version || 'ipv4',
+              provider_id: proxy.provider_id ?? '',
               provider: proxy.provider ?? '',
               status: proxy.status,
               expires_at: proxy.expires_at ? proxy.expires_at.slice(0, 10) : '',
@@ -141,21 +159,40 @@ export const ProxyFormDialog: React.FC<ProxyFormDialogProps> = ({
             }
           : {
               protocol: 'http',
-              proxy_type: 'residential',
+              proxy_type: 'static_residential_isp',
+              ip_version: 'ipv4',
               status: 'active',
               port: 8080,
+              provider_id: '',
+              provider: '',
             }
       );
     }
   }, [open, proxy, currentLinkedAccount, reset]);
 
+  const handleCreateProvider = async (providerData: ProxyProviderFormData) => {
+    const created = await createProvider(providerData);
+    setValue('provider_id', created.id);
+    setValue('provider', created.name);
+  };
+
   const onSubmit = async (data: ProxyFormData) => {
     try {
+      const payload: ProxyFormData = {
+        ...data,
+        provider_id: data.provider_id && data.provider_id !== 'none' ? data.provider_id : null,
+        provider:
+          data.provider ||
+          (data.provider_id && data.provider_id !== 'none'
+            ? providers.find((p) => p.id === data.provider_id)?.name || ''
+            : ''),
+      };
+
       let saved: Proxy;
       if (isEditing && proxy) {
-        saved = await updateProxy(proxy.id, data);
+        saved = await updateProxy(proxy.id, payload);
       } else {
-        saved = await createProxy(data);
+        saved = await createProxy(payload);
       }
 
       // Trata vínculo ou desvínculo da conta
@@ -215,8 +252,8 @@ export const ProxyFormDialog: React.FC<ProxyFormDialogProps> = ({
             {errors.label && <p className="text-xs text-red-400">{errors.label.message}</p>}
           </div>
 
-          {/* Protocol + ProxyType */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Protocol + ProxyType + IP Version */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="space-y-1.5">
               <Label className="text-sm font-medium">Protocolo <span className="text-red-400">*</span></Label>
               <Controller
@@ -237,6 +274,7 @@ export const ProxyFormDialog: React.FC<ProxyFormDialogProps> = ({
               />
               {errors.protocol && <p className="text-xs text-red-400">{errors.protocol.message}</p>}
             </div>
+
             <div className="space-y-1.5">
               <Label className="text-sm font-medium">Tipo <span className="text-red-400">*</span></Label>
               <Controller
@@ -244,10 +282,10 @@ export const ProxyFormDialog: React.FC<ProxyFormDialogProps> = ({
                 control={control}
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="bg-background border-input">
+                    <SelectTrigger className="bg-background border-input truncate text-xs">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-card border-input">
+                    <SelectContent className="bg-card border-input max-h-56">
                       {Object.entries(PROXY_TYPE_LABELS).map(([v, l]) => (
                         <SelectItem key={v} value={v}>{l}</SelectItem>
                       ))}
@@ -256,6 +294,27 @@ export const ProxyFormDialog: React.FC<ProxyFormDialogProps> = ({
                 )}
               />
               {errors.proxy_type && <p className="text-xs text-red-400">{errors.proxy_type.message}</p>}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Versão IP <span className="text-red-400">*</span></Label>
+              <Controller
+                name="ip_version"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value || 'ipv4'} onValueChange={field.onChange}>
+                    <SelectTrigger className="bg-background border-input text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card border-input">
+                      {Object.entries(IP_VERSION_LABELS).map(([v, l]) => (
+                        <SelectItem key={v} value={v}>{l}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.ip_version && <p className="text-xs text-red-400">{errors.ip_version.message}</p>}
             </div>
           </div>
 
@@ -315,7 +374,7 @@ export const ProxyFormDialog: React.FC<ProxyFormDialogProps> = ({
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(v => !v)}
+                  onClick={() => setShowPassword((v) => !v)}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   tabIndex={-1}
                 >
@@ -326,7 +385,7 @@ export const ProxyFormDialog: React.FC<ProxyFormDialogProps> = ({
           </div>
 
           {/* Country + Provider */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="proxy-country" className="text-sm font-medium">País (ISO-2)</Label>
               <Input
@@ -338,13 +397,58 @@ export const ProxyFormDialog: React.FC<ProxyFormDialogProps> = ({
               />
               {errors.country && <p className="text-xs text-red-400">{errors.country.message}</p>}
             </div>
+
             <div className="space-y-1.5">
-              <Label htmlFor="proxy-provider" className="text-sm font-medium">Provedor</Label>
-              <Input
-                id="proxy-provider"
-                {...register('provider')}
-                placeholder="Ex: Brightdata, Oxylabs..."
-                className="bg-background border-input"
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Provedor</Label>
+                <button
+                  type="button"
+                  onClick={() => setProviderModalOpen(true)}
+                  className="text-[11px] text-orange-400 hover:text-orange-300 hover:underline flex items-center gap-1 font-medium cursor-pointer"
+                >
+                  <Plus className="w-3 h-3" />
+                  Novo Provedor
+                </button>
+              </div>
+              <Controller
+                name="provider_id"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    value={field.value || 'none'}
+                    onValueChange={(val) => {
+                      if (val === 'none') {
+                        field.onChange(null);
+                        setValue('provider', '');
+                      } else {
+                        field.onChange(val);
+                        const foundProvider = providers.find((pr) => pr.id === val);
+                        if (foundProvider) setValue('provider', foundProvider.name);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="bg-background border-input text-xs">
+                      <SelectValue placeholder="Selecione um provedor..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card border-input max-h-56">
+                      <SelectItem value="none">
+                        <span className="text-muted-foreground italic">Sem provedor associado</span>
+                      </SelectItem>
+                      {providers.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{p.name}</span>
+                            {p.website && (
+                              <span className="text-[10px] text-muted-foreground">
+                                ({p.website.replace(/^https?:\/\//, '')})
+                              </span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               />
             </div>
           </div>
@@ -445,6 +549,14 @@ export const ProxyFormDialog: React.FC<ProxyFormDialogProps> = ({
             </Button>
           </div>
         </form>
+
+        {/* Dialog inline de criação de provedor */}
+        <ProxyProviderFormDialog
+          open={providerModalOpen}
+          onOpenChange={setProviderModalOpen}
+          onSubmit={handleCreateProvider}
+          isSubmitting={isCreatingProvider}
+        />
       </DialogContent>
     </Dialog>
   );
@@ -454,14 +566,16 @@ export const ProxyFormDialog: React.FC<ProxyFormDialogProps> = ({
 
 interface ProxyCardProps {
   proxy: Proxy;
+  providerName?: string | null;
   linkedAccount?: PlatformAccount | null;
   onEdit: () => void;
   onDelete: () => void;
   onUnlink?: () => void;
 }
 
-const ProxyCard: React.FC<ProxyCardProps> = ({ proxy, linkedAccount, onEdit, onDelete, onUnlink }) => {
+const ProxyCard: React.FC<ProxyCardProps> = ({ proxy, providerName, linkedAccount, onEdit, onDelete, onUnlink }) => {
   const statusColor = PROXY_STATUS_COLORS[proxy.status];
+  const displayProvider = providerName || proxy.provider;
 
   return (
     <div className="rounded-xl border border-border bg-card/40 p-4 space-y-3 hover:border-input/60 transition-colors">
@@ -473,8 +587,11 @@ const ProxyCard: React.FC<ProxyCardProps> = ({ proxy, linkedAccount, onEdit, onD
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground truncate">{proxy.label}</p>
-            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-              <span>{PROXY_PROTOCOL_LABELS[proxy.protocol]} · {PROXY_TYPE_LABELS[proxy.proxy_type]}</span>
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
+              <span>{PROXY_PROTOCOL_LABELS[proxy.protocol]} · {PROXY_TYPE_LABELS[proxy.proxy_type] || proxy.proxy_type}</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300 border border-zinc-700 font-mono font-medium">
+                {(proxy.ip_version || 'ipv4').toUpperCase()}
+              </span>
               {proxy.country && (
                 <span className="inline-flex items-center gap-1">
                   ·
@@ -518,10 +635,10 @@ const ProxyCard: React.FC<ProxyCardProps> = ({ proxy, linkedAccount, onEdit, onD
             <span className="truncate">{proxy.username}</span>
           </div>
         )}
-        {proxy.provider && (
+        {displayProvider && (
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <Wifi className="w-3 h-3 flex-shrink-0" />
-            <span className="truncate">{proxy.provider}</span>
+            <span className="truncate">{displayProvider}</span>
           </div>
         )}
         {proxy.expires_at && (
@@ -588,10 +705,19 @@ export const ProxiesManager: React.FC<ProxiesManagerProps> = ({
 }) => {
   const { proxies, isLoading, deleteProxy, linkProxy, isDeleting, isLinking } =
     useProxies(organizationId);
+  const { providers } = useProxyProviders();
   const [formOpen, setFormOpen] = useState(false);
   const [editingProxy, setEditingProxy] = useState<Proxy | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedCountryFilter, setSelectedCountryFilter] = useState<string>('all');
+
+  const providerMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of providers) {
+      map.set(p.id, p.name);
+    }
+    return map;
+  }, [providers]);
 
   // Mapeia proxy_id → platform_account para exibir vinculação
   const proxyToAccount = useMemo(() => {
@@ -803,6 +929,11 @@ export const ProxiesManager: React.FC<ProxiesManagerProps> = ({
                     <ProxyCard
                       key={proxy.id}
                       proxy={proxy}
+                      providerName={
+                        proxy.provider_id
+                          ? providerMap.get(proxy.provider_id) || proxy.provider
+                          : proxy.provider
+                      }
                       linkedAccount={proxyToAccount.get(proxy.id) ?? null}
                       onEdit={() => { setEditingProxy(proxy); setFormOpen(true); }}
                       onDelete={() => setDeleteId(proxy.id)}

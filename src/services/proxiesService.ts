@@ -1,6 +1,9 @@
 import { supabase } from '@/lib/supabase';
 import type { Proxy, ProxyFormData } from '@/types/proxies';
 
+const PROXY_SELECT_COLUMNS =
+  'id, organization_id, label, protocol, host, port, username, country, proxy_type, ip_version, provider_id, provider, status, expires_at, notes, created_by, created_at, updated_at';
+
 export class ProxiesService {
   /**
    * Lista todos os proxies da organização.
@@ -11,7 +14,7 @@ export class ProxiesService {
 
     const { data, error } = await supabase
       .from('proxies')
-      .select('id, organization_id, label, protocol, host, port, username, country, proxy_type, provider, status, expires_at, notes, created_by, created_at, updated_at')
+      .select(PROXY_SELECT_COLUMNS)
       .eq('organization_id', organizationId)
       .order('created_at', { ascending: false });
 
@@ -54,6 +57,8 @@ export class ProxiesService {
       password: formData.password?.trim() || null,
       country: formData.country?.trim().toUpperCase() || null,
       proxy_type: formData.proxy_type,
+      ip_version: formData.ip_version || 'ipv4',
+      provider_id: formData.provider_id || null,
       provider: formData.provider?.trim() || null,
       status: formData.status,
       expires_at: formData.expires_at || null,
@@ -64,7 +69,7 @@ export class ProxiesService {
     const { data, error } = await supabase
       .from('proxies')
       .insert(payload)
-      .select('id, organization_id, label, protocol, host, port, username, country, proxy_type, provider, status, expires_at, notes, created_by, created_at, updated_at')
+      .select(PROXY_SELECT_COLUMNS)
       .single();
 
     if (error) throw new Error(error.message);
@@ -92,6 +97,8 @@ export class ProxiesService {
       payload.password = formData.password.trim();
     if (formData.country !== undefined) payload.country = formData.country?.trim().toUpperCase() || null;
     if (formData.proxy_type !== undefined) payload.proxy_type = formData.proxy_type;
+    if (formData.ip_version !== undefined) payload.ip_version = formData.ip_version;
+    if (formData.provider_id !== undefined) payload.provider_id = formData.provider_id || null;
     if (formData.provider !== undefined) payload.provider = formData.provider?.trim() || null;
     if (formData.status !== undefined) payload.status = formData.status;
     if (formData.expires_at !== undefined) payload.expires_at = formData.expires_at || null;
@@ -102,7 +109,7 @@ export class ProxiesService {
       .update(payload)
       .eq('organization_id', organizationId)
       .eq('id', id)
-      .select('id, organization_id, label, protocol, host, port, username, country, proxy_type, provider, status, expires_at, notes, created_by, created_at, updated_at')
+      .select(PROXY_SELECT_COLUMNS)
       .single();
 
     if (error) throw new Error(error.message);

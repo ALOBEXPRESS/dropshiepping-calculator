@@ -45,6 +45,8 @@ const PlatformAccounts = lazy(() => import('./pages/PlatformAccountsPage'));
 const AdAccounts = lazy(() => import('./pages/AdAccountsPage'));
 const AdAccountDetail = lazy(() => import('./pages/AdAccountDetailPage'));
 const Proxies = lazy(() => import('./pages/ProxiesPage'));
+const ProxyProviders = lazy(() => import('./pages/ProxyProvidersPage'));
+const Devices = lazy(() => import('./pages/DevicesPage'));
 const BrowserProfiles = lazy(() => import('./pages/BrowserProfilesPage'));
 const BusinessCenters = lazy(() => import('./pages/BusinessCentersPage'));
 
@@ -150,6 +152,30 @@ const ProxiesRoutePage = () => (
   </ProtectedRoute>
 );
 
+const ProxyProvidersRoutePage = () => (
+  <ProtectedRoute>
+    <AdminRoute>
+    <Layout>
+      <Suspense fallback={<LoadingState />}>
+        <ProxyProviders />
+      </Suspense>
+    </Layout>
+    </AdminRoute>
+  </ProtectedRoute>
+);
+
+const DevicesRoutePage = () => (
+  <ProtectedRoute>
+    <AdminRoute>
+    <Layout>
+      <Suspense fallback={<LoadingState />}>
+        <Devices />
+      </Suspense>
+    </Layout>
+    </AdminRoute>
+  </ProtectedRoute>
+);
+
 const BrowserProfilesRoutePage = () => (
   <ProtectedRoute>
     <AdminRoute>
@@ -208,6 +234,10 @@ function App() {
               <Route path="/contas-anuncios/:id" element={<AdAccountDetailRoutePage />} />
               <Route path="/proxies" element={<ProxiesRoutePage />} />
               <Route path="/contas/proxies" element={<ProxiesRoutePage />} />
+              <Route path="/provedores" element={<ProxyProvidersRoutePage />} />
+              <Route path="/contas/provedores" element={<ProxyProvidersRoutePage />} />
+              <Route path="/dispositivos" element={<DevicesRoutePage />} />
+              <Route path="/contas/dispositivos" element={<DevicesRoutePage />} />
               <Route path="/perfis-navegador" element={<BrowserProfilesRoutePage />} />
               <Route path="/contas/perfis-navegador" element={<BrowserProfilesRoutePage />} />
               <Route path="/contas/perfis-de-navegador" element={<BrowserProfilesRoutePage />} />

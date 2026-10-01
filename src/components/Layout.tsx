@@ -70,6 +70,26 @@ const NAV_ROUTES: {
       active: 'bg-orange-500/15 text-orange-400 font-semibold',
       children: [
         {
+          to: '/provedores',
+          aliases: ['/contas/provedores'],
+          label: 'Provedores',
+          adminOnly: true,
+          accent: 'text-amber-400',
+          dot: 'bg-amber-400',
+          dotMuted: 'bg-amber-400/40',
+          active: 'bg-amber-500/15 text-amber-400 font-semibold',
+        },
+        {
+          to: '/dispositivos',
+          aliases: ['/contas/dispositivos'],
+          label: 'Dispositivos',
+          adminOnly: true,
+          accent: 'text-emerald-400',
+          dot: 'bg-emerald-400',
+          dotMuted: 'bg-emerald-400/40',
+          active: 'bg-emerald-500/15 text-emerald-400 font-semibold',
+        },
+        {
           to: '/perfis-navegador',
           aliases: ['/contas/perfis-navegador', '/contas/perfis-de-navegador'],
           label: 'Perfis de Navegador',
@@ -127,6 +147,8 @@ function isRouteMatching(item: NavRouteItem, pathname: string): boolean {
         const isOtherModule =
           pathname.startsWith('/contas/business-centers') ||
           pathname.startsWith('/contas/proxies') ||
+          pathname.startsWith('/contas/provedores') ||
+          pathname.startsWith('/contas/dispositivos') ||
           pathname.startsWith('/contas/perfis-navegador') ||
           pathname.startsWith('/contas/perfis-de-navegador');
         if (isOtherModule) return false;

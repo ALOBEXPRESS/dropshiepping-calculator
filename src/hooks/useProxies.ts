@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProxiesService } from '@/services/proxiesService';
 import type { Proxy, ProxyFormData } from '@/types/proxies';
+import { useSettings } from '@/contexts/SettingsContext';
 import { useUser } from '@/contexts/UserContext';
 
 export interface UseProxiesReturn {
@@ -19,27 +20,29 @@ export interface UseProxiesReturn {
   isLinking: boolean;
 }
 
-export function useProxies(organizationId: string | null): UseProxiesReturn {
+export function useProxies(organizationId?: string | null): UseProxiesReturn {
+  const { organizationId: contextOrgId } = useSettings();
+  const effectiveOrgId = organizationId !== undefined ? organizationId : contextOrgId;
   const queryClient = useQueryClient();
   const { userId } = useUser();
-  const queryKey = ['proxies', organizationId];
+  const queryKey = ['proxies', effectiveOrgId];
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey,
-    queryFn: () => ProxiesService.list(organizationId ?? ''),
-    enabled: !!organizationId,
+    queryFn: () => ProxiesService.list(effectiveOrgId ?? ''),
+    enabled: !!effectiveOrgId,
     staleTime: 5 * 60 * 1000,
   });
 
   const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ['proxies', organizationId] });
+    queryClient.invalidateQueries({ queryKey: ['proxies', effectiveOrgId] });
     // Invalida platform_accounts pois proxy_id pode ter mudado
-    queryClient.invalidateQueries({ queryKey: ['platform_accounts', organizationId] });
+    queryClient.invalidateQueries({ queryKey: ['platform_accounts', effectiveOrgId] });
   };
 
   const createMutation = useMutation({
     mutationFn: (formData: ProxyFormData) =>
-      ProxiesService.create(organizationId ?? '', formData, userId ?? undefined),
+      ProxiesService.create(effectiveOrgId ?? '', formData, userId ?? undefined),
     onSuccess: () => invalidate(),
   });
 

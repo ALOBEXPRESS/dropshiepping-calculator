@@ -1,9 +1,31 @@
 import { z } from 'zod';
+import {
+  PROXY_TYPES,
+  PROXY_TYPE_VALUES,
+  IP_VERSIONS,
+  IP_VERSION_VALUES,
+  PROXY_TYPE_LABELS,
+  IP_VERSION_LABELS,
+  type ProxyTypeValue,
+  type IpVersionValue,
+  isIpv6SupportedForProxyType,
+} from '@/constants/proxyTypes';
+
+export {
+  PROXY_TYPES,
+  PROXY_TYPE_VALUES,
+  IP_VERSIONS,
+  IP_VERSION_VALUES,
+  PROXY_TYPE_LABELS,
+  IP_VERSION_LABELS,
+  isIpv6SupportedForProxyType,
+};
 
 // ── Tipos base ───────────────────────────────────────────────────────────────
 
 export type ProxyProtocol = 'http' | 'https' | 'socks5';
-export type ProxyType = 'residential' | 'datacenter' | 'mobile' | 'isp';
+export type ProxyType = ProxyTypeValue;
+export type IpVersion = IpVersionValue;
 export type ProxyStatus = 'active' | 'expired' | 'banned' | 'inactive';
 
 // ── Interfaz principal (espelho do banco) ────────────────────────────────────
@@ -20,6 +42,9 @@ export interface Proxy {
   password?: string | null;
   country: string | null;
   proxy_type: ProxyType;
+  ip_version: IpVersion;
+  provider_id: string | null;
+  /** Campo texto legado (mantido temporariamente para expand/contract) */
   provider: string | null;
   status: ProxyStatus;
   expires_at: string | null;
@@ -50,7 +75,9 @@ export const proxySchema = z.object({
   username: z.string().trim().optional().or(z.literal('')),
   password: z.string().optional().or(z.literal('')),
   country: z.string().length(2, 'Use código ISO-2 (ex: BR)').optional().or(z.literal('')),
-  proxy_type: z.enum(['residential', 'datacenter', 'mobile', 'isp'] as const),
+  proxy_type: z.enum(PROXY_TYPE_VALUES),
+  ip_version: z.enum(IP_VERSION_VALUES).default('ipv4'),
+  provider_id: z.string().uuid().nullable().optional().or(z.literal('')),
   provider: z.string().trim().optional().or(z.literal('')),
   status: z.enum(['active', 'expired', 'banned', 'inactive'] as const),
   expires_at: z.string().optional().or(z.literal('')),
@@ -65,13 +92,6 @@ export const PROXY_PROTOCOL_LABELS: Record<ProxyProtocol, string> = {
   http: 'HTTP',
   https: 'HTTPS',
   socks5: 'SOCKS5',
-};
-
-export const PROXY_TYPE_LABELS: Record<ProxyType, string> = {
-  residential: 'Residencial',
-  datacenter: 'Datacenter',
-  mobile: 'Mobile',
-  isp: 'ISP',
 };
 
 export const PROXY_STATUS_LABELS: Record<ProxyStatus, string> = {

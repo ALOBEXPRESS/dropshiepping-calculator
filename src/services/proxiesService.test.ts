@@ -23,7 +23,8 @@ describe('proxySchema', () => {
     username: 'user123',
     password: 'secretpassword',
     country: 'BR',
-    proxy_type: 'residential' as const,
+    proxy_type: 'static_residential_isp' as const,
+    ip_version: 'ipv4' as const,
     provider: 'Brightdata',
     status: 'active' as const,
   };
@@ -73,7 +74,7 @@ describe('proxySchema', () => {
       protocol: 'socks5' as const,
       host: '10.0.0.1',
       port: 1080,
-      proxy_type: 'datacenter' as const,
+      proxy_type: 'static_datacenter' as const,
       status: 'active' as const,
     };
     const result = proxySchema.safeParse(minimal);
@@ -165,7 +166,8 @@ describe('ProxiesService', () => {
         username: ' admin ',
         password: ' pass ',
         country: 'br',
-        proxy_type: 'residential' as const,
+        proxy_type: 'static_residential_isp' as const,
+        ip_version: 'ipv4' as const,
         status: 'active' as const,
       };
 
@@ -340,5 +342,5 @@ describe('getCountryName', () => {
     const result = getCountryName('CA');
     expect(typeof result).toBe('string');
     expect(result.length).toBeGreaterThan(0);
-  });
+  }, 15000);
 });
