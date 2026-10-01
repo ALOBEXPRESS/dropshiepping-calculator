@@ -91,6 +91,8 @@ export const DeviceFormDialog: React.FC<DeviceFormDialogProps> = ({
   const isDouplus = isCloudPhone && selectedPlatform === 'douplus';
   const isPhysical = selectedDeviceType === 'pc_windows' || selectedDeviceType === 'mobile';
 
+  const deviceId = device?.id;
+
   useEffect(() => {
     if (open) {
       if (device) {
@@ -120,20 +122,37 @@ export const DeviceFormDialog: React.FC<DeviceFormDialogProps> = ({
         setCurrentStep(1);
       }
     }
-  }, [open, device, reset]);
+  }, [open, deviceId, reset]);
 
-  const handleNext = async () => {
+  const handleNext = async (e?: React.MouseEvent | React.KeyboardEvent | React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const valid = await trigger(['label', 'device_type']);
     if (valid) {
       setCurrentStep(2);
     }
   };
 
-  const handlePrev = () => {
+  const handlePrev = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setCurrentStep(1);
   };
 
   const handleFormSubmit = async (data: DeviceFormData) => {
+    // Se o submit for disparado no Passo 1 (ex: tecla Enter), apenas valida e avança para o Passo 2
+    if (currentStep === 1) {
+      const valid = await trigger(['label', 'device_type']);
+      if (valid) {
+        setCurrentStep(2);
+      }
+      return;
+    }
+
     await onSubmit(data);
     onOpenChange(false);
   };
@@ -173,16 +192,61 @@ export const DeviceFormDialog: React.FC<DeviceFormDialogProps> = ({
               </div>
             </div>
 
-            {/* Stepper Indicator */}
-            <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 px-2.5 py-1 rounded-full text-xs font-mono">
-              <span className={currentStep === 1 ? 'text-cyan-400 font-bold' : 'text-zinc-500'}>1</span>
+            {/* Stepper Indicator Interativo */}
+            <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 p-1 rounded-xl text-xs font-mono">
+              <button
+                type="button"
+                onClick={() => setCurrentStep(1)}
+                className={`px-2.5 py-1 rounded-lg transition-all font-semibold flex items-center gap-1.5 ${
+                  currentStep === 1
+                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-sm'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+                title="Passo 1: Identificador e Tipo"
+              >
+                <span>1</span>
+                <span className="hidden sm:inline font-sans text-[11px] font-normal">Identificador</span>
+              </button>
               <span className="text-zinc-600">/</span>
-              <span className={currentStep === 2 ? 'text-cyan-400 font-bold' : 'text-zinc-500'}>2</span>
+              <button
+                type="button"
+                onClick={async () => {
+                  const valid = await trigger(['label', 'device_type']);
+                  if (valid) setCurrentStep(2);
+                }}
+                className={`px-2.5 py-1 rounded-lg transition-all font-semibold flex items-center gap-1.5 ${
+                  currentStep === 2
+                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-sm'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+                title="Passo 2: Plataforma, Perfil e Conexão"
+              >
+                <span>2</span>
+                <span className="hidden sm:inline font-sans text-[11px] font-normal">Configuração</span>
+              </button>
             </div>
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="p-6 space-y-5">
+        <form
+          onSubmit={(e) => {
+            if (currentStep === 1) {
+              e.preventDefault();
+              e.stopPropagation();
+              handleNext(e);
+              return;
+            }
+            handleSubmit(handleFormSubmit)(e);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && currentStep === 1) {
+              e.preventDefault();
+              e.stopPropagation();
+              handleNext(e);
+            }
+          }}
+          className="p-6 space-y-5"
+        >
           {/* ── PASSO 1: TIPO DE DISPOSITIVO E LABEL ── */}
           {currentStep === 1 && (
             <div className="space-y-4">
@@ -457,7 +521,11 @@ export const DeviceFormDialog: React.FC<DeviceFormDialogProps> = ({
               {currentStep === 1 ? (
                 <Button
                   type="button"
-                  onClick={handleNext}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleNext(e);
+                  }}
                   className="bg-cyan-500 hover:bg-cyan-600 text-white font-medium text-xs px-4 gap-1.5"
                 >
                   <span>Continuar</span>
