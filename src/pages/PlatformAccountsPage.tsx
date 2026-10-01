@@ -76,14 +76,12 @@ import {
 import tiktokImg from '@/imgs/tiktok-shop-seller-cent-icon-filled-256.png';
 import {
   TikTokLogo,
-  MetaLogo,
   GoogleLogo,
   InstagramLogo,
   FacebookLogo,
   ThreadsLogo,
   getSocialPlatformDetails,
 } from '@/components/ui/PlatformLogos';
-import type { PlatformAccountPlatform, MetaAccountType } from '@/types/platformAccounts';
 
 function getSocialProfileUrl(account: PlatformAccount): string | null {
   const username = account.nickname?.trim().replace(/^@/, '');
@@ -151,8 +149,6 @@ export const PlatformAccountsPage: React.FC = () => {
   const [isEditOpen, setIsEditOpen] = useState(false);
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [createPlatform, setCreatePlatform] = useState<PlatformAccountPlatform | null>(null);
-  const [createMetaType, setCreateMetaType] = useState<MetaAccountType | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PlatformAccount | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [linkedAdAccounts, setLinkedAdAccounts] = useState<Array<{ id: string; name: string }>>([]);
@@ -356,10 +352,7 @@ export const PlatformAccountsPage: React.FC = () => {
             Atualizar
           </Button>
           <Button
-            onClick={() => {
-              setCreatePlatform('tiktok');
-              setCreateDialogOpen(true);
-            }}
+            onClick={() => setCreateDialogOpen(true)}
             className="bg-brand hover:bg-brand/90 text-white text-xs font-semibold h-9 px-4 shadow-lg shadow-brand/25"
           >
             <Plus className="w-4 h-4 mr-1.5" />
@@ -927,13 +920,7 @@ export const PlatformAccountsPage: React.FC = () => {
       />
 
       {/* ── Modal de Criação de Nova Conta (Apenas Perfil TikTok) ── */}
-      <Dialog open={createDialogOpen} onOpenChange={(open) => {
-        setCreateDialogOpen(open);
-        if (!open) {
-          setCreatePlatform('tiktok');
-          setCreateMetaType(null);
-        }
-      }}>
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 overflow-hidden bg-zinc-950 border-zinc-800 text-foreground shadow-2xl rounded-2xl">
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-zinc-800/80 bg-zinc-900/60">
             <div className="flex items-center gap-3">

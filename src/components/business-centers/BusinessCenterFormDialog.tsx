@@ -127,8 +127,6 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
 
   const selectedPlatform = watch('platform') || 'tiktok';
   const businessType = watch('business_type') || 'advertiser';
-  const metaLinkedNetwork = watch('meta_linked_network');
-  const metaLinkedAccountId = watch('meta_linked_account_id');
   const metaInstagramAccountId = watch('meta_instagram_account_id');
   const metaFacebookAccountId = watch('meta_facebook_account_id');
   const platformConfig = BC_PLATFORM_CONFIG[selectedPlatform] || BC_PLATFORM_CONFIG.tiktok;

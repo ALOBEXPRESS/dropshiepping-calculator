@@ -30,6 +30,7 @@ export function useAdAccounts(
   filters?: AdAccountFilters
 ): UseAdAccountsReturn {
   const queryClient = useQueryClient();
+  const { userId } = useUser();
   const queryKey = [
     'ad_accounts',
     organizationId,

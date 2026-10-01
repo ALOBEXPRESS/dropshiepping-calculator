@@ -540,8 +540,10 @@ export const AdAccountFormDialog: React.FC<AdAccountFormDialogProps> = ({
                             setValue('platform', plat.id, { shouldValidate: true });
                             setValue('bc_entity_id', null);
                             setValue('business_center_id', '');
-                            setSelectedPlatformAccount(null);
+                            setSelectedPlatformAccounts([]);
                             setValue('platform_account_id', null);
+                            setValue('meta_instagram_account_id', null);
+                            setValue('meta_facebook_account_id', null);
                           }}
                           className={`relative rounded-2xl border-2 p-5 cursor-pointer transition-all ${
                             isSelected

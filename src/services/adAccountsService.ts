@@ -204,7 +204,7 @@ export class AdAccountsService {
   static async update(
     organizationId: string,
     id: string,
-    data: Partial<AdAccountFormData>
+    data: Partial<AdAccountFormData> & { platform_config?: Record<string, unknown> }
   ): Promise<AdAccount> {
     const updatePayload: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
@@ -238,7 +238,9 @@ export class AdAccountsService {
     if (data.meta_facebook_account_id !== undefined)
       updatePayload.meta_facebook_account_id = data.meta_facebook_account_id ?? null;
 
-    if (data.pixel_id !== undefined || data.catalog_id !== undefined) {
+    if (data.platform_config !== undefined) {
+      updatePayload.platform_config = data.platform_config;
+    } else if (data.pixel_id !== undefined || data.catalog_id !== undefined) {
       // Buscar platform_config atual para mesclar
       const { data: current } = await supabase
         .from('ad_accounts')
