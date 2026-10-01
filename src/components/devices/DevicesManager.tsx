@@ -22,6 +22,7 @@ import {
   Layers,
   AlertTriangle,
 } from 'lucide-react';
+import { DeviceLogo } from '@/components/ui/DeviceLogo';
 import {
   Dialog,
   DialogContent,
@@ -132,25 +133,12 @@ export const DevicesManager: React.FC<DevicesManagerProps> = ({ organizationId: 
           {/* Header do Card */}
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div
-                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
-                  device.device_type === 'cloud_phone'
-                    ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
-                    : device.device_type === 'emulator'
-                    ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400'
-                    : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                }`}
-              >
-                {device.device_type === 'cloud_phone' ? (
-                  <Cloud className="w-5 h-5" />
-                ) : device.device_type === 'emulator' ? (
-                  <Cpu className="w-5 h-5" />
-                ) : device.device_type === 'mobile' ? (
-                  <Smartphone className="w-5 h-5" />
-                ) : (
-                  <Monitor className="w-5 h-5" />
-                )}
-              </div>
+              <DeviceLogo
+                platform={device.platform}
+                deviceType={device.device_type}
+                label={device.label}
+                className="w-10 h-10"
+              />
 
               <div>
                 <h4 className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">

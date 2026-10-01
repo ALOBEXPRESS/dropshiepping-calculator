@@ -42,6 +42,7 @@ import {
   Shield,
   CheckCircle2,
 } from 'lucide-react';
+import { DeviceLogo } from '@/components/ui/DeviceLogo';
 
 interface DeviceFormDialogProps {
   open: boolean;
@@ -85,6 +86,7 @@ export const DeviceFormDialog: React.FC<DeviceFormDialogProps> = ({
 
   const selectedDeviceType = watch('device_type');
   const selectedPlatform = watch('platform');
+  const labelWatch = watch('label');
 
   const isCloudPhone = selectedDeviceType === 'cloud_phone';
   const isEmulator = selectedDeviceType === 'emulator';
@@ -177,9 +179,12 @@ export const DeviceFormDialog: React.FC<DeviceFormDialogProps> = ({
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-zinc-800/80 bg-zinc-900/60">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center">
-                {getDeviceIcon(selectedDeviceType)}
-              </div>
+              <DeviceLogo
+                platform={selectedPlatform}
+                deviceType={selectedDeviceType}
+                label={labelWatch}
+                className="w-10 h-10"
+              />
               <div>
                 <DialogTitle className="text-base font-bold text-white">
                   {isEditing ? 'Editar Dispositivo' : 'Novo Dispositivo'}
@@ -344,7 +349,15 @@ export const DeviceFormDialog: React.FC<DeviceFormDialogProps> = ({
                         <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
                           {CLOUD_PHONE_PLATFORMS.map((p) => (
                             <SelectItem key={p.value} value={p.value}>
-                              {p.label}
+                              <div className="flex items-center gap-2">
+                                <DeviceLogo
+                                  platform={p.value}
+                                  deviceType="cloud_phone"
+                                  size="sm"
+                                  className="w-5 h-5 rounded-md"
+                                />
+                                <span>{p.label}</span>
+                              </div>
                             </SelectItem>
                           ))}
                         </SelectContent>
