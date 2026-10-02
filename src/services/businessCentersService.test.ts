@@ -24,6 +24,7 @@ describe('businessCenterSchema', () => {
     currency: 'BRL',
     bc_id: '7123456789012345678',
     notes: '',
+    company_status: 'Ativa' as const,
   };
 
   it('validates a complete valid business center', () => {
@@ -42,7 +43,10 @@ describe('businessCenterSchema', () => {
   });
 
   it('validates allowed business_type values', () => {
-    const invalidResult = businessCenterSchema.safeParse({ ...baseValid, business_type: 'invalid' as any });
+    const invalidResult = businessCenterSchema.safeParse({
+      ...baseValid,
+      business_type: 'invalid' as unknown as typeof baseValid.business_type,
+    });
     expect(invalidResult.success).toBe(false);
   });
 

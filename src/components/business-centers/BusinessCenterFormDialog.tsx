@@ -70,6 +70,29 @@ interface BusinessCenterFormDialogProps {
   organizationId: string;
 }
 
+const DEFAULT_FORM_VALUES: BusinessCenterFormData = {
+  platform: 'tiktok',
+  business_type: 'advertiser',
+  name: '',
+  country: 'BR',
+  timezone: 'America/Sao_Paulo',
+  currency: 'BRL',
+  bc_id: '',
+  notes: '',
+  holder_name: '',
+  holder_cpf: '',
+  holder_rg: '',
+  holder_birth_date: '',
+  company_legal_name: '',
+  company_cnpj: '',
+  company_state_registration: '',
+  company_status: 'Ativa',
+  meta_linked_network: null,
+  meta_linked_account_id: null,
+  meta_instagram_account_id: null,
+  meta_facebook_account_id: null,
+};
+
 export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> = ({
   open,
   onOpenChange,
@@ -83,29 +106,6 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
     useBusinessCenters(organizationId);
   const { data: platformAccounts = [] } = usePlatformAccounts();
   const isBusy = isCreating || isUpdating;
-
-  const defaultValues: BusinessCenterFormData = {
-    platform: 'tiktok',
-    business_type: 'advertiser',
-    name: '',
-    country: 'BR',
-    timezone: 'America/Sao_Paulo',
-    currency: 'BRL',
-    bc_id: '',
-    notes: '',
-    holder_name: '',
-    holder_cpf: '',
-    holder_rg: '',
-    holder_birth_date: '',
-    company_legal_name: '',
-    company_cnpj: '',
-    company_state_registration: '',
-    company_status: 'Ativa',
-    meta_linked_network: null,
-    meta_linked_account_id: null,
-    meta_instagram_account_id: null,
-    meta_facebook_account_id: null,
-  };
 
   const [linkInstagram, setLinkInstagram] = useState(false);
   const [linkFacebook, setLinkFacebook] = useState(false);
@@ -121,7 +121,7 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
     formState: { errors },
   } = useForm<BusinessCenterFormData>({
     resolver: zodResolver(businessCenterSchema),
-    defaultValues,
+    defaultValues: DEFAULT_FORM_VALUES,
     mode: 'onChange',
   });
 
@@ -202,7 +202,7 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
       } else {
         setLinkInstagram(false);
         setLinkFacebook(false);
-        reset(defaultValues);
+        reset(DEFAULT_FORM_VALUES);
         setCurrentStep(1);
       }
     }
