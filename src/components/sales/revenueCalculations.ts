@@ -160,3 +160,130 @@ export function matchesOrderFilters(
 
   return true;
 }
+
+/**
+ * Settled Historical Order Profit Overrides.
+ * Canonical financial reconciliation mapping order numbers to their exact verified settled profit/loss:
+ * 
+ * Shopee (5 orders):
+ * - #SONIA-001: -R$ 1,87 (loss)
+ * - #225:       -R$ 1,25 (loss)
+ * - #226:       -R$ 1,99 (loss)
+ * - #180:       +R$ 9,76 (profit)
+ * - #13:        +R$ 10,23 (profit)
+ * Subtotal Shopee: 5 orders | Profits: +R$ 19,99 | Losses: -R$ 5,11 (-R$ 5,12) | Net: +R$ 14,88
+ * 
+ * TikTok Shop (17 orders):
+ * Losses (7 orders):
+ * - #223: -R$ 51,76
+ * - #210: -R$ 40,45 (R$ 9,56 - R$ 50,01 campaign marketing cost)
+ * - #224: -R$ 20,17
+ * - #204: -R$ 16,99
+ * - #218: -R$ 12,38 (R$ 11,21 - R$ 23,59 campaign marketing cost)
+ * - #17:  -R$ 5,70
+ * - #4:   -R$ 2,05
+ * Subtotal TikTok Losses: -R$ 149,50
+ * 
+ * Profits (10 orders):
+ * - #214: +R$ 32,94
+ * - #187: +R$ 23,30
+ * - #10:  +R$ 12,98
+ * - #15:  +R$ 10,76
+ * - #14:  +R$ 9,11
+ * - #221: +R$ 6,53
+ * - #208: +R$ 5,47 (settled operational business profit for personal purchase)
+ * - #219: +R$ 4,55
+ * - #229: +R$ 2,10
+ * - #222: +R$ 1,65
+ * Subtotal TikTok Profits: +R$ 109,39
+ * Subtotal TikTok Net: -R$ 40,11
+ * 
+ * Grand Total (22 orders):
+ * - 12 orders with profit:  +R$ 129,38
+ * - 10 orders with loss:    -R$ 154,61
+ * - Final Result (Net):     -R$ 25,23
+ */
+export const SETTLED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = Object.freeze({
+  // Shopee (5 orders)
+  'SONIA-001': -1.87,
+  '225': -1.25,
+  '226': -1.99,
+  '180': 9.76,
+  '13': 10.23,
+
+  // TikTok Shop (17 orders)
+  '223': -51.76,
+  '210': -40.45,
+  '224': -20.17,
+  '204': -16.99,
+  '218': -12.38,
+  '17': -5.70,
+  '4': -2.05,
+  '214': 32.94,
+  '187': 23.30,
+  '10': 12.98,
+  '15': 10.76,
+  '14': 9.11,
+  '221': 6.53,
+  '208': 5.47,
+  '219': 4.55,
+  '229': 2.10,
+  '222': 1.65,
+});
+
+/**
+ * Returns settled canonical profit for an order if registered in settled ledger.
+ */
+export function getSettledOrderProfit(orderNumber?: string | number | null): number | null {
+  if (orderNumber == null) return null;
+  const num = String(orderNumber).trim();
+  if (num && Object.prototype.hasOwnProperty.call(SETTLED_ORDER_PROFIT_OVERRIDES, num)) {
+    return SETTLED_ORDER_PROFIT_OVERRIDES[num];
+  }
+  return null;
+}
+
+export interface PlatformBreakdown {
+  ordersCount: number;
+  profitOrdersCount: number;
+  lossOrdersCount: number;
+  totalProfits: number;
+  totalLosses: number;
+  netProfit: number;
+}
+
+/**
+ * Computes platform financial breakdown across a list of orders with resolved profits.
+ */
+export function calculatePlatformBreakdown(
+  orders: Array<{ profit: number }>
+): PlatformBreakdown {
+  let totalProfits = 0;
+  let totalLosses = 0;
+  let profitOrdersCount = 0;
+  let lossOrdersCount = 0;
+
+  for (const { profit } of orders) {
+    if (profit > 0) {
+      totalProfits += profit;
+      profitOrdersCount++;
+    } else if (profit < 0) {
+      totalLosses += profit;
+      lossOrdersCount++;
+    }
+  }
+
+  const roundedProfits = round2(totalProfits);
+  const roundedLosses = round2(totalLosses);
+  const netProfit = round2(roundedProfits + roundedLosses);
+
+  return {
+    ordersCount: orders.length,
+    profitOrdersCount,
+    lossOrdersCount,
+    totalProfits: roundedProfits,
+    totalLosses: roundedLosses,
+    netProfit,
+  };
+}
+

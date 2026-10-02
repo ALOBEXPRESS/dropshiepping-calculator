@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { calcOrderProfit, type OrderProfitInput } from '@/utils/calcOrderProfit';
-import { getSafePeriodLabels, calculatePercentageChange, matchesOrderFilters } from '@/components/sales/revenueCalculations';
+import { getSafePeriodLabels, calculatePercentageChange, matchesOrderFilters, getSettledOrderProfit } from '@/components/sales/revenueCalculations';
 import type { SalesFilters } from '@/hooks/useFilterPersistence';
 
 interface HeroStats {
@@ -21,6 +21,10 @@ type RpcPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
 // Compute profit from an orders_data array (from RPC)
 function computeProfitFromOrders(orders: Record<string, unknown>[]): number {
   return orders.reduce((sum, o) => {
+    const settled = getSettledOrderProfit((o.order_number ?? '') as string | number);
+    if (settled !== null) {
+      return sum + settled;
+    }
     const products = (o.products as Record<string, unknown>[] | null) ?? [];
     const marketplaceName = String(o.marketplace ?? o.marketplace_name ?? '');
     const mpConfig = {
@@ -294,6 +298,11 @@ export const useHeroStats = (
         const computeOrderRealProfitValue = (rawOrder: Record<string, unknown>): number => {
           const orderId = String(rawOrder.order_id ?? '');
           const dbOrder = dbOrderMap.get(orderId);
+          const orderNumber = (dbOrder?.order_number || rawOrder?.order_number) as string | number | undefined;
+          const settled = getSettledOrderProfit(orderNumber);
+          if (settled !== null) {
+            return settled;
+          }
           if (!dbOrder) {
             return computeProfitFromOrders([rawOrder]);
           }

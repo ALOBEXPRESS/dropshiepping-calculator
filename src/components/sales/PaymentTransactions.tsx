@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/lib/supabase';
 import { Loader2, ChevronLeft, ChevronRight, Handshake } from 'lucide-react';
 import { calcOrderProfit, type OrderProfitInput } from '@/utils/calcOrderProfit';
+import { getSettledOrderProfit } from './revenueCalculations';
 
 import shopeeImg from '@/imgs/18790-256x256x32.png';
 import tiktokImg from '@/imgs/tiktok-shop-seller-cent-icon-filled-256.png';
@@ -449,8 +450,9 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
               fixed_fee: fixedFee,
             });
 
+            const settled = getSettledOrderProfit(dbOrder.order_number || tx.order_number);
             const mktCost = mktCostMap.get(tx.id) ?? 0;
-            const computedProfit = result.realProfit - mktCost;
+            const computedProfit = settled !== null ? settled : (result.realProfit - mktCost);
 
             return {
               ...tx,

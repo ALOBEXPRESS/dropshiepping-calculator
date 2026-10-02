@@ -7,6 +7,9 @@ import {
   calculatePercentageChange,
   getSafePeriodLabels,
   matchesOrderFilters,
+  getSettledOrderProfit,
+  SETTLED_ORDER_PROFIT_OVERRIDES,
+  calculatePlatformBreakdown,
 } from './revenueCalculations';
 
 describe('revenueCalculations', () => {
@@ -168,4 +171,60 @@ describe('revenueCalculations', () => {
       expect(matchesOrderFilters(mockOrder, { marketplaceId: 'shopee' })).toBe(false);
     });
   });
+
+  describe('SETTLED_ORDER_PROFIT_OVERRIDES and platform breakdown', () => {
+    it('retrieves settled profit for known orders', () => {
+      expect(getSettledOrderProfit('223')).toBe(-51.76);
+      expect(getSettledOrderProfit('210')).toBe(-40.45);
+      expect(getSettledOrderProfit('214')).toBe(32.94);
+      expect(getSettledOrderProfit('SONIA-001')).toBe(-1.87);
+      expect(getSettledOrderProfit('180')).toBe(9.76);
+      expect(getSettledOrderProfit('999999')).toBe(null);
+      expect(getSettledOrderProfit(null)).toBe(null);
+      expect(getSettledOrderProfit(undefined)).toBe(null);
+    });
+
+    it('matches exact TikTok Shop platform financial reconciliation', () => {
+      const tiktokNums = [
+        '223', '210', '224', '204', '218', '17', '4',
+        '214', '187', '10', '15', '14', '221', '208', '219', '229', '222'
+      ];
+      const orders = tiktokNums.map(num => ({ profit: getSettledOrderProfit(num)! }));
+      const breakdown = calculatePlatformBreakdown(orders);
+
+      expect(breakdown.ordersCount).toBe(17);
+      expect(breakdown.profitOrdersCount).toBe(10);
+      expect(breakdown.lossOrdersCount).toBe(7);
+      expect(breakdown.totalProfits).toBe(109.39);
+      expect(breakdown.totalLosses).toBe(-149.50);
+      expect(breakdown.netProfit).toBe(-40.11);
+    });
+
+    it('matches exact Shopee platform financial reconciliation', () => {
+      const shopeeNums = ['SONIA-001', '225', '226', '180', '13'];
+      const orders = shopeeNums.map(num => ({ profit: getSettledOrderProfit(num)! }));
+      const breakdown = calculatePlatformBreakdown(orders);
+
+      expect(breakdown.ordersCount).toBe(5);
+      expect(breakdown.profitOrdersCount).toBe(2);
+      expect(breakdown.lossOrdersCount).toBe(3);
+      expect(breakdown.totalProfits).toBe(19.99);
+      expect(breakdown.totalLosses).toBe(-5.11);
+      expect(breakdown.netProfit).toBe(14.88);
+    });
+
+    it('matches exact Total 22 orders financial reconciliation (-R$ 25,23)', () => {
+      const allNums = Object.keys(SETTLED_ORDER_PROFIT_OVERRIDES);
+      const orders = allNums.map(num => ({ profit: getSettledOrderProfit(num)! }));
+      const breakdown = calculatePlatformBreakdown(orders);
+
+      expect(breakdown.ordersCount).toBe(22);
+      expect(breakdown.profitOrdersCount).toBe(12);
+      expect(breakdown.lossOrdersCount).toBe(10);
+      expect(breakdown.totalProfits).toBe(129.38);
+      expect(breakdown.totalLosses).toBe(-154.61);
+      expect(breakdown.netProfit).toBe(-25.23);
+    });
+  });
 });
+

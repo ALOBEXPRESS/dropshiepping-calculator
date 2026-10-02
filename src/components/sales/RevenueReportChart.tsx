@@ -30,7 +30,7 @@ import { ReferenceService, type Marketplace } from '@/services/referenceService'
 import { AffiliateAccordion } from './AffiliateAccordion';
 import { AffiliateDetailModal } from './AffiliateDetailModal';
 import { calcOrderProfit } from '@/utils/calcOrderProfit';
-import { matchesOrderFilters } from './revenueCalculations';
+import { matchesOrderFilters, getSettledOrderProfit } from './revenueCalculations';
 import type { SalesFilters } from '@/hooks/useFilterPersistence';
 
 interface RevenueReportChartProps {
@@ -373,9 +373,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     const hasReembolsoOv = orderId in reembolsoByOrderIdRef.current;
     const rawReembolso = (order as { reembolso_value?: number | null }).reembolso_value;
     const reembolsoOv = hasReembolsoOv ? reembolsoByOrderIdRef.current[orderId] : (rawReembolso != null ? Number(rawReembolso) : null);
-    const effectiveProfit = reembolsoOv !== null && !isNaN(reembolsoOv)
-      ? (reembolsoOv - totalProductCost - manualMktDeduct)
-      : (realProfit - manualMktDeduct);
+    const settledDetailProfit = !hasReembolsoOv ? getSettledOrderProfit(orderNumber) : null;
+    const effectiveProfit = settledDetailProfit !== null
+      ? settledDetailProfit
+      : (reembolsoOv !== null && !isNaN(reembolsoOv)
+          ? (reembolsoOv - totalProductCost - manualMktDeduct)
+          : (realProfit - manualMktDeduct));
 
     const detail: OrderDetail = {
       ...((enrichment ?? {}) as Partial<OrderDetail>),
@@ -2102,9 +2105,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 const hasReembolsoOv1 = orderId1 in reembolsoByOrderIdRef.current;
                 const rawReembolso1 = (order as { reembolso_value?: number | null }).reembolso_value;
                 const reembolsoOv1 = hasReembolsoOv1 ? reembolsoByOrderIdRef.current[orderId1] : (rawReembolso1 != null ? Number(rawReembolso1) : null);
-                const realProfit = reembolsoOv1 !== null && !isNaN(reembolsoOv1)
+                const fallbackRealProfit1 = reembolsoOv1 !== null && !isNaN(reembolsoOv1)
                   ? (reembolsoOv1 - tpc1 - manualMktDeduct1)
                   : (rawRealProfit - manualMktDeduct1);
+                const settledTooltip1 = !hasReembolsoOv1 ? getSettledOrderProfit(orderNumber) : null;
+                const realProfit = settledTooltip1 !== null ? settledTooltip1 : fallbackRealProfit1;
                 const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true
                   || String(orderNumber).trim() === '208';
                 const profitLabel = realProfit >= 0 ? 'Lucro:' : 'Prejuízo:';
@@ -2558,9 +2563,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const reembolsoOverride = rawReembolsoOverride != null ? Number(rawReembolsoOverride) : null;
         // manualMarketingCostByOrderId já contém campaign_order_costs + GVM Play (todos os custos salvos)
         const totalMktCost = manualMarketingCostByOrderId[o.order_id] ?? 0;
-        const effectiveProfit = hasReembolsoOverride && reembolsoOverride !== null && !isNaN(reembolsoOverride)
+        const hasManualModalEdit = Boolean(o.order_id && o.order_id in reembolsoByOrderId);
+        const settledProfit = !hasManualModalEdit ? getSettledOrderProfit(o.order_number) : null;
+        const fallbackEffectiveProfit = hasReembolsoOverride && reembolsoOverride !== null && !isNaN(reembolsoOverride)
           ? (reembolsoOverride - totalProductCost - totalMktCost)
           : (realProfit - totalMktCost);
+        const effectiveProfit = settledProfit !== null ? settledProfit : fallbackEffectiveProfit;
 
         // Marketing cost para exibição no painel de totais (keyed by order_id)
         const orderMarketingCost = (marketingCostByProductId as unknown as Record<string, number>)[`order:${o.order_id}`] ?? 0;
@@ -2983,9 +2991,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const hasReembolsoOv2 = !hasRetornoLiquido2 && (order.order_id in reembolsoByOrderIdRef.current);
           const rawReembolso2 = (mergedOrder as { reembolso_value?: number | null }).reembolso_value ?? (order as { reembolso_value?: number | null }).reembolso_value;
           const reembolsoOv2 = hasReembolsoOv2 ? reembolsoByOrderIdRef.current[order.order_id] : (!hasRetornoLiquido2 && rawReembolso2 != null ? Number(rawReembolso2) : null);
-          const realProfit = reembolsoOv2 !== null && !isNaN(reembolsoOv2)
+          const fallbackRealProfit2 = reembolsoOv2 !== null && !isNaN(reembolsoOv2)
             ? (reembolsoOv2 - tpc2 - manualMktDeduct2)
             : (rawRealProfit2 - manualMktDeduct2);
+          const settledTooltip2 = !hasReembolsoOv2 ? getSettledOrderProfit(orderNumber) : null;
+          const realProfit = settledTooltip2 !== null ? settledTooltip2 : fallbackRealProfit2;
           const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true
             || String(orderNumber).trim() === '208';
           const profitColor = isPersonalPurchase ? '#fed7aa' : isFreeSample ? '#e9d5ff' : (realProfit >= 0 ? '#16a34a' : '#dc2626');

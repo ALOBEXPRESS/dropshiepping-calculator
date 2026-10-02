@@ -13,6 +13,7 @@ import { supabase } from '../lib/supabase';
 import { calculatePeriodRanges as calculatePeriodRangesUtil } from '../utils/dateRangeCalculator';
 import { calculateGrowth as calculateGrowthUtil } from '../utils/growthCalculator';
 import { calcOrderProfit, type OrderProfitInput } from '../utils/calcOrderProfit';
+import { getSettledOrderProfit } from '../components/sales/revenueCalculations';
 import type {
   TimePeriod,
   DateRange,
@@ -277,8 +278,9 @@ export class DashboardService {
         fixed_fee: fixedFee,
       });
 
+      const settled = getSettledOrderProfit(order.order_number);
       const mktCost = mktCostMap.get(order.id) ?? 0;
-      const effectiveProfit = result.realProfit - mktCost;
+      const effectiveProfit = settled !== null ? settled : (result.realProfit - mktCost);
 
       return {
         id: order.id,
