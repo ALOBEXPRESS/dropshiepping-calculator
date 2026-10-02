@@ -49,6 +49,7 @@ const ProxyProviders = lazy(() => import('./pages/ProxyProvidersPage'));
 const Devices = lazy(() => import('./pages/DevicesPage'));
 const BrowserProfiles = lazy(() => import('./pages/BrowserProfilesPage'));
 const BusinessCenters = lazy(() => import('./pages/BusinessCentersPage'));
+const InfraMap = lazy(() => import('./pages/InfraMapPage').then(m => ({ default: m.InfraMapPage })));
 
 const ProductsPage = () => (
   <ProtectedRoute>
@@ -200,6 +201,18 @@ const BusinessCentersRoutePage = () => (
   </ProtectedRoute>
 );
 
+const InfraMapRoutePage = () => (
+  <ProtectedRoute>
+    <AdminRoute>
+    <Layout>
+      <Suspense fallback={<LoadingState />}>
+        <InfraMap />
+      </Suspense>
+    </Layout>
+    </AdminRoute>
+  </ProtectedRoute>
+);
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -243,6 +256,8 @@ function App() {
               <Route path="/contas/perfis-de-navegador" element={<BrowserProfilesRoutePage />} />
               <Route path="/business-centers" element={<BusinessCentersRoutePage />} />
               <Route path="/contas/business-centers" element={<BusinessCentersRoutePage />} />
+              <Route path="/mapa" element={<InfraMapRoutePage />} />
+              <Route path="/contas/mapa" element={<InfraMapRoutePage />} />
               <Route path="/profile" element={
                 <ProtectedRoute>
                   <Layout>

@@ -130,6 +130,16 @@ const NAV_ROUTES: {
       dotMuted: 'bg-[hsl(var(--warning)/0.4)]',
       active: 'bg-[hsl(var(--warning)/0.12)] text-[hsl(var(--warning))] font-semibold',
     },
+    {
+      to: '/mapa',
+      aliases: ['/contas/mapa'],
+      label: 'Mapa de Conexões',
+      adminOnly: true,
+      accent: 'text-purple-400',
+      dot: 'bg-purple-400',
+      dotMuted: 'bg-purple-400/40',
+      active: 'bg-purple-500/15 text-purple-400 font-semibold',
+    },
   ],
 };
 
@@ -150,7 +160,8 @@ function isRouteMatching(item: NavRouteItem, pathname: string): boolean {
           pathname.startsWith('/contas/provedores') ||
           pathname.startsWith('/contas/dispositivos') ||
           pathname.startsWith('/contas/perfis-navegador') ||
-          pathname.startsWith('/contas/perfis-de-navegador');
+          pathname.startsWith('/contas/perfis-de-navegador') ||
+          pathname.startsWith('/contas/mapa');
         if (isOtherModule) return false;
       }
       return true;
@@ -325,8 +336,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     </button>
   );
 
+  const isMapPage = location.pathname === '/mapa' || location.pathname === '/contas/mapa';
+
   return (
-    <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
+    <div className={`min-h-screen ${isMapPage ? 'h-screen overflow-hidden' : ''} bg-background text-foreground transition-colors duration-300`}>
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
 
       {/* ── Sidebar ──────────────────────────────────────────────────────── */}
@@ -435,7 +448,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* ── Main content ─────────────────────────────────────────────────── */}
-      <div className={`min-h-screen flex flex-col transition-all duration-300 ${sidebarOpen ? 'lg:ml-60' : 'lg:ml-0'}`}>
+      <div className={`${isMapPage ? 'h-screen max-h-screen overflow-hidden' : 'min-h-screen'} flex flex-col transition-all duration-300 ${sidebarOpen ? 'lg:ml-60' : 'lg:ml-0'}`}>
 
         {/* Header / Topbar */}
         <header className="sticky top-0 z-30 flex items-center justify-between gap-4 px-4 h-14
@@ -552,15 +565,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-4 md:p-6">
+        <main className={isMapPage ? "flex-1 flex flex-col min-h-0 p-0 overflow-hidden" : "flex-1 p-4 md:p-6"}>
           {children}
         </main>
 
         {/* Global Footer */}
-        <footer className="py-6 px-4 border-t border-border/40 text-center mt-auto bg-card/30">
-          <p className="text-gray-400 text-sm font-medium font-iceland tracking-wide">Desenvolvido por: Jonatan Renan</p>
-          <p className="text-gray-600 text-xs mt-1">Alob Express © todos os direitos reservados</p>
-        </footer>
+        {!isMapPage && (
+          <footer className="py-6 px-4 border-t border-border/40 text-center mt-auto bg-card/30">
+            <p className="text-gray-400 text-sm font-medium font-iceland tracking-wide">Desenvolvido por: Jonatan Renan</p>
+            <p className="text-gray-600 text-xs mt-1">Alob Express © todos os direitos reservados</p>
+          </footer>
+        )}
       </div>
     </div>
   );
