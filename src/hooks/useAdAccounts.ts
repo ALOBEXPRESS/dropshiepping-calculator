@@ -13,6 +13,7 @@ export interface UseAdAccountsReturn {
   accounts: AdAccountWithStats[];
   adAccounts: AdAccountWithStats[];
   isLoading: boolean;
+  isFetching: boolean;
   isError: boolean;
   error: Error | null;
   refetch: () => void;
@@ -39,7 +40,7 @@ export function useAdAccounts(
     filters?.platform ?? 'all',
   ];
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
     queryKey,
     queryFn: () => AdAccountsService.list(organizationId ?? '', filters),
     enabled: !!organizationId,
@@ -48,6 +49,7 @@ export function useAdAccounts(
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['ad_accounts', organizationId] });
+    queryClient.invalidateQueries({ queryKey: ['ad_account', organizationId] });
     queryClient.invalidateQueries({ queryKey: ['campaigns', organizationId] });
   };
 
@@ -86,6 +88,7 @@ export function useAdAccounts(
     accounts: data ?? [],
     adAccounts: data ?? [],
     isLoading,
+    isFetching,
     isError,
     error: (error as Error) ?? null,
     refetch,

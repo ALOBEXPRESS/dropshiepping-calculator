@@ -7,6 +7,35 @@ import type {
   AdAccountStatus,
 } from '@/types/adAccounts';
 
+const AD_ACCOUNT_SELECT =
+  '*, platform_account:platform_accounts!platform_account_id(*), business_center:business_centers!bc_entity_id(id, bc_id, name)';
+
+interface CampaignMetricsRow {
+  ad_account_id?: string | null;
+  campaign_products?: Array<{ marketing_cost_override?: number | null }> | null;
+}
+
+/**
+ * Calcula quantidade de campanhas e gasto derivado dos produtos associados por conta de anúncio
+ */
+function calculateCampaignStats(campaigns: CampaignMetricsRow[]): Map<string, { count: number; spend: number }> {
+  const statsMap = new Map<string, { count: number; spend: number }>();
+  for (const c of campaigns) {
+    if (!c.ad_account_id) continue;
+    const existing = statsMap.get(c.ad_account_id) ?? { count: 0, spend: 0 };
+    existing.count += 1;
+
+    const productsCost = (c.campaign_products ?? []).reduce(
+      (acc: number, p: { marketing_cost_override?: number | null }) =>
+        acc + (p.marketing_cost_override != null ? Number(p.marketing_cost_override) : 0),
+      0
+    );
+    existing.spend += productsCost;
+    statsMap.set(c.ad_account_id, existing);
+  }
+  return statsMap;
+}
+
 export class AdAccountsService {
   /**
    * Lista todas as contas de anúncios da organização com contadores e gastos derivados
@@ -19,7 +48,7 @@ export class AdAccountsService {
 
     let query = supabase
       .from('ad_accounts')
-      .select('*, platform_account:platform_accounts!platform_account_id(*)')
+      .select(AD_ACCOUNT_SELECT)
       .eq('organization_id', organizationId)
       .order('created_at', { ascending: false });
 
@@ -32,10 +61,14 @@ export class AdAccountsService {
     }
 
     if (filters?.search && filters.search.trim() !== '') {
-      const term = `%${filters.search.trim()}%`;
-      query = query.or(
-        `name.ilike.${term},advertiser_id.ilike.${term},business_center_id.ilike.${term}`
-      );
+      // Remove caracteres especiais de sintaxe do PostgREST para evitar erro 400
+      const sanitized = filters.search.trim().replace(/[,()]/g, '');
+      if (sanitized) {
+        const term = `%${sanitized}%`;
+        query = query.or(
+          `name.ilike.${term},advertiser_id.ilike.${term},business_center_id.ilike.${term}`
+        );
+      }
     }
 
     const { data: accounts, error } = await query;
@@ -48,22 +81,7 @@ export class AdAccountsService {
       .select('id, ad_account_id, budget_amount, campaign_products(marketing_cost_override)')
       .eq('organization_id', organizationId);
 
-    // Mapear métricas por ad_account_id
-    const statsMap = new Map<string, { count: number; spend: number }>();
-    for (const c of campaigns ?? []) {
-      if (!c.ad_account_id) continue;
-      const existing = statsMap.get(c.ad_account_id) ?? { count: 0, spend: 0 };
-      existing.count += 1;
-
-      // Calcular custo de marketing derivado dos produtos da campanha
-      const productsCost = (c.campaign_products ?? []).reduce(
-        (acc: number, p: { marketing_cost_override: number | null }) =>
-          acc + (p.marketing_cost_override != null ? Number(p.marketing_cost_override) : 0),
-        0
-      );
-      existing.spend += productsCost;
-      statsMap.set(c.ad_account_id, existing);
-    }
+    const statsMap = calculateCampaignStats(campaigns ?? []);
 
     return (accounts as AdAccount[]).map((acc) => {
       const stats = statsMap.get(acc.id) ?? { count: 0, spend: 0 };
@@ -86,7 +104,7 @@ export class AdAccountsService {
 
     const { data: account, error } = await supabase
       .from('ad_accounts')
-      .select('*, platform_account:platform_accounts!platform_account_id(*)')
+      .select(AD_ACCOUNT_SELECT)
       .eq('organization_id', organizationId)
       .eq('id', id)
       .maybeSingle();
@@ -97,24 +115,17 @@ export class AdAccountsService {
     // Buscar campanhas desta conta
     const { data: campaigns } = await supabase
       .from('campaigns')
-      .select('id, budget_amount, campaign_products(marketing_cost_override)')
+      .select('id, ad_account_id, budget_amount, campaign_products(marketing_cost_override)')
       .eq('organization_id', organizationId)
       .eq('ad_account_id', id);
 
-    let totalSpend = 0;
-    for (const c of campaigns ?? []) {
-      const productsCost = (c.campaign_products ?? []).reduce(
-        (acc: number, p: { marketing_cost_override: number | null }) =>
-          acc + (p.marketing_cost_override != null ? Number(p.marketing_cost_override) : 0),
-        0
-      );
-      totalSpend += productsCost;
-    }
+    const statsMap = calculateCampaignStats(campaigns ?? []);
+    const stats = statsMap.get(id) ?? { count: (campaigns ?? []).length, spend: 0 };
 
     return {
       ...(account as AdAccount),
-      campaign_count: (campaigns ?? []).length,
-      total_spend: totalSpend,
+      campaign_count: stats.count,
+      total_spend: stats.spend,
     };
   }
 

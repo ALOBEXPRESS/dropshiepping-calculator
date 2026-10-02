@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Card,
@@ -33,7 +33,7 @@ import {
 import ReactCountryFlag from 'react-country-flag';
 import { AdAccountStatusBadge } from './AdAccountStatusBadge';
 import type { AdAccountWithStats, AdAccountStatus } from '@/types/adAccounts';
-import { getPlatformLogo, getPlatformColor } from '@/components/ui/PlatformLogos';
+import { TikTokLogo, MetaLogo, GoogleLogo, getPlatformColor } from '@/components/ui/PlatformLogos';
 
 interface AdAccountCardProps {
   account: AdAccountWithStats;
@@ -43,7 +43,17 @@ interface AdAccountCardProps {
   onUnlinkPlatformAccount?: (accountId: string) => void | Promise<void>;
 }
 
-export const AdAccountCard: React.FC<AdAccountCardProps> = ({
+const PlatformAccountIcon: React.FC<{ platform: string; className?: string }> = ({ platform, className }) => {
+  if (platform === 'meta') {
+    return <MetaLogo className={className} />;
+  }
+  if (platform === 'google') {
+    return <GoogleLogo className={className} />;
+  }
+  return <TikTokLogo className={className} />;
+};
+
+export const AdAccountCard: React.FC<AdAccountCardProps> = React.memo(({
   account,
   onEdit,
   onStatusChange,
@@ -51,21 +61,35 @@ export const AdAccountCard: React.FC<AdAccountCardProps> = ({
   onUnlinkPlatformAccount,
 }) => {
   const navigate = useNavigate();
-
-  const PlatformIcon = getPlatformLogo(account.platform);
   const platformColor = getPlatformColor(account.platform);
 
-  const formatBRL = (val: number | null | undefined) => {
-    if (val === null || val === undefined) return '—';
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: account.currency || 'BRL' }).format(val);
-  };
+  const formattedSpend = useMemo(() => {
+    if (account.total_spend === null || account.total_spend === undefined) return '—';
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: account.currency || 'BRL',
+    }).format(account.total_spend);
+  }, [account.total_spend, account.currency]);
 
-  const formattedSyncDate = account.last_synced_at
-    ? new Intl.DateTimeFormat('pt-BR', {
-        dateStyle: 'short',
-        timeStyle: 'short',
-      }).format(new Date(account.last_synced_at))
-    : '—';
+  const formattedSpendingLimit = useMemo(() => {
+    if (!account.spending_limit) return 'Sem limite';
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: account.currency || 'BRL',
+    }).format(account.spending_limit);
+  }, [account.spending_limit, account.currency]);
+
+  const formattedSyncDate = useMemo(() => {
+    if (!account.last_synced_at) return '—';
+    return new Intl.DateTimeFormat('pt-BR', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    }).format(new Date(account.last_synced_at));
+  }, [account.last_synced_at]);
+
+  const formattedTimezone = useMemo(() => {
+    return account.timezone.replace('America/', '').replace(/_/g, ' ');
+  }, [account.timezone]);
 
   return (
     <Card className="bg-card/70 backdrop-blur-sm border-border hover:border-orange-500/40 transition-all duration-200 flex flex-col justify-between overflow-hidden shadow-sm group">
@@ -75,7 +99,7 @@ export const AdAccountCard: React.FC<AdAccountCardProps> = ({
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center p-2 flex-shrink-0 shadow-inner">
-                <PlatformIcon className={`w-5 h-5 ${platformColor}`} />
+                <PlatformAccountIcon platform={account.platform} className={`w-5 h-5 ${platformColor}`} />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
@@ -205,6 +229,7 @@ export const AdAccountCard: React.FC<AdAccountCardProps> = ({
                     onUnlinkPlatformAccount(account.id);
                   }}
                   title="Desvincular perfil TikTok desta conta de anúncios"
+                  aria-label="Desvincular perfil TikTok desta conta de anúncios"
                   className="ml-auto text-zinc-500 hover:text-rose-400 p-0.5 rounded transition-colors"
                 >
                   <Unlink className="w-3 h-3" />
@@ -235,7 +260,7 @@ export const AdAccountCard: React.FC<AdAccountCardProps> = ({
             </div>
             <div className="flex items-center gap-1.5 min-w-0 justify-end">
               <Clock className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground/70" />
-              <span className="truncate">{account.timezone.replace('America/', '')}</span>
+              <span className="truncate">{formattedTimezone}</span>
             </div>
           </div>
 
@@ -248,7 +273,7 @@ export const AdAccountCard: React.FC<AdAccountCardProps> = ({
                 Gasto Registrado
               </span>
               <p className="text-sm font-semibold text-foreground">
-                {formatBRL(account.total_spend)}
+                {formattedSpend}
               </p>
             </div>
             <div className="space-y-0.5 text-right">
@@ -256,7 +281,7 @@ export const AdAccountCard: React.FC<AdAccountCardProps> = ({
                 Limite de Gasto
               </span>
               <p className="text-sm font-semibold text-foreground">
-                {account.spending_limit ? formatBRL(account.spending_limit) : 'Sem limite'}
+                {formattedSpendingLimit}
               </p>
             </div>
           </div>
@@ -302,4 +327,6 @@ export const AdAccountCard: React.FC<AdAccountCardProps> = ({
       </CardFooter>
     </Card>
   );
-};
+});
+
+AdAccountCard.displayName = 'AdAccountCard';

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Plus, Search, Layers, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,7 @@ import {
 import { toast } from 'sonner';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useAdAccounts } from '@/hooks/useAdAccounts';
+import { useDebounce } from '@/hooks/useDebounce';
 import { AdAccountCard } from '@/components/ad-accounts/AdAccountCard';
 import { AdAccountSummaryCards } from '@/components/ad-accounts/AdAccountSummaryCards';
 import { AdAccountFormDialog } from '@/components/ad-accounts/AdAccountFormDialog';
@@ -58,9 +59,13 @@ export const AdAccountsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<AdAccountStatus | 'all'>('all');
   const [platformFilter, setPlatformFilter] = useState<AdAccountPlatform | 'all'>('all');
 
+  // Debounce da busca para evitar requisições a cada tecla digitada
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
   const {
     accounts,
     isLoading,
+    isFetching,
     isError,
     refetch,
     createAccount,
@@ -68,7 +73,7 @@ export const AdAccountsPage: React.FC = () => {
     updateStatus,
     deleteAccount,
   } = useAdAccounts(organizationId, {
-    search: searchTerm,
+    search: debouncedSearchTerm,
     status: statusFilter,
     platform: platformFilter,
   });
@@ -79,25 +84,27 @@ export const AdAccountsPage: React.FC = () => {
   const [deleteAccountTarget, setDeleteAccountTarget] = useState<AdAccountWithStats | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleNewAccount = () => {
+  const isFiltered = Boolean(searchTerm.trim() || statusFilter !== 'all' || platformFilter !== 'all');
+
+  const handleNewAccount = useCallback(() => {
     setEditingAccount(null);
     setFormDialogOpen(true);
-  };
+  }, []);
 
-  const handleEditAccount = (acc: AdAccountWithStats) => {
+  const handleEditAccount = useCallback((acc: AdAccountWithStats) => {
     setEditingAccount(acc);
     setFormDialogOpen(true);
-  };
+  }, []);
 
-  const handleFormSubmit = async (data: AdAccountFormData) => {
+  const handleFormSubmit = useCallback(async (data: AdAccountFormData) => {
     if (editingAccount) {
       await updateAccount(editingAccount.id, data);
     } else {
       await createAccount(data);
     }
-  };
+  }, [editingAccount, updateAccount, createAccount]);
 
-  const handleStatusChange = async (id: string, newStatus: AdAccountStatus) => {
+  const handleStatusChange = useCallback(async (id: string, newStatus: AdAccountStatus) => {
     try {
       await updateStatus(id, newStatus);
       toast.success('Status da conta atualizado com sucesso!');
@@ -105,9 +112,9 @@ export const AdAccountsPage: React.FC = () => {
       const msg = err instanceof Error ? err.message : 'Erro ao alterar status';
       toast.error(msg);
     }
-  };
+  }, [updateStatus]);
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = useCallback(async () => {
     if (!deleteAccountTarget) return;
     setIsDeleting(true);
     try {
@@ -120,17 +127,23 @@ export const AdAccountsPage: React.FC = () => {
     } finally {
       setIsDeleting(false);
     }
-  };
+  }, [deleteAccountTarget, deleteAccount]);
 
-  const handleUnlinkPlatform = async (accountId: string) => {
+  const handleUnlinkPlatform = useCallback(async (accountId: string) => {
     try {
       await updateAccount(accountId, { platform_account_id: null });
-      toast.success('Perfil TikTok desvinculado com sucesso desta conta!');
+      toast.success('Perfil desvinculado com sucesso desta conta!');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erro ao desvincular perfil';
       toast.error(msg);
     }
-  };
+  }, [updateAccount]);
+
+  const handleResetFilters = useCallback(() => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setPlatformFilter('all');
+  }, []);
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6 text-foreground">
@@ -155,9 +168,10 @@ export const AdAccountsPage: React.FC = () => {
             variant="outline"
             size="sm"
             onClick={() => refetch()}
+            disabled={isFetching}
             className="h-9 gap-1.5 border-border text-xs text-muted-foreground hover:text-foreground"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
+            <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin text-orange-400' : ''}`} />
             <span className="hidden sm:inline">Atualizar</span>
           </Button>
 
@@ -182,6 +196,7 @@ export const AdAccountsPage: React.FC = () => {
             placeholder="Buscar por nome, ID do anunciante ou Business Center..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            aria-label="Buscar contas de anúncios por nome, ID ou Business Center"
             className="pl-9 bg-background/60 border-input text-xs h-9"
           />
         </div>
@@ -233,8 +248,16 @@ export const AdAccountsPage: React.FC = () => {
 
       {/* Error State */}
       {isError && !isLoading && (
-        <div className="text-center py-12 rounded-xl border border-rose-500/20 bg-rose-500/5 text-rose-400 text-sm">
-          Erro ao carregar contas de anúncios. Verifique sua conexão e tente recarregar.
+        <div className="text-center py-10 px-4 rounded-xl border border-rose-500/20 bg-rose-500/5 text-rose-400 text-sm space-y-3">
+          <p>Erro ao carregar contas de anúncios. Verifique sua conexão e tente novamente.</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            className="border-rose-500/30 text-rose-400 hover:bg-rose-500/10 text-xs h-8"
+          >
+            Tentar novamente
+          </Button>
         </div>
       )}
 
@@ -246,21 +269,31 @@ export const AdAccountsPage: React.FC = () => {
           </div>
           <div className="max-w-md space-y-1">
             <h3 className="text-base font-semibold text-foreground">
-              Nenhuma conta de anúncios encontrada
+              {isFiltered ? 'Nenhuma conta encontrada' : 'Nenhuma conta de anúncios cadastrada'}
             </h3>
             <p className="text-xs text-muted-foreground">
-              {searchTerm || statusFilter !== 'all' || platformFilter !== 'all'
+              {isFiltered
                 ? 'Nenhum resultado corresponde aos filtros aplicados.'
-                : 'Cadastre sua primeira conta de anúncios do TikTok para organizar e mensurar seus investimentos.'}
+                : 'Cadastre sua primeira conta de anúncios para organizar e mensurar seus investimentos.'}
             </p>
           </div>
-          <Button
-            onClick={handleNewAccount}
-            className="bg-orange-500 hover:bg-orange-600 text-white gap-2 h-9 text-xs"
-          >
-            <Plus className="w-4 h-4" />
-            Cadastrar Primeira Conta
-          </Button>
+          {isFiltered ? (
+            <Button
+              variant="outline"
+              onClick={handleResetFilters}
+              className="border-border text-xs h-9"
+            >
+              Limpar Filtros
+            </Button>
+          ) : (
+            <Button
+              onClick={handleNewAccount}
+              className="bg-orange-500 hover:bg-orange-600 text-white gap-2 h-9 text-xs font-medium"
+            >
+              <Plus className="w-4 h-4" />
+              Cadastrar Primeira Conta
+            </Button>
+          )}
         </div>
       )}
 

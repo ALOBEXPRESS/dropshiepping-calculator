@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Megaphone, Layers, DollarSign, Wallet } from 'lucide-react';
 import type { AdAccountWithStats } from '@/types/adAccounts';
@@ -7,14 +7,30 @@ interface AdAccountSummaryCardsProps {
   accounts: AdAccountWithStats[];
 }
 
-export const AdAccountSummaryCards: React.FC<AdAccountSummaryCardsProps> = ({ accounts }) => {
-  const totalAccounts = accounts.length;
-  const activeAccounts = accounts.filter((a) => a.status === 'active').length;
-  const totalCampaigns = accounts.reduce((acc, a) => acc + a.campaign_count, 0);
-  const totalSpend = accounts.reduce((acc, a) => acc + a.total_spend, 0);
+const currencyFormatter = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+});
 
-  const formatBRL = (val: number) =>
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+export const AdAccountSummaryCards: React.FC<AdAccountSummaryCardsProps> = React.memo(({ accounts }) => {
+  const { totalAccounts, activeAccounts, totalCampaigns, totalSpend } = useMemo(() => {
+    let active = 0;
+    let campaigns = 0;
+    let spend = 0;
+
+    for (const a of accounts) {
+      if (a.status === 'active') active += 1;
+      campaigns += a.campaign_count || 0;
+      spend += a.total_spend || 0;
+    }
+
+    return {
+      totalAccounts: accounts.length,
+      activeAccounts: active,
+      totalCampaigns: campaigns,
+      totalSpend: spend,
+    };
+  }, [accounts]);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -64,7 +80,7 @@ export const AdAccountSummaryCards: React.FC<AdAccountSummaryCardsProps> = ({ ac
               Investimento Registrado
             </p>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl font-bold text-foreground">{formatBRL(totalSpend)}</span>
+              <span className="text-2xl font-bold text-foreground">{currencyFormatter.format(totalSpend)}</span>
             </div>
           </div>
           <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
@@ -92,4 +108,6 @@ export const AdAccountSummaryCards: React.FC<AdAccountSummaryCardsProps> = ({ ac
       </Card>
     </div>
   );
-};
+});
+
+AdAccountSummaryCards.displayName = 'AdAccountSummaryCards';

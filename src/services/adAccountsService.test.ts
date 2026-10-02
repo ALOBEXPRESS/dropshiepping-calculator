@@ -57,13 +57,20 @@ describe('adAccountSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('fails if platform is not tiktok', () => {
+  it('fails if platform is invalid', () => {
     const input = {
       ...baseValidInput,
-      platform: 'meta',
+      platform: 'invalid_platform',
     };
     const result = adAccountSchema.safeParse(input);
     expect(result.success).toBe(false);
+  });
+
+  it('accepts valid platforms (tiktok, meta, google)', () => {
+    for (const platform of ['tiktok', 'meta', 'google'] as const) {
+      const result = adAccountSchema.safeParse({ ...baseValidInput, platform });
+      expect(result.success).toBe(true);
+    }
   });
 
   it('fails if email format is invalid', () => {
