@@ -123,7 +123,7 @@ describe('buildPlatformMetadata', () => {
 describe('PlatformAccountsService', () => {
   const orgId = 'org-test-uuid-123';
   const platformAccountId = 'pa-test-uuid-456';
-  const adAccountId = 'aa-test-uuid-789';
+  const _adAccountId = 'aa-test-uuid-789';
 
   beforeEach(() => {
     vi.clearAllMocks();
