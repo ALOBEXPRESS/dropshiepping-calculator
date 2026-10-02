@@ -10,6 +10,7 @@ import {
   Trash2,
   Shield,
   Compass,
+  Building2,
   ExternalLink,
   Sparkles,
   Coins,
@@ -30,6 +31,7 @@ import {
   getSocialProfileUrl,
   getAccountDisplayEmail,
 } from './platformAccountUtils';
+import { useAccountLinkedBusinessCenters } from '@/hooks/useBusinessCenterAccounts';
 import type { PlatformAccount } from '@/types/platformAccounts';
 
 export interface LinkedBrowserProfile {
@@ -61,6 +63,7 @@ export const PlatformAccountCard: React.FC<PlatformAccountCardProps> = React.mem
     const profileUrl = getSocialProfileUrl(account);
 
     const isGoogle = account.platform === 'google';
+    const { data: linkedBcs = [] } = useAccountLinkedBusinessCenters(account.id);
     const meta = account.platform_metadata;
     const googleMeta = isGoogle && meta?.signup_method === 'google' ? meta : null;
 
@@ -294,6 +297,46 @@ export const PlatformAccountCard: React.FC<PlatformAccountCardProps> = React.mem
               >
                 + Vincular perfil
               </Link>
+            )}
+          </div>
+
+          {/* Business Centers Vinculados (N:N) */}
+          <div className="flex items-center justify-between">
+            <span className="text-zinc-400 flex items-center gap-1">
+              <Building2 className="w-3 h-3 text-purple-400" /> Business Center:
+            </span>
+            {linkedBcs.length > 0 ? (
+              <span
+                className="font-medium text-purple-400 font-mono text-[11px] truncate max-w-[170px] flex items-center gap-1"
+                title={linkedBcs
+                  .map(
+                    (b) =>
+                      `${b.relationship_type === 'owner' ? '👑 ' : ''}${
+                        b.business_centers?.name || b.business_centers?.bc_id
+                      }`
+                  )
+                  .join(', ')}
+              >
+                {linkedBcs[0].relationship_type === 'owner' && '👑 '}
+                <span className="truncate">
+                  {linkedBcs[0].business_centers?.name ||
+                    linkedBcs[0].business_centers?.bc_id ||
+                    'Business Center'}
+                </span>
+                {linkedBcs.length > 1 && (
+                  <span className="text-[10px] text-purple-300">
+                    (+{linkedBcs.length - 1})
+                  </span>
+                )}
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onEdit(account)}
+                className="text-zinc-500 hover:text-purple-400 italic text-[11px] hover:underline"
+              >
+                + Vincular BC
+              </button>
             )}
           </div>
 

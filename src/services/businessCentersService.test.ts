@@ -116,11 +116,19 @@ describe('BusinessCentersService', () => {
         in: vi.fn().mockResolvedValue({ data: mockAdAccounts, error: null }),
       };
 
+      // Third call: business_center_platform_accounts count
+      const linkedChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: [{ id: 'link-1', business_center_id: mockBCId }], error: null }),
+      };
+
       let callCount = 0;
       vi.mocked(supabase.from).mockImplementation(() => {
         callCount++;
         if (callCount === 1) return bcChain as unknown as SupabaseFromReturn;
-        return adChain as unknown as SupabaseFromReturn;
+        if (callCount === 2) return adChain as unknown as SupabaseFromReturn;
+        return linkedChain as unknown as SupabaseFromReturn;
       });
 
       const result = await BusinessCentersService.list(mockOrgId);
@@ -128,6 +136,7 @@ describe('BusinessCentersService', () => {
       expect(supabase.from).toHaveBeenCalledWith('business_centers');
       expect(result).toHaveLength(1);
       expect(result[0].ad_account_count).toBe(1);
+      expect(result[0].linked_account_count).toBe(1);
     });
 
     it('throws error when supabase query fails', async () => {
@@ -310,6 +319,112 @@ describe('BusinessCentersService', () => {
 
       const result = await BusinessCentersService.getLinkedAdAccounts(mockOrgId, mockBCId);
       expect(result).toEqual(mockAccounts);
+    });
+  });
+
+  describe('N:N Platform Accounts Linking', () => {
+    const mockAccountId = '22222222-2222-2222-2222-222222222222';
+
+    it('getLinkedAccounts returns linked accounts with details', async () => {
+      const mockRelations = [
+        {
+          id: 'rel-1',
+          business_center_id: mockBCId,
+          platform_account_id: mockAccountId,
+          relationship_type: 'owner',
+          permission_level: 'admin',
+          status: 'active',
+        },
+      ];
+
+      const chain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockResolvedValue({ data: mockRelations, error: null }),
+      };
+
+      vi.mocked(supabase.from).mockReturnValue(chain as unknown as SupabaseFromReturn);
+
+      const result = await BusinessCentersService.getLinkedAccounts(mockOrgId, mockBCId);
+      expect(supabase.from).toHaveBeenCalledWith('business_center_platform_accounts');
+      expect(result).toEqual(mockRelations);
+    });
+
+    it('linkAccount throws error when attempting to add a second owner to the same account', async () => {
+      // Mock existing owner in another BC
+      const checkChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({
+          data: {
+            id: 'other-rel',
+            business_center_id: '99999999-9999-9999-9999-999999999999',
+            business_centers: { name: 'Portfólio Antigo', bc_id: '123' },
+          },
+          error: null,
+        }),
+      };
+
+      vi.mocked(supabase.from).mockReturnValue(checkChain as unknown as SupabaseFromReturn);
+
+      await expect(
+        BusinessCentersService.linkAccount(mockOrgId, {
+          business_center_id: mockBCId,
+          platform_account_id: mockAccountId,
+          relationship_type: 'owner',
+        })
+      ).rejects.toThrow(/Esta conta já possui um proprietário registrado/);
+    });
+
+    it('linkAccount successfully links with partner_access or ad_authorization', async () => {
+      const createdRel = {
+        id: 'new-rel',
+        business_center_id: mockBCId,
+        platform_account_id: mockAccountId,
+        relationship_type: 'ad_authorization',
+        permission_level: 'ads_only',
+        status: 'active',
+      };
+
+      const chain = {
+        upsert: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: createdRel, error: null }),
+      };
+
+      vi.mocked(supabase.from).mockReturnValue(chain as unknown as SupabaseFromReturn);
+
+      const result = await BusinessCentersService.linkAccount(mockOrgId, {
+        business_center_id: mockBCId,
+        platform_account_id: mockAccountId,
+        relationship_type: 'ad_authorization',
+        permission_level: 'ads_only',
+      });
+
+      expect(supabase.from).toHaveBeenCalledWith('business_center_platform_accounts');
+      expect(result).toEqual(createdRel);
+    });
+
+    it('unlinkAccount removes association', async () => {
+      const chain = {
+        delete: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+      };
+      let eqCalls = 0;
+      chain.eq.mockImplementation(function (this: typeof chain) {
+        eqCalls++;
+        if (eqCalls >= 3) {
+          return Promise.resolve({ error: null });
+        }
+        return chain;
+      });
+
+      vi.mocked(supabase.from).mockReturnValue(chain as unknown as SupabaseFromReturn);
+
+      await expect(
+        BusinessCentersService.unlinkAccount(mockOrgId, mockBCId, mockAccountId)
+      ).resolves.not.toThrow();
+      expect(supabase.from).toHaveBeenCalledWith('business_center_platform_accounts');
     });
   });
 });

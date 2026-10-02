@@ -71,6 +71,7 @@ import {
   GoogleLogo,
 } from '@/components/ui/PlatformLogos';
 import { getAccountSocialKey } from '@/components/platform-accounts/platformAccountUtils';
+import { AccountBusinessCentersSection } from './AccountBusinessCentersSection';
 
 interface EditPlatformAccountDialogProps {
   open: boolean;
@@ -1087,6 +1088,15 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
               </div>
             )}
           </div>
+
+          {/* ── Business Centers / Portfólios Vinculados (N:N) ── */}
+          {account?.id && (
+            <AccountBusinessCentersSection
+              accountId={account.id}
+              platform={account.platform}
+              disabled={isSaving}
+            />
+          )}
 
           {/* Bio */}
           <div className="space-y-1.5">

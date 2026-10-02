@@ -36,6 +36,9 @@ export const EDGE_COLORS: Record<string, string> = {
   bc_linked_account: '#7C3AED',
   bc_meta_ig: '#F472B6',
   bc_meta_fb: '#3B82F6',
+  bc_owner_account: '#F59E0B',
+  bc_partner_access: '#3B82F6',
+  bc_ad_authorized: '#06B6D4',
   bc_proxy: '#FF4D00',
   hosts_bc: '#34D399',
 };
@@ -135,6 +138,98 @@ export function transformToReactFlow(graph: InfraGraphResponse): {
           isIdeal: !isMultiAccount,
           accountsCount,
         },
+      };
+    }
+
+    if (e.relation === 'bc_owner_account') {
+      return {
+        id: edgeId,
+        source: e.source,
+        target: e.target,
+        type: 'smoothstep',
+        animated: false,
+        label: '👑 Proprietário',
+        labelStyle: {
+          fill: '#FBBF24',
+          fontWeight: 700,
+          fontSize: 10,
+        },
+        labelBgStyle: {
+          fill: '#18181B',
+          fillOpacity: 0.9,
+          rx: 4,
+          ry: 4,
+          stroke: '#F59E0B',
+          strokeWidth: 1,
+        },
+        labelBgPadding: [6, 2] as [number, number],
+        style: {
+          stroke: '#F59E0B',
+          strokeWidth: 2.5,
+        },
+        data: { relation: e.relation, relationship_type: 'owner' },
+      };
+    }
+
+    if (e.relation === 'bc_partner_access') {
+      return {
+        id: edgeId,
+        source: e.source,
+        target: e.target,
+        type: 'smoothstep',
+        animated: false,
+        label: '🤝 Parceiro',
+        labelStyle: {
+          fill: '#93C5FD',
+          fontWeight: 600,
+          fontSize: 10,
+        },
+        labelBgStyle: {
+          fill: '#18181B',
+          fillOpacity: 0.9,
+          rx: 4,
+          ry: 4,
+          stroke: '#3B82F6',
+          strokeWidth: 1,
+        },
+        labelBgPadding: [6, 2] as [number, number],
+        style: {
+          stroke: '#3B82F6',
+          strokeWidth: 1.8,
+          strokeDasharray: '5 4',
+        },
+        data: { relation: e.relation, relationship_type: 'partner_access' },
+      };
+    }
+
+    if (e.relation === 'bc_ad_authorized') {
+      return {
+        id: edgeId,
+        source: e.source,
+        target: e.target,
+        type: 'smoothstep',
+        animated: false,
+        label: '📢 Anúncios',
+        labelStyle: {
+          fill: '#67E8F9',
+          fontWeight: 600,
+          fontSize: 10,
+        },
+        labelBgStyle: {
+          fill: '#18181B',
+          fillOpacity: 0.9,
+          rx: 4,
+          ry: 4,
+          stroke: '#06B6D4',
+          strokeWidth: 1,
+        },
+        labelBgPadding: [6, 2] as [number, number],
+        style: {
+          stroke: '#06B6D4',
+          strokeWidth: 1.8,
+          strokeDasharray: '4 4',
+        },
+        data: { relation: e.relation, relationship_type: 'ad_authorization' },
       };
     }
 

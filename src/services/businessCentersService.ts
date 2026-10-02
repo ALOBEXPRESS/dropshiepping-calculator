@@ -4,11 +4,16 @@ import type {
   BusinessCenterWithStats,
   BusinessCenterFormData,
   BusinessCenterFilters,
+  BusinessCenterAccountRelation,
+  BusinessCenterAccountInput,
+  RelationshipType,
+  PermissionLevel,
+  RelationshipStatus,
 } from '@/types/businessCenters';
 
 export class BusinessCentersService {
   /**
-   * Lista todos os business centers da organização com contagem de ad_accounts vinculadas.
+   * Lista todos os business centers da organização com contagem de ad_accounts e contas vinculadas.
    */
   static async list(
     organizationId: string,
@@ -31,8 +36,9 @@ export class BusinessCentersService {
     if (error) throw new Error(error.message);
     if (!centers || centers.length === 0) return [];
 
-    // Contar ad_accounts vinculadas a cada BC
     const centerIds = centers.map((c) => c.id);
+
+    // Contar ad_accounts vinculadas a cada BC
     const { data: adAccounts } = await supabase
       .from('ad_accounts')
       .select('id, bc_entity_id')
@@ -45,14 +51,32 @@ export class BusinessCentersService {
       countMap.set(acc.bc_entity_id, (countMap.get(acc.bc_entity_id) ?? 0) + 1);
     }
 
+    // Contar platform_accounts vinculadas (N:N)
+    const { data: linkedAccs } = await supabase
+      .from('business_center_platform_accounts')
+      .select('id, business_center_id')
+      .eq('organization_id', organizationId)
+      .eq('status', 'active')
+      .in('business_center_id', centerIds);
+
+    const linkedCountMap = new Map<string, number>();
+    for (const link of linkedAccs ?? []) {
+      if (!link.business_center_id) continue;
+      linkedCountMap.set(
+        link.business_center_id,
+        (linkedCountMap.get(link.business_center_id) ?? 0) + 1
+      );
+    }
+
     return (centers as BusinessCenter[]).map((bc) => ({
       ...bc,
       ad_account_count: countMap.get(bc.id) ?? 0,
+      linked_account_count: linkedCountMap.get(bc.id) ?? 0,
     }));
   }
 
   /**
-   * Obtém um business center por ID.
+   * Obtém um business center por ID com contas vinculadas.
    */
   static async getById(
     organizationId: string,
@@ -77,10 +101,280 @@ export class BusinessCentersService {
       .eq('organization_id', organizationId)
       .eq('bc_entity_id', id);
 
+    // Buscar contas vinculadas (N:N)
+    const linkedAccounts = await BusinessCentersService.getLinkedAccounts(
+      organizationId,
+      id
+    );
+
     return {
       ...(center as BusinessCenter),
       ad_account_count: count ?? 0,
+      linked_account_count: linkedAccounts.length,
+      linked_accounts: linkedAccounts,
     };
+  }
+
+  /**
+   * Busca contas de plataforma vinculadas a um Business Center (N:N).
+   */
+  static async getLinkedAccounts(
+    organizationId: string,
+    businessCenterId: string
+  ): Promise<BusinessCenterAccountRelation[]> {
+    if (!organizationId || !businessCenterId) return [];
+
+    const { data, error } = await supabase
+      .from('business_center_platform_accounts')
+      .select(`
+        id,
+        organization_id,
+        business_center_id,
+        platform_account_id,
+        relationship_type,
+        permission_level,
+        status,
+        linked_at,
+        external_relation_id,
+        notes,
+        created_at,
+        updated_at,
+        platform_accounts:platform_account_id (
+          id,
+          name,
+          nickname,
+          platform,
+          meta_account_type,
+          holder_name,
+          profile_photo_url
+        )
+      `)
+      .eq('organization_id', organizationId)
+      .eq('business_center_id', businessCenterId)
+      .order('linked_at', { ascending: false });
+
+    if (error) {
+      console.error('Erro ao buscar contas vinculadas ao BC:', error);
+      return [];
+    }
+    return (data as unknown as BusinessCenterAccountRelation[]) || [];
+  }
+
+  /**
+   * Busca Business Centers aos quais uma Conta de Plataforma está vinculada (N:N).
+   */
+  static async getLinkedBusinessCentersForAccount(
+    organizationId: string,
+    platformAccountId: string
+  ): Promise<BusinessCenterAccountRelation[]> {
+    if (!organizationId || !platformAccountId) return [];
+
+    const { data, error } = await supabase
+      .from('business_center_platform_accounts')
+      .select(`
+        id,
+        organization_id,
+        business_center_id,
+        platform_account_id,
+        relationship_type,
+        permission_level,
+        status,
+        linked_at,
+        external_relation_id,
+        notes,
+        created_at,
+        updated_at,
+        business_centers:business_center_id (
+          id,
+          name,
+          bc_id,
+          platform,
+          business_type
+        )
+      `)
+      .eq('organization_id', organizationId)
+      .eq('platform_account_id', platformAccountId)
+      .order('linked_at', { ascending: false });
+
+    if (error) {
+      console.error('Erro ao buscar Business Centers vinculados à conta:', error);
+      return [];
+    }
+    return (data as unknown as BusinessCenterAccountRelation[]) || [];
+  }
+
+  /**
+   * Vincula uma conta de plataforma a um Business Center com tipo de relação e nível de permissão.
+   */
+  static async linkAccount(
+    organizationId: string,
+    data: {
+      business_center_id: string;
+      platform_account_id: string;
+      relationship_type: RelationshipType;
+      permission_level?: PermissionLevel;
+      status?: RelationshipStatus;
+      notes?: string | null;
+      external_relation_id?: string | null;
+    }
+  ): Promise<BusinessCenterAccountRelation> {
+    if (!organizationId) throw new Error('Organização não identificada');
+
+    // Se relationship_type for 'owner', verificar se já existe outro BC como owner
+    if (data.relationship_type === 'owner') {
+      const { data: existingOwner, error: checkError } = await supabase
+        .from('business_center_platform_accounts')
+        .select('id, business_center_id, business_centers(name, bc_id)')
+        .eq('organization_id', organizationId)
+        .eq('platform_account_id', data.platform_account_id)
+        .eq('relationship_type', 'owner')
+        .maybeSingle();
+
+      if (checkError) console.warn('Erro ao checar proprietário existente:', checkError);
+      if (existingOwner && existingOwner.business_center_id !== data.business_center_id) {
+        const ownerBc = existingOwner.business_centers as unknown as {
+          name?: string;
+          bc_id?: string;
+        };
+        const bcName = ownerBc?.name || ownerBc?.bc_id || 'outro Business Center';
+        throw new Error(
+          `Esta conta já possui um proprietário registrado (${bcName}). De acordo com as regras da Meta e TikTok, um ativo só pode ter 1 Business Center proprietário. Vincule como "Acesso Compartilhado (Parceiro)" ou "Autorização para Anúncios".`
+        );
+      }
+    }
+
+    const payload = {
+      organization_id: organizationId,
+      business_center_id: data.business_center_id,
+      platform_account_id: data.platform_account_id,
+      relationship_type: data.relationship_type,
+      permission_level: data.permission_level || 'standard',
+      status: data.status || 'active',
+      notes: data.notes?.trim() || null,
+      external_relation_id: data.external_relation_id?.trim() || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data: result, error } = await supabase
+      .from('business_center_platform_accounts')
+      .upsert(payload, { onConflict: 'business_center_id,platform_account_id' })
+      .select('*')
+      .single();
+
+    if (error) {
+      if (error.code === '23505') {
+        throw new Error(
+          'Esta conta já está vinculada a outro Business Center como proprietário ou o vínculo já existe.'
+        );
+      }
+      throw new Error(error.message);
+    }
+
+    return result as BusinessCenterAccountRelation;
+  }
+
+  /**
+   * Desvincula uma conta de plataforma de um Business Center.
+   */
+  static async unlinkAccount(
+    organizationId: string,
+    businessCenterId: string,
+    platformAccountId: string
+  ): Promise<void> {
+    if (!organizationId || !businessCenterId || !platformAccountId) return;
+
+    const { error } = await supabase
+      .from('business_center_platform_accounts')
+      .delete()
+      .eq('organization_id', organizationId)
+      .eq('business_center_id', businessCenterId)
+      .eq('platform_account_id', platformAccountId);
+
+    if (error) throw new Error(error.message);
+  }
+
+  /**
+   * Atualiza os metadados de uma relação existente.
+   */
+  static async updateAccountRelation(
+    organizationId: string,
+    relationId: string,
+    data: Partial<{
+      relationship_type: RelationshipType;
+      permission_level: PermissionLevel;
+      status: RelationshipStatus;
+      notes: string | null;
+      external_relation_id: string | null;
+    }>
+  ): Promise<BusinessCenterAccountRelation> {
+    const updatePayload: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (data.relationship_type !== undefined)
+      updatePayload.relationship_type = data.relationship_type;
+    if (data.permission_level !== undefined)
+      updatePayload.permission_level = data.permission_level;
+    if (data.status !== undefined) updatePayload.status = data.status;
+    if (data.notes !== undefined) updatePayload.notes = data.notes?.trim() || null;
+    if (data.external_relation_id !== undefined)
+      updatePayload.external_relation_id = data.external_relation_id?.trim() || null;
+
+    const { data: updated, error } = await supabase
+      .from('business_center_platform_accounts')
+      .update(updatePayload)
+      .eq('organization_id', organizationId)
+      .eq('id', relationId)
+      .select('*')
+      .single();
+
+    if (error) throw new Error(error.message);
+    return updated as BusinessCenterAccountRelation;
+  }
+
+  /**
+   * Sincroniza a lista completa de contas vinculadas a um Business Center.
+   */
+  static async syncLinkedAccounts(
+    organizationId: string,
+    businessCenterId: string,
+    accounts: BusinessCenterAccountInput[]
+  ): Promise<void> {
+    if (!organizationId || !businessCenterId) return;
+
+    // Buscar vínculos existentes
+    const { data: currentLinks } = await supabase
+      .from('business_center_platform_accounts')
+      .select('id, platform_account_id')
+      .eq('organization_id', organizationId)
+      .eq('business_center_id', businessCenterId);
+
+    const targetAccountIds = new Set(accounts.map((a) => a.platform_account_id));
+
+    // Desvincular contas que não estão na lista alvo
+    const toDeleteIds = (currentLinks ?? [])
+      .filter((l) => !targetAccountIds.has(l.platform_account_id))
+      .map((l) => l.id);
+
+    if (toDeleteIds.length > 0) {
+      await supabase
+        .from('business_center_platform_accounts')
+        .delete()
+        .eq('organization_id', organizationId)
+        .in('id', toDeleteIds);
+    }
+
+    // Vincular / atualizar contas na lista alvo
+    for (const acc of accounts) {
+      await BusinessCentersService.linkAccount(organizationId, {
+        business_center_id: businessCenterId,
+        platform_account_id: acc.platform_account_id,
+        relationship_type: acc.relationship_type,
+        permission_level: acc.permission_level || 'standard',
+        status: acc.status || 'active',
+        notes: acc.notes,
+        external_relation_id: acc.external_relation_id,
+      });
+    }
   }
 
   /**
@@ -92,9 +386,10 @@ export class BusinessCentersService {
     userId?: string | null
   ): Promise<BusinessCenter> {
     // Se bc_id não for informado, gera um ID de 19 dígitos no padrão do TikTok
-    const finalBcId = data.bc_id && data.bc_id.trim() !== ''
-      ? data.bc_id.trim()
-      : `7${Date.now()}${Math.floor(10000 + Math.random() * 90000)}`;
+    const finalBcId =
+      data.bc_id && data.bc_id.trim() !== ''
+        ? data.bc_id.trim()
+        : `7${Date.now()}${Math.floor(10000 + Math.random() * 90000)}`;
 
     const payload = {
       organization_id: organizationId,
@@ -114,10 +409,18 @@ export class BusinessCentersService {
       company_cnpj: data.company_cnpj?.trim() || null,
       company_state_registration: data.company_state_registration?.trim() || null,
       company_status: data.company_status || 'Ativa',
-      meta_linked_network: data.platform === 'meta' ? (data.meta_linked_network || null) : null,
-      meta_linked_account_id: data.platform === 'meta' ? (data.meta_linked_account_id || data.meta_instagram_account_id || data.meta_facebook_account_id || null) : null,
-      meta_instagram_account_id: data.platform === 'meta' ? (data.meta_instagram_account_id || null) : null,
-      meta_facebook_account_id: data.platform === 'meta' ? (data.meta_facebook_account_id || null) : null,
+      meta_linked_network: data.platform === 'meta' ? data.meta_linked_network || null : null,
+      meta_linked_account_id:
+        data.platform === 'meta'
+          ? data.meta_linked_account_id ||
+            data.meta_instagram_account_id ||
+            data.meta_facebook_account_id ||
+            null
+          : null,
+      meta_instagram_account_id:
+        data.platform === 'meta' ? data.meta_instagram_account_id || null : null,
+      meta_facebook_account_id:
+        data.platform === 'meta' ? data.meta_facebook_account_id || null : null,
       device_id: data.device_id || null,
       proxy_id: data.proxy_id || null,
       created_by: userId || null,
@@ -135,7 +438,19 @@ export class BusinessCentersService {
       }
       throw new Error(error.message);
     }
-    return created as BusinessCenter;
+
+    const bc = created as BusinessCenter;
+
+    // Sincroniza contas N:N se informadas
+    if (data.linked_accounts && data.linked_accounts.length > 0) {
+      await BusinessCentersService.syncLinkedAccounts(
+        organizationId,
+        bc.id,
+        data.linked_accounts
+      );
+    }
+
+    return bc;
   }
 
   /**
@@ -152,24 +467,37 @@ export class BusinessCentersService {
 
     if (data.platform !== undefined) payload.platform = data.platform;
     if (data.business_type !== undefined) payload.business_type = data.business_type;
-    if (data.company_legal_name !== undefined) payload.company_legal_name = data.company_legal_name?.trim() || null;
+    if (data.company_legal_name !== undefined)
+      payload.company_legal_name = data.company_legal_name?.trim() || null;
     if (data.country !== undefined) payload.country = data.country;
     if (data.timezone !== undefined) payload.timezone = data.timezone;
     if (data.currency !== undefined) payload.currency = data.currency;
-    if (data.bc_id !== undefined && data.bc_id.trim() !== '') payload.bc_id = data.bc_id.trim();
+    if (data.bc_id !== undefined && data.bc_id.trim() !== '')
+      payload.bc_id = data.bc_id.trim();
     if (data.name !== undefined) payload.name = data.name?.trim() || null;
     if (data.notes !== undefined) payload.notes = data.notes?.trim() || null;
-    if (data.holder_name !== undefined) payload.holder_name = data.holder_name?.trim() || null;
-    if (data.holder_cpf !== undefined) payload.holder_cpf = data.holder_cpf?.trim() || null;
+    if (data.holder_name !== undefined)
+      payload.holder_name = data.holder_name?.trim() || null;
+    if (data.holder_cpf !== undefined)
+      payload.holder_cpf = data.holder_cpf?.trim() || null;
     if (data.holder_rg !== undefined) payload.holder_rg = data.holder_rg?.trim() || null;
-    if (data.holder_birth_date !== undefined) payload.holder_birth_date = data.holder_birth_date?.trim() || null;
-    if (data.company_cnpj !== undefined) payload.company_cnpj = data.company_cnpj?.trim() || null;
-    if (data.company_state_registration !== undefined) payload.company_state_registration = data.company_state_registration?.trim() || null;
-    if (data.company_status !== undefined) payload.company_status = data.company_status || 'Ativa';
-    if (data.meta_linked_network !== undefined) payload.meta_linked_network = data.meta_linked_network || null;
-    if (data.meta_linked_account_id !== undefined) payload.meta_linked_account_id = data.meta_linked_account_id || null;
-    if (data.meta_instagram_account_id !== undefined) payload.meta_instagram_account_id = data.meta_instagram_account_id || null;
-    if (data.meta_facebook_account_id !== undefined) payload.meta_facebook_account_id = data.meta_facebook_account_id || null;
+    if (data.holder_birth_date !== undefined)
+      payload.holder_birth_date = data.holder_birth_date?.trim() || null;
+    if (data.company_cnpj !== undefined)
+      payload.company_cnpj = data.company_cnpj?.trim() || null;
+    if (data.company_state_registration !== undefined)
+      payload.company_state_registration =
+        data.company_state_registration?.trim() || null;
+    if (data.company_status !== undefined)
+      payload.company_status = data.company_status || 'Ativa';
+    if (data.meta_linked_network !== undefined)
+      payload.meta_linked_network = data.meta_linked_network || null;
+    if (data.meta_linked_account_id !== undefined)
+      payload.meta_linked_account_id = data.meta_linked_account_id || null;
+    if (data.meta_instagram_account_id !== undefined)
+      payload.meta_instagram_account_id = data.meta_instagram_account_id || null;
+    if (data.meta_facebook_account_id !== undefined)
+      payload.meta_facebook_account_id = data.meta_facebook_account_id || null;
     if (data.device_id !== undefined) payload.device_id = data.device_id || null;
     if (data.proxy_id !== undefined) payload.proxy_id = data.proxy_id || null;
 
@@ -187,6 +515,16 @@ export class BusinessCentersService {
       }
       throw new Error(error.message);
     }
+
+    // Sincroniza contas N:N se informadas
+    if (data.linked_accounts !== undefined) {
+      await BusinessCentersService.syncLinkedAccounts(
+        organizationId,
+        id,
+        data.linked_accounts
+      );
+    }
+
     return updated as BusinessCenter;
   }
 
@@ -242,3 +580,4 @@ export class BusinessCentersService {
     return data || [];
   }
 }
+

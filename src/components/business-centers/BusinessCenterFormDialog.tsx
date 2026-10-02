@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,8 +9,6 @@ import {
   Check,
   CheckCircle2,
   Sparkles,
-  Link2,
-  AlertTriangle,
   User,
   FileText,
   Loader2,
@@ -42,9 +40,12 @@ import { useBusinessCenters } from '@/hooks/useBusinessCenters';
 import { usePlatformAccounts } from '@/hooks/usePlatformAccounts';
 import { useProxies } from '@/hooks/useProxies';
 import { useDevices } from '@/hooks/useDevices';
+import { BusinessCentersService } from '@/services/businessCentersService';
+import { BusinessCenterAccountLinksManager } from './BusinessCenterAccountLinksManager';
 import type {
   BusinessCenterWithStats,
   BusinessCenterFormData,
+  BusinessCenterAccountInput,
   CompanyStatus,
 } from '@/types/businessCenters';
 import {
@@ -56,8 +57,6 @@ import {
   TikTokLogo,
   MetaLogo,
   GoogleLogo,
-  InstagramLogo,
-  FacebookLogo,
   getPlatformLogo,
   getPlatformColor,
 } from '@/components/ui/PlatformLogos';
@@ -115,8 +114,8 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
   const { devices = [] } = useDevices();
   const isBusy = isCreating || isUpdating;
 
-  const [linkInstagram, setLinkInstagram] = useState(false);
-  const [linkFacebook, setLinkFacebook] = useState(false);
+  // Gerenciamento de vínculos N:N entre este Business Center e Contas de Plataforma
+  const [linkedAccounts, setLinkedAccounts] = useState<BusinessCenterAccountInput[]>([]);
 
   const {
     register,
@@ -135,50 +134,60 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
 
   const selectedPlatform = watch('platform') || 'tiktok';
   const businessType = watch('business_type') || 'advertiser';
-  const metaInstagramAccountId = watch('meta_instagram_account_id');
-  const metaFacebookAccountId = watch('meta_facebook_account_id');
   const platformConfig = BC_PLATFORM_CONFIG[selectedPlatform] || BC_PLATFORM_CONFIG.tiktok;
   const PlatformIcon = getPlatformLogo(selectedPlatform);
   const platformColor = getPlatformColor(selectedPlatform);
 
-  // Filtrar contas de plataforma por tipo de rede meta
-  const metaInstagramAccounts = useMemo(() => {
-    return platformAccounts.filter(
-      (a) => a.platform === 'meta' && (!a.meta_account_type || a.meta_account_type === 'instagram')
-    );
-  }, [platformAccounts]);
-
-  const metaFacebookAccounts = useMemo(() => {
-    return platformAccounts.filter(
-      (a) => a.platform === 'meta' && a.meta_account_type === 'facebook'
-    );
-  }, [platformAccounts]);
-
-  const selectedInstagramAccount = useMemo(() => {
-    if (!metaInstagramAccountId) return null;
-    return platformAccounts.find((a) => a.id === metaInstagramAccountId) ?? null;
-  }, [metaInstagramAccountId, platformAccounts]);
-
-  const selectedFacebookAccount = useMemo(() => {
-    if (!metaFacebookAccountId) return null;
-    return platformAccounts.find((a) => a.id === metaFacebookAccountId) ?? null;
-  }, [metaFacebookAccountId, platformAccounts]);
-
   useEffect(() => {
     if (open) {
       if (center) {
-        const hasIg = !!(
-          center.meta_instagram_account_id ||
-          center.meta_linked_network === 'instagram' ||
-          center.meta_linked_network === 'both'
-        );
-        const hasFb = !!(
-          center.meta_facebook_account_id ||
-          center.meta_linked_network === 'facebook' ||
-          center.meta_linked_network === 'both'
-        );
-        setLinkInstagram(hasIg);
-        setLinkFacebook(hasFb);
+        // Carrega vínculos N:N da junction table
+        BusinessCentersService.getLinkedAccounts(organizationId, center.id)
+          .then((relations) => {
+            if (relations && relations.length > 0) {
+              setLinkedAccounts(
+                relations.map((r) => ({
+                  platform_account_id: r.platform_account_id,
+                  relationship_type: r.relationship_type,
+                  permission_level: r.permission_level,
+                  status: r.status,
+                  notes: r.notes,
+                  external_relation_id: r.external_relation_id,
+                }))
+              );
+            } else {
+              // Fallback para vínculos legados (caso ainda não migrados)
+              const fallbackList: BusinessCenterAccountInput[] = [];
+              const seen = new Set<string>();
+              if (center.meta_instagram_account_id) {
+                fallbackList.push({
+                  platform_account_id: center.meta_instagram_account_id,
+                  relationship_type: 'owner',
+                  permission_level: 'admin',
+                });
+                seen.add(center.meta_instagram_account_id);
+              }
+              if (center.meta_facebook_account_id && !seen.has(center.meta_facebook_account_id)) {
+                fallbackList.push({
+                  platform_account_id: center.meta_facebook_account_id,
+                  relationship_type: 'owner',
+                  permission_level: 'admin',
+                });
+                seen.add(center.meta_facebook_account_id);
+              }
+              if (center.meta_linked_account_id && !seen.has(center.meta_linked_account_id)) {
+                fallbackList.push({
+                  platform_account_id: center.meta_linked_account_id,
+                  relationship_type: 'owner',
+                  permission_level: 'admin',
+                });
+              }
+              setLinkedAccounts(fallbackList);
+            }
+          })
+          .catch((err) => {
+            console.warn('Erro ao carregar vínculos N:N do BC:', err);
+          });
 
         reset({
           platform: center.platform ?? 'tiktok',
@@ -199,24 +208,19 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
           company_status: (center.company_status as CompanyStatus) ?? 'Ativa',
           meta_linked_network: center.meta_linked_network ?? null,
           meta_linked_account_id: center.meta_linked_account_id ?? null,
-          meta_instagram_account_id:
-            center.meta_instagram_account_id ??
-            (center.meta_linked_network === 'instagram' ? center.meta_linked_account_id : null),
-          meta_facebook_account_id:
-            center.meta_facebook_account_id ??
-            (center.meta_linked_network === 'facebook' ? center.meta_linked_account_id : null),
+          meta_instagram_account_id: center.meta_instagram_account_id ?? null,
+          meta_facebook_account_id: center.meta_facebook_account_id ?? null,
           device_id: center.device_id ?? null,
           proxy_id: center.proxy_id ?? null,
         });
         setCurrentStep(2);
       } else {
-        setLinkInstagram(false);
-        setLinkFacebook(false);
+        setLinkedAccounts([]);
         reset(DEFAULT_FORM_VALUES);
         setCurrentStep(1);
       }
     }
-  }, [open, center, reset]);
+  }, [open, center, organizationId, reset]);
 
   const handleNextStep = async () => {
     const valid = await trigger(['platform']);
@@ -233,11 +237,33 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
 
   const onSubmit = async (data: BusinessCenterFormData) => {
     try {
-      const meta_instagram_account_id = linkInstagram ? data.meta_instagram_account_id || null : null;
-      const meta_facebook_account_id = linkFacebook ? data.meta_facebook_account_id || null : null;
-      const meta_linked_network =
-        linkInstagram && linkFacebook ? 'both' : linkInstagram ? 'instagram' : linkFacebook ? 'facebook' : null;
-      const meta_linked_account_id = meta_instagram_account_id || meta_facebook_account_id || null;
+      // Determina valores legados para compatibilidade com queries/views existentes
+      let meta_instagram_account_id: string | null = null;
+      let meta_facebook_account_id: string | null = null;
+      let meta_linked_network: 'instagram' | 'facebook' | 'both' | null = null;
+      let meta_linked_account_id: string | null = null;
+
+      if (data.platform === 'meta') {
+        const igLink = linkedAccounts.find((l) => {
+          const acc = platformAccounts.find((a) => a.id === l.platform_account_id);
+          return acc?.meta_account_type === 'instagram' || (!acc?.meta_account_type && acc?.platform === 'meta');
+        });
+        const fbLink = linkedAccounts.find((l) => {
+          const acc = platformAccounts.find((a) => a.id === l.platform_account_id);
+          return acc?.meta_account_type === 'facebook';
+        });
+
+        meta_instagram_account_id = igLink?.platform_account_id ?? null;
+        meta_facebook_account_id = fbLink?.platform_account_id ?? null;
+        if (meta_instagram_account_id && meta_facebook_account_id) {
+          meta_linked_network = 'both';
+        } else if (meta_instagram_account_id) {
+          meta_linked_network = 'instagram';
+        } else if (meta_facebook_account_id) {
+          meta_linked_network = 'facebook';
+        }
+        meta_linked_account_id = meta_instagram_account_id || meta_facebook_account_id || null;
+      }
 
       const payload: BusinessCenterFormData = {
         ...data,
@@ -247,6 +273,7 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
         meta_linked_account_id,
         device_id: data.device_id || null,
         proxy_id: data.proxy_id || null,
+        linked_accounts: linkedAccounts,
       };
 
       if (isEditing && center) {
@@ -257,6 +284,7 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
         toast.success('Business Center criado com sucesso!');
       }
       reset();
+      setLinkedAccounts([]);
       onOpenChange(false);
     } catch (err) {
       toast.error(
@@ -872,239 +900,15 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
                     </div>
                   </div>
 
-                  {/* ── SEÇÃO 4: Vínculo com Conta de Plataforma (Meta) ── */}
-                  {selectedPlatform === 'meta' && (
-                    <div className="p-5 rounded-2xl border border-blue-500/20 bg-blue-500/5 space-y-4">
-                      <div className="flex items-center justify-between pb-2 border-b border-blue-500/20">
-                        <div className="flex items-center gap-2">
-                          <Link2 className="w-4 h-4 text-blue-400" />
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-blue-300">
-                            4. Vínculo de Rede Social (Meta)
-                          </h4>
-                        </div>
-                        <span className="text-[11px] text-zinc-400">
-                          Vincule perfil do Instagram, página do Facebook ou ambos
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        {/* Botão Toggle Instagram */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const next = !linkInstagram;
-                            setLinkInstagram(next);
-                            if (!next) {
-                              setValue('meta_instagram_account_id', null);
-                            }
-                            const net = next && linkFacebook ? 'both' : next ? 'instagram' : linkFacebook ? 'facebook' : null;
-                            setValue('meta_linked_network', net);
-                          }}
-                          className={`flex items-center justify-between p-3.5 rounded-xl border-2 transition-all ${
-                            linkInstagram
-                              ? 'border-pink-500/60 bg-pink-500/15 text-white ring-1 ring-pink-500/30'
-                              : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5">
-                            <InstagramLogo className="w-5 h-5 flex-shrink-0" />
-                            <div className="text-left">
-                              <span className="text-xs font-semibold block text-white">Instagram</span>
-                              <span className="text-[10px] text-zinc-400">Vincular perfil IG</span>
-                            </div>
-                          </div>
-                          {linkInstagram && (
-                            <div className="w-5 h-5 rounded-full bg-pink-500 flex items-center justify-center flex-shrink-0">
-                              <Check className="w-3 h-3 text-white stroke-[3]" />
-                            </div>
-                          )}
-                        </button>
-
-                        {/* Botão Toggle Facebook */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const next = !linkFacebook;
-                            setLinkFacebook(next);
-                            if (!next) {
-                              setValue('meta_facebook_account_id', null);
-                            }
-                            const net = linkInstagram && next ? 'both' : linkInstagram ? 'instagram' : next ? 'facebook' : null;
-                            setValue('meta_linked_network', net);
-                          }}
-                          className={`flex items-center justify-between p-3.5 rounded-xl border-2 transition-all ${
-                            linkFacebook
-                              ? 'border-blue-500/60 bg-blue-500/15 text-white ring-1 ring-blue-500/30'
-                              : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5">
-                            <FacebookLogo className="w-5 h-5 flex-shrink-0" />
-                            <div className="text-left">
-                              <span className="text-xs font-semibold block text-white">Facebook</span>
-                              <span className="text-[10px] text-zinc-400">Vincular página FB</span>
-                            </div>
-                          </div>
-                          {linkFacebook && (
-                            <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
-                              <Check className="w-3 h-3 text-white stroke-[3]" />
-                            </div>
-                          )}
-                        </button>
-                      </div>
-
-                      {/* Seletor Instagram quando ativo */}
-                      {linkInstagram && (
-                        <div className="space-y-2 pt-2 border-t border-pink-500/20">
-                          <div className="flex items-center justify-between">
-                            <Label className="text-xs font-medium text-pink-300 flex items-center gap-1.5">
-                              <InstagramLogo className="w-3.5 h-3.5" />
-                              Conta de Instagram cadastrada em Contas:
-                            </Label>
-                            <Link to="/contas" target="_blank" className="text-[10px] text-pink-400 hover:underline">
-                              Gerenciar Contas
-                            </Link>
-                          </div>
-                          <Controller
-                            name="meta_instagram_account_id"
-                            control={control}
-                            render={({ field }) => (
-                              <Select
-                                value={field.value || 'none'}
-                                onValueChange={(v) => {
-                                  const val = v === 'none' ? null : v;
-                                  field.onChange(val);
-                                  setValue('meta_linked_account_id', val || metaFacebookAccountId || null);
-                                }}
-                              >
-                                <SelectTrigger className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white">
-                                  <SelectValue placeholder="Selecione um perfil do Instagram..." />
-                                </SelectTrigger>
-                                <SelectContent className="bg-zinc-900 border-zinc-800 text-white max-h-60">
-                                  <SelectItem value="none">
-                                    <span className="text-zinc-500 italic">Nenhum perfil de Instagram selecionado</span>
-                                  </SelectItem>
-                                  {metaInstagramAccounts.map((acc) => (
-                                    <SelectItem key={acc.id} value={acc.id}>
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-semibold text-white">{acc.name}</span>
-                                        {acc.nickname && <span className="text-pink-300 text-[11px]">@{acc.nickname}</span>}
-                                        {acc.holder_name && <span className="text-zinc-400 text-[10px]">({acc.holder_name})</span>}
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          />
-
-                          {metaInstagramAccounts.length === 0 && (
-                            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-pink-500/10 border border-pink-500/20 text-xs text-pink-300">
-                              <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-                              <span>
-                                Nenhum perfil de Instagram cadastrado.{' '}
-                                <Link to="/contas" className="underline hover:text-pink-200">
-                                  Cadastre primeiro em Contas
-                                </Link>
-                                .
-                              </span>
-                            </div>
-                          )}
-
-                          {selectedInstagramAccount && (
-                            <div className="p-3 rounded-xl bg-zinc-950/80 border border-pink-500/30 text-xs space-y-1">
-                              <div className="flex items-center gap-2">
-                                <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
-                                <span className="font-bold text-white">{selectedInstagramAccount.name}</span>
-                                {selectedInstagramAccount.nickname && (
-                                  <span className="text-pink-300 font-mono">@{selectedInstagramAccount.nickname}</span>
-                                )}
-                              </div>
-                              <p className="text-zinc-400 text-[11px]">
-                                Titular: <strong className="text-zinc-200">{selectedInstagramAccount.holder_name}</strong>
-                                {selectedInstagramAccount.email ? ` · ${selectedInstagramAccount.email}` : ''}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Seletor Facebook quando ativo */}
-                      {linkFacebook && (
-                        <div className="space-y-2 pt-2 border-t border-blue-500/20">
-                          <div className="flex items-center justify-between">
-                            <Label className="text-xs font-medium text-blue-300 flex items-center gap-1.5">
-                              <FacebookLogo className="w-3.5 h-3.5" />
-                              Página ou Perfil de Facebook cadastrado em Contas:
-                            </Label>
-                            <Link to="/contas" target="_blank" className="text-[10px] text-blue-400 hover:underline">
-                              Gerenciar Contas
-                            </Link>
-                          </div>
-                          <Controller
-                            name="meta_facebook_account_id"
-                            control={control}
-                            render={({ field }) => (
-                              <Select
-                                value={field.value || 'none'}
-                                onValueChange={(v) => {
-                                  const val = v === 'none' ? null : v;
-                                  field.onChange(val);
-                                  setValue('meta_linked_account_id', metaInstagramAccountId || val || null);
-                                }}
-                              >
-                                <SelectTrigger className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white">
-                                  <SelectValue placeholder="Selecione uma página/perfil do Facebook..." />
-                                </SelectTrigger>
-                                <SelectContent className="bg-zinc-900 border-zinc-800 text-white max-h-60">
-                                  <SelectItem value="none">
-                                    <span className="text-zinc-500 italic">Nenhum perfil de Facebook selecionado</span>
-                                  </SelectItem>
-                                  {metaFacebookAccounts.map((acc) => (
-                                    <SelectItem key={acc.id} value={acc.id}>
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-semibold text-white">{acc.name}</span>
-                                        {acc.nickname && <span className="text-blue-300 text-[11px]">@{acc.nickname}</span>}
-                                        {acc.holder_name && <span className="text-zinc-400 text-[10px]">({acc.holder_name})</span>}
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          />
-
-                          {metaFacebookAccounts.length === 0 && (
-                            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300">
-                              <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-                              <span>
-                                Nenhum perfil de Facebook cadastrado.{' '}
-                                <Link to="/contas" className="underline hover:text-blue-200">
-                                  Cadastre primeiro em Contas
-                                </Link>
-                                .
-                              </span>
-                            </div>
-                          )}
-
-                          {selectedFacebookAccount && (
-                            <div className="p-3 rounded-xl bg-zinc-950/80 border border-blue-500/30 text-xs space-y-1">
-                              <div className="flex items-center gap-2">
-                                <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
-                                <span className="font-bold text-white">{selectedFacebookAccount.name}</span>
-                                {selectedFacebookAccount.nickname && (
-                                  <span className="text-blue-300 font-mono">@{selectedFacebookAccount.nickname}</span>
-                                )}
-                              </div>
-                              <p className="text-zinc-400 text-[11px]">
-                                Titular: <strong className="text-zinc-200">{selectedFacebookAccount.holder_name}</strong>
-                                {selectedFacebookAccount.email ? ` · ${selectedFacebookAccount.email}` : ''}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                  {/* ── SEÇÃO 4: Vínculo de Contas de Plataforma (N:N TikTok e Meta) ── */}
+                  {(selectedPlatform === 'tiktok' || selectedPlatform === 'meta') && (
+                    <BusinessCenterAccountLinksManager
+                      platform={selectedPlatform}
+                      linkedAccounts={linkedAccounts}
+                      onChange={setLinkedAccounts}
+                      availableAccounts={platformAccounts}
+                      disabled={isBusy}
+                    />
                   )}
 
                   {/* ── SEÇÃO 4.5: Infraestrutura de Rede e Operação (Proxy & Dispositivo) ── */}

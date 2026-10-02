@@ -16,7 +16,7 @@ import type { BusinessCenterWithStats } from '@/types/businessCenters';
 import { BC_PLATFORM_CONFIG } from '@/types/businessCenters';
 import {
   InstagramLogo,
-  FacebookLogo,
+  TikTokLogo,
   getPlatformLogo,
   getPlatformColor,
 } from '@/components/ui/PlatformLogos';
@@ -222,34 +222,42 @@ export const BusinessCenterCard: React.FC<BusinessCenterCardProps> = React.memo(
           </button>
         </div>
 
-        {/* Meta linked account info */}
-        {center.platform === 'meta' &&
-          (center.meta_linked_network ||
+        {/* Linked platform accounts info (TikTok / Meta N:N) */}
+        {Boolean(
+          (center.linked_account_count && center.linked_account_count > 0) ||
+            center.meta_linked_network ||
             center.meta_instagram_account_id ||
-            center.meta_facebook_account_id) && (
-            <div className="flex flex-wrap items-center gap-2 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs">
-              {(center.meta_linked_network === 'instagram' ||
-                center.meta_linked_network === 'both' ||
-                center.meta_instagram_account_id) && (
-                <span className="flex items-center gap-1.5 text-pink-300 font-medium">
-                  <InstagramLogo className="w-3.5 h-3.5 flex-shrink-0" />
-                  Instagram
-                </span>
+            center.meta_facebook_account_id
+        ) && (
+          <div
+            className={`flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg text-xs ${
+              center.platform === 'tiktok'
+                ? 'bg-cyan-500/10 border border-cyan-500/20'
+                : 'bg-blue-500/10 border border-blue-500/20'
+            }`}
+          >
+            <div className="flex items-center gap-1.5 font-medium">
+              {center.platform === 'tiktok' ? (
+                <>
+                  <TikTokLogo className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
+                  <span className="text-cyan-300">Perfis TikTok</span>
+                </>
+              ) : (
+                <>
+                  <InstagramLogo className="w-3.5 h-3.5 text-pink-400 flex-shrink-0" />
+                  <span className="text-pink-300">Ativos Meta (IG/FB)</span>
+                </>
               )}
-              {center.meta_linked_network === 'both' && (
-                <span className="text-zinc-500">•</span>
-              )}
-              {(center.meta_linked_network === 'facebook' ||
-                center.meta_linked_network === 'both' ||
-                center.meta_facebook_account_id) && (
-                <span className="flex items-center gap-1.5 text-blue-300 font-medium">
-                  <FacebookLogo className="w-3.5 h-3.5 flex-shrink-0" />
-                  Facebook
-                </span>
-              )}
-              <span className="text-zinc-400 text-[11px]">vinculado(s)</span>
             </div>
-          )}
+            <span
+              className={`text-[11px] font-semibold ${
+                center.platform === 'tiktok' ? 'text-cyan-400' : 'text-blue-300'
+              }`}
+            >
+              {center.linked_account_count ?? 1} vinculado(s)
+            </span>
+          </div>
+        )}
 
         {/* Notes if any */}
         {center.notes && (

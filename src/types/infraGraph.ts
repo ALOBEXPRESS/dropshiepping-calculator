@@ -31,7 +31,10 @@ export type EdgeRelation =
   | 'has_campaign'
   | 'bc_linked_account'
   | 'bc_meta_ig'
-  | 'bc_meta_fb';
+  | 'bc_meta_fb'
+  | 'bc_owner_account'
+  | 'bc_partner_access'
+  | 'bc_ad_authorized';
 
 // ── Health alert types ────────────────────────────────────────────────────────
 

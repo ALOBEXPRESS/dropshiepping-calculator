@@ -96,6 +96,18 @@ export const InfraMapLegend: React.FC = () => {
                 <span className="text-rose-400 font-medium">Linha Vermelha: Multi-Contas no Dispositivo</span>
               </div>
               <div className="flex items-center gap-2.5 py-0.5">
+                <span className="w-4 h-0.5 rounded-full bg-amber-500 shrink-0" />
+                <span className="text-amber-400 font-medium">👑 Âmbar: Business Center Proprietário</span>
+              </div>
+              <div className="flex items-center gap-2.5 py-0.5">
+                <span className="w-4 h-0.5 rounded-full bg-blue-500 shrink-0 border-b border-dashed border-blue-300" />
+                <span className="text-blue-400 font-medium">🤝 Azul: Acesso Compartilhado (Parceiro)</span>
+              </div>
+              <div className="flex items-center gap-2.5 py-0.5">
+                <span className="w-4 h-0.5 rounded-full bg-cyan-500 shrink-0 border-b border-dashed border-cyan-300" />
+                <span className="text-cyan-400 font-medium">📢 Ciano: Autorização Anúncios (Spark)</span>
+              </div>
+              <div className="flex items-center gap-2.5 py-0.5">
                 <div className="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-rose-500/40 shrink-0" />
                 <span className="text-rose-300">Nó com Alerta de Saúde</span>
               </div>
