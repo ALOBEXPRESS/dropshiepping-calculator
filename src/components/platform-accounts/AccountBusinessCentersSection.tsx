@@ -112,15 +112,15 @@ export const AccountBusinessCentersSection: React.FC<
             <Building2 className="w-4 h-4 text-purple-400" />
             <h4 className="text-xs font-bold uppercase tracking-wider text-purple-300">
               {isTikTok
-                ? 'Business Centers TikTok Vinculados (N:N)'
+                ? 'Business Centers TikTok Vinculados'
                 : isMeta
-                ? 'Meta Business Portfolios Vinculados (N:N)'
+                ? 'Meta Business Portfolios Vinculados'
                 : 'Business Centers / Portfólios Vinculados'}
             </h4>
           </div>
           <p className="text-[11px] text-zinc-400">
             {isTikTok
-              ? 'Esta conta TikTok pode ser autorizada por múltiplos Business Centers para veiculação de anúncios (até 800) ou gestão.'
+              ? 'Gerencie os Business Centers que possuem acesso ou autorização de anúncios para esta conta TikTok.'
               : 'Gerencie os Portfólios Meta com acesso a este perfil/página, identificando claramente o Proprietário e Parceiros.'}
           </p>
         </div>

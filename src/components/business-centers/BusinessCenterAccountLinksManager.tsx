@@ -5,7 +5,6 @@ import {
   Megaphone,
   Plus,
   Trash2,
-  Info,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -166,14 +165,14 @@ export const BusinessCenterAccountLinksManager: React.FC<
               }`}
             >
               {isTikTok
-                ? '4. Vínculo de Contas TikTok (Muitos-para-Muitos)'
-                : '4. Vínculo de Redes Sociais Meta (N:N Multi-Contas)'}
+                ? '4. Contas TikTok Vinculadas'
+                : '4. Redes Sociais e Perfis Vinculados'}
             </h4>
           </div>
           <p className="text-xs text-zinc-400">
             {isTikTok
-              ? 'Vincule múltiplos perfis do TikTok a este Business Center com diferenciação de Propriedade, Acesso ou Spark Ads.'
-              : 'Vincule perfis do Instagram e páginas do Facebook. Suporta propriedade primária e múltiplos acessos de parceiro.'}
+              ? 'Vincule os perfis do TikTok associados a este Business Center (Proprietário, Acesso ou Anúncios).'
+              : 'Vincule os perfis do Instagram e páginas do Facebook associados a este portfólio.'}
           </p>
         </div>
 
@@ -184,44 +183,6 @@ export const BusinessCenterAccountLinksManager: React.FC<
           {linkedAccounts.length}{' '}
           {linkedAccounts.length === 1 ? 'conta vinculada' : 'contas vinculadas'}
         </Badge>
-      </div>
-
-      {/* Banner Explicativo de Regras Reais das Plataformas */}
-      <div
-        className={`p-3 rounded-xl border text-xs leading-relaxed space-y-1 ${
-          isTikTok
-            ? 'bg-cyan-500/10 border-cyan-500/25 text-cyan-200'
-            : 'bg-blue-500/10 border-blue-500/25 text-blue-200'
-        }`}
-      >
-        <div className="flex items-center gap-1.5 font-semibold">
-          <Info className="w-4 h-4 flex-shrink-0" />
-          <span>Regras oficiais de relacionamento {isTikTok ? 'TikTok' : 'Meta'}:</span>
-        </div>
-        <ul className="list-disc pl-5 space-y-0.5 text-[11px] opacity-90">
-          {isTikTok ? (
-            <>
-              <li>
-                <strong>Proprietário (👑):</strong> O Business Center é o detentor primário do ativo.
-              </li>
-              <li>
-                <strong>Autorização para Anúncios (📢):</strong> Para ad delivery e Spark Ads, uma mesma conta TikTok pode ser autorizada por até <strong>800 Business Centers</strong>.
-              </li>
-              <li>
-                <strong>Acesso Compartilhado (🤝):</strong> Membros e agências autorizadas a operar o perfil.
-              </li>
-            </>
-          ) : (
-            <>
-              <li>
-                <strong>Propriedade do Ativo (👑):</strong> Cada conta de Instagram ou Página de Facebook possui no máximo <strong>1 Portfólio Proprietário</strong>.
-              </li>
-              <li>
-                <strong>Acesso de Parceiro (🤝):</strong> Vários Portfólios podem ter acesso compartilhado simultâneo ao mesmo ativo para co-gestão ou veiculação.
-              </li>
-            </>
-          )}
-        </ul>
       </div>
 
       {/* Caixa de Adição de Nova Conta */}

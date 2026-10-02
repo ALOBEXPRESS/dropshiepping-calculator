@@ -9,6 +9,7 @@ import {
   User,
   FileText,
   Hash,
+  Smartphone,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
@@ -255,6 +256,21 @@ export const BusinessCenterCard: React.FC<BusinessCenterCardProps> = React.memo(
               }`}
             >
               {center.linked_account_count ?? 1} vinculado(s)
+            </span>
+          </div>
+        )}
+
+        {/* Dispositivos operacionais associados */}
+        {Boolean(
+          (center.device_ids && center.device_ids.length > 0) || center.device_id
+        ) && (
+          <div className="flex items-center justify-between text-xs text-zinc-400 bg-zinc-900/40 px-2.5 py-1.5 rounded-lg border border-zinc-800/60">
+            <span className="flex items-center gap-1.5 text-zinc-300">
+              <Smartphone className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
+              <span>Dispositivos:</span>
+            </span>
+            <span className="font-mono text-cyan-300 font-semibold text-[11px]">
+              {(center.device_ids?.length || (center.device_id ? 1 : 0))} associado(s)
             </span>
           </div>
         )}

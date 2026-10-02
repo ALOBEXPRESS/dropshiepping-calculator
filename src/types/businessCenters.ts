@@ -184,8 +184,10 @@ export interface BusinessCenter {
   meta_instagram_account_id?: string | null;
   /** Para Meta: ID da página/perfil de Facebook vinculado - Legado mantido para compatibilidade */
   meta_facebook_account_id?: string | null;
-  /** Dispositivo vinculado (infraestrutura) */
+  /** Dispositivo vinculado (infraestrutura legado) */
   device_id?: string | null;
+  /** Dispositivos operacionais vinculados (infraestrutura N:N) */
+  device_ids?: string[];
   /** Proxy vinculado (infraestrutura) */
   proxy_id?: string | null;
   created_by: string | null;
@@ -232,8 +234,10 @@ export const businessCenterSchema = z.object({
   meta_instagram_account_id: z.string().uuid().optional().nullable().or(z.literal('')),
   /** Meta: ID da conta de Facebook vinculada */
   meta_facebook_account_id: z.string().uuid().optional().nullable().or(z.literal('')),
-  /** Dispositivo vinculado (infraestrutura) */
+  /** Dispositivo vinculado (infraestrutura legado) */
   device_id: z.string().uuid().optional().nullable().or(z.literal('')),
+  /** Dispositivos operacionais vinculados (infraestrutura N:N) */
+  device_ids: z.array(z.string().uuid()).optional(),
   /** Proxy vinculado (infraestrutura) */
   proxy_id: z.string().uuid().optional().nullable().or(z.literal('')),
   /** Contas de Plataforma vinculadas (N:N) com tipo de relacionamento */

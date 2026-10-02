@@ -68,15 +68,41 @@ export class BusinessCentersService {
       );
     }
 
-    return (centers as BusinessCenter[]).map((bc) => ({
-      ...bc,
-      ad_account_count: countMap.get(bc.id) ?? 0,
-      linked_account_count: linkedCountMap.get(bc.id) ?? 0,
-    }));
+    // Buscar dispositivos vinculados aos BCs (N:N)
+    const { data: centerDevices } = await supabase
+      .from('business_center_devices')
+      .select('business_center_id, device_id')
+      .eq('organization_id', organizationId)
+      .in('business_center_id', centerIds);
+
+    const devicesMap = new Map<string, string[]>();
+    for (const cd of centerDevices ?? []) {
+      if (!cd.business_center_id) continue;
+      const arr = devicesMap.get(cd.business_center_id) ?? [];
+      arr.push(cd.device_id);
+      devicesMap.set(cd.business_center_id, arr);
+    }
+
+    return (centers as BusinessCenter[]).map((bc) => {
+      const dbDevices = devicesMap.get(bc.id);
+      const resolvedDevices =
+        dbDevices && dbDevices.length > 0
+          ? dbDevices
+          : bc.device_id
+          ? [bc.device_id]
+          : [];
+
+      return {
+        ...bc,
+        device_ids: resolvedDevices,
+        ad_account_count: countMap.get(bc.id) ?? 0,
+        linked_account_count: linkedCountMap.get(bc.id) ?? 0,
+      };
+    });
   }
 
   /**
-   * Obtém um business center por ID com contas vinculadas.
+   * Obtém um business center por ID com contas e dispositivos vinculados.
    */
   static async getById(
     organizationId: string,
@@ -107,12 +133,48 @@ export class BusinessCentersService {
       id
     );
 
+    // Buscar dispositivos vinculados (N:N)
+    const deviceIds = await BusinessCentersService.getCenterDevices(
+      organizationId,
+      id
+    );
+    const resolvedDeviceIds =
+      deviceIds.length > 0
+        ? deviceIds
+        : center.device_id
+        ? [center.device_id]
+        : [];
+
     return {
       ...(center as BusinessCenter),
+      device_ids: resolvedDeviceIds,
       ad_account_count: count ?? 0,
       linked_account_count: linkedAccounts.length,
       linked_accounts: linkedAccounts,
     };
+  }
+
+  /**
+   * Busca os IDs dos dispositivos vinculados a um Business Center (N:N).
+   */
+  static async getCenterDevices(
+    organizationId: string,
+    businessCenterId: string
+  ): Promise<string[]> {
+    if (!organizationId || !businessCenterId) return [];
+
+    const { data, error } = await supabase
+      .from('business_center_devices')
+      .select('device_id')
+      .eq('organization_id', organizationId)
+      .eq('business_center_id', businessCenterId);
+
+    if (error) {
+      console.error('Erro ao buscar dispositivos vinculados ao BC:', error);
+      return [];
+    }
+
+    return (data || []).map((row: { device_id: string }) => row.device_id);
   }
 
   /**
@@ -391,6 +453,13 @@ export class BusinessCentersService {
         ? data.bc_id.trim()
         : `7${Date.now()}${Math.floor(10000 + Math.random() * 90000)}`;
 
+    const initialDevices =
+      data.device_ids !== undefined
+        ? data.device_ids
+        : data.device_id
+        ? [data.device_id]
+        : [];
+
     const payload = {
       organization_id: organizationId,
       platform: data.platform || 'tiktok',
@@ -421,7 +490,7 @@ export class BusinessCentersService {
         data.platform === 'meta' ? data.meta_instagram_account_id || null : null,
       meta_facebook_account_id:
         data.platform === 'meta' ? data.meta_facebook_account_id || null : null,
-      device_id: data.device_id || null,
+      device_id: initialDevices[0] || null,
       proxy_id: data.proxy_id || null,
       created_by: userId || null,
     };
@@ -441,6 +510,16 @@ export class BusinessCentersService {
 
     const bc = created as BusinessCenter;
 
+    // Salva dispositivos vinculados (N:N)
+    if (initialDevices.length > 0) {
+      const devRows = initialDevices.map((dId) => ({
+        organization_id: organizationId,
+        business_center_id: bc.id,
+        device_id: dId,
+      }));
+      await supabase.from('business_center_devices').insert(devRows);
+    }
+
     // Sincroniza contas N:N se informadas
     if (data.linked_accounts && data.linked_accounts.length > 0) {
       await BusinessCentersService.syncLinkedAccounts(
@@ -450,7 +529,10 @@ export class BusinessCentersService {
       );
     }
 
-    return bc;
+    return {
+      ...bc,
+      device_ids: initialDevices,
+    };
   }
 
   /**
@@ -498,7 +580,11 @@ export class BusinessCentersService {
       payload.meta_instagram_account_id = data.meta_instagram_account_id || null;
     if (data.meta_facebook_account_id !== undefined)
       payload.meta_facebook_account_id = data.meta_facebook_account_id || null;
-    if (data.device_id !== undefined) payload.device_id = data.device_id || null;
+    if (data.device_ids !== undefined) {
+      payload.device_id = data.device_ids[0] || null;
+    } else if (data.device_id !== undefined) {
+      payload.device_id = data.device_id || null;
+    }
     if (data.proxy_id !== undefined) payload.proxy_id = data.proxy_id || null;
 
     const { data: updated, error } = await supabase
@@ -516,6 +602,26 @@ export class BusinessCentersService {
       throw new Error(error.message);
     }
 
+    // Sincroniza dispositivos vinculados (N:N)
+    let updatedDeviceIds: string[] | undefined = undefined;
+    if (data.device_ids !== undefined) {
+      await supabase
+        .from('business_center_devices')
+        .delete()
+        .eq('organization_id', organizationId)
+        .eq('business_center_id', id);
+
+      if (data.device_ids.length > 0) {
+        const devRows = data.device_ids.map((devId) => ({
+          organization_id: organizationId,
+          business_center_id: id,
+          device_id: devId,
+        }));
+        await supabase.from('business_center_devices').insert(devRows);
+      }
+      updatedDeviceIds = data.device_ids;
+    }
+
     // Sincroniza contas N:N se informadas
     if (data.linked_accounts !== undefined) {
       await BusinessCentersService.syncLinkedAccounts(
@@ -525,7 +631,10 @@ export class BusinessCentersService {
       );
     }
 
-    return updated as BusinessCenter;
+    return {
+      ...(updated as BusinessCenter),
+      ...(updatedDeviceIds !== undefined ? { device_ids: updatedDeviceIds } : {}),
+    };
   }
 
   /**

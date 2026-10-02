@@ -15,6 +15,7 @@ import {
   ArrowLeft,
   Shield,
   Smartphone,
+  X,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -116,6 +117,8 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
 
   // Gerenciamento de vínculos N:N entre este Business Center e Contas de Plataforma
   const [linkedAccounts, setLinkedAccounts] = useState<BusinessCenterAccountInput[]>([]);
+  // Gerenciamento de dispositivos operacionais associados (N:N)
+  const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
 
   const {
     register,
@@ -213,9 +216,29 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
           device_id: center.device_id ?? null,
           proxy_id: center.proxy_id ?? null,
         });
+        // Carrega dispositivos operacionais N:N
+        let initialDevs = center.device_ids ?? [];
+        if (initialDevs.length === 0 && center.device_id) {
+          initialDevs = [center.device_id];
+        }
+        setSelectedDeviceIds(initialDevs);
+
+        if (organizationId && center.id) {
+          BusinessCentersService.getCenterDevices(organizationId, center.id)
+            .then((devs) => {
+              if (devs && devs.length > 0) {
+                setSelectedDeviceIds(devs);
+              }
+            })
+            .catch((err) => {
+              console.warn('Erro ao carregar dispositivos do BC:', err);
+            });
+        }
+
         setCurrentStep(2);
       } else {
         setLinkedAccounts([]);
+        setSelectedDeviceIds([]);
         reset(DEFAULT_FORM_VALUES);
         setCurrentStep(1);
       }
@@ -271,7 +294,8 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
         meta_facebook_account_id,
         meta_linked_network,
         meta_linked_account_id,
-        device_id: data.device_id || null,
+        device_id: selectedDeviceIds[0] || null,
+        device_ids: selectedDeviceIds,
         proxy_id: data.proxy_id || null,
         linked_accounts: linkedAccounts,
       };
@@ -285,6 +309,7 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
       }
       reset();
       setLinkedAccounts([]);
+      setSelectedDeviceIds([]);
       onOpenChange(false);
     } catch (err) {
       toast.error(
@@ -295,6 +320,8 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
 
   const handleClose = () => {
     reset();
+    setLinkedAccounts([]);
+    setSelectedDeviceIds([]);
     onOpenChange(false);
   };
 
@@ -969,47 +996,98 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
                         />
                       </div>
 
-                      {/* Dispositivo Seletor */}
+                      {/* Dispositivos Operacionais (Multi-Seleção N:N) */}
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
                           <Label className="text-xs font-medium text-zinc-300 flex items-center gap-1.5">
                             <Smartphone className="w-3.5 h-3.5 text-cyan-400" />
-                            Dispositivo Operacional (Opcional)
+                            <span>Dispositivos Operacionais (Opcional)</span>
                           </Label>
-                          <Link to="/dispositivos" target="_blank" className="text-[10px] text-cyan-400 hover:underline">
+                          <Link
+                            to="/dispositivos"
+                            target="_blank"
+                            className="text-[10px] text-cyan-400 hover:underline"
+                          >
                             + Gerenciar Dispositivos
                           </Link>
                         </div>
-                        <Controller
-                          name="device_id"
-                          control={control}
-                          render={({ field }) => (
-                            <Select
-                              value={field.value || 'none'}
-                              onValueChange={(v) => field.onChange(v === 'none' ? null : v)}
-                            >
-                              <SelectTrigger className="bg-zinc-900 border-zinc-800 text-xs h-10 text-white">
-                                <SelectValue placeholder="Selecione um dispositivo..." />
-                              </SelectTrigger>
-                              <SelectContent className="bg-zinc-900 border-zinc-800 text-white max-h-56">
-                                <SelectItem value="none">
-                                  <span className="text-zinc-500 italic">Nenhum dispositivo associado</span>
+
+                        {/* Seletor para adicionar dispositivo */}
+                        <Select
+                          value="none"
+                          onValueChange={(devId) => {
+                            if (devId && devId !== 'none' && !selectedDeviceIds.includes(devId)) {
+                              setSelectedDeviceIds([...selectedDeviceIds, devId]);
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="bg-zinc-900 border-zinc-800 text-xs h-10 text-white">
+                            <SelectValue placeholder="+ Vincular dispositivo operacional..." />
+                          </SelectTrigger>
+                          <SelectContent className="bg-zinc-900 border-zinc-800 text-white max-h-56">
+                            <SelectItem value="none" disabled>
+                              <span className="text-zinc-500 italic">
+                                Selecione um dispositivo para associar...
+                              </span>
+                            </SelectItem>
+                            {devices
+                              .filter((d) => !selectedDeviceIds.includes(d.id))
+                              .map((d) => (
+                                <SelectItem key={d.id} value={d.id}>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-white">{d.label}</span>
+                                    {d.platform && (
+                                      <span className="text-zinc-400 text-[11px]">({d.platform})</span>
+                                    )}
+                                    <span className="text-cyan-400 text-[10px] font-medium uppercase px-1 py-0.5 rounded bg-cyan-400/10">
+                                      {d.device_type}
+                                    </span>
+                                  </div>
                                 </SelectItem>
-                                {devices.map((d) => (
-                                  <SelectItem key={d.id} value={d.id}>
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-semibold text-white">{d.label}</span>
-                                      {d.platform && <span className="text-zinc-400 text-[11px]">({d.platform})</span>}
-                                      <span className="text-cyan-400 text-[10px] font-medium uppercase px-1 py-0.5 rounded bg-cyan-400/10">
-                                        {d.device_type}
-                                      </span>
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
+                              ))}
+                          </SelectContent>
+                        </Select>
+
+                        {/* Lista de dispositivos vinculados */}
+                        {selectedDeviceIds.length === 0 ? (
+                          <p className="text-[11px] text-zinc-500 italic pt-0.5">
+                            Nenhum dispositivo associado (Operação web/indireta)
+                          </p>
+                        ) : (
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {selectedDeviceIds.map((devId) => {
+                              const dev = devices.find((d) => d.id === devId);
+                              return (
+                                <div
+                                  key={devId}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-700/80 text-xs text-white shadow-sm"
+                                >
+                                  <Smartphone className="w-3 h-3 text-cyan-400 flex-shrink-0" />
+                                  <span className="font-medium truncate max-w-[140px]">
+                                    {dev?.label || 'Dispositivo'}
+                                  </span>
+                                  {dev?.device_type && (
+                                    <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-cyan-500/15 text-cyan-300 font-mono">
+                                      {dev.device_type}
+                                    </span>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setSelectedDeviceIds(
+                                        selectedDeviceIds.filter((id) => id !== devId)
+                                      )
+                                    }
+                                    className="text-zinc-400 hover:text-rose-400 ml-0.5 p-0.5 rounded hover:bg-zinc-800 transition-colors cursor-pointer"
+                                    title="Desvincular dispositivo"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

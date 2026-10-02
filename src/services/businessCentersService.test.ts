@@ -187,7 +187,10 @@ describe('BusinessCentersService', () => {
           created_by: 'user-123',
         })
       );
-      expect(result).toEqual(createdRecord);
+      expect(result).toEqual({
+        ...createdRecord,
+        device_ids: [],
+      });
     });
 
     it('throws user-friendly error on unique constraint violation', async () => {
