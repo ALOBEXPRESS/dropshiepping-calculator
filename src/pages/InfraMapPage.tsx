@@ -39,35 +39,111 @@ const InfraMapContent: React.FC = () => {
   const { data, isLoading, error, refetch } = useInfraGraph(organizationId);
   const { fitView } = useReactFlow();
 
-  const [groupBy, setGroupBy] = useState<'none' | 'provider' | 'platform'>('none');
-  const [visibleNodeTypes, setVisibleNodeTypes] = useState<Set<InfraNodeType>>(
-    new Set(ALL_NODE_TYPES)
-  );
+  // 1. Group By with localStorage persistence
+  const [groupBy, setGroupByState] = useState<'none' | 'provider' | 'platform'>(() => {
+    try {
+      const saved = localStorage.getItem(`infra_map_group_by_${organizationId || 'default'}`);
+      if (saved === 'none' || saved === 'provider' || saved === 'platform') {
+        return saved;
+      }
+    } catch {}
+    return 'none';
+  });
+
+  const setGroupBy = useCallback((mode: 'none' | 'provider' | 'platform') => {
+    setGroupByState(mode);
+    try {
+      localStorage.setItem(`infra_map_group_by_${organizationId || 'default'}`, mode);
+    } catch {}
+    setTimeout(() => {
+      fitView({ padding: 0.15 });
+    }, 100);
+  }, [organizationId, fitView]);
+
+  // 2. Visible Node Types with localStorage persistence
+  const [visibleNodeTypes, setVisibleNodeTypesState] = useState<Set<InfraNodeType>>(() => {
+    try {
+      const saved = localStorage.getItem(`infra_map_visible_types_${organizationId || 'default'}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return new Set(parsed as InfraNodeType[]);
+        }
+      }
+    } catch {}
+    return new Set(ALL_NODE_TYPES);
+  });
+
+  const setVisibleNodeTypes = useCallback((types: Set<InfraNodeType>) => {
+    setVisibleNodeTypesState(types);
+    try {
+      localStorage.setItem(
+        `infra_map_visible_types_${organizationId || 'default'}`,
+        JSON.stringify(Array.from(types))
+      );
+    } catch {}
+  }, [organizationId]);
+
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedAlertType, setSelectedAlertType] = useState<string | null>(null);
   const [filterOnlyAlerts, setFilterOnlyAlerts] = useState(false);
-  const [hideUnused, setHideUnused] = useState(true);
 
-  // Custom node positions persisted in localStorage
+  // 3. Hide Unused with localStorage persistence
+  const [hideUnused, setHideUnusedState] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem(`infra_map_hide_unused_${organizationId || 'default'}`);
+      if (saved !== null) {
+        return saved === 'true';
+      }
+    } catch {}
+    return true;
+  });
+
+  const setHideUnused = useCallback((updater: boolean | ((prev: boolean) => boolean)) => {
+    setHideUnusedState((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      try {
+        localStorage.setItem(`infra_map_hide_unused_${organizationId || 'default'}`, String(next));
+      } catch {}
+      return next;
+    });
+  }, [organizationId]);
+
+  // 4. Custom node positions persisted in localStorage PER grouping mode
   const [customPositions, setCustomPositions] = useState<Record<string, { x: number; y: number }>>(() => {
     try {
-      const raw = localStorage.getItem(`infra_map_positions_${organizationId || 'default'}`);
+      const raw = localStorage.getItem(`infra_map_positions_${organizationId || 'default'}_${groupBy}`);
       return raw ? JSON.parse(raw) : {};
     } catch {
       return {};
     }
   });
 
-  // Re-read custom positions if organizationId changes
+  // Re-read settings and custom positions if organizationId or groupBy changes
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(`infra_map_positions_${organizationId || 'default'}`);
-      setCustomPositions(raw ? JSON.parse(raw) : {});
+      const savedGroupBy = localStorage.getItem(`infra_map_group_by_${organizationId || 'default'}`);
+      if (savedGroupBy === 'none' || savedGroupBy === 'provider' || savedGroupBy === 'platform') {
+        setGroupByState(savedGroupBy);
+      }
+      const savedTypes = localStorage.getItem(`infra_map_visible_types_${organizationId || 'default'}`);
+      if (savedTypes) {
+        const parsed = JSON.parse(savedTypes);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setVisibleNodeTypesState(new Set(parsed as InfraNodeType[]));
+        }
+      }
+      const savedHide = localStorage.getItem(`infra_map_hide_unused_${organizationId || 'default'}`);
+      if (savedHide !== null) {
+        setHideUnusedState(savedHide === 'true');
+      }
+      const rawPos = localStorage.getItem(`infra_map_positions_${organizationId || 'default'}_${groupBy}`);
+      setCustomPositions(rawPos ? JSON.parse(rawPos) : {});
     } catch {
       setCustomPositions({});
     }
-  }, [organizationId]);
+  }, [organizationId, groupBy]);
 
   const handleNodeDragStop: OnNodeDrag<Node> = useCallback((_event, node) => {
     setCustomPositions((prev) => {
@@ -76,17 +152,20 @@ const InfraMapContent: React.FC = () => {
         [node.id]: { x: Math.round(node.position.x), y: Math.round(node.position.y) },
       };
       try {
-        localStorage.setItem(`infra_map_positions_${organizationId || 'default'}`, JSON.stringify(updated));
+        localStorage.setItem(
+          `infra_map_positions_${organizationId || 'default'}_${groupBy}`,
+          JSON.stringify(updated)
+        );
       } catch (e) {
         console.warn('Failed to save node position:', e);
       }
       return updated;
     });
-  }, [organizationId]);
+  }, [organizationId, groupBy]);
 
   const handleResetLayout = useCallback(() => {
     try {
-      localStorage.removeItem(`infra_map_positions_${organizationId || 'default'}`);
+      localStorage.removeItem(`infra_map_positions_${organizationId || 'default'}_${groupBy}`);
     } catch (e) {
       console.warn('Failed to remove saved positions:', e);
     }
@@ -95,7 +174,7 @@ const InfraMapContent: React.FC = () => {
     setTimeout(() => {
       fitView({ padding: 0.15 });
     }, 60);
-  }, [organizationId, fitView]);
+  }, [organizationId, groupBy, fitView]);
 
   // 1. Compute health alerts from raw graph data
   const allAlerts = useMemo(() => {
@@ -193,12 +272,11 @@ const InfraMapContent: React.FC = () => {
     );
   }, [rfEdges, activeNodes]);
 
-  // 7. Apply Dagre layout strictly to visible/active nodes + custom user positions
-  const groupingMode = groupBy === 'provider' ? 'provider' : groupBy === 'platform' ? 'platform' : 'provider';
+  // 7. Apply layout strictly to visible/active nodes + custom user positions
   const { layoutedNodes, layoutedEdges } = useInfraMapLayout(
     activeNodes,
     activeEdges,
-    groupingMode,
+    groupBy,
     customPositions
   );
 
