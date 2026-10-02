@@ -45,6 +45,7 @@ const InfraMapContent: React.FC = () => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedAlertType, setSelectedAlertType] = useState<string | null>(null);
   const [filterOnlyAlerts, setFilterOnlyAlerts] = useState(false);
+  const [hideUnused, setHideUnused] = useState(true);
 
   // 1. Compute health alerts from raw graph data
   const allAlerts = useMemo(() => {
@@ -52,7 +53,39 @@ const InfraMapContent: React.FC = () => {
     return computeAllAlerts(data);
   }, [data]);
 
-  // 2. Transform raw graph → ReactFlow nodes/edges + apply health alerts
+  // 2. Identify connected node IDs (in-degree > 0 or out-degree > 0)
+  const connectedNodeIds = useMemo(() => {
+    if (!data?.edges) return new Set<string>();
+    const set = new Set<string>();
+    for (const edge of data.edges) {
+      set.add(edge.source);
+      set.add(edge.target);
+    }
+    return set;
+  }, [data?.edges]);
+
+  // 3. Identify nodes that are flagged by active health alerts
+  const alertNodeIds = useMemo(() => {
+    const set = new Set<string>();
+    for (const alert of allAlerts) {
+      for (const id of alert.nodeIds) {
+        set.add(id);
+      }
+    }
+    return set;
+  }, [allAlerts]);
+
+  // Helper: determine if a node is idle/unused (no connections and no active alerts)
+  const isNodeUnused = useCallback(
+    (nodeId: string) => {
+      if (connectedNodeIds.has(nodeId)) return false;
+      if (alertNodeIds.has(nodeId)) return false;
+      return true;
+    },
+    [connectedNodeIds, alertNodeIds]
+  );
+
+  // 4. Transform raw graph → ReactFlow nodes/edges + apply health alerts
   const { rfNodes, rfEdges } = useMemo(() => {
     if (!data) return { rfNodes: [], rfEdges: [] };
     const { nodes, edges } = transformToReactFlow(data);
@@ -60,38 +93,62 @@ const InfraMapContent: React.FC = () => {
     return { rfNodes: nodesWithAlerts, rfEdges: edges };
   }, [data, allAlerts]);
 
-  // 3. Apply layout (dagre)
-  const groupingMode = groupBy === 'provider' ? 'provider' : groupBy === 'platform' ? 'platform' : 'provider';
-  const { layoutedNodes, layoutedEdges } = useInfraMapLayout(rfNodes, rfEdges, groupingMode);
+  // Count unused/idle nodes
+  const unusedCount = useMemo(() => {
+    return rfNodes.filter((n) => isNodeUnused(n.id)).length;
+  }, [rfNodes, isNodeUnused]);
 
-  // 4. Focus state (BFS)
+  // 5. Focus state (BFS)
   const { highlightedNodeIds, highlightedEdgeIds, focusNodes, clearFocus, focusedNodeId } =
     useInfraMapFocus(data?.edges ?? []);
 
-  // 5. Apply focus state to layouted nodes/edges
-  const { nodes: focusedNodes, edges: focusedEdges } = useMemo(() => {
-    return applyFocusState(layoutedNodes, layoutedEdges, highlightedNodeIds, highlightedEdgeIds);
-  }, [layoutedNodes, layoutedEdges, highlightedNodeIds, highlightedEdgeIds]);
+  // 6. Filter active nodes before applying layout
+  const activeNodes = useMemo(() => {
+    return rfNodes.filter((node) => {
+      // A. Node type visibility filter
+      if (!visibleNodeTypes.has(node.type as InfraNodeType)) return false;
 
-  // 6. Filter by visible node types and alert-only filter
-  const filteredNodes = useMemo(() => {
-    return focusedNodes.filter((node) => {
-      const typeMatch = visibleNodeTypes.has(node.type as InfraNodeType);
-      if (!typeMatch) return false;
+      // B. Hide unused/idle nodes by default
+      if (hideUnused && isNodeUnused(node.id)) {
+        // Exception: Keep visible if explicitly focused/selected by user
+        if (focusedNodeId === node.id || highlightedNodeIds?.has(node.id)) {
+          return true;
+        }
+        return false;
+      }
 
+      // C. Filter only alerts
       if (filterOnlyAlerts) {
         return (node.data as any)?.hasAlert === true;
       }
+
       return true;
     });
-  }, [focusedNodes, visibleNodeTypes, filterOnlyAlerts]);
+  }, [
+    rfNodes,
+    visibleNodeTypes,
+    hideUnused,
+    isNodeUnused,
+    filterOnlyAlerts,
+    focusedNodeId,
+    highlightedNodeIds,
+  ]);
 
-  const filteredEdges = useMemo(() => {
-    const visibleIds = new Set(filteredNodes.map((n) => n.id));
-    return focusedEdges.filter(
+  const activeEdges = useMemo(() => {
+    const visibleIds = new Set(activeNodes.map((n) => n.id));
+    return rfEdges.filter(
       (e) => visibleIds.has(e.source) && visibleIds.has(e.target)
     );
-  }, [focusedEdges, filteredNodes]);
+  }, [rfEdges, activeNodes]);
+
+  // 7. Apply Dagre layout strictly to visible/active nodes
+  const groupingMode = groupBy === 'provider' ? 'provider' : groupBy === 'platform' ? 'platform' : 'provider';
+  const { layoutedNodes, layoutedEdges } = useInfraMapLayout(activeNodes, activeEdges, groupingMode);
+
+  // 8. Apply focus state to layouted nodes/edges
+  const { nodes: focusedNodes, edges: focusedEdges } = useMemo(() => {
+    return applyFocusState(layoutedNodes, layoutedEdges, highlightedNodeIds, highlightedEdgeIds);
+  }, [layoutedNodes, layoutedEdges, highlightedNodeIds, highlightedEdgeIds]);
 
   const handleNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
     setSelectedNode(node);
@@ -105,6 +162,9 @@ const InfraMapContent: React.FC = () => {
 
   const handleNodeFocus = useCallback(
     (nodeId: string) => {
+      if (isNodeUnused(nodeId) && hideUnused) {
+        setHideUnused(false);
+      }
       focusNodes([nodeId]);
       setTimeout(() => {
         fitView({
@@ -114,7 +174,7 @@ const InfraMapContent: React.FC = () => {
         });
       }, 50);
     },
-    [focusNodes, fitView]
+    [focusNodes, fitView, isNodeUnused, hideUnused]
   );
 
   const handleFitView = useCallback(() => {
@@ -230,7 +290,8 @@ const InfraMapContent: React.FC = () => {
 
       {/* 2. Interactive Toolbar */}
       <InfraMapToolbar
-        nodes={filteredNodes}
+        nodes={focusedNodes}
+        allNodes={rfNodes}
         groupBy={groupBy}
         onGroupByChange={setGroupBy}
         visibleNodeTypes={visibleNodeTypes}
@@ -238,16 +299,25 @@ const InfraMapContent: React.FC = () => {
         onNodeFocus={handleNodeFocus}
         onFitView={handleFitView}
         onResetFocus={handleResetFocus}
-        hasActiveFocus={Boolean(focusedNodeId || selectedAlertType || filterOnlyAlerts)}
+        hasActiveFocus={Boolean(focusedNodeId || selectedAlertType || filterOnlyAlerts || !hideUnused)}
         filterOnlyAlerts={filterOnlyAlerts}
         onToggleOnlyAlerts={() => setFilterOnlyAlerts(!filterOnlyAlerts)}
+        hideUnused={hideUnused}
+        onToggleHideUnused={() => {
+          setHideUnused((prev) => !prev);
+          setTimeout(() => {
+            fitView({ padding: 0.15 });
+          }, 50);
+        }}
+        unusedCount={unusedCount}
+        totalNodesCount={rfNodes.length}
       />
 
       {/* 3. Graph Viewport Canvas */}
       <div className="flex-1 relative min-h-0 w-full overflow-hidden">
         <InfraMapCanvas
-          nodes={filteredNodes}
-          edges={filteredEdges}
+          nodes={focusedNodes}
+          edges={focusedEdges}
           onNodeClick={handleNodeClick}
           onPaneClick={handlePaneClick}
         />

@@ -9,6 +9,8 @@ import {
   AlertTriangle,
   Check,
   RotateCcw,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -42,6 +44,7 @@ import { toast } from 'sonner';
 
 interface InfraMapToolbarProps {
   nodes: Node[];
+  allNodes?: Node[];
   groupBy: 'none' | 'provider' | 'platform';
   onGroupByChange: (mode: 'none' | 'provider' | 'platform') => void;
   visibleNodeTypes: Set<InfraNodeType>;
@@ -52,6 +55,10 @@ interface InfraMapToolbarProps {
   hasActiveFocus?: boolean;
   filterOnlyAlerts?: boolean;
   onToggleOnlyAlerts?: () => void;
+  hideUnused?: boolean;
+  onToggleHideUnused?: () => void;
+  unusedCount?: number;
+  totalNodesCount?: number;
 }
 
 const NODE_TYPE_LABELS: Record<InfraNodeType, string> = {
@@ -80,6 +87,7 @@ const ALL_NODE_TYPES: InfraNodeType[] = [
 
 export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
   nodes,
+  allNodes,
   groupBy,
   onGroupByChange,
   visibleNodeTypes,
@@ -90,13 +98,20 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
   hasActiveFocus,
   filterOnlyAlerts,
   onToggleOnlyAlerts,
+  hideUnused = true,
+  onToggleHideUnused,
+  unusedCount = 0,
+  totalNodesCount,
 }) => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
+  // Use allNodes for search and total counts if provided, otherwise active nodes
+  const sourceNodes = allNodes || nodes;
+
   // Count nodes by type
   const nodeCountsByType = ALL_NODE_TYPES.reduce((acc, type) => {
-    acc[type] = nodes.filter((n) => n.type === type).length;
+    acc[type] = sourceNodes.filter((n) => n.type === type).length;
     return acc;
   }, {} as Record<InfraNodeType, number>);
 
@@ -181,7 +196,7 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
                   Nenhum nó encontrado com este termo.
                 </CommandEmpty>
                 <CommandGroup heading="Recursos no Mapa">
-                  {nodes.map((node) => {
+                  {sourceNodes.map((node) => {
                     const data = node.data as { label?: string; sublabel?: string; color?: string };
                     const nodeType = node.type as InfraNodeType;
                     const typeLabel = NODE_TYPE_LABELS[nodeType] || nodeType;
@@ -355,6 +370,46 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
           >
             <AlertTriangle className="h-3.5 w-3.5" />
             <span>Apenas Alertas</span>
+          </Button>
+        )}
+
+        {/* Quick Toggle: Apenas em Uso / Ocultar Ociosos */}
+        {onToggleHideUnused && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onToggleHideUnused}
+            title={
+              hideUnused
+                ? 'Clique para exibir todos os nós (inclusive provedores e dispositivos sem conexões)'
+                : 'Clique para ocultar nós sem uso/sem conexões ativas'
+            }
+            className={cn(
+              'h-8 text-xs gap-1.5 cursor-pointer transition-all',
+              hideUnused
+                ? 'border-border/80 bg-background/60 hover:bg-accent text-zinc-300'
+                : 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 shadow-[0_0_12px_rgba(6,182,212,0.15)]'
+            )}
+          >
+            {hideUnused ? (
+              <>
+                <EyeOff className="h-3.5 w-3.5 text-amber-400" />
+                <span>Apenas em Uso</span>
+                {unusedCount > 0 && (
+                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                    +{unusedCount} ociosos
+                  </span>
+                )}
+              </>
+            ) : (
+              <>
+                <Eye className="h-3.5 w-3.5" />
+                <span>Exibindo Todos</span>
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-cyan-500/20 text-cyan-400">
+                  {totalNodesCount ?? nodes.length}
+                </span>
+              </>
+            )}
           </Button>
         )}
       </div>

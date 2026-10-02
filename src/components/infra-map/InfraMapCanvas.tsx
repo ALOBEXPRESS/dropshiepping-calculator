@@ -107,9 +107,10 @@ export const InfraMapCanvas: React.FC<InfraMapCanvasProps> = ({
             const type = node.type as InfraNodeType;
             return NODE_COLORS[type] || '#6B7280';
           }}
-          maskColor="rgba(0, 0, 0, 0.6)"
+          bgColor="#090a0d"
+          maskColor="rgba(9, 10, 13, 0.75)"
           position="bottom-right"
-          className="!m-4 !w-44 !h-32 bg-card/90 backdrop-blur-md border border-border/80 rounded-xl shadow-2xl overflow-hidden"
+          className="!m-4 !w-44 !h-32 bg-[#090a0d]/90 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden"
           zoomable
           pannable
         />
