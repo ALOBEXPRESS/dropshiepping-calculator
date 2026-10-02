@@ -7,6 +7,11 @@ import {
   findSharedDedicatedProxies,
   findAdAccountsWithoutBC,
   findExpiredActiveProxies,
+  findTikTokAccountDeviceBanRisk,
+  findTikTokAccountMultipleDevices,
+  findDeviceMultipleTikTokAccounts,
+  findProxySharedMultipleDevices,
+  findProxySharedMultipleBCs,
   computeAllAlerts,
 } from './infraGraphHealth';
 import type { InfraGraphResponse } from '@/types/infraGraph';
@@ -30,11 +35,19 @@ const makeProxy = (
   },
 });
 
-const makeAccount = (id: string, opts: { country?: string } = {}) => ({
+const makeAccount = (id: string, opts: { country?: string; platform?: string } = {}) => ({
   id: `pa_${id}`,
   type: 'platform_account' as const,
   label: `Account ${id}`,
   country: opts.country ?? 'BR',
+  platform: opts.platform ?? 'tiktok',
+  meta: {},
+});
+
+const makeDevice = (id: string) => ({
+  id: `dev_${id}`,
+  type: 'device' as const,
+  label: `Device ${id}`,
   meta: {},
 });
 
@@ -52,10 +65,11 @@ const makeAdAccount = (id: string) => ({
   meta: {},
 });
 
-const makeBc = (id: string) => ({
+const makeBc = (id: string, opts: { platform?: string } = {}) => ({
   id: `bc_${id}`,
   type: 'business_center' as const,
   label: `BC ${id}`,
+  platform: opts.platform ?? 'tiktok',
   meta: {},
 });
 
@@ -63,6 +77,24 @@ const usesProxyEdge = (proxyId: string, accountId: string) => ({
   source: `px_${proxyId}`,
   target: `pa_${accountId}`,
   relation: 'uses_proxy' as const,
+});
+
+const runsOnEdge = (devId: string, accId: string) => ({
+  source: `dev_${devId}`,
+  target: `pa_${accId}`,
+  relation: 'runs_on' as const,
+});
+
+const deviceProxyEdge = (pxId: string, devId: string) => ({
+  source: `px_${pxId}`,
+  target: `dev_${devId}`,
+  relation: 'device_proxy' as const,
+});
+
+const bcProxyEdge = (pxId: string, bcId: string) => ({
+  source: `px_${pxId}`,
+  target: `bc_${bcId}`,
+  relation: 'bc_proxy' as const,
 });
 
 const hasProfileEdge = (accountId: string, profileId: string) => ({
@@ -230,3 +262,106 @@ describe('findExpiredActiveProxies', () => {
     expect(findExpiredActiveProxies(graph).count).toBe(0);
   });
 });
+
+describe('findTikTokAccountDeviceBanRisk', () => {
+  it('detects TikTok account connected to 6 or more devices with critical error severity', () => {
+    const devices = [1, 2, 3, 4, 5, 6].map((i) => makeDevice(String(i)));
+    const edges = [1, 2, 3, 4, 5, 6].map((i) => runsOnEdge(String(i), 'tk1'));
+    const graph: InfraGraphResponse = {
+      nodes: [makeAccount('tk1', { platform: 'tiktok' }), ...devices],
+      edges,
+    };
+
+    const alert = findTikTokAccountDeviceBanRisk(graph);
+    expect(alert.count).toBe(7); // account + 6 devices
+    expect(alert.severity).toBe('error');
+    expect(alert.nodeIds).toContain('pa_tk1');
+    expect(alert.nodeIds).toContain('dev_6');
+  });
+
+  it('does NOT trigger ban risk for account with 5 devices', () => {
+    const devices = [1, 2, 3, 4, 5].map((i) => makeDevice(String(i)));
+    const edges = [1, 2, 3, 4, 5].map((i) => runsOnEdge(String(i), 'tk1'));
+    const graph: InfraGraphResponse = {
+      nodes: [makeAccount('tk1', { platform: 'tiktok' }), ...devices],
+      edges,
+    };
+
+    expect(findTikTokAccountDeviceBanRisk(graph).count).toBe(0);
+  });
+});
+
+describe('findTikTokAccountMultipleDevices', () => {
+  it('detects TikTok account connected to 2 to 5 devices with warning severity', () => {
+    const devices = [makeDevice('1'), makeDevice('2')];
+    const graph: InfraGraphResponse = {
+      nodes: [makeAccount('tk1', { platform: 'tiktok' }), ...devices],
+      edges: [runsOnEdge('1', 'tk1'), runsOnEdge('2', 'tk1')],
+    };
+
+    const alert = findTikTokAccountMultipleDevices(graph);
+    expect(alert.count).toBe(3); // account + 2 devices
+    expect(alert.severity).toBe('warning');
+    expect(alert.nodeIds).toContain('pa_tk1');
+  });
+
+  it('does NOT flag account with exactly 1 device (ideal 1:1)', () => {
+    const graph: InfraGraphResponse = {
+      nodes: [makeAccount('tk1', { platform: 'tiktok' }), makeDevice('1')],
+      edges: [runsOnEdge('1', 'tk1')],
+    };
+
+    expect(findTikTokAccountMultipleDevices(graph).count).toBe(0);
+  });
+});
+
+describe('findDeviceMultipleTikTokAccounts', () => {
+  it('detects a single device hosting multiple TikTok accounts', () => {
+    const graph: InfraGraphResponse = {
+      nodes: [
+        makeDevice('1'),
+        makeAccount('tk1', { platform: 'tiktok' }),
+        makeAccount('tk2', { platform: 'tiktok' }),
+      ],
+      edges: [runsOnEdge('1', 'tk1'), runsOnEdge('1', 'tk2')],
+    };
+
+    const alert = findDeviceMultipleTikTokAccounts(graph);
+    expect(alert.count).toBe(3); // device + 2 accounts
+    expect(alert.severity).toBe('warning');
+    expect(alert.nodeIds).toContain('dev_1');
+  });
+});
+
+describe('findProxySharedMultipleDevices', () => {
+  it('detects a proxy shared across multiple devices', () => {
+    const graph: InfraGraphResponse = {
+      nodes: [makeProxy('1'), makeDevice('dev1'), makeDevice('dev2')],
+      edges: [deviceProxyEdge('1', 'dev1'), deviceProxyEdge('1', 'dev2')],
+    };
+
+    const alert = findProxySharedMultipleDevices(graph);
+    expect(alert.count).toBe(3);
+    expect(alert.severity).toBe('warning');
+    expect(alert.nodeIds).toContain('px_1');
+  });
+});
+
+describe('findProxySharedMultipleBCs', () => {
+  it('detects a proxy shared across multiple TikTok Business Centers', () => {
+    const graph: InfraGraphResponse = {
+      nodes: [
+        makeProxy('1'),
+        makeBc('bc1', { platform: 'tiktok' }),
+        makeBc('bc2', { platform: 'tiktok' }),
+      ],
+      edges: [bcProxyEdge('1', 'bc1'), bcProxyEdge('1', 'bc2')],
+    };
+
+    const alert = findProxySharedMultipleBCs(graph);
+    expect(alert.count).toBe(3);
+    expect(alert.severity).toBe('warning');
+    expect(alert.nodeIds).toContain('px_1');
+  });
+});
+

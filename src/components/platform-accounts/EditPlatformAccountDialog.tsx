@@ -32,11 +32,20 @@ import {
   Check,
   Sparkles,
   Shield,
+  Smartphone,
+  AlertOctagon,
+  ChevronDown,
+  ShieldAlert,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useProxies } from '@/hooks/useProxies';
+import { useDevices } from '@/hooks/useDevices';
+import type { DeviceWithStats } from '@/types/devices';
+import { PlatformAccountsService } from '@/services/platformAccountsService';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   platformAccountSchema,
   type PlatformAccountFormData,
@@ -70,10 +79,16 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
 }) => {
   const { organizationId } = useSettings();
   const { proxies = [] } = useProxies(organizationId ?? '');
+  const { devicesWithStats = [] } = useDevices();
+
   const [isSaving, setIsSaving] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
+  const [deviceAccordionOpen, setDeviceAccordionOpen] = useState(true);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const isTikTok = !account || account.platform === 'tiktok';
 
   const {
     register,
@@ -123,6 +138,24 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
 
       const googleMeta = meta?.signup_method === 'google' ? meta : null;
 
+      let initialDeviceIds = account.device_ids ?? [];
+      if (initialDeviceIds.length === 0 && account.device_id) {
+        initialDeviceIds = [account.device_id];
+      }
+      setSelectedDeviceIds(initialDeviceIds);
+
+      if (organizationId && account.id) {
+        PlatformAccountsService.getAccountDevices(organizationId, account.id)
+          .then((ids) => {
+            if (ids && ids.length > 0) {
+              setSelectedDeviceIds(ids);
+            }
+          })
+          .catch((err) => {
+            console.warn('[EditPlatformAccountDialog] Erro ao buscar dispositivos:', err);
+          });
+      }
+
       reset({
         platform: 'tiktok',
         country: account.country || 'BR',
@@ -143,7 +176,7 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
       });
       setPreviewUrl(account.profile_photo_url || null);
     }
-  }, [account, open, reset]);
+  }, [account, open, organizationId, reset]);
 
   // Ao mudar país, re-formata o telefone e atualiza a moeda padrão caso necessário
   useEffect(() => {
@@ -158,6 +191,28 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
       }
     }
   }, [countryValue, setValue, watch]);
+
+  const handleToggleDevice = (deviceId: string) => {
+    setSelectedDeviceIds((prev) => {
+      const isSelected = prev.includes(deviceId);
+      if (isSelected) {
+        return prev.filter((id) => id !== deviceId);
+      } else {
+        const next = [...prev, deviceId];
+        if (next.length >= 6 && isTikTok) {
+          toast.error(
+            '🚨 LIMITE CRÍTICO TIKTOK: Conectar 6 ou mais dispositivos gera alto risco de banimento permanente!',
+            { duration: 5500 }
+          );
+        } else if (next.length > 1 && isTikTok) {
+          toast.warning(
+            '⚠️ Atenção: Para TikTok, associar múltiplos dispositivos a uma mesma conta não é o ideal (o recomendado é 1:1).'
+          );
+        }
+        return next;
+      }
+    });
+  };
 
   // Upload e compressão de foto de perfil
   const handlePhotoUpload = useCallback(
@@ -217,9 +272,25 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
 
   const handleFormSubmit = async (data: PlatformAccountFormData) => {
     if (!account) return;
+
+    if (isTikTok && selectedDeviceIds.length >= 6) {
+      const confirmed = window.confirm(
+        '⚠️ RISCO IMINENTE DE BANIMENTO NO TIKTOK:\n\n' +
+        `Você vinculou ${selectedDeviceIds.length} dispositivos a esta conta TikTok.\n` +
+        'O TikTok NÃO permite que mais de 6 dispositivos diferentes se conectem a uma conta. ' +
+        'Se você continuar, sua conta estará sob risco altíssimo de suspensão e banimento definitivo pela plataforma.\n\n' +
+        'Deseja realmente continuar com esta configuração de alto risco?'
+      );
+      if (!confirmed) return;
+    }
+
     setIsSaving(true);
     try {
-      await onSave(account.id, data);
+      await onSave(account.id, {
+        ...data,
+        device_ids: selectedDeviceIds,
+        device_id: selectedDeviceIds[0] || null,
+      });
       toast.success('Conta atualizada com sucesso!');
       onOpenChange(false);
     } catch (err: unknown) {
@@ -632,6 +703,244 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
                 </Select>
               )}
             />
+          </div>
+
+          {/* ── ACORDEON EM VERMELHO: DISPOSITIVOS & REGRAS ANTI-BAN TIKTOK ── */}
+          <div className="rounded-xl border border-red-500/40 bg-gradient-to-b from-red-950/30 via-zinc-950/70 to-zinc-950 overflow-hidden shadow-lg shadow-red-950/20">
+            {/* Header / Accordion Trigger */}
+            <button
+              type="button"
+              onClick={() => setDeviceAccordionOpen(!deviceAccordionOpen)}
+              className="w-full text-left flex items-center justify-between p-3.5 bg-red-950/40 hover:bg-red-950/60 transition-colors cursor-pointer select-none border-b border-red-500/25"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-red-500/15 border border-red-500/35 flex items-center justify-center text-red-400 shrink-0 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
+                  <Smartphone className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-red-300 uppercase tracking-wide">
+                      Dispositivos Vinculados
+                    </span>
+                    {isTikTok && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-500/20 border border-red-500/40 text-red-300">
+                        Regras TikTok
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-red-400/80">
+                    Controle de hardware fingerprinting e limites anti-banimento
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {selectedDeviceIds.length === 0 && (
+                  <Badge variant="outline" className="text-[10px] bg-zinc-900/80 text-zinc-400 border-zinc-700">
+                    Nenhum aparelho
+                  </Badge>
+                )}
+                {selectedDeviceIds.length === 1 && (
+                  <Badge variant="outline" className="text-[10px] bg-emerald-950/60 text-emerald-300 border-emerald-500/40 font-semibold">
+                    1 aparelho · Ideal (1:1)
+                  </Badge>
+                )}
+                {selectedDeviceIds.length > 1 && selectedDeviceIds.length < 6 && (
+                  <Badge variant="outline" className="text-[10px] bg-amber-950/60 text-amber-300 border-amber-500/40 font-semibold">
+                    {selectedDeviceIds.length} aparelhos · Não ideal
+                  </Badge>
+                )}
+                {selectedDeviceIds.length >= 6 && (
+                  <Badge variant="outline" className="text-[10px] bg-red-600/30 text-red-200 border-red-500 animate-pulse font-bold">
+                    🚨 {selectedDeviceIds.length} aparelhos · Risco de Ban!
+                  </Badge>
+                )}
+
+                <div className="p-1 rounded text-red-400 hover:text-white transition-transform duration-200">
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform duration-200 ${
+                      deviceAccordionOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </div>
+              </div>
+            </button>
+
+            {/* Accordion Content */}
+            {deviceAccordionOpen && (
+              <div className="p-4 space-y-4 text-xs">
+                {/* 1. Explicação Didática e Destaque TikTok */}
+                <div className="rounded-lg p-3 bg-red-950/40 border border-red-500/30 space-y-2.5">
+                  <div className="flex items-start gap-2">
+                    <ShieldAlert className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="font-semibold text-red-200 text-xs">
+                        {isTikTok
+                          ? 'Regras Estritas de Segurança e Isolamento para TikTok'
+                          : 'Atenção às Políticas de Isolamento de Hardware'}
+                      </p>
+                      <p className="text-[11px] text-red-300/90 leading-relaxed">
+                        {isTikTok ? (
+                          <>
+                            No <strong className="text-white">TikTok</strong>, uma conta pode estar associada a um ou vários dispositivos (
+                            <span className="text-amber-300 font-medium">não é o ideal</span>), assim como um dispositivo pode conter várias contas (
+                            <span className="text-amber-300 font-medium">não é o ideal</span>). O padrão recomendado e mais seguro é{' '}
+                            <strong className="text-emerald-300 font-bold">1 dispositivo para cada conta (1:1)</strong>.
+                          </>
+                        ) : (
+                          <>
+                            A vinculação multi-dispositivo deve ser gerenciada com cautela para evitar cruzamento de hardware fingerprint.
+                          </>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Alerta Fatal de 6 dispositivos */}
+                  <div className="pt-2 border-t border-red-500/20 flex items-start gap-2">
+                    <AlertOctagon className="w-4 h-4 text-red-400 shrink-0 mt-0.5 animate-pulse" />
+                    <div className="text-[11px] text-red-300/95 leading-relaxed">
+                      <strong className="text-red-200 uppercase font-bold">Risco de Banimento Imediato:</strong>{' '}
+                      O TikTok <strong className="text-white">NÃO permite mais de 6 dispositivos diferentes conectados</strong> à mesma conta. Ultrapassar essa marca dispara o filtro anti-fraude de login da ByteDance e causa{' '}
+                      <strong className="text-red-300 underline underline-offset-2">risco imediato de suspensão permanente</strong>.
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Medidor Visual de Dispositivos Conectados */}
+                <div className="space-y-1.5 bg-zinc-900/60 p-3 rounded-lg border border-red-500/20">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-zinc-300 font-medium flex items-center gap-1.5">
+                      Medidor de Dispositivos Vinculados:
+                    </span>
+                    <span
+                      className={`font-mono font-bold ${
+                        selectedDeviceIds.length >= 6
+                          ? 'text-red-400'
+                          : selectedDeviceIds.length > 1
+                          ? 'text-amber-400'
+                          : selectedDeviceIds.length === 1
+                          ? 'text-emerald-400'
+                          : 'text-zinc-500'
+                      }`}
+                    >
+                      {selectedDeviceIds.length} / 5 dispositivos seguros
+                    </span>
+                  </div>
+
+                  {/* Barra de 6 slots */}
+                  <div className="grid grid-cols-6 gap-1 h-2">
+                    {[1, 2, 3, 4, 5, 6].map((slot) => {
+                      const isFilled = selectedDeviceIds.length >= slot;
+                      let slotColor = 'bg-zinc-800';
+                      if (isFilled) {
+                        if (slot === 1) slotColor = 'bg-emerald-500';
+                        else if (slot <= 5) slotColor = 'bg-amber-500';
+                        else slotColor = 'bg-red-500 animate-pulse';
+                      }
+                      return (
+                        <div
+                          key={slot}
+                          title={
+                            slot === 1
+                              ? 'Slot 1: Ideal (1:1)'
+                              : slot <= 5
+                              ? `Slot ${slot}: Múltiplos aparelhos (Atenção)`
+                              : 'Slot 6+: LIMITE CRÍTICO - BANIMENTO'
+                          }
+                          className={`rounded-sm transition-all duration-300 ${slotColor}`}
+                        />
+                      );
+                    })}
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-zinc-500 pt-0.5">
+                    <span className="text-emerald-400/80">1: Ideal</span>
+                    <span className="text-amber-400/80">2 a 5: Não ideal</span>
+                    <span className="text-red-400 font-bold">6+: Banimento</span>
+                  </div>
+                </div>
+
+                {/* 3. Seleção de Dispositivos */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-zinc-200 flex items-center justify-between">
+                    <span>Selecione os Dispositivos Físicos ou Virtuais:</span>
+                    <span className="text-[10px] text-zinc-400">
+                      {devicesWithStats.length} cadastrados no workspace
+                    </span>
+                  </Label>
+
+                  {devicesWithStats.length === 0 ? (
+                    <div className="p-4 rounded-lg bg-zinc-900/60 border border-dashed border-zinc-800 text-center text-zinc-400 space-y-1">
+                      <p>Nenhum dispositivo cadastrado na organização.</p>
+                      <p className="text-[11px] text-zinc-500">
+                        Cadastre computadores ou celulares na seção Dispositivos para vinculá-los aqui.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 no-scrollbar">
+                      {devicesWithStats.map((dev: DeviceWithStats) => {
+                        const isSelected = selectedDeviceIds.includes(dev.id);
+                        return (
+                          <div
+                            key={dev.id}
+                            onClick={() => handleToggleDevice(dev.id)}
+                            className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer transition-all ${
+                              isSelected
+                                ? 'bg-red-950/50 border-red-500/60 shadow-[0_0_8px_rgba(239,68,68,0.15)]'
+                                : 'bg-zinc-900/60 border-zinc-800/80 hover:bg-zinc-900 hover:border-zinc-700'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={() => handleToggleDevice(dev.id)}
+                                className="data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600 border-zinc-700"
+                              />
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-white truncate text-xs">
+                                    {dev.label}
+                                  </span>
+                                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
+                                    {dev.device_type}
+                                  </span>
+                                </div>
+                                {dev.proxy_label && (
+                                  <span className="text-[10px] text-zinc-400 flex items-center gap-1 mt-0.5">
+                                    🌐 Proxy: {dev.proxy_label}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {isSelected && (
+                              <span className="text-[10px] font-semibold text-red-300 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/30">
+                                Vinculado
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Banner de Risco Ativo se >= 6 selecionados */}
+                {selectedDeviceIds.length >= 6 && isTikTok && (
+                  <div className="p-3 rounded-lg bg-red-600/20 border-2 border-red-500 flex items-center gap-3 animate-pulse">
+                    <AlertOctagon className="w-5 h-5 text-red-400 shrink-0" />
+                    <div>
+                      <p className="text-xs font-bold text-red-200">
+                        ALERTA MÁXIMO: Risco Iminente de Banimento da Conta TikTok!
+                      </p>
+                      <p className="text-[11px] text-red-300">
+                        Você selecionou {selectedDeviceIds.length} dispositivos. O algoritmo do TikTok detectará login simultâneo anormal e suspenderá a conta. Desmarque até ficar com menos de 6 aparelhos (ideal: 1).
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Bio */}

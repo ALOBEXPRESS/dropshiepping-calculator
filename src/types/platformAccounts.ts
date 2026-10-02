@@ -64,6 +64,8 @@ export interface PlatformAccount {
   platform_metadata: PlatformMetadata | null;
   email?: string | null;
   proxy_id?: string | null;
+  device_id?: string | null;
+  device_ids?: string[];
   meta_account_type?: MetaAccountType | null;
   created_by: string | null;
   created_at: string;
@@ -90,6 +92,9 @@ export const platformAccountSchema = z.object({
   email: z.string().email('Informe um e-mail válido').optional().or(z.literal('')),
   // Proxy vinculado
   proxy_id: z.string().uuid().nullable().optional().or(z.literal('')),
+  // Dispositivos vinculados (N:N)
+  device_id: z.string().uuid().nullable().optional().or(z.literal('')),
+  device_ids: z.array(z.string().uuid()).optional(),
   // Campos condicionais para signup_method = 'google'
   google_account_age_years: z.number().min(0).max(30).nullable().optional(),
   google_ads_invested_brl: z.number().min(0).nullable().optional(),

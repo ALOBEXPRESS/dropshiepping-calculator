@@ -21,6 +21,8 @@ export type EdgeRelation =
   | 'device_proxy'
   | 'has_profile'
   | 'runs_on'
+  | 'hosts_bc'
+  | 'bc_proxy'
   | 'owns'
   | 'linked_tiktok'
   | 'linked_meta_ig'
@@ -40,7 +42,12 @@ export type HealthAlertType =
   | 'country_mismatch'
   | 'shared_proxy'
   | 'ad_account_without_bc'
-  | 'expired_proxy_active';
+  | 'expired_proxy_active'
+  | 'tiktok_account_device_ban_risk'
+  | 'tiktok_account_multiple_devices'
+  | 'device_multiple_tiktok_accounts'
+  | 'proxy_shared_multiple_devices'
+  | 'proxy_shared_multiple_bcs';
 
 export interface HealthAlert {
   type: HealthAlertType;

@@ -12,6 +12,7 @@ import {
   ChevronUp,
   X,
   Activity,
+  Smartphone,
 } from 'lucide-react';
 import type { HealthAlert } from '@/types/infraGraph';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +34,36 @@ interface AlertMeta {
 }
 
 const ALERT_CONFIG: Record<string, AlertMeta> = {
+  tiktok_account_device_ban_risk: {
+    label: 'Ban Risk TikTok (6+ Aparelhos)',
+    icon: ShieldAlert,
+    severity: 'error',
+    description: 'Conta TikTok conectada a 6 ou mais dispositivos (risco iminente de suspensão permanente)',
+  },
+  tiktok_account_multiple_devices: {
+    label: 'TikTok Multi-Dispositivo',
+    icon: Smartphone,
+    severity: 'warning',
+    description: 'Conta TikTok vinculada a múltiplos dispositivos (não ideal para TikTok, recomendado 1:1)',
+  },
+  device_multiple_tiktok_accounts: {
+    label: 'Aparelho com Várias Contas TikTok',
+    icon: Laptop,
+    severity: 'warning',
+    description: 'Dispositivo executando múltiplas contas TikTok (não ideal para TikTok, recomendado 1:1)',
+  },
+  proxy_shared_multiple_devices: {
+    label: 'Proxy em Múltiplos Aparelhos',
+    icon: Shield,
+    severity: 'warning',
+    description: 'Proxy compartilhado entre vários dispositivos (não ideal para isolamento no TikTok)',
+  },
+  proxy_shared_multiple_bcs: {
+    label: 'Proxy em Múltiplos Business Centers',
+    icon: Briefcase,
+    severity: 'warning',
+    description: 'Proxy compartilhado entre múltiplos Business Centers do TikTok (não recomendado)',
+  },
   proxy_without_account: {
     label: 'Proxies sem Conta',
     icon: Shield,

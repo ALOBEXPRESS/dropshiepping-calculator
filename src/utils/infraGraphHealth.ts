@@ -197,12 +197,258 @@ export function findExpiredActiveProxies(
   );
 }
 
+// ── TikTok & Infra Isolation Rules ──────────────────────────────────────────
+
+/**
+ * TikTok account connected to 6 or more devices.
+ * CRITICAL BAN RISK: TikTok strictly flags and bans accounts shared on 6+ devices.
+ */
+export function findTikTokAccountDeviceBanRisk(graph: InfraGraphResponse): HealthAlert {
+  const runsOnEdges = edgesByRelation(graph.edges, 'runs_on');
+  const flaggedAccountIds = new Set<string>();
+  const allNodeIds = new Set<string>();
+  const banEdgeIds: string[] = [];
+
+  const accounts = nodesByType(graph.nodes, 'platform_account');
+  for (const account of accounts) {
+    const isTikTok = !account.platform || account.platform === 'tiktok';
+    if (!isTikTok) continue;
+
+    // Devices connected via runs_on edges (source: device, target: account)
+    const connectedDevEdges = runsOnEdges.filter((e) => e.target === account.id);
+    const connectedDevIds = new Set<string>(connectedDevEdges.map((e) => e.source));
+
+    // Also include any device IDs in meta
+    if (Array.isArray(account.meta?.device_ids)) {
+      for (const dId of account.meta.device_ids as string[]) {
+        connectedDevIds.add(dId.startsWith('dev_') ? dId : `dev_${dId}`);
+      }
+    }
+
+    if (connectedDevIds.size >= 6) {
+      flaggedAccountIds.add(account.id);
+      allNodeIds.add(account.id);
+      for (const devId of connectedDevIds) {
+        allNodeIds.add(devId);
+      }
+      for (const e of connectedDevEdges) {
+        banEdgeIds.push(`${e.source}→${e.target}`);
+      }
+    }
+  }
+
+  const nodeIds = Array.from(allNodeIds);
+  return makeAlert(
+    'tiktok_account_device_ban_risk',
+    flaggedAccountIds.size > 0 ? 'error' : 'info',
+    'Risco de Ban TikTok (6+ Dispositivos)',
+    flaggedAccountIds.size > 0
+      ? `${flaggedAccountIds.size} conta(s) TikTok conectada(s) a 6 ou mais dispositivos (RISCO IMINENTE DE BANIMENTO)`
+      : 'Nenhuma conta TikTok com limite excessivo de dispositivos',
+    nodeIds,
+    banEdgeIds
+  );
+}
+
+/**
+ * TikTok account connected to multiple devices (2 to 5 devices).
+ * Not ideal for TikTok: 1 account per 1 device is recommended.
+ */
+export function findTikTokAccountMultipleDevices(graph: InfraGraphResponse): HealthAlert {
+  const runsOnEdges = edgesByRelation(graph.edges, 'runs_on');
+  const flaggedAccountIds = new Set<string>();
+  const allNodeIds = new Set<string>();
+  const edgeIds: string[] = [];
+
+  const accounts = nodesByType(graph.nodes, 'platform_account');
+  for (const account of accounts) {
+    const isTikTok = !account.platform || account.platform === 'tiktok';
+    if (!isTikTok) continue;
+
+    const connectedDevEdges = runsOnEdges.filter((e) => e.target === account.id);
+    const connectedDevIds = new Set<string>(connectedDevEdges.map((e) => e.source));
+
+    if (Array.isArray(account.meta?.device_ids)) {
+      for (const dId of account.meta.device_ids as string[]) {
+        connectedDevIds.add(dId.startsWith('dev_') ? dId : `dev_${dId}`);
+      }
+    }
+
+    if (connectedDevIds.size >= 2 && connectedDevIds.size < 6) {
+      flaggedAccountIds.add(account.id);
+      allNodeIds.add(account.id);
+      for (const devId of connectedDevIds) {
+        allNodeIds.add(devId);
+      }
+      for (const e of connectedDevEdges) {
+        edgeIds.push(`${e.source}→${e.target}`);
+      }
+    }
+  }
+
+  const nodeIds = Array.from(allNodeIds);
+  return makeAlert(
+    'tiktok_account_multiple_devices',
+    flaggedAccountIds.size > 0 ? 'warning' : 'info',
+    'Conta TikTok em Múltiplos Dispositivos',
+    flaggedAccountIds.size > 0
+      ? `${flaggedAccountIds.size} conta(s) TikTok vinculada(s) a múltiplos dispositivos (não ideal para TikTok, recomendado 1:1)`
+      : 'Todas as contas TikTok em no máximo 1 dispositivo',
+    nodeIds,
+    edgeIds
+  );
+}
+
+/**
+ * Single device hosting multiple TikTok accounts.
+ * Not ideal for TikTok: 1 device should host 1 account.
+ */
+export function findDeviceMultipleTikTokAccounts(graph: InfraGraphResponse): HealthAlert {
+  const nodeMap = new Map(graph.nodes.map((n) => [n.id, n]));
+  const runsOnEdges = edgesByRelation(graph.edges, 'runs_on');
+  const deviceToTikTokAccounts = new Map<string, string[]>();
+
+  for (const edge of runsOnEdges) {
+    const targetAccount = nodeMap.get(edge.target);
+    const isTikTok = !targetAccount?.platform || targetAccount?.platform === 'tiktok';
+    if (isTikTok) {
+      const list = deviceToTikTokAccounts.get(edge.source) ?? [];
+      list.push(edge.target);
+      deviceToTikTokAccounts.set(edge.source, list);
+    }
+  }
+
+  const flaggedDeviceIds = new Set<string>();
+  const allNodeIds = new Set<string>();
+  const edgeIds: string[] = [];
+
+  for (const [deviceId, accountIds] of deviceToTikTokAccounts) {
+    const uniqueAccounts = Array.from(new Set(accountIds));
+    if (uniqueAccounts.length > 1) {
+      flaggedDeviceIds.add(deviceId);
+      allNodeIds.add(deviceId);
+      for (const accId of uniqueAccounts) {
+        allNodeIds.add(accId);
+        edgeIds.push(`${deviceId}→${accId}`);
+      }
+    }
+  }
+
+  const nodeIds = Array.from(allNodeIds);
+  return makeAlert(
+    'device_multiple_tiktok_accounts',
+    flaggedDeviceIds.size > 0 ? 'warning' : 'info',
+    'Dispositivo com Várias Contas TikTok',
+    flaggedDeviceIds.size > 0
+      ? `${flaggedDeviceIds.size} dispositivo(s) operando múltiplas contas TikTok (não ideal para TikTok, recomendado 1:1)`
+      : 'Nenhum dispositivo compartilhado entre contas TikTok',
+    nodeIds,
+    edgeIds
+  );
+}
+
+/**
+ * Single proxy distributed to multiple devices.
+ * 1 device should only have 1 proxy. A proxy can have multiple devices, but not ideal for TikTok.
+ */
+export function findProxySharedMultipleDevices(graph: InfraGraphResponse): HealthAlert {
+  const deviceProxyEdges = edgesByRelation(graph.edges, 'device_proxy');
+  const proxyToDevices = new Map<string, string[]>();
+
+  for (const edge of deviceProxyEdges) {
+    const list = proxyToDevices.get(edge.source) ?? [];
+    list.push(edge.target);
+    proxyToDevices.set(edge.source, list);
+  }
+
+  const flaggedProxyIds = new Set<string>();
+  const allNodeIds = new Set<string>();
+  const edgeIds: string[] = [];
+
+  for (const [proxyId, deviceIds] of proxyToDevices) {
+    const uniqueDevices = Array.from(new Set(deviceIds));
+    if (uniqueDevices.length > 1) {
+      flaggedProxyIds.add(proxyId);
+      allNodeIds.add(proxyId);
+      for (const devId of uniqueDevices) {
+        allNodeIds.add(devId);
+        edgeIds.push(`${proxyId}→${devId}`);
+      }
+    }
+  }
+
+  const nodeIds = Array.from(allNodeIds);
+  return makeAlert(
+    'proxy_shared_multiple_devices',
+    flaggedProxyIds.size > 0 ? 'warning' : 'info',
+    'Proxy em Múltiplos Dispositivos',
+    flaggedProxyIds.size > 0
+      ? `${flaggedProxyIds.size} proxy(ies) compartilhado(s) entre múltiplos dispositivos (não ideal para TikTok)`
+      : 'Nenhum proxy compartilhado entre vários dispositivos',
+    nodeIds,
+    edgeIds
+  );
+}
+
+/**
+ * Single proxy associated with multiple Business Centers.
+ * 1 Proxy can have multiple BCs, but not ideal for TikTok.
+ */
+export function findProxySharedMultipleBCs(graph: InfraGraphResponse): HealthAlert {
+  const nodeMap = new Map(graph.nodes.map((n) => [n.id, n]));
+  const bcProxyEdges = edgesByRelation(graph.edges, 'bc_proxy');
+  const proxyToBcs = new Map<string, string[]>();
+
+  for (const edge of bcProxyEdges) {
+    const targetBc = nodeMap.get(edge.target);
+    const isTikTok = !targetBc?.platform || targetBc?.platform === 'tiktok';
+    if (isTikTok) {
+      const list = proxyToBcs.get(edge.source) ?? [];
+      list.push(edge.target);
+      proxyToBcs.set(edge.source, list);
+    }
+  }
+
+  const flaggedProxyIds = new Set<string>();
+  const allNodeIds = new Set<string>();
+  const edgeIds: string[] = [];
+
+  for (const [proxyId, bcIds] of proxyToBcs) {
+    const uniqueBcs = Array.from(new Set(bcIds));
+    if (uniqueBcs.length > 1) {
+      flaggedProxyIds.add(proxyId);
+      allNodeIds.add(proxyId);
+      for (const bcId of uniqueBcs) {
+        allNodeIds.add(bcId);
+        edgeIds.push(`${proxyId}→${bcId}`);
+      }
+    }
+  }
+
+  const nodeIds = Array.from(allNodeIds);
+  return makeAlert(
+    'proxy_shared_multiple_bcs',
+    flaggedProxyIds.size > 0 ? 'warning' : 'info',
+    'Proxy em Múltiplos Business Centers',
+    flaggedProxyIds.size > 0
+      ? `${flaggedProxyIds.size} proxy(ies) compartilhado(s) entre múltiplos Business Centers do TikTok (não ideal)`
+      : 'Nenhum proxy compartilhado entre múltiplos Business Centers TikTok',
+    nodeIds,
+    edgeIds
+  );
+}
+
 /** Computes all alerts for a graph. */
 export function computeAllAlerts(
   graph: InfraGraphResponse,
   now?: Date
 ): HealthAlert[] {
   return [
+    findTikTokAccountDeviceBanRisk(graph),
+    findTikTokAccountMultipleDevices(graph),
+    findDeviceMultipleTikTokAccounts(graph),
+    findProxySharedMultipleDevices(graph),
+    findProxySharedMultipleBCs(graph),
     findProxiesWithoutAccounts(graph),
     findAccountsWithoutProxy(graph),
     findBrowserProfilesWithoutAccount(graph),

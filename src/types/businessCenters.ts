@@ -44,6 +44,10 @@ export interface BusinessCenter {
   meta_instagram_account_id?: string | null;
   /** Para Meta: ID da página/perfil de Facebook vinculado */
   meta_facebook_account_id?: string | null;
+  /** Dispositivo vinculado (infraestrutura) */
+  device_id?: string | null;
+  /** Proxy vinculado (infraestrutura) */
+  proxy_id?: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -86,6 +90,10 @@ export const businessCenterSchema = z.object({
   meta_instagram_account_id: z.string().uuid().optional().nullable().or(z.literal('')),
   /** Meta: ID da conta de Facebook vinculada */
   meta_facebook_account_id: z.string().uuid().optional().nullable().or(z.literal('')),
+  /** Dispositivo vinculado (infraestrutura) */
+  device_id: z.string().uuid().optional().nullable().or(z.literal('')),
+  /** Proxy vinculado (infraestrutura) */
+  proxy_id: z.string().uuid().optional().nullable().or(z.literal('')),
 });
 
 export type BusinessCenterFormData = z.infer<typeof businessCenterSchema>;

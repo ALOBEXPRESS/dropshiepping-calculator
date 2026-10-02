@@ -118,6 +118,8 @@ export class BusinessCentersService {
       meta_linked_account_id: data.platform === 'meta' ? (data.meta_linked_account_id || data.meta_instagram_account_id || data.meta_facebook_account_id || null) : null,
       meta_instagram_account_id: data.platform === 'meta' ? (data.meta_instagram_account_id || null) : null,
       meta_facebook_account_id: data.platform === 'meta' ? (data.meta_facebook_account_id || null) : null,
+      device_id: data.device_id || null,
+      proxy_id: data.proxy_id || null,
       created_by: userId || null,
     };
 
@@ -168,6 +170,8 @@ export class BusinessCentersService {
     if (data.meta_linked_account_id !== undefined) payload.meta_linked_account_id = data.meta_linked_account_id || null;
     if (data.meta_instagram_account_id !== undefined) payload.meta_instagram_account_id = data.meta_instagram_account_id || null;
     if (data.meta_facebook_account_id !== undefined) payload.meta_facebook_account_id = data.meta_facebook_account_id || null;
+    if (data.device_id !== undefined) payload.device_id = data.device_id || null;
+    if (data.proxy_id !== undefined) payload.proxy_id = data.proxy_id || null;
 
     const { data: updated, error } = await supabase
       .from('business_centers')

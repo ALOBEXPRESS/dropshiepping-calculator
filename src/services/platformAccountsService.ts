@@ -41,6 +41,28 @@ export class PlatformAccountsService {
   }
 
   /**
+   * Obtém a lista de IDs de dispositivos vinculados a uma conta.
+   */
+  static async getAccountDevices(
+    organizationId: string,
+    accountId: string
+  ): Promise<string[]> {
+    if (!organizationId || !accountId) return [];
+
+    const { data, error } = await supabase
+      .from('platform_account_devices')
+      .select('device_id')
+      .eq('organization_id', organizationId)
+      .eq('platform_account_id', accountId);
+
+    if (error) {
+      console.error('Erro ao buscar dispositivos da conta:', error);
+      return [];
+    }
+    return (data ?? []).map((r) => r.device_id);
+  }
+
+  /**
    * Obtém uma conta de plataforma por ID.
    */
   static async getById(
@@ -59,8 +81,15 @@ export class PlatformAccountsService {
     if (error) throw new Error(error.message);
     if (!data) return null;
     const acc = data as PlatformAccount;
+    const deviceIds = await PlatformAccountsService.getAccountDevices(organizationId, id);
+    const resolvedDeviceIds = deviceIds.length > 0
+      ? deviceIds
+      : (acc.device_id ? [acc.device_id] : []);
+
     return {
       ...acc,
+      device_ids: resolvedDeviceIds,
+      device_id: acc.device_id ?? resolvedDeviceIds[0] ?? null,
       email: acc.platform_metadata?.email ?? null,
     };
   }
@@ -74,6 +103,10 @@ export class PlatformAccountsService {
     userId?: string | null
   ): Promise<PlatformAccount> {
     const platform_metadata = buildPlatformMetadata(formData);
+
+    const initialDevices = formData.device_ids && formData.device_ids.length > 0
+      ? formData.device_ids
+      : (formData.device_id ? [formData.device_id] : []);
 
     const payload = {
       organization_id: organizationId,
@@ -90,6 +123,7 @@ export class PlatformAccountsService {
       birth_date: formData.birth_date || null,
       platform_metadata: platform_metadata ?? null,
       proxy_id: formData.proxy_id || null,
+      device_id: initialDevices[0] || formData.device_id || null,
       meta_account_type: formData.platform === 'meta' ? (formData.meta_account_type || null) : null,
       created_by: userId || null,
     };
@@ -102,8 +136,19 @@ export class PlatformAccountsService {
 
     if (error) throw new Error(error.message);
     const created = data as PlatformAccount;
+
+    if (initialDevices.length > 0) {
+      const rows = initialDevices.map((dId) => ({
+        organization_id: organizationId,
+        platform_account_id: created.id,
+        device_id: dId,
+      }));
+      await supabase.from('platform_account_devices').insert(rows);
+    }
+
     return {
       ...created,
+      device_ids: initialDevices,
       email: created.platform_metadata?.email ?? null,
     };
   }
@@ -133,6 +178,10 @@ export class PlatformAccountsService {
     if (formData.phone !== undefined) updatePayload.phone = formData.phone?.trim() || null;
     if (formData.birth_date !== undefined) updatePayload.birth_date = formData.birth_date || null;
     if (formData.proxy_id !== undefined) updatePayload.proxy_id = formData.proxy_id || null;
+    if (formData.device_id !== undefined) updatePayload.device_id = formData.device_id || null;
+    if (formData.device_ids !== undefined) {
+      updatePayload.device_id = formData.device_ids[0] || null;
+    }
 
     // Reconstruir platform_metadata se signup_method ou campos condicionais mudaram
     if (
@@ -169,8 +218,31 @@ export class PlatformAccountsService {
 
     if (error) throw new Error(error.message);
     const updated = data as PlatformAccount;
+
+    if (formData.device_ids !== undefined) {
+      await supabase
+        .from('platform_account_devices')
+        .delete()
+        .eq('organization_id', organizationId)
+        .eq('platform_account_id', id);
+
+      if (formData.device_ids.length > 0) {
+        const rows = formData.device_ids.map((devId) => ({
+          organization_id: organizationId,
+          platform_account_id: id,
+          device_id: devId,
+        }));
+        await supabase.from('platform_account_devices').insert(rows);
+      }
+    }
+
+    const updatedDevices = formData.device_ids !== undefined
+      ? formData.device_ids
+      : await PlatformAccountsService.getAccountDevices(organizationId, id);
+
     return {
       ...updated,
+      device_ids: updatedDevices,
       email: updated.platform_metadata?.email ?? null,
     };
   }
