@@ -286,7 +286,9 @@ function NavLink({ route, pathname, e2eSearch }: { route: NavRouteItem; pathname
 
 // ── Main Layout ───────────────────────────────────────────────────────────────
 export default function Layout({ children }: { children: React.ReactNode }) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => 
+    typeof window !== 'undefined' ? window.innerWidth >= 1024 : true
+  );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [ecommerceOpen, setEcommerceOpen] = useLocalStorageBoolean('nav_group_ecommerce_open', true);
   const [painelOpen, setPainelOpen] = useLocalStorageBoolean('nav_group_painel_open', true);
@@ -298,6 +300,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { organizationId } = useSettings();
   const { isAdmin, profile } = useUser();
   const e2eSearch = new URLSearchParams(location.search).get('e2e') === 'true' ? '?e2e=true' : '';
+
+  // Fecha a sidebar automaticamente ao navegar em telas mobile/tablet (< 1024px)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
+  }, [location.pathname]);
 
   // Bling real-time notifications
   useEffect(() => {
@@ -341,6 +350,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className={`min-h-screen ${isMapPage ? 'h-screen overflow-hidden' : ''} bg-background text-foreground transition-colors duration-300`}>
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+
+      {/* ── Mobile backdrop ───────────────────────────────────────────────── */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 z-35 bg-black/60 backdrop-blur-xs lg:hidden transition-opacity cursor-pointer"
+          aria-hidden="true"
+        />
+      )}
 
       {/* ── Sidebar ──────────────────────────────────────────────────────── */}
       <aside

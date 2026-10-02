@@ -193,25 +193,23 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
   }, [countryValue, setValue, watch]);
 
   const handleToggleDevice = (deviceId: string) => {
-    setSelectedDeviceIds((prev) => {
-      const isSelected = prev.includes(deviceId);
-      if (isSelected) {
-        return prev.filter((id) => id !== deviceId);
-      } else {
-        const next = [...prev, deviceId];
-        if (next.length >= 6 && isTikTok) {
-          toast.error(
-            '🚨 LIMITE CRÍTICO TIKTOK: Conectar 6 ou mais dispositivos gera alto risco de banimento permanente!',
-            { duration: 5500 }
-          );
-        } else if (next.length > 1 && isTikTok) {
-          toast.warning(
-            '⚠️ Atenção: Para TikTok, associar múltiplos dispositivos a uma mesma conta não é o ideal (o recomendado é 1:1).'
-          );
-        }
-        return next;
+    const isSelected = selectedDeviceIds.includes(deviceId);
+    if (isSelected) {
+      setSelectedDeviceIds((prev) => prev.filter((id) => id !== deviceId));
+    } else {
+      const nextLength = selectedDeviceIds.length + 1;
+      if (nextLength >= 6 && isTikTok) {
+        toast.error(
+          '🚨 LIMITE CRÍTICO TIKTOK: Conectar 6 ou mais dispositivos gera alto risco de banimento permanente!',
+          { duration: 5500 }
+        );
+      } else if (nextLength > 1 && isTikTok) {
+        toast.warning(
+          '⚠️ Atenção: Para TikTok, associar múltiplos dispositivos a uma mesma conta não é o ideal (o recomendado é 1:1).'
+        );
       }
-    });
+      setSelectedDeviceIds((prev) => (prev.includes(deviceId) ? prev : [...prev, deviceId]));
+    }
   };
 
   // Upload e compressão de foto de perfil
@@ -881,10 +879,10 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
                       {devicesWithStats.map((dev: DeviceWithStats) => {
                         const isSelected = selectedDeviceIds.includes(dev.id);
                         return (
-                          <div
+                          <label
                             key={dev.id}
-                            onClick={() => handleToggleDevice(dev.id)}
-                            className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer transition-all ${
+                            htmlFor={`device-checkbox-${dev.id}`}
+                            className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer transition-all select-none ${
                               isSelected
                                 ? 'bg-red-950/50 border-red-500/60 shadow-[0_0_8px_rgba(239,68,68,0.15)]'
                                 : 'bg-zinc-900/60 border-zinc-800/80 hover:bg-zinc-900 hover:border-zinc-700'
@@ -892,8 +890,10 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
                           >
                             <div className="flex items-center gap-2.5 min-w-0">
                               <Checkbox
+                                id={`device-checkbox-${dev.id}`}
                                 checked={isSelected}
                                 onCheckedChange={() => handleToggleDevice(dev.id)}
+                                onClick={(e) => e.stopPropagation()}
                                 className="data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600 border-zinc-700"
                               />
                               <div className="min-w-0">
@@ -918,7 +918,7 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
                                 Vinculado
                               </span>
                             )}
-                          </div>
+                          </label>
                         );
                       })}
                     </div>
