@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useDevices } from '@/hooks/useDevices';
+import { useDebounce } from '@/hooks/useDebounce';
 import { DeviceFormDialog } from './DeviceFormDialog';
 import type { Device, DeviceFormData, DeviceWithStats } from '@/types/devices';
 import {
@@ -48,21 +49,22 @@ export const DevicesManager: React.FC<DevicesManagerProps> = ({ organizationId: 
   } = useDevices();
 
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
   const [formOpen, setFormOpen] = useState(false);
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
   const [deletingDevice, setDeletingDevice] = useState<DeviceWithStats | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const filteredDevices = useMemo(() => {
-    if (!search.trim()) return devicesWithStats;
-    const q = search.toLowerCase();
+    if (!debouncedSearch.trim()) return devicesWithStats;
+    const q = debouncedSearch.toLowerCase().trim();
     return devicesWithStats.filter(
       (d) =>
         d.label.toLowerCase().includes(q) ||
         (d.platform && d.platform.toLowerCase().includes(q)) ||
         (d.notes && d.notes.toLowerCase().includes(q))
     );
-  }, [devicesWithStats, search]);
+  }, [devicesWithStats, debouncedSearch]);
 
   // Agrupamento visual por categoria
   const cloudPhones = useMemo(
@@ -162,16 +164,18 @@ export const DevicesManager: React.FC<DevicesManagerProps> = ({ organizationId: 
               <button
                 type="button"
                 onClick={() => handleOpenEdit(device)}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
                 title="Editar dispositivo"
+                aria-label={`Editar dispositivo ${device.label}`}
               >
                 <Edit2 className="w-3.5 h-3.5" />
               </button>
               <button
                 type="button"
                 onClick={() => setDeletingDevice(device)}
-                className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
                 title="Excluir dispositivo"
+                aria-label={`Excluir dispositivo ${device.label}`}
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>

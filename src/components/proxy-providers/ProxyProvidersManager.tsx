@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useProxyProviders } from '@/hooks/useProxyProviders';
+import { useDebounce } from '@/hooks/useDebounce';
 import { ProxyProviderFormDialog } from './ProxyProviderFormDialog';
 import type { ProxyProvider, ProxyProviderFormData, ProxyProviderWithStats } from '@/types/proxyProviders';
 import { Button } from '@/components/ui/button';
@@ -35,21 +36,22 @@ export const ProxyProvidersManager: React.FC<ProxyProvidersManagerProps> = ({ or
   } = useProxyProviders();
 
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
   const [formOpen, setFormOpen] = useState(false);
   const [editingProvider, setEditingProvider] = useState<ProxyProvider | null>(null);
   const [deletingProvider, setDeletingProvider] = useState<ProxyProviderWithStats | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const filteredProviders = useMemo(() => {
-    if (!search.trim()) return providersWithStats;
-    const q = search.toLowerCase();
+    if (!debouncedSearch.trim()) return providersWithStats;
+    const q = debouncedSearch.toLowerCase().trim();
     return providersWithStats.filter(
       (p) =>
         p.name.toLowerCase().includes(q) ||
         (p.website && p.website.toLowerCase().includes(q)) ||
         (p.notes && p.notes.toLowerCase().includes(q))
     );
-  }, [providersWithStats, search]);
+  }, [providersWithStats, debouncedSearch]);
 
   const handleOpenCreate = () => {
     setEditingProvider(null);
@@ -195,8 +197,9 @@ export const ProxyProvidersManager: React.FC<ProxyProvidersManagerProps> = ({ or
                     <button
                       type="button"
                       onClick={() => handleOpenEdit(provider)}
-                      className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                      className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
                       title="Editar provedor"
+                      aria-label={`Editar provedor ${provider.name}`}
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
@@ -204,8 +207,9 @@ export const ProxyProvidersManager: React.FC<ProxyProvidersManagerProps> = ({ or
                       <button
                         type="button"
                         onClick={() => setDeletingProvider(provider)}
-                        className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                        className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
                         title="Excluir provedor"
+                        aria-label={`Excluir provedor ${provider.name}`}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>

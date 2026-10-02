@@ -1,30 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Compass,
   Plus,
-  Pencil,
-  Trash2,
   Loader2,
   Search,
-  Copy,
-  Check,
-  Shield,
-  User,
   AlertTriangle,
-  Archive,
-  RotateCcw,
 } from 'lucide-react';
-import ReactCountryFlag from 'react-country-flag';
 import { toast } from 'sonner';
-import { useSearchParams, Link } from 'react-router-dom';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { useSearchParams } from 'react-router-dom';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,7 +20,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -48,481 +30,16 @@ import {
 import { useBrowserProfiles } from '@/hooks/useBrowserProfiles';
 import { usePlatformAccounts } from '@/hooks/usePlatformAccounts';
 import { useProxies } from '@/hooks/useProxies';
+import { useDebounce } from '@/hooks/useDebounce';
 import type {
   BrowserProfile,
-  BrowserProfileFormData,
-  BrowserProfileTool,
   BrowserProfileStatus,
 } from '@/types/browserProfiles';
-import {
-  browserProfileSchema,
-  BROWSER_PROFILE_TOOL_LABELS,
-  BROWSER_PROFILE_STATUS_LABELS,
-  BROWSER_PROFILE_STATUS_COLORS,
-} from '@/types/browserProfiles';
-import type { PlatformAccount } from '@/types/platformAccounts';
+import { BrowserProfileCard } from './BrowserProfileCard';
+import { BrowserProfileFormDialog } from './BrowserProfileFormDialog';
+import { filterBrowserProfiles } from './browserProfilesUtils';
 
-// ── BrowserProfileFormDialog ──────────────────────────────────────────────────
-
-interface BrowserProfileFormDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  profile?: BrowserProfile | null;
-  organizationId: string;
-  platformAccounts: PlatformAccount[];
-  defaultAccountId?: string | null;
-}
-
-export const BrowserProfileFormDialog: React.FC<BrowserProfileFormDialogProps> = ({
-  open,
-  onOpenChange,
-  profile,
-  organizationId,
-  platformAccounts,
-  defaultAccountId,
-}) => {
-  const { createProfile, updateProfile, isCreating, isUpdating } =
-    useBrowserProfiles(organizationId);
-  const { proxies } = useProxies(organizationId);
-  const isEditing = !!profile;
-  const isBusy = isCreating || isUpdating;
-
-  const proxyMap = useMemo(() => new Map(proxies.map((p) => [p.id, p])), [proxies]);
-
-  const {
-    register,
-    handleSubmit,
-    control,
-    watch,
-    reset,
-    formState: { errors },
-  } = useForm<BrowserProfileFormData>({
-    resolver: zodResolver(browserProfileSchema),
-    defaultValues: profile
-      ? {
-          platform_account_id: profile.platform_account_id,
-          tool: 'adspower',
-          external_profile_id: profile.external_profile_id ?? '',
-          name: profile.name ?? '',
-          notes: profile.notes ?? '',
-          status: profile.status as BrowserProfileStatus,
-        }
-      : {
-          platform_account_id: defaultAccountId || (platformAccounts[0]?.id ?? ''),
-          tool: 'adspower',
-          external_profile_id: '',
-          name: '',
-          notes: '',
-          status: 'active',
-        },
-  });
-
-  const selectedAccountId = watch('platform_account_id');
-  const selectedAccount = useMemo(
-    () => platformAccounts.find((a) => a.id === selectedAccountId),
-    [platformAccounts, selectedAccountId]
-  );
-  const derivedProxy = selectedAccount?.proxy_id
-    ? proxyMap.get(selectedAccount.proxy_id)
-    : null;
-
-  useEffect(() => {
-    if (open) {
-      reset(
-        profile
-          ? {
-              platform_account_id: profile.platform_account_id,
-              tool: 'adspower',
-              external_profile_id: profile.external_profile_id ?? '',
-              name: profile.name ?? '',
-              notes: profile.notes ?? '',
-              status: profile.status as BrowserProfileStatus,
-            }
-          : {
-              platform_account_id: defaultAccountId || (platformAccounts[0]?.id ?? ''),
-              tool: 'adspower',
-              external_profile_id: '',
-              name: '',
-              notes: '',
-              status: 'active',
-            }
-      );
-    }
-  }, [open, profile, defaultAccountId, platformAccounts, reset]);
-
-  const onSubmit = async (data: BrowserProfileFormData) => {
-    try {
-      if (isEditing && profile) {
-        await updateProfile(profile.id, data);
-        toast.success('Perfil de navegador atualizado com sucesso!');
-      } else {
-        await createProfile(data);
-        toast.success('Perfil de navegador criado com sucesso!');
-      }
-      reset();
-      onOpenChange(false);
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : 'Erro ao salvar perfil de navegador.'
-      );
-    }
-  };
-
-  const handleClose = () => {
-    reset();
-    onOpenChange(false);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="bg-card border-border text-foreground max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Compass className="w-5 h-5 text-cyan-400" />
-            {isEditing ? 'Editar Perfil de Navegador' : 'Novo Perfil de Navegador'}
-          </DialogTitle>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-2">
-          {/* Tool (AdsPower) */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-foreground">
-              Ferramenta Anti-detect <span className="text-red-400">*</span>
-            </Label>
-            <div className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Compass className="w-4 h-4 text-cyan-400" />
-                <span className="text-xs font-semibold text-cyan-300">AdsPower</span>
-              </div>
-              <span className="text-[10px] text-muted-foreground bg-background/50 px-2 py-0.5 rounded">
-                Ativo no frontend
-              </span>
-            </div>
-            <input type="hidden" {...register('tool')} value="adspower" />
-          </div>
-
-          {/* Platform Account Selection */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-foreground">
-              Conta de Plataforma Vinculada <span className="text-red-400">*</span>
-            </Label>
-            <Controller
-              name="platform_account_id"
-              control={control}
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className="bg-background border-input text-xs">
-                    <SelectValue placeholder="Selecione uma conta de plataforma..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-input max-h-56">
-                    {platformAccounts.map((acc) => (
-                      <SelectItem key={acc.id} value={acc.id}>
-                        <span className="flex items-center gap-2">
-                          {acc.country && (
-                            <ReactCountryFlag countryCode={acc.country} svg style={{ width: '1em', height: '1em' }} />
-                          )}
-                          <span>{acc.name}</span>
-                          <span className="text-[10px] text-muted-foreground">({acc.platform})</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.platform_account_id && (
-              <p className="text-xs text-red-400">{errors.platform_account_id.message}</p>
-            )}
-          </div>
-
-          {/* Derived Proxy Info Box */}
-          <div className="p-3 rounded-lg border border-border/80 bg-accent/20 space-y-1.5">
-            <p className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5">
-              <Shield className="w-3.5 h-3.5 text-orange-400" />
-              Proxy Derivado da Conta (Regra de Negócio)
-            </p>
-            {derivedProxy ? (
-              <div className="flex items-center justify-between text-xs pt-1">
-                <span className="font-medium text-foreground truncate">
-                  {derivedProxy.label} ({derivedProxy.host}:{derivedProxy.port})
-                </span>
-                <span className="text-[10px] text-emerald-400 font-semibold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
-                  Herança ativa
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between text-xs pt-1 text-amber-400">
-                <span className="flex items-center gap-1 text-[11px]">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
-                  A conta selecionada ainda não possui proxy configurado.
-                </span>
-              </div>
-            )}
-            <p className="text-[10px] text-muted-foreground">
-              O perfil não armazena proxy próprio — ele sempre utiliza o proxy configurado na conta.
-            </p>
-          </div>
-
-          {/* Name */}
-          <div className="space-y-1.5">
-            <Label htmlFor="profile-name" className="text-xs font-semibold text-foreground">
-              Nome do Perfil
-            </Label>
-            <Input
-              id="profile-name"
-              {...register('name')}
-              placeholder="Ex: Perfil Principal AdsPower #01"
-              className="bg-background border-input text-xs"
-            />
-            {errors.name && (
-              <p className="text-xs text-red-400">{errors.name.message}</p>
-            )}
-          </div>
-
-          {/* External Profile ID (AdsPower Serial) */}
-          <div className="space-y-1.5">
-            <Label htmlFor="external_profile_id" className="text-xs font-semibold text-foreground">
-              ID / Serial no AdsPower (Opcional)
-            </Label>
-            <Input
-              id="external_profile_id"
-              {...register('external_profile_id')}
-              placeholder="Ex: k7y2m10 ou serial numérico"
-              className="bg-background border-input font-mono text-xs"
-            />
-            {errors.external_profile_id && (
-              <p className="text-xs text-red-400">
-                {errors.external_profile_id.message}
-              </p>
-            )}
-            <p className="text-[11px] text-muted-foreground">
-              Identificador do perfil no painel do AdsPower para cópia rápida.
-            </p>
-          </div>
-
-          {/* Status */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-foreground">Status</Label>
-            <Controller
-              name="status"
-              control={control}
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className="bg-background border-input text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-input">
-                    {Object.entries(BROWSER_PROFILE_STATUS_LABELS).map(([v, l]) => (
-                      <SelectItem key={v} value={v}>
-                        {l}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </div>
-
-          {/* Notes */}
-          <div className="space-y-1.5">
-            <Label htmlFor="notes" className="text-xs font-semibold text-foreground">
-              Observações
-            </Label>
-            <textarea
-              id="notes"
-              {...register('notes')}
-              rows={2}
-              placeholder="Anotações internas, máquina, cookies..."
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-3 border-t border-border">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              disabled={isBusy}
-              className="text-xs"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={isBusy}
-              className="bg-cyan-600 hover:bg-cyan-700 text-white text-xs gap-1.5"
-            >
-              {isBusy && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              {isEditing ? 'Salvar Alterações' : 'Criar Perfil'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-};
-
-// ── BrowserProfileCard ────────────────────────────────────────────────────────
-
-interface BrowserProfileCardProps {
-  profile: BrowserProfile;
-  account?: PlatformAccount | null;
-  proxyLabel?: string | null;
-  onEdit: () => void;
-  onDelete: () => void;
-  onToggleStatus: () => void;
-}
-
-const BrowserProfileCard: React.FC<BrowserProfileCardProps> = ({
-  profile,
-  account,
-  proxyLabel,
-  onEdit,
-  onDelete,
-  onToggleStatus,
-}) => {
-  const [copied, setCopied] = useState(false);
-  const statusColor = BROWSER_PROFILE_STATUS_COLORS[profile.status as BrowserProfileStatus] || '';
-  const isArchived = profile.status === 'archived';
-
-  const handleCopySerial = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!profile.external_profile_id) return;
-    navigator.clipboard.writeText(profile.external_profile_id);
-    setCopied(true);
-    toast.success('ID do AdsPower copiado!');
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <div
-      className={`rounded-2xl border bg-gradient-to-b from-card/80 to-card/40 p-5 space-y-4 transition-all shadow-sm ${
-        isArchived
-          ? 'border-border/50 opacity-75'
-          : 'border-border/80 hover:border-cyan-500/40'
-      }`}
-    >
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center flex-shrink-0">
-            <Compass className="w-5 h-5 text-cyan-400" />
-          </div>
-          <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-foreground truncate">
-              {profile.name || profile.external_profile_id || 'Perfil sem nome'}
-            </h3>
-            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
-              <span className="font-semibold text-cyan-400">
-                {BROWSER_PROFILE_TOOL_LABELS[profile.tool as BrowserProfileTool] || profile.tool}
-              </span>
-              <span>·</span>
-              <span className={`px-1.5 py-0.2 rounded-full border text-[10px] font-semibold ${statusColor}`}>
-                {BROWSER_PROFILE_STATUS_LABELS[profile.status as BrowserProfileStatus] || profile.status}
-              </span>
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <button
-            onClick={onToggleStatus}
-            className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-            title={isArchived ? 'Reativar perfil' : 'Arquivar perfil'}
-          >
-            {isArchived ? <RotateCcw className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
-          </button>
-          <button
-            onClick={onEdit}
-            className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-            title="Editar perfil"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={onDelete}
-            className="p-1.5 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-colors"
-            title="Excluir perfil"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
-
-      {/* External ID Badge */}
-      {profile.external_profile_id && (
-        <div className="flex items-center justify-between p-2 rounded-lg bg-accent/30 border border-border/60">
-          <div className="min-w-0">
-            <p className="text-[10px] text-muted-foreground uppercase font-semibold">
-              ID / Serial AdsPower
-            </p>
-            <p className="font-mono text-xs font-semibold text-foreground truncate select-all">
-              {profile.external_profile_id}
-            </p>
-          </div>
-          <button
-            onClick={handleCopySerial}
-            className="p-1 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-            title="Copiar ID"
-          >
-            {copied ? (
-              <Check className="w-3.5 h-3.5 text-emerald-400" />
-            ) : (
-              <Copy className="w-3.5 h-3.5" />
-            )}
-          </button>
-        </div>
-      )}
-
-      {/* Linked Account info */}
-      <div className="space-y-1.5 pt-1 border-t border-border/60 text-xs">
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground flex items-center gap-1.5">
-            <User className="w-3 h-3 text-brand" /> Conta Vinculada:
-          </span>
-          {account ? (
-            <Link
-              to="/contas"
-              className="font-medium text-foreground hover:underline flex items-center gap-1.5 max-w-[170px] truncate"
-            >
-              {account.country && (
-                <ReactCountryFlag countryCode={account.country} svg style={{ width: '1em', height: '1em' }} />
-              )}
-              <span className="truncate">{account.name}</span>
-            </Link>
-          ) : (
-            <span className="text-muted-foreground italic">Não encontrada</span>
-          )}
-        </div>
-
-        {/* Derived Proxy */}
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground flex items-center gap-1.5">
-            <Shield className="w-3 h-3 text-orange-400" /> Proxy Derivado:
-          </span>
-          {proxyLabel ? (
-            <span className="font-mono text-[11px] font-medium text-orange-400 truncate max-w-[170px]">
-              {proxyLabel}
-            </span>
-          ) : (
-            <span className="text-zinc-500 italic text-[11px]">Nenhum (na conta)</span>
-          )}
-        </div>
-      </div>
-
-      {/* Notes if any */}
-      {profile.notes && (
-        <p className="text-xs text-muted-foreground line-clamp-2 italic pt-1">
-          "{profile.notes}"
-        </p>
-      )}
-    </div>
-  );
-};
-
-// ── BrowserProfilesManager ────────────────────────────────────────────────────
-
-interface BrowserProfilesManagerProps {
+export interface BrowserProfilesManagerProps {
   organizationId: string;
 }
 
@@ -545,6 +62,7 @@ export const BrowserProfilesManager: React.FC<BrowserProfilesManagerProps> = ({
   const { proxies } = useProxies(organizationId);
 
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'archived'>('all');
   const [accountFilter, setAccountFilter] = useState<string>(accountFilterParam);
   const [formOpen, setFormOpen] = useState(!!newForParam);
@@ -571,20 +89,8 @@ export const BrowserProfilesManager: React.FC<BrowserProfilesManagerProps> = ({
   }, [accountFilterParam, newForParam]);
 
   const filteredProfiles = useMemo(() => {
-    return profiles.filter((p) => {
-      if (statusFilter !== 'all' && p.status !== statusFilter) return false;
-      if (accountFilter !== 'all' && p.platform_account_id !== accountFilter) return false;
-      if (search.trim()) {
-        const term = search.toLowerCase().trim();
-        const matchesName = p.name && p.name.toLowerCase().includes(term);
-        const matchesSerial =
-          p.external_profile_id && p.external_profile_id.toLowerCase().includes(term);
-        const matchesNotes = p.notes && p.notes.toLowerCase().includes(term);
-        if (!matchesName && !matchesSerial && !matchesNotes) return false;
-      }
-      return true;
-    });
-  }, [profiles, statusFilter, accountFilter, search]);
+    return filterBrowserProfiles(profiles, debouncedSearch, statusFilter, accountFilter);
+  }, [profiles, debouncedSearch, statusFilter, accountFilter]);
 
   const activeCount = useMemo(
     () => profiles.filter((p) => p.status === 'active').length,
@@ -645,7 +151,7 @@ export const BrowserProfilesManager: React.FC<BrowserProfilesManagerProps> = ({
             setEditingProfile(null);
             setFormOpen(true);
           }}
-          className="bg-cyan-600 hover:bg-cyan-700 text-white gap-2 h-10 text-xs shadow-md"
+          className="bg-cyan-600 hover:bg-cyan-700 text-white gap-2 h-10 text-xs shadow-md cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           Novo Perfil AdsPower
@@ -753,7 +259,7 @@ export const BrowserProfilesManager: React.FC<BrowserProfilesManagerProps> = ({
                 setEditingProfile(null);
                 setFormOpen(true);
               }}
-              className="gap-2 mt-1 text-xs"
+              className="gap-2 mt-1 text-xs cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               Criar primeiro perfil
@@ -823,13 +329,13 @@ export const BrowserProfilesManager: React.FC<BrowserProfilesManagerProps> = ({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-background border-input text-foreground hover:bg-accent text-xs">
+            <AlertDialogCancel className="bg-background border-input text-foreground hover:bg-accent text-xs cursor-pointer">
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700 text-white text-xs"
+              className="bg-red-600 hover:bg-red-700 text-white text-xs cursor-pointer"
             >
               {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Excluir'}
             </AlertDialogAction>
