@@ -62,7 +62,15 @@ import {
   formatCentsToCurrencyString,
   formatPhoneByCountry,
 } from '@/utils/inputMasks';
-import { getSocialPlatformDetails } from '@/components/ui/PlatformLogos';
+import {
+  getSocialPlatformDetails,
+  TikTokLogo,
+  InstagramLogo,
+  FacebookLogo,
+  ThreadsLogo,
+  GoogleLogo,
+} from '@/components/ui/PlatformLogos';
+import { getAccountSocialKey } from '@/components/platform-accounts/platformAccountUtils';
 
 interface EditPlatformAccountDialogProps {
   open: boolean;
@@ -70,6 +78,8 @@ interface EditPlatformAccountDialogProps {
   account: PlatformAccount | null;
   onSave: (id: string, data: Partial<PlatformAccountFormData>) => Promise<void>;
 }
+
+type SocialKey = 'tiktok' | 'instagram' | 'facebook' | 'threads' | 'google';
 
 export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps> = ({
   open,
@@ -86,9 +96,12 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
   const [deviceAccordionOpen, setDeviceAccordionOpen] = useState(true);
+  const [currentSocialKey, setCurrentSocialKey] = useState<SocialKey>('tiktok');
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const isTikTok = !account || account.platform === 'tiktok';
+  const isTikTok = currentSocialKey === 'tiktok';
+  const isGoogle = currentSocialKey === 'google';
+  const isMeta = currentSocialKey === 'instagram' || currentSocialKey === 'facebook' || currentSocialKey === 'threads';
 
   const {
     register,
@@ -130,6 +143,25 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
 
   useEffect(() => {
     if (account && open) {
+      const socialKey = getAccountSocialKey(account);
+      setCurrentSocialKey(socialKey);
+
+      const resolvedPlatform =
+        account.platform ||
+        (socialKey === 'instagram' || socialKey === 'facebook' || socialKey === 'threads'
+          ? 'meta'
+          : socialKey);
+
+      const resolvedMetaType =
+        account.meta_account_type ||
+        (socialKey === 'instagram'
+          ? 'instagram'
+          : socialKey === 'facebook'
+          ? 'facebook'
+          : socialKey === 'threads'
+          ? 'threads'
+          : null);
+
       const meta = account.platform_metadata;
       const initialEmail =
         account.email ??
@@ -157,7 +189,8 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
       }
 
       reset({
-        platform: 'tiktok',
+        platform: resolvedPlatform as 'tiktok' | 'google' | 'meta',
+        meta_account_type: resolvedMetaType,
         country: account.country || 'BR',
         name: account.name || '',
         holder_name: account.holder_name || '',
@@ -177,6 +210,20 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
       setPreviewUrl(account.profile_photo_url || null);
     }
   }, [account, open, organizationId, reset]);
+
+  const handlePlatformChange = (key: SocialKey) => {
+    setCurrentSocialKey(key);
+    if (key === 'tiktok') {
+      setValue('platform', 'tiktok');
+      setValue('meta_account_type', null);
+    } else if (key === 'google') {
+      setValue('platform', 'google');
+      setValue('meta_account_type', null);
+    } else {
+      setValue('platform', 'meta');
+      setValue('meta_account_type', key);
+    }
+  };
 
   // Ao mudar país, re-formata o telefone e atualiza a moeda padrão caso necessário
   useEffect(() => {
@@ -282,10 +329,15 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
       if (!confirmed) return;
     }
 
+    const finalPlatform = currentSocialKey === 'tiktok' ? 'tiktok' : currentSocialKey === 'google' ? 'google' : 'meta';
+    const finalMetaType = isMeta ? currentSocialKey : null;
+
     setIsSaving(true);
     try {
       await onSave(account.id, {
         ...data,
+        platform: finalPlatform,
+        meta_account_type: finalMetaType,
         device_ids: selectedDeviceIds,
         device_id: selectedDeviceIds[0] || null,
       });
@@ -299,9 +351,10 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
     }
   };
 
-  const social = account
-    ? getSocialPlatformDetails(account.platform, account.meta_account_type)
-    : null;
+  const social = getSocialPlatformDetails(
+    currentSocialKey === 'tiktok' ? 'tiktok' : currentSocialKey === 'google' ? 'google' : 'meta',
+    isMeta ? currentSocialKey : null
+  );
   const SocialLogo = social?.Logo;
   const socialName = social?.name || 'Plataforma';
 
@@ -322,7 +375,7 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
                 Editar Conta {socialName}
               </DialogTitle>
               <DialogDescription className="text-xs text-zinc-400">
-                Altere os dados cadastrais, titularidade e vínculos do perfil {socialName}.
+                Altere a plataforma, dados cadastrais, titularidade e vínculos do perfil.
               </DialogDescription>
             </div>
           </div>
@@ -332,6 +385,46 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
           onSubmit={handleSubmit(handleFormSubmit)}
           className="flex-1 overflow-y-auto px-6 py-5 space-y-5"
         >
+          {/* ── SELETOR DE PLATAFORMA (TIKTOK, INSTAGRAM, FACEBOOK, THREADS, GOOGLE) ── */}
+          <div className="p-3.5 rounded-xl border border-zinc-800 bg-zinc-900/60 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold text-zinc-200 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                Plataforma da Conta
+              </Label>
+              <span className="text-[10px] text-zinc-400">
+                Alterne a plataforma para reconfigurar os campos
+              </span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              {[
+                { key: 'tiktok' as const, name: 'TikTok', Logo: TikTokLogo, activeClass: 'border-cyan-500 bg-cyan-500/15 text-cyan-300' },
+                { key: 'instagram' as const, name: 'Instagram', Logo: InstagramLogo, activeClass: 'border-pink-500 bg-pink-500/15 text-pink-300' },
+                { key: 'facebook' as const, name: 'Facebook', Logo: FacebookLogo, activeClass: 'border-blue-500 bg-blue-500/15 text-blue-300' },
+                { key: 'threads' as const, name: 'Threads', Logo: ThreadsLogo, activeClass: 'border-zinc-400 bg-zinc-800 text-white' },
+                { key: 'google' as const, name: 'Google', Logo: GoogleLogo, activeClass: 'border-amber-500 bg-amber-500/15 text-amber-300' },
+              ].map((item) => {
+                const isSelected = currentSocialKey === item.key;
+                const ItemLogo = item.Logo;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => handlePlatformChange(item.key)}
+                    className={`flex items-center justify-center gap-1.5 p-2 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+                      isSelected
+                        ? `${item.activeClass} shadow-xs ring-1 ring-white/10`
+                        : 'border-zinc-800 bg-zinc-950/60 text-zinc-400 hover:text-white hover:bg-zinc-900 hover:border-zinc-700'
+                    }`}
+                  >
+                    <ItemLogo className="w-4 h-4 shrink-0" />
+                    <span>{item.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Avatar Upload */}
           <div className="flex items-center gap-4 p-4 rounded-xl border border-zinc-800/80 bg-zinc-900/40">
             <div className="relative group w-16 h-16 rounded-full overflow-hidden bg-zinc-800 border-2 border-zinc-700 flex-shrink-0 flex items-center justify-center">
@@ -386,11 +479,30 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-zinc-200">
-                Nome da Conta <span className="text-rose-400">*</span>
+                {isTikTok
+                  ? 'Nome do Perfil TikTok'
+                  : currentSocialKey === 'instagram'
+                  ? 'Nome do Perfil Instagram'
+                  : currentSocialKey === 'facebook'
+                  ? 'Nome da Página / Perfil Facebook'
+                  : currentSocialKey === 'threads'
+                  ? 'Nome do Perfil Threads'
+                  : 'Nome da Conta Google Ads'}{' '}
+                <span className="text-rose-400">*</span>
               </Label>
               <Input
                 {...register('name')}
-                placeholder="Ex: Minha Loja TikTok"
+                placeholder={
+                  isTikTok
+                    ? 'Ex: Minha Loja TikTok'
+                    : currentSocialKey === 'instagram'
+                    ? 'Ex: Loja Instagram Oficial'
+                    : currentSocialKey === 'facebook'
+                    ? 'Ex: Página Facebook Loja'
+                    : currentSocialKey === 'threads'
+                    ? 'Ex: Threads Loja'
+                    : 'Ex: Google Ads Jonatan Principal'
+                }
                 className="bg-zinc-900 border-zinc-800 text-xs h-10 text-white"
               />
               {errors.name && (
@@ -414,7 +526,7 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
 
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-zinc-200">
-                Apelido / @Username
+                {isGoogle ? 'Identificador MCC / Apelido' : 'Apelido / @Username'}
               </Label>
               <div className="relative">
                 <span className="absolute left-3 top-2.5 text-xs text-zinc-500 font-bold select-none">
@@ -422,7 +534,17 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
                 </span>
                 <Input
                   {...register('nickname')}
-                  placeholder="usuario_tiktok"
+                  placeholder={
+                    isTikTok
+                      ? 'usuario_tiktok'
+                      : currentSocialKey === 'instagram'
+                      ? 'minhaloja'
+                      : currentSocialKey === 'facebook'
+                      ? 'pagina.loja'
+                      : currentSocialKey === 'threads'
+                      ? 'usuario_threads'
+                      : 'mcc_principal'
+                  }
                   className="pl-7 bg-zinc-900 border-zinc-800 text-xs h-10 text-white font-mono"
                 />
               </div>
@@ -541,6 +663,29 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
                 )}
               />
             </div>
+
+            {/* Biografia / Descrição (TikTok e Meta) */}
+            {!isGoogle && (
+              <div className="sm:col-span-2 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="account_bio" className="text-xs font-semibold text-zinc-200">
+                    Biografia / Descrição do Perfil
+                  </Label>
+                  <span className="text-[10px] text-zinc-500">Opcional</span>
+                </div>
+                <textarea
+                  id="account_bio"
+                  {...register('bio')}
+                  rows={2}
+                  placeholder={
+                    isTikTok
+                      ? 'Ex: Conteúdo diário e ofertas exclusivas. Link na bio!'
+                      : 'Ex: Loja oficial de acessórios. Entregas em todo o Brasil.'
+                  }
+                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-cyan-500/60 resize-none"
+                />
+              </div>
+            )}
           </div>
 
           {/* E-mail da Conta */}
@@ -548,7 +693,7 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
             <Label className="text-xs font-semibold text-zinc-200 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <Mail className="w-3.5 h-3.5 text-zinc-400" />
-                {signupMethod === 'google'
+                {isGoogle || signupMethod === 'google'
                   ? 'E-mail da Conta Google'
                   : signupMethod === 'apple'
                   ? 'Apple ID / E-mail'
@@ -560,7 +705,7 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
               <Input
                 {...register('email')}
                 type="email"
-                placeholder="exemplo@gmail.com"
+                placeholder={isGoogle ? 'usuario@gmail.com' : 'exemplo@gmail.com'}
                 className="pl-9 bg-zinc-900 border-zinc-800 text-xs h-10 text-white font-mono"
               />
             </div>
@@ -570,7 +715,7 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
           </div>
 
           {/* Dados Condicionais Google */}
-          {signupMethod === 'google' && (
+          {(isGoogle || signupMethod === 'google') && (
             <div className="p-4 rounded-xl border border-blue-500/25 bg-blue-500/8 space-y-3">
               <p className="text-xs font-semibold text-blue-300 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5" />

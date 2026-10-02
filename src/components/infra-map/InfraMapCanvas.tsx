@@ -6,6 +6,9 @@ import {
   Background,
   BackgroundVariant,
   useReactFlow,
+  applyNodeChanges,
+  type NodeChange,
+  type OnNodeDrag,
 } from '@xyflow/react';
 import type { Node, Edge } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -39,15 +42,27 @@ interface InfraMapCanvasProps {
   edges: Edge[];
   onNodeClick: (event: React.MouseEvent, node: Node) => void;
   onPaneClick: () => void;
+  onNodeDragStop?: OnNodeDrag<Node>;
 }
 
 export const InfraMapCanvas: React.FC<InfraMapCanvasProps> = ({
-  nodes,
+  nodes: inputNodes,
   edges,
   onNodeClick,
   onPaneClick,
+  onNodeDragStop,
 }) => {
   const { fitView } = useReactFlow();
+  const [nodes, setNodes] = React.useState<Node[]>(inputNodes);
+
+  // Synchronize internal nodes state with external nodes prop
+  useEffect(() => {
+    setNodes(inputNodes);
+  }, [inputNodes]);
+
+  const onNodesChange = React.useCallback((changes: NodeChange[]) => {
+    setNodes((nds) => applyNodeChanges(changes, nds));
+  }, []);
 
   // Automatically fit view when nodes are first loaded or layout changes
   useEffect(() => {
@@ -68,8 +83,11 @@ export const InfraMapCanvas: React.FC<InfraMapCanvasProps> = ({
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        onNodesChange={onNodesChange}
+        onNodeDragStop={onNodeDragStop}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
+        nodesDraggable={true}
         fitView
         fitViewOptions={{
           padding: 0.15,

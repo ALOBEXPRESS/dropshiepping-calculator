@@ -60,6 +60,7 @@ export const deviceSchema = z
     proxy_id: z.string().uuid('ID de proxy inválido').nullable().optional().or(z.literal('')),
     notes: z.string().trim().max(500, 'Notas devem ter no máximo 500 caracteres').optional().or(z.literal('')),
     device_profile: z.string().trim().nullable().optional().or(z.literal('')),
+    account_ids: z.array(z.string().uuid()).optional(),
   })
   .superRefine((data, ctx) => {
     // 1. Emulador exige plataforma específica

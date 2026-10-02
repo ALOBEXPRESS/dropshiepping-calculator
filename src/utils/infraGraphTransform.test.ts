@@ -78,6 +78,50 @@ describe('infraGraphTransform — transformToReactFlow', () => {
     expect(edges[0].style?.stroke).toBe('#EF4444');
     expect(edges[0].style?.strokeDasharray).toBe('6 4');
   });
+
+  it('renders runs_on edge as solid green line when device is linked to exactly 1 account (1:1 ideal)', () => {
+    const graph: InfraGraphResponse = {
+      nodes: [
+        { id: 'dv_1', type: 'device', label: 'Samsung Galaxy A10', meta: {} },
+        { id: 'pa_1', type: 'platform_account', label: 'TikTok Account 1', meta: {} },
+      ],
+      edges: [
+        { source: 'dv_1', target: 'pa_1', relation: 'runs_on' },
+      ],
+    };
+
+    const { edges } = transformToReactFlow(graph);
+    expect(edges).toHaveLength(1);
+    expect(edges[0].style?.stroke).toBe('#22C55E');
+    expect(edges[0].style?.strokeDasharray).toBeUndefined();
+    expect(edges[0].label).toBe('✓ 1:1 Ideal');
+    expect(edges[0].data?.isIdeal).toBe(true);
+    expect(edges[0].data?.isWarning).toBe(false);
+  });
+
+  it('renders runs_on edges as red warning lines when device is linked to multiple accounts', () => {
+    const graph: InfraGraphResponse = {
+      nodes: [
+        { id: 'dv_1', type: 'device', label: 'Samsung Galaxy A10', meta: {} },
+        { id: 'pa_1', type: 'platform_account', label: 'TikTok Account 1', meta: {} },
+        { id: 'pa_2', type: 'platform_account', label: 'TikTok Account 2', meta: {} },
+      ],
+      edges: [
+        { source: 'dv_1', target: 'pa_1', relation: 'runs_on' },
+        { source: 'dv_1', target: 'pa_2', relation: 'runs_on' },
+      ],
+    };
+
+    const { edges } = transformToReactFlow(graph);
+    expect(edges).toHaveLength(2);
+    for (const edge of edges) {
+      expect(edge.style?.stroke).toBe('#EF4444');
+      expect(edge.style?.strokeDasharray).toBe('6 4');
+      expect(edge.label).toContain('⚠️ Multi-Contas');
+      expect(edge.data?.isWarning).toBe(true);
+      expect(edge.data?.isIdeal).toBe(false);
+    }
+  });
 });
 
 describe('infraGraphTransform — applyHealthAlerts', () => {

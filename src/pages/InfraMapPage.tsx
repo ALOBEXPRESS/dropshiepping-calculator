@@ -1,8 +1,9 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { ReactFlowProvider, useReactFlow } from '@xyflow/react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { ReactFlowProvider, useReactFlow, type OnNodeDrag } from '@xyflow/react';
 import type { Node } from '@xyflow/react';
 import { Loader2, AlertCircle, Network, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import { useInfraGraph } from '@/hooks/useInfraGraph';
 import { useInfraMapLayout } from '@/hooks/useInfraMapLayout';
 import { useInfraMapFocus } from '@/hooks/useInfraMapFocus';
@@ -47,6 +48,54 @@ const InfraMapContent: React.FC = () => {
   const [selectedAlertType, setSelectedAlertType] = useState<string | null>(null);
   const [filterOnlyAlerts, setFilterOnlyAlerts] = useState(false);
   const [hideUnused, setHideUnused] = useState(true);
+
+  // Custom node positions persisted in localStorage
+  const [customPositions, setCustomPositions] = useState<Record<string, { x: number; y: number }>>(() => {
+    try {
+      const raw = localStorage.getItem(`infra_map_positions_${organizationId || 'default'}`);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  // Re-read custom positions if organizationId changes
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(`infra_map_positions_${organizationId || 'default'}`);
+      setCustomPositions(raw ? JSON.parse(raw) : {});
+    } catch {
+      setCustomPositions({});
+    }
+  }, [organizationId]);
+
+  const handleNodeDragStop: OnNodeDrag<Node> = useCallback((_event, node) => {
+    setCustomPositions((prev) => {
+      const updated = {
+        ...prev,
+        [node.id]: { x: Math.round(node.position.x), y: Math.round(node.position.y) },
+      };
+      try {
+        localStorage.setItem(`infra_map_positions_${organizationId || 'default'}`, JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Failed to save node position:', e);
+      }
+      return updated;
+    });
+  }, [organizationId]);
+
+  const handleResetLayout = useCallback(() => {
+    try {
+      localStorage.removeItem(`infra_map_positions_${organizationId || 'default'}`);
+    } catch (e) {
+      console.warn('Failed to remove saved positions:', e);
+    }
+    setCustomPositions({});
+    toast.success('Layout do mapa redefinido para a organização automática!');
+    setTimeout(() => {
+      fitView({ padding: 0.15 });
+    }, 60);
+  }, [organizationId, fitView]);
 
   // 1. Compute health alerts from raw graph data
   const allAlerts = useMemo(() => {
@@ -144,9 +193,14 @@ const InfraMapContent: React.FC = () => {
     );
   }, [rfEdges, activeNodes]);
 
-  // 7. Apply Dagre layout strictly to visible/active nodes
+  // 7. Apply Dagre layout strictly to visible/active nodes + custom user positions
   const groupingMode = groupBy === 'provider' ? 'provider' : groupBy === 'platform' ? 'platform' : 'provider';
-  const { layoutedNodes, layoutedEdges } = useInfraMapLayout(activeNodes, activeEdges, groupingMode);
+  const { layoutedNodes, layoutedEdges } = useInfraMapLayout(
+    activeNodes,
+    activeEdges,
+    groupingMode,
+    customPositions
+  );
 
   // 8. Apply focus state to layouted nodes/edges
   const { nodes: focusedNodes, edges: focusedEdges } = useMemo(() => {
@@ -314,6 +368,8 @@ const InfraMapContent: React.FC = () => {
         }}
         unusedCount={unusedCount}
         totalNodesCount={rfNodes.length}
+        onResetLayout={handleResetLayout}
+        hasCustomPositions={Object.keys(customPositions).length > 0}
       />
 
       {/* 3. Graph Viewport Canvas */}
@@ -323,6 +379,7 @@ const InfraMapContent: React.FC = () => {
           edges={focusedEdges}
           onNodeClick={handleNodeClick}
           onPaneClick={handlePaneClick}
+          onNodeDragStop={handleNodeDragStop}
         />
 
         {/* Floating Collapsible Legend */}

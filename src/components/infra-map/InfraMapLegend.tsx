@@ -88,12 +88,20 @@ export const InfraMapLegend: React.FC = () => {
             {/* Visual Indicators */}
             <div className="pt-2 mt-2 border-t border-border/60 space-y-1.5">
               <div className="flex items-center gap-2.5 py-0.5">
+                <span className="w-4 h-0.5 rounded-full bg-emerald-500 shrink-0" />
+                <span className="text-emerald-400 font-medium">Linha Verde: 1 Dispositivo = 1 Conta (Ideal)</span>
+              </div>
+              <div className="flex items-center gap-2.5 py-0.5">
+                <span className="w-4 h-0.5 rounded-full bg-rose-500 shrink-0 border-b border-dashed border-rose-300" />
+                <span className="text-rose-400 font-medium">Linha Vermelha: Multi-Contas no Dispositivo</span>
+              </div>
+              <div className="flex items-center gap-2.5 py-0.5">
                 <div className="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-rose-500/40 shrink-0" />
                 <span className="text-rose-300">Nó com Alerta de Saúde</span>
               </div>
               <div className="flex items-center gap-2.5 py-0.5">
                 <div className="w-2.5 h-2.5 rounded-full border border-dashed border-red-400 shrink-0" />
-                <span className="text-muted-foreground">Linha Vermelha: Divergência</span>
+                <span className="text-muted-foreground">Linha Vermelha Tracejada: Divergência</span>
               </div>
               <div className="flex items-center gap-2.5 py-0.5 opacity-60">
                 <EyeOff className="w-2.5 h-2.5 text-zinc-500 shrink-0" />

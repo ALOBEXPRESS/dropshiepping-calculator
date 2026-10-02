@@ -26,7 +26,7 @@ export const EDGE_COLORS: Record<string, string> = {
   uses_proxy: '#FF4D00',
   device_proxy: '#34D399',
   has_profile: '#67E8F9',
-  runs_on: '#34D399',
+  runs_on: '#22C55E',
   owns: '#9CA3AF',
   linked_tiktok: '#06B6D4',
   linked_meta_ig: '#F472B6',
@@ -36,6 +36,8 @@ export const EDGE_COLORS: Record<string, string> = {
   bc_linked_account: '#7C3AED',
   bc_meta_ig: '#F472B6',
   bc_meta_fb: '#3B82F6',
+  bc_proxy: '#FF4D00',
+  hosts_bc: '#34D399',
 };
 
 export interface InfraNodeData extends Record<string, unknown> {
@@ -73,12 +75,68 @@ export function transformToReactFlow(graph: InfraGraphResponse): {
   const mismatchEdges = getMismatchEdgeIds(graph);
   const expiredProxies = getExpiredProxyIds(graph);
 
+  // Computa quantas contas estão associadas a cada dispositivo via runs_on
+  const deviceRunsOnCount = new Map<string, number>();
+  // Computa quantos dispositivos estão associados a cada conta
+  const accountRunsOnCount = new Map<string, number>();
+
+  for (const e of graph.edges) {
+    if (e.relation === 'runs_on') {
+      deviceRunsOnCount.set(e.source, (deviceRunsOnCount.get(e.source) ?? 0) + 1);
+      accountRunsOnCount.set(e.target, (accountRunsOnCount.get(e.target) ?? 0) + 1);
+    }
+  }
+
   const edges: RFEdge[] = graph.edges.map((e) => {
     const edgeId = `${e.source}→${e.target}`;
     const isMismatch = mismatchEdges.has(edgeId);
     const isExpiredProxy =
       e.relation === 'uses_proxy' && expiredProxies.has(e.source);
     const isWarning = isMismatch || isExpiredProxy;
+
+    // Conexão Dispositivo <-> Conta (runs_on):
+    // Regra anti-ban e isolamento operacional:
+    // - Se dispositivo associado a 1 única conta (1:1): Linha VERDE (#22C55E) -> Ideal anti-ban
+    // - Se dispositivo associado a múltiplas contas (>1): Linha VERMELHA (#EF4444) tracejada/alerta
+    if (e.relation === 'runs_on') {
+      const accountsCount = deviceRunsOnCount.get(e.source) ?? 1;
+      const devicesCount = accountRunsOnCount.get(e.target) ?? 1;
+      const isMultiAccount = accountsCount > 1 || devicesCount > 1;
+
+      return {
+        id: edgeId,
+        source: e.source,
+        target: e.target,
+        type: 'smoothstep',
+        animated: isMultiAccount,
+        label: isMultiAccount ? `⚠️ Multi-Contas (${accountsCount})` : '✓ 1:1 Ideal',
+        labelStyle: {
+          fill: isMultiAccount ? '#EF4444' : '#22C55E',
+          fontWeight: 700,
+          fontSize: 10,
+        },
+        labelBgStyle: {
+          fill: '#090a0d',
+          fillOpacity: 0.9,
+          rx: 4,
+          ry: 4,
+          stroke: isMultiAccount ? '#EF4444' : '#22C55E',
+          strokeWidth: 1,
+        },
+        labelBgPadding: [6, 2] as [number, number],
+        style: {
+          stroke: isMultiAccount ? '#EF4444' : '#22C55E',
+          strokeWidth: isMultiAccount ? 2.5 : 2,
+          strokeDasharray: isMultiAccount ? '6 4' : undefined,
+        },
+        data: {
+          relation: e.relation,
+          isWarning: isMultiAccount,
+          isIdeal: !isMultiAccount,
+          accountsCount,
+        },
+      };
+    }
 
     return {
       id: edgeId,

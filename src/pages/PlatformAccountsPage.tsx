@@ -121,6 +121,9 @@ export const PlatformAccountsPage: React.FC = () => {
   const [editingAccount, setEditingAccount] = useState<PlatformAccount | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [createPlatformKey, setCreatePlatformKey] = useState<
+    'tiktok' | 'instagram' | 'facebook' | 'threads' | 'google'
+  >('tiktok');
 
   // Exclusão com verificação de vínculos
   const [deleteTarget, setDeleteTarget] = useState<PlatformAccount | null>(null);
@@ -506,29 +509,89 @@ export const PlatformAccountsPage: React.FC = () => {
         onSave={handleSaveEdit}
       />
 
-      {/* ── Modal de Criação de Nova Conta (Apenas Perfil TikTok) ── */}
+      {/* ── Modal de Criação de Nova Conta ── */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 overflow-hidden bg-zinc-950 border-zinc-800 text-foreground shadow-2xl rounded-2xl">
-          <DialogHeader className="px-6 pt-6 pb-4 border-b border-zinc-800/80 bg-zinc-900/60">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-brand/10 border border-brand/25 flex items-center justify-center p-2">
-                <img src={tiktokImg} alt="TikTok" className="w-full h-full object-contain" />
+          <DialogHeader className="px-6 pt-5 pb-4 border-b border-zinc-800/80 bg-zinc-900/60 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-700/80 flex items-center justify-center p-2 shadow-inner">
+                  {createPlatformKey === 'tiktok' && (
+                    <img src={tiktokImg} alt="TikTok" className="w-full h-full object-contain" />
+                  )}
+                  {createPlatformKey === 'instagram' && <InstagramLogo className="w-6 h-6" />}
+                  {createPlatformKey === 'facebook' && <FacebookLogo className="w-6 h-6" />}
+                  {createPlatformKey === 'threads' && <ThreadsLogo className="w-6 h-6" />}
+                  {createPlatformKey === 'google' && <GoogleLogo className="w-6 h-6" />}
+                </div>
+                <div>
+                  <DialogTitle className="text-lg font-bold text-white">
+                    Cadastrar Perfil {createPlatformKey === 'tiktok'
+                      ? 'TikTok'
+                      : createPlatformKey === 'instagram'
+                      ? 'Instagram'
+                      : createPlatformKey === 'facebook'
+                      ? 'Facebook'
+                      : createPlatformKey === 'threads'
+                      ? 'Threads'
+                      : 'Google Ads'}
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-zinc-400">
+                    Crie a conta de plataforma para associação às suas operações de tráfego.
+                  </DialogDescription>
+                </div>
               </div>
-              <div>
-                <DialogTitle className="text-lg font-bold text-white">
-                  Cadastrar Perfil TikTok
-                </DialogTitle>
-                <DialogDescription className="text-xs text-zinc-400">
-                  Crie o perfil TikTok para associação às suas contas de anúncios.
-                </DialogDescription>
-              </div>
+            </div>
+
+            {/* Seletor de Plataforma no Wizard de Criação */}
+            <div className="grid grid-cols-5 gap-2 pt-1">
+              {[
+                { key: 'tiktok' as const, name: 'TikTok', Logo: TikTokLogo, activeClass: 'border-cyan-500 bg-cyan-500/15 text-cyan-300' },
+                { key: 'instagram' as const, name: 'Instagram', Logo: InstagramLogo, activeClass: 'border-pink-500 bg-pink-500/15 text-pink-300' },
+                { key: 'facebook' as const, name: 'Facebook', Logo: FacebookLogo, activeClass: 'border-blue-500 bg-blue-500/15 text-blue-300' },
+                { key: 'threads' as const, name: 'Threads', Logo: ThreadsLogo, activeClass: 'border-zinc-400 bg-zinc-800 text-white' },
+                { key: 'google' as const, name: 'Google', Logo: GoogleLogo, activeClass: 'border-amber-500 bg-amber-500/15 text-amber-300' },
+              ].map((item) => {
+                const isSelected = createPlatformKey === item.key;
+                const ItemLogo = item.Logo;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => setCreatePlatformKey(item.key)}
+                    className={`flex items-center justify-center gap-1.5 p-2 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+                      isSelected
+                        ? `${item.activeClass} shadow-xs ring-1 ring-white/10`
+                        : 'border-zinc-800 bg-zinc-950/60 text-zinc-400 hover:text-white hover:bg-zinc-900 hover:border-zinc-700'
+                    }`}
+                  >
+                    <ItemLogo className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden sm:inline">{item.name}</span>
+                  </button>
+                );
+              })}
             </div>
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto px-6 py-5">
             <PlatformAccountStep
-              platform="tiktok"
-              metaAccountType={null}
+              key={createPlatformKey}
+              platform={
+                createPlatformKey === 'tiktok'
+                  ? 'tiktok'
+                  : createPlatformKey === 'google'
+                  ? 'google'
+                  : 'meta'
+              }
+              metaAccountType={
+                createPlatformKey === 'instagram'
+                  ? 'instagram'
+                  : createPlatformKey === 'facebook'
+                  ? 'facebook'
+                  : createPlatformKey === 'threads'
+                  ? 'threads'
+                  : null
+              }
               selectedAccount={null}
               defaultMode="create"
               hideSelectExisting

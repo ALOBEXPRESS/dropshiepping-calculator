@@ -37,29 +37,78 @@ export class DevicesService {
       proxyMap.set(p.id, p.label);
     }
 
-    // Busca contas associadas
-    const { data: accounts } = await supabase
-      .from('platform_accounts')
-      .select('id, device_id')
-      .eq('organization_id', organizationId)
-      .not('device_id', 'is', null);
+    // Busca contas associadas via device_id direto e via junction table
+    const [{ data: accountsDirect }, { data: junctionRows }] = await Promise.all([
+      supabase
+        .from('platform_accounts')
+        .select('id, device_id')
+        .eq('organization_id', organizationId)
+        .not('device_id', 'is', null),
+      supabase
+        .from('platform_account_devices')
+        .select('device_id, platform_account_id')
+        .eq('organization_id', organizationId),
+    ]);
 
-    const accountCountMap = new Map<string, number>();
-    for (const acc of accounts ?? []) {
+    const deviceAccountsMap = new Map<string, Set<string>>();
+    for (const acc of accountsDirect ?? []) {
       if (acc.device_id) {
-        accountCountMap.set(acc.device_id, (accountCountMap.get(acc.device_id) ?? 0) + 1);
+        if (!deviceAccountsMap.has(acc.device_id)) {
+          deviceAccountsMap.set(acc.device_id, new Set());
+        }
+        deviceAccountsMap.get(acc.device_id)!.add(acc.id);
+      }
+    }
+    for (const row of junctionRows ?? []) {
+      if (row.device_id) {
+        if (!deviceAccountsMap.has(row.device_id)) {
+          deviceAccountsMap.set(row.device_id, new Set());
+        }
+        deviceAccountsMap.get(row.device_id)!.add(row.platform_account_id);
       }
     }
 
     return devices.map((d) => ({
       ...d,
       proxy_label: d.proxy_id ? proxyMap.get(d.proxy_id) ?? null : null,
-      account_count: accountCountMap.get(d.id) ?? 0,
+      account_count: deviceAccountsMap.get(d.id)?.size ?? 0,
     }));
   }
 
   /**
-   * Cria um novo dispositivo.
+   * Obtém a lista de IDs de contas de plataforma vinculadas a um dispositivo.
+   */
+  static async getDeviceAccounts(
+    organizationId: string,
+    deviceId: string
+  ): Promise<string[]> {
+    if (!organizationId || !deviceId) return [];
+
+    const [{ data: junctionRows }, { data: directAccounts }] = await Promise.all([
+      supabase
+        .from('platform_account_devices')
+        .select('platform_account_id')
+        .eq('organization_id', organizationId)
+        .eq('device_id', deviceId),
+      supabase
+        .from('platform_accounts')
+        .select('id')
+        .eq('organization_id', organizationId)
+        .eq('device_id', deviceId),
+    ]);
+
+    const accountIdSet = new Set<string>();
+    for (const r of junctionRows ?? []) {
+      accountIdSet.add(r.platform_account_id);
+    }
+    for (const a of directAccounts ?? []) {
+      accountIdSet.add(a.id);
+    }
+    return Array.from(accountIdSet);
+  }
+
+  /**
+   * Cria um novo dispositivo e sincroniza eventuais contas vinculadas.
    */
   static async create(
     organizationId: string,
@@ -92,11 +141,33 @@ export class DevicesService {
       .single();
 
     if (error) throw new Error(error.message);
-    return data as Device;
+    const created = data as Device;
+
+    // Sincronizar contas selecionadas
+    if (formData.account_ids && formData.account_ids.length > 0) {
+      const rows = formData.account_ids.map((accId) => ({
+        organization_id: organizationId,
+        platform_account_id: accId,
+        device_id: created.id,
+      }));
+      await supabase.from('platform_account_devices').insert(rows);
+
+      // Atualiza também device_id primário nas contas caso ainda não tenham
+      for (const accId of formData.account_ids) {
+        await supabase
+          .from('platform_accounts')
+          .update({ device_id: created.id, updated_at: new Date().toISOString() })
+          .eq('organization_id', organizationId)
+          .eq('id', accId)
+          .is('device_id', null);
+      }
+    }
+
+    return created;
   }
 
   /**
-   * Atualiza um dispositivo existente.
+   * Atualiza um dispositivo existente e sincroniza eventuais contas vinculadas.
    */
   static async update(
     organizationId: string,
@@ -132,6 +203,54 @@ export class DevicesService {
       .single();
 
     if (error) throw new Error(error.message);
+
+    // Sincroniza tabela junction se account_ids foi fornecido
+    if (formData.account_ids !== undefined) {
+      // 1. Remove associações anteriores deste aparelho
+      await supabase
+        .from('platform_account_devices')
+        .delete()
+        .eq('organization_id', organizationId)
+        .eq('device_id', id);
+
+      // 2. Insere novas associações
+      if (formData.account_ids.length > 0) {
+        const rows = formData.account_ids.map((accId) => ({
+          organization_id: organizationId,
+          platform_account_id: accId,
+          device_id: id,
+        }));
+        await supabase.from('platform_account_devices').insert(rows);
+
+        // Atualiza device_id nas contas selecionadas
+        for (const accId of formData.account_ids) {
+          await supabase
+            .from('platform_accounts')
+            .update({ device_id: id, updated_at: new Date().toISOString() })
+            .eq('organization_id', organizationId)
+            .eq('id', accId);
+        }
+      }
+
+      // 3. Limpa device_id de contas que foram desvinculadas deste aparelho
+      const { data: oldDirect } = await supabase
+        .from('platform_accounts')
+        .select('id')
+        .eq('organization_id', organizationId)
+        .eq('device_id', id);
+
+      const keepSet = new Set(formData.account_ids);
+      for (const oldAcc of oldDirect ?? []) {
+        if (!keepSet.has(oldAcc.id)) {
+          await supabase
+            .from('platform_accounts')
+            .update({ device_id: null, updated_at: new Date().toISOString() })
+            .eq('organization_id', organizationId)
+            .eq('id', oldAcc.id);
+        }
+      }
+    }
+
     return data as Device;
   }
 
@@ -140,16 +259,10 @@ export class DevicesService {
    */
   static async delete(organizationId: string, id: string): Promise<void> {
     // Verificação preventiva de contas vinculadas
-    const { count, error: countError } = await supabase
-      .from('platform_accounts')
-      .select('id', { count: 'exact', head: true })
-      .eq('organization_id', organizationId)
-      .eq('device_id', id);
-
-    if (countError) throw new Error(countError.message);
-    if (count && count > 0) {
+    const accounts = await this.getDeviceAccounts(organizationId, id);
+    if (accounts.length > 0) {
       throw new Error(
-        `Não é possível excluir este dispositivo pois ${count} conta(s) de plataforma está(ão) associada(s) a ele.`
+        `Não é possível excluir este dispositivo pois ${accounts.length} conta(s) de plataforma está(ão) associada(s) a ele.`
       );
     }
 

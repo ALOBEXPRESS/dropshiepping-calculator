@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -6,6 +6,7 @@ import {
   type Device,
   type DeviceFormData,
 } from '@/types/devices';
+import type { PlatformAccount } from '@/types/platformAccounts';
 import {
   DEVICE_TYPES,
   CLOUD_PHONE_PLATFORMS,
@@ -14,6 +15,11 @@ import {
   type DeviceTypeValue,
 } from '@/constants/deviceTypes';
 import { useProxies } from '@/hooks/useProxies';
+import { usePlatformAccounts } from '@/hooks/usePlatformAccounts';
+import { useSettings } from '@/contexts/SettingsContext';
+import { DevicesService } from '@/services/devicesService';
+import { Checkbox } from '@/components/ui/checkbox';
+import { getPlatformLogo } from '@/components/ui/PlatformLogos';
 import {
   Dialog,
   DialogContent,
@@ -41,6 +47,8 @@ import {
   ArrowLeft,
   Shield,
   CheckCircle2,
+  AlertOctagon,
+  Search,
 } from 'lucide-react';
 import { DeviceLogo } from '@/components/ui/DeviceLogo';
 
@@ -61,7 +69,11 @@ export const DeviceFormDialog: React.FC<DeviceFormDialogProps> = ({
 }) => {
   const isEditing = !!device;
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
+  const { organizationId } = useSettings();
   const { proxies } = useProxies();
+  const { data: platformAccounts = [] } = usePlatformAccounts();
+  const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
+  const [accountSearch, setAccountSearch] = useState('');
 
   const {
     register,
@@ -112,7 +124,16 @@ export const DeviceFormDialog: React.FC<DeviceFormDialogProps> = ({
           notes: device.notes || '',
         });
         setCurrentStep(1);
+
+        if (organizationId) {
+          DevicesService.getDeviceAccounts(organizationId, device.id)
+            .then((ids) => setSelectedAccountIds(ids))
+            .catch((err) =>
+              console.warn('[DeviceFormDialog] Erro ao carregar contas vinculadas:', err)
+            );
+        }
       } else {
+        setSelectedAccountIds([]);
         reset({
           label: '',
           device_type: 'cloud_phone',
@@ -124,7 +145,24 @@ export const DeviceFormDialog: React.FC<DeviceFormDialogProps> = ({
         setCurrentStep(1);
       }
     }
-  }, [open, deviceId, reset]);
+  }, [open, deviceId, organizationId, reset]);
+
+  const toggleAccount = (accId: string) => {
+    setSelectedAccountIds((prev) =>
+      prev.includes(accId) ? prev.filter((id) => id !== accId) : [...prev, accId]
+    );
+  };
+
+  const filteredAccounts = useMemo(() => {
+    if (!accountSearch.trim()) return platformAccounts;
+    const q = accountSearch.toLowerCase().trim();
+    return platformAccounts.filter(
+      (a) =>
+        a.name.toLowerCase().includes(q) ||
+        (a.nickname && a.nickname.toLowerCase().includes(q)) ||
+        (a.holder_name && a.holder_name.toLowerCase().includes(q))
+    );
+  }, [platformAccounts, accountSearch]);
 
   const handleNext = async (e?: React.MouseEvent | React.KeyboardEvent | React.FormEvent) => {
     if (e) {
@@ -155,7 +193,10 @@ export const DeviceFormDialog: React.FC<DeviceFormDialogProps> = ({
       return;
     }
 
-    await onSubmit(data);
+    await onSubmit({
+      ...data,
+      account_ids: selectedAccountIds,
+    });
     onOpenChange(false);
   };
 
@@ -487,6 +528,96 @@ export const DeviceFormDialog: React.FC<DeviceFormDialogProps> = ({
                     </Select>
                   )}
                 />
+              </div>
+
+              {/* Contas de Plataforma Vinculadas (Bidirecional) */}
+              <div className="space-y-2.5 p-3.5 rounded-xl border border-zinc-800 bg-zinc-900/40">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs font-semibold text-zinc-200 flex items-center gap-1.5">
+                      <Smartphone className="w-3.5 h-3.5 text-cyan-400" />
+                      Contas de Plataforma Vinculadas
+                    </Label>
+                    {selectedAccountIds.length === 0 ? (
+                      <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full font-mono">
+                        0 vinculadas
+                      </span>
+                    ) : selectedAccountIds.length === 1 ? (
+                      <span className="text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-mono font-semibold flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400" /> 1:1 Ideal
+                      </span>
+                    ) : (
+                      <span className="text-[10px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-mono font-semibold flex items-center gap-1">
+                        <AlertOctagon className="w-3 h-3 text-amber-400" /> {selectedAccountIds.length} Contas (Multi)
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-zinc-500">Opcional</span>
+                </div>
+
+                <p className="text-[11px] text-zinc-400 leading-normal">
+                  Selecione quais contas operam neste aparelho. O recomendado para TikTok é manter 1 conta por dispositivo.
+                </p>
+
+                {platformAccounts.length > 3 && (
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-zinc-500" />
+                    <Input
+                      placeholder="Buscar contas..."
+                      value={accountSearch}
+                      onChange={(e) => setAccountSearch(e.target.value)}
+                      className="pl-8 bg-zinc-950 border-zinc-800 text-xs h-8 text-white placeholder:text-zinc-600 focus:border-cyan-500/60"
+                    />
+                  </div>
+                )}
+
+                <div className="max-h-44 overflow-y-auto space-y-1.5 pr-1">
+                  {filteredAccounts.length === 0 ? (
+                    <div className="text-center py-3 text-zinc-500 text-xs">
+                      {platformAccounts.length === 0
+                        ? 'Nenhuma conta cadastrada no sistema.'
+                        : 'Nenhuma conta encontrada para a busca.'}
+                    </div>
+                  ) : (
+                    filteredAccounts.map((acc: PlatformAccount) => {
+                      const isSelected = selectedAccountIds.includes(acc.id);
+                      const Icon = getPlatformLogo(acc.platform);
+                      return (
+                        <label
+                          key={acc.id}
+                          htmlFor={`dev_acc_${acc.id}`}
+                          className={`flex items-center justify-between p-2.5 rounded-lg border text-xs cursor-pointer transition-all ${
+                            isSelected
+                              ? 'bg-cyan-500/10 border-cyan-500/50 text-white shadow-xs'
+                              : 'bg-zinc-950/60 border-zinc-800/80 hover:bg-zinc-900 text-zinc-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <Checkbox
+                              id={`dev_acc_${acc.id}`}
+                              checked={isSelected}
+                              onCheckedChange={() => toggleAccount(acc.id)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="data-[state=checked]:bg-cyan-500 data-[state=checked]:border-cyan-500"
+                            />
+                            <Icon className="w-4 h-4 shrink-0" />
+                            <div className="truncate">
+                              <span className="font-semibold text-white truncate block">{acc.name}</span>
+                              <span className="text-[10px] text-zinc-500 font-mono">
+                                {acc.nickname ? `@${acc.nickname}` : acc.email || acc.platform}
+                              </span>
+                            </div>
+                          </div>
+                          {acc.country && (
+                            <span className="text-[10px] bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded uppercase font-mono shrink-0 ml-2">
+                              {acc.country}
+                            </span>
+                          )}
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
               </div>
 
               {/* Observações */}

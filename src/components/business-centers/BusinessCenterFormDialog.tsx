@@ -15,6 +15,8 @@ import {
   FileText,
   Loader2,
   ArrowLeft,
+  Shield,
+  Smartphone,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -38,6 +40,8 @@ import {
 } from '@/components/ui/select';
 import { useBusinessCenters } from '@/hooks/useBusinessCenters';
 import { usePlatformAccounts } from '@/hooks/usePlatformAccounts';
+import { useProxies } from '@/hooks/useProxies';
+import { useDevices } from '@/hooks/useDevices';
 import type {
   BusinessCenterWithStats,
   BusinessCenterFormData,
@@ -91,6 +95,8 @@ const DEFAULT_FORM_VALUES: BusinessCenterFormData = {
   meta_linked_account_id: null,
   meta_instagram_account_id: null,
   meta_facebook_account_id: null,
+  device_id: null,
+  proxy_id: null,
 };
 
 export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> = ({
@@ -105,6 +111,8 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
   const { createCenter, updateCenter, isCreating, isUpdating } =
     useBusinessCenters(organizationId);
   const { data: platformAccounts = [] } = usePlatformAccounts();
+  const { proxies = [] } = useProxies(organizationId);
+  const { devices = [] } = useDevices();
   const isBusy = isCreating || isUpdating;
 
   const [linkInstagram, setLinkInstagram] = useState(false);
@@ -197,6 +205,8 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
           meta_facebook_account_id:
             center.meta_facebook_account_id ??
             (center.meta_linked_network === 'facebook' ? center.meta_linked_account_id : null),
+          device_id: center.device_id ?? null,
+          proxy_id: center.proxy_id ?? null,
         });
         setCurrentStep(2);
       } else {
@@ -235,6 +245,8 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
         meta_facebook_account_id,
         meta_linked_network,
         meta_linked_account_id,
+        device_id: data.device_id || null,
+        proxy_id: data.proxy_id || null,
       };
 
       if (isEditing && center) {
@@ -1094,6 +1106,109 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
                       )}
                     </div>
                   )}
+
+                  {/* ── SEÇÃO 4.5: Infraestrutura de Rede e Operação (Proxy & Dispositivo) ── */}
+                  <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-3.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                          <Shield className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-semibold text-white">Infraestrutura & Rede Dedicada</h4>
+                          <p className="text-[11px] text-zinc-400">Vincule o proxy e dispositivo usados para operar este Business Manager</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-zinc-800/60">
+                      {/* Proxy Seletor */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-medium text-zinc-300 flex items-center gap-1.5">
+                            <Shield className="w-3.5 h-3.5 text-amber-400" />
+                            Proxy Dedicado (Opcional)
+                          </Label>
+                          <Link to="/provedores-proxy" target="_blank" className="text-[10px] text-amber-400 hover:underline">
+                            + Gerenciar Proxies
+                          </Link>
+                        </div>
+                        <Controller
+                          name="proxy_id"
+                          control={control}
+                          render={({ field }) => (
+                            <Select
+                              value={field.value || 'none'}
+                              onValueChange={(v) => field.onChange(v === 'none' ? null : v)}
+                            >
+                              <SelectTrigger className="bg-zinc-900 border-zinc-800 text-xs h-10 text-white">
+                                <SelectValue placeholder="Selecione um proxy..." />
+                              </SelectTrigger>
+                              <SelectContent className="bg-zinc-900 border-zinc-800 text-white max-h-56">
+                                <SelectItem value="none">
+                                  <span className="text-zinc-500 italic">Nenhum proxy vinculado (Conexão direta)</span>
+                                </SelectItem>
+                                {proxies.map((p) => (
+                                  <SelectItem key={p.id} value={p.id}>
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-semibold text-white">{p.label}</span>
+                                      <span className="text-zinc-400 text-[11px] font-mono">{p.host}:{p.port}</span>
+                                      <span className="text-amber-400 text-[10px] font-medium uppercase px-1 py-0.5 rounded bg-amber-400/10">
+                                        {p.proxy_type}
+                                      </span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      </div>
+
+                      {/* Dispositivo Seletor */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-medium text-zinc-300 flex items-center gap-1.5">
+                            <Smartphone className="w-3.5 h-3.5 text-cyan-400" />
+                            Dispositivo Operacional (Opcional)
+                          </Label>
+                          <Link to="/dispositivos" target="_blank" className="text-[10px] text-cyan-400 hover:underline">
+                            + Gerenciar Dispositivos
+                          </Link>
+                        </div>
+                        <Controller
+                          name="device_id"
+                          control={control}
+                          render={({ field }) => (
+                            <Select
+                              value={field.value || 'none'}
+                              onValueChange={(v) => field.onChange(v === 'none' ? null : v)}
+                            >
+                              <SelectTrigger className="bg-zinc-900 border-zinc-800 text-xs h-10 text-white">
+                                <SelectValue placeholder="Selecione um dispositivo..." />
+                              </SelectTrigger>
+                              <SelectContent className="bg-zinc-900 border-zinc-800 text-white max-h-56">
+                                <SelectItem value="none">
+                                  <span className="text-zinc-500 italic">Nenhum dispositivo associado</span>
+                                </SelectItem>
+                                {devices.map((d) => (
+                                  <SelectItem key={d.id} value={d.id}>
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-semibold text-white">{d.label}</span>
+                                      {d.platform && <span className="text-zinc-400 text-[11px]">({d.platform})</span>}
+                                      <span className="text-cyan-400 text-[10px] font-medium uppercase px-1 py-0.5 rounded bg-cyan-400/10">
+                                        {d.device_type}
+                                      </span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </div>
 
                   {/* ── SEÇÃO 5: Observações ── */}
                   <div className="space-y-1.5">

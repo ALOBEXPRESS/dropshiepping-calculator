@@ -194,13 +194,15 @@ export class PlatformAccountsService {
       // Busca valores atuais para merge
       const current = await PlatformAccountsService.getById(organizationId, id);
       const merged: PlatformAccountFormData = {
-        platform: 'tiktok',
+        platform: (formData.platform ?? current?.platform ?? 'tiktok') as 'tiktok' | 'google' | 'meta',
         country: formData.country ?? (current?.country ?? 'BR'),
         name: formData.name ?? (current?.name ?? ''),
         holder_name: formData.holder_name ?? (current?.holder_name ?? ''),
+        nickname: formData.nickname ?? (current?.nickname ?? ''),
         niche: formData.niche ?? (current?.niche ?? 'outro'),
         signup_method: formData.signup_method ?? (current?.signup_method ?? 'google'),
         email: formData.email ?? (current?.email ?? ''),
+        meta_account_type: formData.meta_account_type ?? current?.meta_account_type ?? null,
         google_account_age_years: formData.google_account_age_years,
         google_ads_invested_brl: formData.google_ads_invested_brl,
         google_ads_currency: formData.google_ads_currency,

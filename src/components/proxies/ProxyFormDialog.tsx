@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Shield, Plus, Loader2, Eye, EyeOff, Link2 } from 'lucide-react';
+import { Shield, Plus, Loader2, Eye, EyeOff, Link2, Building2 } from 'lucide-react';
 import ReactCountryFlag from 'react-country-flag';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,7 @@ import {
 } from '@/components/ui/select';
 import { useProxies } from '@/hooks/useProxies';
 import { useProxyProviders } from '@/hooks/useProxyProviders';
+import { useBusinessCenters } from '@/hooks/useBusinessCenters';
 import { ProxyProviderFormDialog } from '@/components/proxy-providers/ProxyProviderFormDialog';
 import { ProviderLogo } from '@/components/ui/ProviderLogo';
 import type { PlatformAccount } from '@/types/platformAccounts';
@@ -65,13 +67,22 @@ const InnerProxyForm: React.FC<InnerProxyFormProps> = ({
   const { createProxy, updateProxy, linkProxy, isCreating, isUpdating, isLinking } =
     useProxies(organizationId);
   const { providers, createProvider, isCreating: isCreatingProvider } = useProxyProviders();
+  const { centers: businessCenters = [] } = useBusinessCenters(organizationId);
   const [showPassword, setShowPassword] = useState(false);
   const [selectedAccountId, setSelectedAccountId] = useState<string>(
     () => currentLinkedAccount?.id ?? 'none'
   );
+  const [selectedBcId, setSelectedBcId] = useState<string>('none');
   const [providerModalOpen, setProviderModalOpen] = useState(false);
   const isEditing = !!proxy;
   const isBusy = isCreating || isUpdating || isLinking;
+
+  useEffect(() => {
+    if (proxy && businessCenters.length > 0) {
+      const linked = businessCenters.find((bc) => bc.proxy_id === proxy.id);
+      if (linked) setSelectedBcId(linked.id);
+    }
+  }, [proxy, businessCenters]);
 
   const {
     register,
@@ -148,9 +159,30 @@ const InnerProxyForm: React.FC<InnerProxyFormProps> = ({
         }
       }
 
+      // Trata vínculo ou desvínculo de Business Manager (BM)
+      const previousBc = businessCenters.find((bc) => bc.proxy_id === (proxy?.id ?? saved.id));
+      const previousBcId = previousBc?.id ?? 'none';
+
+      if (selectedBcId !== previousBcId) {
+        if (previousBcId !== 'none') {
+          await supabase
+            .from('business_centers')
+            .update({ proxy_id: null, updated_at: new Date().toISOString() })
+            .eq('organization_id', organizationId)
+            .eq('id', previousBcId);
+        }
+        if (selectedBcId !== 'none') {
+          await supabase
+            .from('business_centers')
+            .update({ proxy_id: saved.id, updated_at: new Date().toISOString() })
+            .eq('organization_id', organizationId)
+            .eq('id', selectedBcId);
+        }
+      }
+
       toast.success(
         isEditing
-          ? 'Proxy e vínculo atualizados com sucesso!'
+          ? 'Proxy e vínculos atualizados com sucesso!'
           : 'Proxy criado com sucesso!'
       );
       onSaved?.(saved);
@@ -480,6 +512,51 @@ const InnerProxyForm: React.FC<InnerProxyFormProps> = ({
           </Select>
           <p className="text-[11px] text-muted-foreground">
             Vincular ou desvincular a conta aqui atualiza imediatamente o isolamento de rede da conta.
+          </p>
+        </div>
+
+        {/* Business Manager (BM) Vinculado */}
+        <div className="space-y-2 p-3.5 rounded-lg border border-purple-500/30 bg-purple-500/5">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs font-semibold text-purple-300 flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5" />
+              Business Manager (BM / Business Center) Vinculado
+            </Label>
+            <span className="text-[10px] text-muted-foreground">Opcional</span>
+          </div>
+          <Select value={selectedBcId} onValueChange={setSelectedBcId}>
+            <SelectTrigger className="w-full bg-background border-border text-xs h-10">
+              <SelectValue placeholder="Nenhum Business Center vinculado" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover border-border max-h-56">
+              <SelectItem value="none">
+                <span className="text-muted-foreground italic">Nenhum BM vinculado (Desvinculado)</span>
+              </SelectItem>
+              {businessCenters.map((bc) => {
+                const isCurrent = bc.proxy_id === proxy?.id;
+                const isOther = bc.proxy_id && bc.proxy_id !== proxy?.id;
+                return (
+                  <SelectItem key={bc.id} value={bc.id}>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-foreground">{bc.name || 'Sem nome'}</span>
+                      <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-mono uppercase text-muted-foreground">
+                        {bc.platform}
+                      </span>
+                      {bc.bc_id && (
+                        <span className="text-[10px] text-muted-foreground font-mono">
+                          (ID: {bc.bc_id})
+                        </span>
+                      )}
+                      {isCurrent && <span className="text-emerald-400 font-semibold text-[10px]">✓ Atual</span>}
+                      {isOther && !isCurrent && <span className="text-amber-400 text-[10px]">(tem outro proxy)</span>}
+                    </div>
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-muted-foreground">
+            Vincula o tráfego operacional e API deste Business Manager diretamente através deste proxy.
           </p>
         </div>
 

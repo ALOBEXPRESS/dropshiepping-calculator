@@ -71,12 +71,29 @@ export interface UseInfraMapLayoutReturn {
 export function useInfraMapLayout(
   nodes: LayoutedNodes,
   edges: LayoutedEdges,
-  groupingMode: GroupingMode
+  groupingMode: GroupingMode,
+  customPositions?: Record<string, { x: number; y: number }>
 ): UseInfraMapLayoutReturn {
   const { nodes: layoutedNodes, edges: layoutedEdges } = useMemo(() => {
     const direction = groupingMode === 'platform' ? 'TB' : 'LR';
-    return runDagreLayout(nodes, edges, direction);
-  }, [nodes, edges, groupingMode]);
+    const dagreResult = runDagreLayout(nodes, edges, direction);
+    if (!customPositions || Object.keys(customPositions).length === 0) {
+      return dagreResult;
+    }
+
+    const mergedNodes = dagreResult.nodes.map((node) => {
+      const custom = customPositions[node.id];
+      if (custom && typeof custom.x === 'number' && typeof custom.y === 'number') {
+        return {
+          ...node,
+          position: custom,
+        };
+      }
+      return node;
+    });
+
+    return { nodes: mergedNodes, edges: dagreResult.edges };
+  }, [nodes, edges, groupingMode, customPositions]);
 
   return { layoutedNodes, layoutedEdges, isLayouting: false };
 }

@@ -59,6 +59,8 @@ interface InfraMapToolbarProps {
   onToggleHideUnused?: () => void;
   unusedCount?: number;
   totalNodesCount?: number;
+  onResetLayout?: () => void;
+  hasCustomPositions?: boolean;
 }
 
 const NODE_TYPE_LABELS: Record<InfraNodeType, string> = {
@@ -102,6 +104,8 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
   onToggleHideUnused,
   unusedCount = 0,
   totalNodesCount,
+  onResetLayout,
+  hasCustomPositions,
 }) => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -470,6 +474,25 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
           >
             <Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="hidden sm:inline">Enquadrar</span>
+          </Button>
+        )}
+
+        {/* Reset Layout to Default Button */}
+        {onResetLayout && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onResetLayout}
+            className={cn(
+              "h-8 text-xs gap-1.5 border-border/80 bg-background/60 hover:bg-accent cursor-pointer transition-colors",
+              hasCustomPositions ? "text-cyan-400 border-cyan-500/30 hover:border-cyan-500/50 hover:bg-cyan-500/10" : "text-muted-foreground hover:text-foreground"
+            )}
+            title="Redefinir posições de todos os nós para a organização automática"
+            aria-label="Resetar layout do mapa"
+          >
+            <RotateCcw className="h-3.5 w-3.5 text-cyan-400" />
+            <span className="hidden sm:inline">Resetar Layout</span>
           </Button>
         )}
 
