@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Search,
   Download,
@@ -38,7 +38,7 @@ import {
 import type { InfraNodeType } from '@/types/infraGraph';
 import type { Node } from '@xyflow/react';
 import { toPng } from 'html-to-image';
-import { NODE_COLORS } from '@/utils/infraGraphTransform';
+import { NODE_COLORS, type InfraNodeData } from '@/utils/infraGraphTransform';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -106,14 +106,33 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
   const [searchOpen, setSearchOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
+  // Global keyboard shortcut: Ctrl+K / Cmd+K to open search popover
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        const target = e.target as HTMLElement | null;
+        if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') {
+          return;
+        }
+        e.preventDefault();
+        setSearchOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Use allNodes for search and total counts if provided, otherwise active nodes
   const sourceNodes = allNodes || nodes;
 
-  // Count nodes by type
-  const nodeCountsByType = ALL_NODE_TYPES.reduce((acc, type) => {
-    acc[type] = sourceNodes.filter((n) => n.type === type).length;
-    return acc;
-  }, {} as Record<InfraNodeType, number>);
+  // Count nodes by type (memoized)
+  const nodeCountsByType = useMemo(() => {
+    return ALL_NODE_TYPES.reduce((acc, type) => {
+      acc[type] = sourceNodes.filter((n) => n.type === type).length;
+      return acc;
+    }, {} as Record<InfraNodeType, number>);
+  }, [sourceNodes]);
 
   const handleExportPNG = async () => {
     const element = document.querySelector('.react-flow') as HTMLElement;
@@ -131,10 +150,6 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
         pixelRatio: 2,
         width: element.offsetWidth,
         height: element.offsetHeight,
-        filter: (_node) => {
-          // Exclude controls & minimap if needed, or keep everything
-          return true;
-        },
       });
 
       const link = document.createElement('a');
@@ -177,9 +192,11 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
         <Popover open={searchOpen} onOpenChange={setSearchOpen}>
           <PopoverTrigger asChild>
             <Button
+              type="button"
               variant="outline"
               size="sm"
               className="h-8 text-xs gap-2 border-border/80 bg-background/60 hover:bg-accent cursor-pointer"
+              aria-label="Buscar recurso no mapa (Ctrl+K)"
             >
               <Search className="h-3.5 w-3.5 text-muted-foreground" />
               <span>Buscar nó...</span>
@@ -190,22 +207,23 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
           </PopoverTrigger>
           <PopoverContent className="w-[360px] p-0 shadow-2xl border-border bg-card" align="start">
             <Command className="bg-transparent">
-              <CommandInput placeholder="Buscar por nome, IP ou tipo..." className="text-xs" />
+              <CommandInput placeholder="Buscar por nome, IP, plataforma ou país..." className="text-xs" />
               <CommandList className="max-h-[300px]">
                 <CommandEmpty className="p-4 text-xs text-muted-foreground text-center">
                   Nenhum nó encontrado com este termo.
                 </CommandEmpty>
                 <CommandGroup heading="Recursos no Mapa">
                   {sourceNodes.map((node) => {
-                    const data = node.data as { label?: string; sublabel?: string; color?: string };
+                    const nodeData = (node.data as unknown) as InfraNodeData;
                     const nodeType = node.type as InfraNodeType;
                     const typeLabel = NODE_TYPE_LABELS[nodeType] || nodeType;
                     const dotColor = NODE_COLORS[nodeType] || '#6B7280';
+                    const searchValue = `${nodeData?.label ?? ''} ${nodeData?.sublabel ?? ''} ${node.id} ${typeLabel} ${nodeData?.country ?? ''} ${nodeData?.platform ?? ''} ${nodeData?.status ?? ''}`;
 
                     return (
                       <CommandItem
                         key={node.id}
-                        value={`${data.label || ''} ${data.sublabel || ''} ${typeLabel}`}
+                        value={searchValue}
                         onSelect={() => {
                           onNodeFocus(node.id);
                           setSearchOpen(false);
@@ -218,11 +236,11 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
                         />
                         <div className="flex flex-col min-w-0 flex-1">
                           <span className="text-xs font-medium text-foreground truncate">
-                            {data.label || node.id}
+                            {nodeData?.label || node.id}
                           </span>
-                          {data.sublabel && (
+                          {nodeData?.sublabel && (
                             <span className="font-mono text-[10px] text-muted-foreground truncate">
-                              {data.sublabel}
+                              {nodeData.sublabel}
                             </span>
                           )}
                         </div>
@@ -242,9 +260,11 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
+              type="button"
               variant="outline"
               size="sm"
               className="h-8 text-xs gap-1.5 border-border/80 bg-background/60 hover:bg-accent cursor-pointer"
+              aria-label="Modo de agrupamento do grafo"
             >
               <Layers className="h-3.5 w-3.5 text-primary" />
               <span>
@@ -289,12 +309,14 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
+              type="button"
               variant="outline"
               size="sm"
               className={cn(
                 'h-8 text-xs gap-1.5 border-border/80 bg-background/60 hover:bg-accent cursor-pointer',
                 visibleNodeTypes.size < ALL_NODE_TYPES.length && 'border-primary/50 text-primary'
               )}
+              aria-label="Filtrar por tipos de nós visíveis"
             >
               <Filter className="h-3.5 w-3.5" />
               <span>Tipos de Nós</span>
@@ -358,9 +380,11 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
         {/* Quick Filter: Only with Alerts */}
         {onToggleOnlyAlerts && (
           <Button
+            type="button"
             variant={filterOnlyAlerts ? 'destructive' : 'outline'}
             size="sm"
             onClick={onToggleOnlyAlerts}
+            aria-label="Filtrar apenas nós com alertas de saúde"
             className={cn(
               'h-8 text-xs gap-1.5 cursor-pointer transition-all',
               filterOnlyAlerts
@@ -376,6 +400,7 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
         {/* Quick Toggle: Apenas em Uso / Ocultar Ociosos */}
         {onToggleHideUnused && (
           <Button
+            type="button"
             variant="outline"
             size="sm"
             onClick={onToggleHideUnused}
@@ -384,6 +409,7 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
                 ? 'Clique para exibir todos os nós (inclusive provedores e dispositivos sem conexões)'
                 : 'Clique para ocultar nós sem uso/sem conexões ativas'
             }
+            aria-label={hideUnused ? 'Exibir nós ociosos' : 'Ocultar nós ociosos'}
             className={cn(
               'h-8 text-xs gap-1.5 cursor-pointer transition-all',
               hideUnused
@@ -419,10 +445,12 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
         {/* Reset Focus Button */}
         {hasActiveFocus && onResetFocus && (
           <Button
+            type="button"
             variant="ghost"
             size="sm"
             onClick={onResetFocus}
             className="h-8 text-xs gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
+            aria-label="Restaurar foco do grafo"
           >
             <RotateCcw className="h-3.5 w-3.5" />
             <span className="hidden md:inline">Restaurar Foco</span>
@@ -432,11 +460,13 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
         {/* Fit View Button */}
         {onFitView && (
           <Button
+            type="button"
             variant="outline"
             size="sm"
             onClick={onFitView}
             className="h-8 text-xs gap-1.5 border-border/80 bg-background/60 hover:bg-accent cursor-pointer"
             title="Ajustar visualização para enquadrar todos os nós"
+            aria-label="Ajustar zoom para enquadrar todos os nós"
           >
             <Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="hidden sm:inline">Enquadrar</span>
@@ -445,11 +475,13 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
 
         {/* Export PNG Button */}
         <Button
+          type="button"
           variant="outline"
           size="sm"
           onClick={handleExportPNG}
           disabled={isExporting}
           className="h-8 text-xs gap-1.5 border-border/80 bg-background/60 hover:bg-accent cursor-pointer text-foreground"
+          aria-label="Exportar grafo em formato PNG"
         >
           {isExporting ? (
             <RefreshCw className="h-3.5 w-3.5 animate-spin text-primary" />

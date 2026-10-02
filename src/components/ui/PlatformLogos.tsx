@@ -97,6 +97,24 @@ export function getPlatformLogo(platform: string): React.FC<{ className?: string
   }
 }
 
+/** Static PlatformLogo component to avoid dynamic component creation in render */
+export const PlatformLogo: React.FC<{
+  platform?: string | null;
+  className?: string;
+  colored?: boolean;
+}> = ({ platform = 'tiktok', className = 'w-5 h-5', colored = true }) => {
+  switch (platform) {
+    case 'tiktok':
+      return <TikTokLogo className={className} colored={colored} />;
+    case 'meta':
+      return <MetaLogo className={className} />;
+    case 'google':
+      return <GoogleLogo className={className} />;
+    default:
+      return <TikTokLogo className={className} colored={colored} />;
+  }
+};
+
 /** Returns the appropriate color class for a given platform */
 export function getPlatformColor(platform: string): string {
   switch (platform) {

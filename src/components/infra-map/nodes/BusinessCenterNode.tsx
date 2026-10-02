@@ -1,7 +1,7 @@
 import React from 'react';
 import type { NodeProps } from '@xyflow/react';
 import { BaseNode, MonoLabel, CountryTag } from './BaseNode';
-import { getPlatformLogo } from '@/components/ui/PlatformLogos';
+import { PlatformLogo } from '@/components/ui/PlatformLogos';
 import type { InfraNodeData } from '@/utils/infraGraphTransform';
 
 export const BusinessCenterNode = React.memo(function BusinessCenterNode({
@@ -9,13 +9,12 @@ export const BusinessCenterNode = React.memo(function BusinessCenterNode({
 }: NodeProps) {
   const nodeData = (data as unknown) as InfraNodeData;
   const platform = nodeData.platform ?? 'tiktok';
-  const Logo = getPlatformLogo(platform);
 
   return (
     <BaseNode data={nodeData} nodeType="business_center">
       <div className="flex items-center gap-2.5 mb-1.5">
         <div className="w-8 h-8 rounded-lg bg-violet-500/10 border border-violet-500/30 flex items-center justify-center shrink-0">
-          <Logo className="w-4 h-4" colored={false} />
+          <PlatformLogo platform={platform} className="w-4 h-4" colored={false} />
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-[12px] font-semibold text-zinc-100 truncate leading-tight">

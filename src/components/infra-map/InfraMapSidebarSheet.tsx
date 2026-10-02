@@ -62,8 +62,8 @@ export const InfraMapSidebarSheet: React.FC<InfraMapSidebarSheetProps> = ({
   const nodeData = (node.data as unknown) as InfraNodeData;
   const nodeColor = NODE_COLORS[nodeType] || '#6B7280';
 
-  // Filter alerts belonging to this specific node
-  const nodeAlerts = allAlerts.filter((a) => a.nodeIds.includes(node.id));
+  // Filter active alerts belonging to this specific node
+  const nodeAlerts = allAlerts.filter((a) => a.severity !== 'info' && a.nodeIds.includes(node.id));
   const hasAlerts = nodeAlerts.length > 0;
 
   const handleOpenInModule = () => {
@@ -216,6 +216,7 @@ export const InfraMapSidebarSheet: React.FC<InfraMapSidebarSheetProps> = ({
           <div className="space-y-2 pt-2">
             {onFocusNode && (
               <Button
+                type="button"
                 variant="outline"
                 className="w-full gap-2 text-xs border-border/80 hover:bg-accent cursor-pointer"
                 onClick={handleFocus}
@@ -227,6 +228,7 @@ export const InfraMapSidebarSheet: React.FC<InfraMapSidebarSheetProps> = ({
 
             {canOpenInModule && (
               <Button
+                type="button"
                 className="w-full gap-2 text-xs cursor-pointer shadow-md"
                 onClick={handleOpenInModule}
               >
@@ -236,6 +238,7 @@ export const InfraMapSidebarSheet: React.FC<InfraMapSidebarSheetProps> = ({
             )}
 
             <Button
+              type="button"
               variant="ghost"
               className="w-full text-xs text-muted-foreground hover:text-foreground cursor-pointer"
               onClick={() => onOpenChange(false)}

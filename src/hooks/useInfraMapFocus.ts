@@ -9,9 +9,15 @@ interface FocusState {
 
 const MAX_DEPTH = 10;
 
+interface AdjacencyEdge {
+  neighborId: string;
+  edgeId: string;
+}
+
 /**
- * BFS bidirectional: finds all nodes reachable from focusedNodeId
+ * BFS bidirectional: finds all nodes reachable from focusedNodeId within MAX_DEPTH hops,
  * traversing edges in both directions (upstream + downstream).
+ * Uses an adjacency map for O(|V| + |E|) performance and tracks true hop distance.
  */
 function computeFocusedIds(
   nodeId: string,
@@ -20,31 +26,43 @@ function computeFocusedIds(
   const highlightedNodeIds = new Set<string>([nodeId]);
   const highlightedEdgeIds = new Set<string>();
 
-  const queue: string[] = [nodeId];
-  let depth = 0;
+  if (edges.length === 0) {
+    return { highlightedNodeIds, highlightedEdgeIds };
+  }
 
-  while (queue.length > 0 && depth < MAX_DEPTH) {
-    const current = queue.shift()!;
+  // Build bidirectional adjacency map
+  const adj = new Map<string, AdjacencyEdge[]>();
+  for (const edge of edges) {
+    const edgeId = `${edge.source}→${edge.target}`;
 
-    for (const edge of edges) {
-      const edgeId = `${edge.source}→${edge.target}`;
+    if (!adj.has(edge.source)) adj.set(edge.source, []);
+    adj.get(edge.source)!.push({ neighborId: edge.target, edgeId });
 
-      // Downstream: current is source
-      if (edge.source === current && !highlightedNodeIds.has(edge.target)) {
-        highlightedNodeIds.add(edge.target);
-        highlightedEdgeIds.add(edgeId);
-        queue.push(edge.target);
-      }
+    if (!adj.has(edge.target)) adj.set(edge.target, []);
+    adj.get(edge.target)!.push({ neighborId: edge.source, edgeId });
+  }
 
-      // Upstream: current is target
-      if (edge.target === current && !highlightedNodeIds.has(edge.source)) {
-        highlightedNodeIds.add(edge.source);
-        highlightedEdgeIds.add(edgeId);
-        queue.push(edge.source);
+  // BFS with distance level tracking
+  const queue: { id: string; distance: number }[] = [{ id: nodeId, distance: 0 }];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current) break;
+
+    const { id, distance } = current;
+    if (distance >= MAX_DEPTH) continue;
+
+    const neighbors = adj.get(id);
+    if (!neighbors) continue;
+
+    for (const { neighborId, edgeId } of neighbors) {
+      highlightedEdgeIds.add(edgeId);
+
+      if (!highlightedNodeIds.has(neighborId)) {
+        highlightedNodeIds.add(neighborId);
+        queue.push({ id: neighborId, distance: distance + 1 });
       }
     }
-
-    depth++;
   }
 
   return { highlightedNodeIds, highlightedEdgeIds };

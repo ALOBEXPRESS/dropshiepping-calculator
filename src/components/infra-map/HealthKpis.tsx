@@ -39,31 +39,13 @@ const ALERT_CONFIG: Record<string, AlertMeta> = {
     severity: 'warning',
     description: 'Proxies ativos sem nenhuma conta de plataforma vinculada',
   },
-  proxies_without_accounts: {
-    label: 'Proxies sem Conta',
-    icon: Shield,
-    severity: 'warning',
-    description: 'Proxies ativos sem nenhuma conta de plataforma vinculada',
-  },
   account_without_proxy: {
     label: 'Contas sem Proxy',
     icon: Globe,
     severity: 'warning',
     description: 'Contas operando sem proxy atribuído (risco de fingerprint)',
   },
-  accounts_without_proxy: {
-    label: 'Contas sem Proxy',
-    icon: Globe,
-    severity: 'warning',
-    description: 'Contas operando sem proxy atribuído (risco de fingerprint)',
-  },
   browser_profile_without_account: {
-    label: 'Perfis sem Conta',
-    icon: Laptop,
-    severity: 'warning',
-    description: 'Perfis de navegador sem conta de plataforma vinculada',
-  },
-  browser_profiles_without_account: {
     label: 'Perfis sem Conta',
     icon: Laptop,
     severity: 'warning',
@@ -81,12 +63,6 @@ const ALERT_CONFIG: Record<string, AlertMeta> = {
     severity: 'error',
     description: 'Proxy dedicado (estático) compartilhado entre múltiplas contas',
   },
-  shared_dedicated_proxy: {
-    label: 'Proxy Compartilhado',
-    icon: ShieldAlert,
-    severity: 'error',
-    description: 'Proxy dedicado (estático) compartilhado entre múltiplas contas',
-  },
   ad_account_without_bc: {
     label: 'Contas sem BC',
     icon: Briefcase,
@@ -94,12 +70,6 @@ const ALERT_CONFIG: Record<string, AlertMeta> = {
     description: 'Contas de anúncio sem vínculo a um Business Center',
   },
   expired_proxy_active: {
-    label: 'Proxies Expirados',
-    icon: Clock,
-    severity: 'error',
-    description: 'Proxies marcados como ativos com data de expiração no passado',
-  },
-  expired_active_proxies: {
     label: 'Proxies Expirados',
     icon: Clock,
     severity: 'error',
@@ -115,32 +85,46 @@ export const HealthKpis: React.FC<HealthKpisProps> = ({
 }) => {
   const [collapsed, setCollapsed] = useState(false);
 
-  // Group alerts by type and extract aggregated info
-  const alertMap = new Map<string, { count: number; alert: HealthAlert; meta: AlertMeta }>();
+  // Group active actionable alerts by type and extract aggregated info
+  const alertMap = React.useMemo(() => {
+    const map = new Map<string, { count: number; alert: HealthAlert; meta: AlertMeta }>();
 
-  alerts.forEach((alert) => {
-    const meta = ALERT_CONFIG[alert.type] || {
-      label: alert.label || alert.type.replace(/_/g, ' '),
-      icon: alert.severity === 'error' ? AlertTriangle : Shield,
-      severity: alert.severity,
-      description: alert.message,
-    };
+    for (const alert of alerts) {
+      if (!alert.count || alert.count <= 0 || alert.severity === 'info') {
+        continue;
+      }
 
-    const existing = alertMap.get(alert.type);
-    if (existing) {
-      existing.count += alert.count || 1;
-    } else {
-      alertMap.set(alert.type, {
-        count: alert.count || 1,
-        alert,
-        meta,
-      });
+      const meta = ALERT_CONFIG[alert.type] || {
+        label: alert.label || alert.type.replace(/_/g, ' '),
+        icon: alert.severity === 'error' ? AlertTriangle : Shield,
+        severity: alert.severity,
+        description: alert.message,
+      };
+
+      const existing = map.get(alert.type);
+      if (existing) {
+        existing.count += alert.count;
+      } else {
+        map.set(alert.type, {
+          count: alert.count,
+          alert,
+          meta,
+        });
+      }
     }
-  });
 
-  const totalErrors = alerts.filter((a) => a.severity === 'error').length;
-  const totalWarnings = alerts.filter((a) => a.severity === 'warning').length;
-  const totalIssues = totalErrors + totalWarnings;
+    return map;
+  }, [alerts]);
+
+  const { totalErrors, totalWarnings, totalIssues } = React.useMemo(() => {
+    const errors = alerts.filter((a) => a.severity === 'error' && (a.count ?? 0) > 0).length;
+    const warnings = alerts.filter((a) => a.severity === 'warning' && (a.count ?? 0) > 0).length;
+    return {
+      totalErrors: errors,
+      totalWarnings: warnings,
+      totalIssues: errors + warnings,
+    };
+  }, [alerts]);
 
   return (
     <div className="bg-card/90 backdrop-blur-md border-b border-border/80 transition-all select-none">
@@ -204,16 +188,19 @@ export const HealthKpis: React.FC<HealthKpisProps> = ({
           )}
         </div>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setCollapsed(!collapsed)}
-          className="h-7 text-xs text-muted-foreground hover:text-foreground gap-1.5"
-          aria-label={collapsed ? 'Expandir painel de alertas' : 'Recolher painel de alertas'}
-        >
-          <span>{collapsed ? 'Ver detalhes' : 'Recolher'}</span>
-          {collapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
-        </Button>
+        {alertMap.size > 0 && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setCollapsed(!collapsed)}
+            className="h-7 text-xs text-muted-foreground hover:text-foreground gap-1.5 cursor-pointer"
+            aria-label={collapsed ? 'Expandir painel de alertas' : 'Recolher painel de alertas'}
+          >
+            <span>{collapsed ? 'Ver detalhes' : 'Recolher'}</span>
+            {collapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+          </Button>
+        )}
       </div>
 
       {/* Alert Chips (collapsible) */}

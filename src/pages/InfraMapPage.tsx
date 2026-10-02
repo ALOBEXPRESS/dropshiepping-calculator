@@ -17,6 +17,7 @@ import {
   transformToReactFlow,
   applyHealthAlerts,
   applyFocusState,
+  type InfraNodeData,
 } from '@/utils/infraGraphTransform';
 import { computeAllAlerts } from '@/utils/infraGraphHealth';
 
@@ -62,7 +63,7 @@ const InfraMapContent: React.FC = () => {
       set.add(edge.target);
     }
     return set;
-  }, [data?.edges]);
+  }, [data]);
 
   // 3. Identify nodes that are flagged by active health alerts
   const alertNodeIds = useMemo(() => {
@@ -93,10 +94,12 @@ const InfraMapContent: React.FC = () => {
     return { rfNodes: nodesWithAlerts, rfEdges: edges };
   }, [data, allAlerts]);
 
-  // Count unused/idle nodes
+  // Count unused/idle nodes within currently visible types
   const unusedCount = useMemo(() => {
-    return rfNodes.filter((n) => isNodeUnused(n.id)).length;
-  }, [rfNodes, isNodeUnused]);
+    return rfNodes.filter(
+      (n) => visibleNodeTypes.has(n.type as InfraNodeType) && isNodeUnused(n.id)
+    ).length;
+  }, [rfNodes, visibleNodeTypes, isNodeUnused]);
 
   // 5. Focus state (BFS)
   const { highlightedNodeIds, highlightedEdgeIds, focusNodes, clearFocus, focusedNodeId } =
@@ -119,7 +122,7 @@ const InfraMapContent: React.FC = () => {
 
       // C. Filter only alerts
       if (filterOnlyAlerts) {
-        return (node.data as any)?.hasAlert === true;
+        return (node.data as unknown as InfraNodeData)?.hasAlert === true;
       }
 
       return true;
