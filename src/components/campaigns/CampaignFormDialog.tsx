@@ -265,13 +265,18 @@ export const CampaignFormDialog: React.FC<CampaignFormDialogProps> = ({
         0
       );
       const hasAdSetCost = adSetsCostTotal > 0;
-      const finalPayload = hasAdSetCost
+      const finalPayload = hasAdSetCost && payload.products.length > 0
         ? {
             ...payload,
-            products: payload.products.map(p => ({
-              ...p,
-              marketing_cost_override: adSetsCostTotal,
-            })),
+            products: payload.products.map((p, idx) => {
+              if (p.marketing_cost_override != null && p.marketing_cost_override > 0) {
+                return p;
+              }
+              return {
+                ...p,
+                marketing_cost_override: idx === 0 ? adSetsCostTotal : null,
+              };
+            }),
           }
         : payload;
 

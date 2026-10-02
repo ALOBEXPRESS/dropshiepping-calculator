@@ -1,10 +1,8 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import gsap from 'gsap';
-import { Megaphone, Plus, Pencil, Trash2, Loader2, ChevronDown, User } from 'lucide-react';
-import ReactCountryFlag from 'react-country-flag';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Megaphone, Plus, Loader2, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { supabase } from '@/lib/supabase';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,13 +19,28 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { useCampaigns } from '@/hooks/useCampaigns';
 import { useAdAccounts } from '@/hooks/useAdAccounts';
 import type { AdAccountWithStats, AdAccountFormData } from '@/types/adAccounts';
-import { AdAccountStatusBadge } from '@/components/ad-accounts/AdAccountStatusBadge';
 import { AdAccountFormDialog } from '@/components/ad-accounts/AdAccountFormDialog';
 import { CampaignFormDialog } from '@/components/campaigns/CampaignFormDialog';
 import { MarketplacePickerModal } from '@/components/campaigns/MarketplacePickerModal';
 import { AdAccountPickerModal } from '@/components/campaigns/AdAccountPickerModal';
-import { getObjectiveLabel } from '@/types/campaigns';
-import type { CampaignWithRelations, CampaignStatus, CampaignMarketplace } from '@/types/campaigns';
+import { CampaignCard } from '@/components/campaigns/CampaignCard';
+import { AccountGroupSection } from '@/components/campaigns/AccountGroupSection';
+import { ObjectiveGroupSection } from '@/components/campaigns/ObjectiveGroupSection';
+import {
+  formatBRL,
+  calculateTotalMarketingCost,
+  calculateTotalBudget,
+  getUniqueAdAccountsCount,
+  filterAndSortCampaigns,
+  groupCampaignsByAccount,
+  groupCampaignsByObjective,
+  type SortKey,
+} from '@/components/campaigns/campaignsUtils';
+import type {
+  CampaignWithRelations,
+  CampaignStatus,
+  CampaignMarketplace,
+} from '@/types/campaigns';
 
 import tiktokImg from '@/imgs/tiktok-shop-seller-cent-icon-filled-256.png';
 import mercadolivreImg from '@/imgs/mercadolivre.svg';
@@ -41,738 +54,19 @@ const MARKETPLACE_LOGOS: Record<string, string> = {
   shein: sheinImg,
 };
 
-const statusConfig: Record<CampaignStatus, { label: string; className: string }> = {
-  active:  { label: 'Ativo',     className: 'bg-green-500/15 text-green-400 border-green-500/30' },
-  paused:  { label: 'Pausado',   className: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30' },
-  ended:   { label: 'Encerrado', className: 'bg-muted text-muted-foreground border-border' },
+const STATUS_CONFIG: Record<CampaignStatus, { label: string; className: string }> = {
+  active: { label: 'Ativo', className: 'bg-green-500/15 text-green-400 border-green-500/30' },
+  paused: { label: 'Pausado', className: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30' },
+  ended: { label: 'Encerrado', className: 'bg-muted text-muted-foreground border-border' },
 };
 
-const SkeletonCard = () => (
+const SkeletonCard: React.FC = () => (
   <div className="rounded-xl border border-border bg-card/40 p-5 animate-pulse space-y-3">
     <div className="h-4 bg-background rounded w-2/3" />
     <div className="h-3 bg-background rounded w-1/2" />
     <div className="h-3 bg-background rounded w-1/3" />
   </div>
 );
-
-// Accordion group section
-const GroupSection: React.FC<{
-  groupKey: string;
-  label: string;
-  icon: string;
-  color: string;
-  borderColor: string;
-  count: number;
-  custo: number;
-  formatBRL: (v: number) => string;
-  children: React.ReactNode;
-}> = ({ label, icon, color, borderColor, count, custo, formatBRL, children }) => {
-  const [open, setOpen] = useState(false);
-  const bodyRef = useRef<HTMLDivElement>(null);
-  const chevronRef = useRef<SVGSVGElement>(null);
-
-  // Init closed
-  useEffect(() => {
-    if (bodyRef.current) {
-      gsap.set(bodyRef.current, { height: 0, opacity: 0, overflow: 'hidden' });
-    }
-    if (chevronRef.current) {
-      gsap.set(chevronRef.current, { rotation: -90 });
-    }
-    return () => {
-      if (bodyRef.current) gsap.killTweensOf(bodyRef.current);
-      if (chevronRef.current) gsap.killTweensOf(chevronRef.current);
-    };
-  }, []);
-
-  const toggle = () => {
-    const el = bodyRef.current;
-    if (!el) { setOpen(v => !v); return; }
-    if (!open) {
-      setOpen(true);
-      gsap.fromTo(el,
-        { height: 0, opacity: 0 },
-        { height: 'auto', opacity: 1, duration: 0.4, ease: 'power2.out', onComplete: () => { el.style.height = 'auto'; } }
-      );
-      gsap.to(chevronRef.current, { rotation: 0, duration: 0.3, ease: 'power2.out' });
-    } else {
-      gsap.to(el, {
-        height: 0, opacity: 0, duration: 0.3, ease: 'power2.in',
-        onComplete: () => setOpen(false),
-      });
-      gsap.to(chevronRef.current, { rotation: -90, duration: 0.3, ease: 'power2.in' });
-    }
-  };
-
-  return (
-    <div className="space-y-2">
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={toggle}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            toggle();
-          }
-        }}
-        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card/40 border ${borderColor} hover:bg-card/70 transition-colors cursor-pointer select-none`}
-      >
-        <span className="text-base">{icon}</span>
-        <span className={`text-xs font-semibold uppercase tracking-widest ${color}`}>{label}</span>
-        <span className="text-[10px] bg-background text-muted-foreground px-1.5 py-0.5 rounded-full">{count}</span>
-        {custo > 0 && (
-          <span className="text-[10px] text-orange-400/70 ml-auto mr-2">
-            Custo: R$ {formatBRL(custo)}
-          </span>
-        )}
-        <ChevronDown
-          ref={chevronRef}
-          className={`w-4 h-4 text-muted-foreground ${custo > 0 ? '' : 'ml-auto'}`}
-          style={{ transform: 'rotate(0deg)' }}
-        />
-      </div>
-      <div ref={bodyRef} style={{ overflow: 'hidden' }}>
-        {open && <div className="grid gap-3">{children}</div>}
-      </div>
-    </div>
-  );
-};
-
-// ── AccountGroupSection (Grouped by Ad Account -> Platform Account) ─────────
-const AccountGroupSection: React.FC<{
-  groupKey: string;
-  account?: AdAccountWithStats | CampaignWithRelations['ad_account'];
-  count: number;
-  marketingCost: number;
-  budget: number;
-  formatBRL: (v: number) => string;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}> = ({ account, count, marketingCost, budget, formatBRL, defaultOpen = true, children }) => {
-  const [open, setOpen] = useState(defaultOpen);
-  const bodyRef = useRef<HTMLDivElement>(null);
-  const chevronRef = useRef<SVGSVGElement>(null);
-
-  useEffect(() => {
-    if (bodyRef.current) {
-      if (!defaultOpen) {
-        gsap.set(bodyRef.current, { height: 0, opacity: 0, overflow: 'hidden' });
-      } else {
-        gsap.set(bodyRef.current, { height: 'auto', opacity: 1, overflow: 'visible' });
-      }
-    }
-    if (chevronRef.current) {
-      gsap.set(chevronRef.current, { rotation: defaultOpen ? 0 : -90 });
-    }
-    return () => {
-      if (bodyRef.current) gsap.killTweensOf(bodyRef.current);
-      if (chevronRef.current) gsap.killTweensOf(chevronRef.current);
-    };
-  }, [defaultOpen]);
-
-  const toggle = () => {
-    const el = bodyRef.current;
-    if (!el) { setOpen(v => !v); return; }
-    if (!open) {
-      setOpen(true);
-      gsap.fromTo(el,
-        { height: 0, opacity: 0 },
-        { height: 'auto', opacity: 1, duration: 0.35, ease: 'power2.out', onComplete: () => { el.style.height = 'auto'; } }
-      );
-      gsap.to(chevronRef.current, { rotation: 0, duration: 0.3, ease: 'power2.out' });
-    } else {
-      gsap.to(el, {
-        height: 0, opacity: 0, duration: 0.28, ease: 'power2.in',
-        onComplete: () => setOpen(false),
-      });
-      gsap.to(chevronRef.current, { rotation: -90, duration: 0.28, ease: 'power2.in' });
-    }
-  };
-
-  const isUnassigned = !account;
-
-  return (
-    <div className="space-y-2.5">
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={toggle}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            toggle();
-          }
-        }}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-card/60 border border-border hover:border-zinc-700 hover:bg-card/90 transition-all cursor-pointer text-left shadow-sm group select-none"
-      >
-        {/* Left: Account Icon, Name, Profile Badge, Advertiser ID */}
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center p-1.5 flex-shrink-0 group-hover:border-orange-500/40 transition-colors">
-            {isUnassigned ? (
-              <Megaphone className="w-4 h-4 text-zinc-400" />
-            ) : (
-              <img src={tiktokImg} alt="TikTok Ads" className="w-full h-full object-contain" />
-            )}
-          </div>
-
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-semibold text-white group-hover:text-orange-400 transition-colors truncate">
-                {isUnassigned ? 'Campanhas Avulsas (Sem Conta Vinculada)' : account.name}
-              </span>
-              {!isUnassigned && account.status && (
-                <AdAccountStatusBadge status={account.status} />
-              )}
-              <span className="text-[10px] bg-background text-muted-foreground px-2 py-0.5 rounded-full font-medium">
-                {count} {count === 1 ? 'campanha' : 'campanhas'}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2 mt-1 flex-wrap">
-              {/* Profile badge if linked */}
-              {!isUnassigned && account.platform_account ? (
-                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-900/90 border border-zinc-800 text-[11px] text-zinc-300">
-                  {account.platform_account.profile_photo_url ? (
-                    <img
-                      src={account.platform_account.profile_photo_url}
-                      alt={account.platform_account.name}
-                      className="w-3.5 h-3.5 rounded-full object-cover border border-zinc-700 flex-shrink-0"
-                    />
-                  ) : (
-                    <User className="w-3 h-3 text-zinc-400" />
-                  )}
-                  <span className="font-medium text-white truncate max-w-[120px]">
-                    {account.platform_account.name}
-                  </span>
-                  {account.platform_account.country && (
-                    <ReactCountryFlag
-                      countryCode={account.platform_account.country}
-                      svg
-                      style={{ width: '0.8em', height: '0.8em' }}
-                    />
-                  )}
-                  {account.platform_account.nickname && (
-                    <span className="text-[10px] text-zinc-400 font-mono truncate">
-                      @{account.platform_account.nickname}
-                    </span>
-                  )}
-                </div>
-              ) : !isUnassigned ? (
-                <span className="text-[10px] text-zinc-500 font-mono">
-                  ID: {account.advertiser_id || 'Não configurado'}
-                </span>
-              ) : (
-                <span className="text-[10px] text-zinc-500">
-                  Campanhas não associadas a nenhuma conta de anúncios
-                </span>
-              )}
-
-              {!isUnassigned && account.platform_account && account.advertiser_id && (
-                <span className="text-[10px] text-zinc-500 font-mono hidden md:inline">
-                  • ID: {account.advertiser_id}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Marketing Cost of Account X + Budget + Chevron */}
-        <div className="flex items-center gap-4 flex-shrink-0">
-          <div className="text-right">
-            <p className="text-[10px] uppercase font-semibold text-zinc-400 tracking-wider">
-              Custo de Marketing
-            </p>
-            <p className="text-xs font-bold text-orange-400">
-              R$ {formatBRL(marketingCost)}
-            </p>
-          </div>
-
-          <div className="text-right hidden sm:block">
-            <p className="text-[10px] uppercase font-semibold text-zinc-400 tracking-wider">
-              Orçamento
-            </p>
-            <p className="text-xs font-medium text-zinc-300">
-              R$ {formatBRL(budget)}
-            </p>
-          </div>
-
-          <ChevronDown
-            ref={chevronRef}
-            className="w-4 h-4 text-muted-foreground transition-transform"
-            style={{ transform: 'rotate(0deg)' }}
-          />
-        </div>
-      </div>
-
-      <div ref={bodyRef} style={{ overflow: 'hidden' }}>
-        {open && <div className="grid gap-3 pt-1">{children}</div>}
-      </div>
-    </div>
-  );
-};
-
-
-interface CampaignCardProps {
-  campaign: CampaignWithRelations;
-  sc: { label: string; className: string };
-  logo: string | undefined;
-  adSets: CampaignWithRelations['campaign_ad_sets'];
-  onEdit: () => void;
-  onDelete: () => void;
-  organizationId?: string;
-}
-
-// ── AdCreativeAccordion ───────────────────────────────────────────────────────
-const RETURNS_METRICS = [
-  { key: 'views'       as const, label: 'Visualizações', icon: '👁' },
-  { key: 'sales'       as const, label: 'Vendas',        icon: '🛒' },
-  { key: 'impressions' as const, label: 'Impressões',    icon: '📊' },
-  { key: 'clicks'      as const, label: 'Clicks',        icon: '🖱' },
-];
-
-const AdCreativeAccordion: React.FC<{
-  mediaUrl: string;
-  mediaType?: string | null;
-  adText?: string | null;
-  adTitle?: string | null;
-  adCta?: string | null;
-  organizationId?: string;
-  productIds?: string[];
-}> = ({ mediaUrl, mediaType, adText, adTitle, adCta, organizationId, productIds }) => {
-  const [open, setOpen] = React.useState(false);
-  type Metrics = { views: number; sales: number; impressions: number; clicks: number };
-  const [form, setForm] = React.useState<Record<keyof Metrics, string>>({ views: '', sales: '', impressions: '', clicks: '' });
-  const [saved, setSaved] = React.useState<Metrics>({ views: 0, sales: 0, impressions: 0, clicks: 0 });
-  const [saving, setSaving] = React.useState(false);
-
-  React.useEffect(() => {
-    if (!open || !organizationId || !productIds?.length) return;
-    supabase
-      .from('campaign_returns')
-      .select('views, sales, impressions, clicks')
-      .eq('organization_id', organizationId)
-      .in('product_id', productIds)
-      .then(({ data }) => {
-        if (!data?.length) return;
-        const agg = (data as Metrics[]).reduce(
-          (acc, r) => ({ views: acc.views+(r.views||0), sales: acc.sales+(r.sales||0), impressions: acc.impressions+(r.impressions||0), clicks: acc.clicks+(r.clicks||0) }),
-          { views: 0, sales: 0, impressions: 0, clicks: 0 }
-        );
-        setSaved(agg);
-        setForm({ views: agg.views ? String(agg.views) : '', sales: agg.sales ? String(agg.sales) : '', impressions: agg.impressions ? String(agg.impressions) : '', clicks: agg.clicks ? String(agg.clicks) : '' });
-      });
-  }, [open, organizationId, productIds?.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleSave = async () => {
-    if (!organizationId || !productIds?.length) return;
-    setSaving(true);
-    const payload = {
-      organization_id: organizationId,
-      product_id: productIds[0],
-      views: parseInt(form.views) || 0,
-      sales: parseInt(form.sales) || 0,
-      impressions: parseInt(form.impressions) || 0,
-      clicks: parseInt(form.clicks) || 0,
-      updated_at: new Date().toISOString(),
-    };
-    await supabase.from('campaign_returns').upsert(payload, { onConflict: 'organization_id,product_id' });
-    setSaved({ views: payload.views, sales: payload.sales, impressions: payload.impressions, clicks: payload.clicks });
-    setSaving(false);
-  };
-
-  const extractTikTokId = (input: string): string => {
-    const dvid = input.match(/data-video-id=["'](\d+)["']/);
-    if (dvid) return dvid[1];
-    const cite = input.match(/cite=["'][^"']*\/video\/(\d+)/);
-    if (cite) return cite[1];
-    const urlMatch = input.match(/\/video\/(\d+)/);
-    if (urlMatch) return urlMatch[1];
-    return '';
-  };
-
-  const tiktokId = mediaUrl.includes('tiktok.com') ? extractTikTokId(mediaUrl) : '';
-  const iframeMatch = mediaUrl.match(/src=["']([^"']+)["']/);
-  const resolvedUrl = tiktokId
-    ? `https://www.tiktok.com/embed/v2/${tiktokId}`
-    : iframeMatch ? iframeMatch[1] : mediaUrl;
-  const isEmbed = !!(tiktokId || iframeMatch || mediaUrl.includes('<iframe') || mediaUrl.includes('streamable.com'));
-  const isImage = mediaType === 'imagem';
-
-  return (
-    <div className="mt-2 rounded-lg border border-border overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-3 py-2 bg-card/60 hover:bg-background/60 transition-colors text-left"
-      >
-        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Ad / Criativo</span>
-        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
-      </button>
-      {open && (
-        <div className="px-4 py-4 bg-background/40">
-          <div className="flex gap-5 items-start">
-            {/* ── LEFT: vídeo / imagem ── */}
-            <div className="flex-shrink-0">
-              <div style={{ width: '140px', height: '248px', borderRadius: 10, overflow: 'hidden', position: 'relative', background: '#000' }}>
-                {isImage ? (
-                  <img src={resolvedUrl} alt="Criativo" className="w-full h-full object-contain bg-card" loading="lazy" />
-                ) : isEmbed ? (
-                  <iframe
-                    src={resolvedUrl}
-                    allow="encrypted-media;"
-                    allowFullScreen
-                    scrolling="no"
-                    title="Criativo"
-                    style={{ border: 'none', width: '140px', height: '248px', position: 'absolute', top: 0, left: 0, overflow: 'hidden', borderRadius: 10 }}
-                  />
-                ) : (
-                  <video src={resolvedUrl} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover" />
-                )}
-              </div>
-              {/* Ad copy below video */}
-              {(adTitle || adText || adCta) && (
-                <div className="mt-2 space-y-1 max-w-[140px]">
-                  {adTitle && <p className="text-[11px] font-semibold text-foreground truncate">{adTitle}</p>}
-                  {adText && <p className="text-[10px] text-muted-foreground leading-relaxed line-clamp-2">{adText}</p>}
-                  {adCta && <span className="inline-block text-[10px] bg-orange-500/20 text-orange-300 border border-orange-500/30 px-2 py-0.5 rounded">{adCta}</span>}
-                </div>
-              )}
-            </div>
-
-            {/* ── RIGHT: benefícios editáveis ── */}
-            <div className="flex-1 min-w-0">
-              <div className="rounded-xl p-3 h-full" style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.28)' }}>
-                <p className="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-3">📈 Benefícios da Campanha</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {RETURNS_METRICS.map(({ key, label, icon }) => (
-                    <div key={key} className="flex flex-col gap-1">
-                      <label className="text-[9px] text-orange-300/60 uppercase font-medium">{icon} {label}</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={form[key]}
-                        onChange={e => setForm(prev => ({ ...prev, [key]: e.target.value }))}
-                        onBlur={handleSave}
-                        placeholder={saved[key] ? String(saved[key]) : '0'}
-                        className="w-full rounded-lg px-2 py-1.5 text-[12px] font-bold bg-card/80 border border-orange-500/25 text-orange-200 focus:outline-none focus:border-orange-500 placeholder:text-muted-foreground transition-colors"
-                      />
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-3 flex items-center justify-between">
-                  <p className="text-[9px] text-muted-foreground">Salva automaticamente ao sair do campo</p>
-                  {saving && <span className="text-[9px] text-orange-400 animate-pulse">Salvando…</span>}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ── AdSetsSection (extracted to keep CampaignCard clean) ────────────────────
-const AdSetsSection: React.FC<{
-  adSets: CampaignWithRelations['campaign_ad_sets'];
-  campaign: CampaignWithRelations;
-  audienceModeLabel: Record<string, string>;
-  formatBRL: (v: number) => string;
-  organizationId?: string;
-}> = ({ adSets, campaign: c, audienceModeLabel, formatBRL, organizationId }) => {
-  const [open, setOpen] = useState(false);
-  const bodyRef = useRef<HTMLDivElement>(null);
-  const chevronRef = useRef<SVGSVGElement>(null);
-
-  useEffect(() => {
-    if (bodyRef.current) gsap.set(bodyRef.current, { height: 0, opacity: 0, overflow: 'hidden' });
-    return () => {
-      if (bodyRef.current) gsap.killTweensOf(bodyRef.current);
-      if (chevronRef.current) gsap.killTweensOf(chevronRef.current);
-    };
-  }, []);
-
-  const toggle = () => {
-    const el = bodyRef.current;
-    if (!el) { setOpen(v => !v); return; }
-    if (!open) {
-      setOpen(true);
-      gsap.fromTo(el, { height: 0, opacity: 0 }, { height: 'auto', opacity: 1, duration: 0.32, ease: 'power2.out', onComplete: () => { el.style.height = 'auto'; } });
-      gsap.to(chevronRef.current, { rotation: 180, duration: 0.28, ease: 'power2.out' });
-    } else {
-      gsap.to(el, { height: 0, opacity: 0, duration: 0.25, ease: 'power2.in', onComplete: () => setOpen(false) });
-      gsap.to(chevronRef.current, { rotation: 0, duration: 0.25, ease: 'power2.in' });
-    }
-  };
-
-  const destinationLabel: Record<string, string> = { site: 'Site', app: 'Aplicativo', tiktok_shop: 'Loja TikTok' };
-  const goalLabel: Record<string, string> = { click: 'Clique', landing_page_view: 'Visualização pg inicial', engagement_session: 'Sessão de Engajamento' };
-
-  return (
-    <div>
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={toggle}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            toggle();
-          }
-        }}
-        className="w-full flex items-center justify-between px-4 py-2.5 bg-card/30 hover:bg-background/40 transition-colors text-left border-t border-border cursor-pointer select-none"
-      >
-        <span className="text-xs font-medium text-muted-foreground">
-          Grupos de Anúncios
-          {adSets.length > 0 && (
-            <span className="ml-1.5 bg-background text-muted-foreground text-[10px] px-1.5 py-0.5 rounded-full">{adSets.length}</span>
-          )}
-        </span>
-        <ChevronDown ref={chevronRef} className="w-3.5 h-3.5 text-muted-foreground" style={{ transform: 'rotate(0deg)' }} />
-      </div>
-
-      <div ref={bodyRef} style={{ overflow: 'hidden' }}>
-        {open && (
-          <div className="divide-y divide-zinc-800/60">
-            {adSets.length === 0 ? (
-              <p className="px-5 py-3 text-xs text-muted-foreground italic">Nenhum grupo configurado.</p>
-            ) : adSets.map((adSet, i) => {
-              const ext = adSet as typeof adSet & {
-                traffic_destination?: string | null;
-                optimization_goal?: string | null;
-                target_cost_per_result?: number | null;
-                ad_media_url?: string | null;
-                ad_media_type?: string | null;
-                ad_text?: string | null;
-                ad_title?: string | null;
-                ad_cta?: string | null;
-              };
-              return (
-                <div key={adSet.id ?? i} className="px-4 py-3 space-y-1.5 bg-background/30">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-foreground">{adSet.name ?? `Grupo ${i + 1}`}</span>
-                    {adSet.audience_mode && (
-                      <span className="text-[10px] bg-background text-muted-foreground px-1.5 py-0.5 rounded">
-                        {audienceModeLabel[adSet.audience_mode] ?? adSet.audience_mode}
-                      </span>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                    {adSet.start_date && <p className="text-[11px] text-muted-foreground">Início: <span className="text-foreground">{new Intl.DateTimeFormat('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }).format(new Date(adSet.start_date))}</span></p>}
-                    {adSet.end_date && <p className="text-[11px] text-muted-foreground">Fim: <span className="text-foreground">{new Intl.DateTimeFormat('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }).format(new Date(adSet.end_date))}</span></p>}
-                    {c.budget_amount != null && <p className="text-[11px] text-muted-foreground">Orçamento: <span className="text-foreground">R$ {formatBRL(Number(c.budget_amount))}</span></p>}
-                    {ext.traffic_destination && <p className="text-[11px] text-muted-foreground">Destino: <span className="text-foreground">{destinationLabel[ext.traffic_destination] ?? ext.traffic_destination}</span></p>}
-                    {ext.optimization_goal && <p className="text-[11px] text-muted-foreground">Objetivo: <span className="text-foreground">{goalLabel[ext.optimization_goal] ?? ext.optimization_goal}</span></p>}
-                    {adSet.audience_location && <p className="text-[11px] text-muted-foreground">Localização: <span className="text-foreground">{adSet.audience_location}</span></p>}
-                    {adSet.audience_interests && <p className="text-[11px] text-muted-foreground">Interesses: <span className="text-foreground">{adSet.audience_interests}</span></p>}
-                    {ext.target_cost_per_result != null && <p className="text-[11px] text-muted-foreground">CPA Alvo: <span className="text-foreground">R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(ext.target_cost_per_result)}</span></p>}
-                  </div>
-                  {ext.ad_media_url && (
-                    <AdCreativeAccordion
-                      mediaUrl={ext.ad_media_url}
-                      mediaType={ext.ad_media_type}
-                      adText={ext.ad_text}
-                      adTitle={ext.ad_title}
-                      adCta={ext.ad_cta}
-                      organizationId={organizationId}
-                      productIds={c.campaign_products.map(p => p.product_id).filter(Boolean) as string[]}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const CampaignCard: React.FC<CampaignCardProps> = ({ campaign: c, sc, logo, adSets, onEdit, onDelete, organizationId }) => {
-  const [expanded, setExpanded] = useState(false);
-  const bodyRef = useRef<HTMLDivElement>(null);
-  const chevronRef = useRef<SVGSVGElement>(null);
-
-  const marketplaceLabel: Record<string, string> = {
-    tiktok: 'TikTok Shop',
-    mercadolivre: 'Mercado Livre',
-    amazon: 'Amazon',
-    shein: 'Shein',
-  };
-
-  const audienceModeLabel: Record<string, string> = {
-    auto: 'Automático (Smart+)',
-    manual: 'Manual',
-    saved: 'Audiência Salva',
-  };
-
-  // Period from first adSet with dates
-  const firstAdSetWithDates = adSets.find(a => a.start_date || a.end_date);
-  const formatDate = (d: string | null | undefined) =>
-    d ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' }).format(new Date(d)) : null;
-  const periodStart = formatDate(firstAdSetWithDates?.start_date);
-  const periodEnd = formatDate(firstAdSetWithDates?.end_date);
-  const periodStr = periodStart && periodEnd
-    ? `${periodStart} – ${periodEnd}`
-    : periodStart ? `A partir de ${periodStart}`
-    : periodEnd ? `Até ${periodEnd}`
-    : null;
-
-  const totalCusto = c.campaign_products.reduce(
-    (sum, p) => sum + (p.marketing_cost_override != null ? Number(p.marketing_cost_override) : 0), 0
-  );
-  const formatBRL = (v: number) => new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(v);
-
-  // GSAP expand/collapse
-  const toggle = () => {
-    const el = bodyRef.current;
-    if (!el) { setExpanded(v => !v); return; }
-    if (!expanded) {
-      // expand
-      setExpanded(true);
-      gsap.fromTo(el,
-        { height: 0, opacity: 0 },
-        { height: 'auto', opacity: 1, duration: 0.38, ease: 'power2.out',
-          onComplete: () => { el.style.height = 'auto'; } }
-      );
-      gsap.to(chevronRef.current, { rotation: 180, duration: 0.3, ease: 'power2.out' });
-    } else {
-      // collapse
-      gsap.to(el, {
-        height: 0, opacity: 0, duration: 0.3, ease: 'power2.in',
-        onComplete: () => setExpanded(false),
-      });
-      gsap.to(chevronRef.current, { rotation: 0, duration: 0.3, ease: 'power2.in' });
-    }
-  };
-
-  // Init: body hidden on mount
-  useEffect(() => {
-    if (bodyRef.current) {
-      gsap.set(bodyRef.current, { height: 0, opacity: 0, overflow: 'hidden' });
-    }
-    return () => {
-      if (bodyRef.current) gsap.killTweensOf(bodyRef.current);
-      if (chevronRef.current) gsap.killTweensOf(chevronRef.current);
-    };
-  }, []);
-
-  return (
-    <div className="rounded-xl border border-border bg-card/40 overflow-hidden transition-colors hover:border-input/70">
-      {/* ── Collapsed header (always visible) ── */}
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={toggle}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            toggle();
-          }
-        }}
-        className="w-full text-left cursor-pointer select-none"
-        aria-expanded={expanded}
-      >
-        <div className="flex items-center gap-3 px-4 py-3.5">
-          {/* Marketplace logo */}
-          <div className="w-9 h-9 rounded-lg bg-card flex items-center justify-center flex-shrink-0 overflow-hidden p-1 shadow-sm">
-            {logo
-              ? <img src={logo} alt={c.marketplace} className="w-full h-full object-contain" />
-              : <Megaphone className="w-4 h-4 text-muted-foreground" />}
-          </div>
-
-          {/* Title + badges */}
-          <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-white truncate max-w-[340px]">{c.name}</span>
-            <span className="flex-shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full bg-pink-500/15 text-pink-400 border border-pink-500/30">
-              {marketplaceLabel[c.marketplace] ?? c.marketplace}
-            </span>
-            {c.ad_account && (
-              <span className="flex-shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-                {c.ad_account.name}
-              </span>
-            )}
-            <span className={`flex-shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full border ${sc.className}`}>
-              {sc.label}
-            </span>
-          </div>
-
-          {/* Actions + chevron */}
-          <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
-            <button
-              type="button"
-              aria-label="Editar"
-              onClick={onEdit}
-              className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-background transition-colors"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              aria-label="Excluir"
-              onClick={onDelete}
-              className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-danger hover:bg-background transition-colors"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <ChevronDown
-            ref={chevronRef}
-            className="w-4 h-4 text-muted-foreground flex-shrink-0"
-            style={{ transform: 'rotate(0deg)' }}
-          />
-        </div>
-      </div>
-
-      {/* ── Expanded body (GSAP-animated) ── */}
-      <div ref={bodyRef} style={{ overflow: 'hidden' }}>
-        {expanded && (
-          <div className="border-t border-border">
-            {/* Details row */}
-            <div className="px-4 py-3 space-y-1.5">
-              <p className="text-xs text-muted-foreground">
-                Objetivo: <span className="text-foreground">{getObjectiveLabel(c.objective)}</span>
-                {' · '}
-                Orçamento: <span className="text-foreground">
-                  {c.budget_type === 'daily' ? 'Diário' : 'Vitalício'}
-                  {c.budget_amount != null ? ` · R$ ${formatBRL(Number(c.budget_amount))}` : ''}
-                </span>
-                {totalCusto > 0 && (
-                  <> · Custo: <span className="text-orange-400 font-medium">R$ {formatBRL(totalCusto)}</span></>
-                )}
-                {c.ad_account && (
-                  <> · Conta: <span className="text-cyan-300 font-medium">{c.ad_account.name}</span></>
-                )}
-              </p>
-              {periodStr && (
-                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                  <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  {periodStr}
-                </p>
-              )}
-              {c.campaign_products.length > 0 && (
-                <p className="text-xs text-muted-foreground">{c.campaign_products.length} produto(s) vinculado(s)</p>
-              )}
-            </div>
-
-            {/* Ad Sets accordion */}
-            <AdSetsSection
-              adSets={adSets}
-              campaign={c}
-              audienceModeLabel={audienceModeLabel}
-              formatBRL={formatBRL}
-              organizationId={organizationId}
-            />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
 
 const CampaignsPage: React.FC = () => {
   const { organizationId } = useSettings();
@@ -781,11 +75,17 @@ const CampaignsPage: React.FC = () => {
   const shouldOpenNew = searchParams.get('nova') === 'true';
 
   const { adAccounts, createAccount } = useAdAccounts(organizationId ?? '');
-  const { campaigns, isLoading, isError, deleteCampaign } = useCampaigns(
+  const { campaigns, isLoading, isError, deleteCampaign, refetch } = useCampaigns(
     organizationId ?? '',
     selectedAccountId
   );
 
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('date_desc');
+  const [groupBy, setGroupBy] = useState<'ad_account' | 'objective'>('ad_account');
+
+  // Modals & Actions
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<CampaignWithRelations | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -798,9 +98,7 @@ const CampaignsPage: React.FC = () => {
   const [selectedNewCampaignAdAccountId, setSelectedNewCampaignAdAccountId] = useState<string | undefined>(undefined);
   const [newAccountModalOpen, setNewAccountModalOpen] = useState(false);
 
-  // Grouping view: 'ad_account' | 'objective'
-  const [groupBy, setGroupBy] = useState<'ad_account' | 'objective'>('ad_account');
-
+  // Deep-link handling: ?nova=true
   useEffect(() => {
     if (shouldOpenNew) {
       setMarketplacePickerOpen(true);
@@ -855,7 +153,11 @@ const CampaignsPage: React.FC = () => {
     }
   };
 
-  const handleEdit = (c: CampaignWithRelations) => { setEditingCampaign(c); setDialogOpen(true); };
+  const handleEdit = (c: CampaignWithRelations) => {
+    setEditingCampaign(c);
+    setDialogOpen(true);
+  };
+
   const handleDeleteConfirm = async () => {
     if (!deleteId) return;
     setDeleting(true);
@@ -870,27 +172,7 @@ const CampaignsPage: React.FC = () => {
     }
   };
 
-  type SortKey = 'date_desc' | 'date_asc' | 'name_asc' | 'name_desc' | 'budget_desc' | 'budget_asc' | 'status';
-  const [sortKey, setSortKey] = useState<SortKey>('date_desc');
-
-  const sortedCampaigns = useMemo(() => {
-    return [...campaigns].sort((a, b) => {
-      switch (sortKey) {
-        case 'date_desc': return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        case 'date_asc':  return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-        case 'name_asc':  return (a.name ?? '').localeCompare(b.name ?? '');
-        case 'name_desc': return (b.name ?? '').localeCompare(a.name ?? '');
-        case 'budget_desc': return (Number(b.budget_amount ?? 0)) - (Number(a.budget_amount ?? 0));
-        case 'budget_asc':  return (Number(a.budget_amount ?? 0)) - (Number(b.budget_amount ?? 0));
-        case 'status': {
-          const order: Record<string, number> = { active: 0, paused: 1, ended: 2 };
-          return (order[a.status] ?? 9) - (order[b.status] ?? 9);
-        }
-        default: return 0;
-      }
-    });
-  }, [campaigns, sortKey]);
-
+  // Map of ad accounts for rapid lookup
   const adAccountMap = useMemo(() => {
     const map = new Map<string, AdAccountWithStats>();
     for (const acc of adAccounts) {
@@ -899,82 +181,54 @@ const CampaignsPage: React.FC = () => {
     return map;
   }, [adAccounts]);
 
+  // Filtered and sorted campaigns
+  const processedCampaigns = useMemo(() => {
+    return filterAndSortCampaigns(campaigns, {
+      search: searchQuery,
+      sortKey,
+    });
+  }, [campaigns, searchQuery, sortKey]);
+
+  // Overall KPIs
   const totalMarketingCost = useMemo(() => {
-    return campaigns.reduce((sum, c) =>
-      sum + (c.campaign_products ?? []).reduce(
-        (s, p) => s + (p.marketing_cost_override != null ? Number(p.marketing_cost_override) : 0),
-        0
-      ), 0
-    );
+    return calculateTotalMarketingCost(campaigns);
   }, [campaigns]);
 
   const totalBudget = useMemo(() => {
-    return campaigns.reduce((sum, c) => sum + Number(c.budget_amount ?? 0), 0);
+    return calculateTotalBudget(campaigns);
   }, [campaigns]);
 
   const uniqueAccountsCount = useMemo(() => {
-    const ids = new Set(campaigns.map(c => c.ad_account_id).filter(Boolean));
-    return ids.size;
+    return getUniqueAdAccountsCount(campaigns);
   }, [campaigns]);
 
+  // Grouped by ad account
   const accountGroups = useMemo(() => {
-    const map = new Map<string, CampaignWithRelations[]>();
-    for (const c of sortedCampaigns) {
-      const key = c.ad_account_id ?? 'unassigned';
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(c);
-    }
+    return groupCampaignsByAccount(processedCampaigns, adAccountMap);
+  }, [processedCampaigns, adAccountMap]);
 
-    const groups: {
-      key: string;
-      account?: AdAccountWithStats | CampaignWithRelations['ad_account'];
-      campaigns: CampaignWithRelations[];
-      marketingCost: number;
-      budget: number;
-    }[] = [];
-
-    const sortedKeys = Array.from(map.keys()).sort((a, b) => {
-      if (a === 'unassigned') return 1;
-      if (b === 'unassigned') return -1;
-      const accA = adAccountMap.get(a)?.name ?? '';
-      const accB = adAccountMap.get(b)?.name ?? '';
-      return accA.localeCompare(accB);
-    });
-
-    for (const key of sortedKeys) {
-      const groupCampaigns = map.get(key) ?? [];
-      const account = key !== 'unassigned' ? (adAccountMap.get(key) ?? groupCampaigns[0]?.ad_account) : undefined;
-      const marketingCost = groupCampaigns.reduce(
-        (sum, c) => sum + (c.campaign_products ?? []).reduce(
-          (s, p) => s + (p.marketing_cost_override != null ? Number(p.marketing_cost_override) : 0), 0
-        ), 0
-      );
-      const budget = groupCampaigns.reduce((sum, c) => sum + Number(c.budget_amount ?? 0), 0);
-
-      groups.push({
-        key,
-        account,
-        campaigns: groupCampaigns,
-        marketingCost,
-        budget,
-      });
-    }
-
-    return groups;
-  }, [sortedCampaigns, adAccountMap]);
+  // Grouped by objective
+  const objectiveGroups = useMemo(() => {
+    return groupCampaignsByObjective(processedCampaigns);
+  }, [processedCampaigns]);
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-white">Campanhas</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Gerencie suas campanhas de tráfego pago</p>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Campanhas</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Gerencie suas campanhas de tráfego pago
+          </p>
         </div>
+
+        {/* Action Buttons & Filters */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Account Filter */}
           {adAccounts.length > 0 && (
             <Select value={selectedAccountId} onValueChange={handleAccountChange}>
-              <SelectTrigger className="w-48 bg-card border-input text-foreground text-xs h-9">
+              <SelectTrigger className="w-44 bg-card border-input text-foreground text-xs h-9">
                 <SelectValue placeholder="Todas as Contas" />
               </SelectTrigger>
               <SelectContent className="bg-card border-input text-foreground">
@@ -988,7 +242,9 @@ const CampaignsPage: React.FC = () => {
               </SelectContent>
             </Select>
           )}
-          <Select value={sortKey} onValueChange={(v) => setSortKey(v as typeof sortKey)}>
+
+          {/* Sort Selector */}
+          <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
             <SelectTrigger className="w-48 bg-card border-input text-foreground text-xs h-9">
               <SelectValue placeholder="Ordenar por" />
             </SelectTrigger>
@@ -1002,187 +258,209 @@ const CampaignsPage: React.FC = () => {
               <SelectItem value="status">Status (ativo → encerrado)</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={handleNew} className="bg-orange-500 hover:bg-orange-600 text-white gap-2 h-9">
+
+          {/* New Campaign Button */}
+          <Button
+            type="button"
+            onClick={handleNew}
+            className="bg-orange-500 hover:bg-orange-600 text-white gap-2 h-9 font-medium shadow-sm transition-all"
+          >
             <Plus className="w-4 h-4" />
             Nova Campanha
           </Button>
         </div>
       </div>
 
-      {/* Loading */}
+      {/* Loading state */}
       {isLoading && (
         <div className="space-y-3">
-          {[1, 2, 3].map((i) => <SkeletonCard key={i} />)}
+          {[1, 2, 3].map((i) => (
+            <SkeletonCard key={i} />
+          ))}
         </div>
       )}
 
-      {/* Error */}
+      {/* Error state */}
       {isError && !isLoading && (
-        <div className="text-center py-10 text-red-400 text-sm">
-          Erro ao carregar campanhas. Tente recarregar a página.
+        <div className="text-center py-10 px-4 rounded-xl border border-red-500/20 bg-red-500/10 text-red-400 text-sm space-y-2">
+          <p>Erro ao carregar campanhas. Verifique sua conexão com o servidor.</p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            className="border-red-500/40 text-red-300 hover:bg-red-500/20"
+          >
+            Tentar novamente
+          </Button>
         </div>
       )}
 
-      {/* Empty */}
+      {/* Empty state (no campaigns registered at all) */}
       {!isLoading && !isError && campaigns.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <div className="w-16 h-16 rounded-full bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center py-20 gap-4 rounded-2xl border border-dashed border-border/80 bg-card/20">
+          <div className="w-16 h-16 rounded-full bg-background/80 border border-border flex items-center justify-center">
             <Megaphone className="w-8 h-8 text-muted-foreground" />
           </div>
           <div className="text-center">
             <p className="text-white font-semibold">Nenhuma campanha encontrada</p>
-            <p className="text-muted-foreground text-sm mt-1">Crie sua primeira campanha de tráfego pago.</p>
+            <p className="text-muted-foreground text-sm mt-1">
+              Crie sua primeira campanha de tráfego pago para começar a rastrear métricas.
+            </p>
           </div>
-          <Button onClick={handleNew} className="bg-orange-500 hover:bg-orange-600 text-white gap-2">
+          <Button
+            type="button"
+            onClick={handleNew}
+            className="bg-orange-500 hover:bg-orange-600 text-white gap-2 font-medium"
+          >
             <Plus className="w-4 h-4" />
             Criar Campanha
           </Button>
         </div>
       )}
 
-      {/* List */}
-      {!isLoading && campaigns.length > 0 && (() => {
-        const formatBRL = (v: number) => new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(v);
-
-        // Group by objective category: Conversão vs Consideração/Conhecimento
-        const CONVERSION_OBJECTIVES = new Set(['sales', 'app_promotion', 'lead_generation']);
-        const objGroups: { key: string; label: string; icon: string; color: string; borderColor: string; campaigns: typeof sortedCampaigns }[] = [
-          {
-            key: 'conversao',
-            label: 'Conversão',
-            icon: '💰',
-            color: 'text-orange-400',
-            borderColor: 'border-orange-500/30',
-            campaigns: sortedCampaigns.filter(c => CONVERSION_OBJECTIVES.has(c.objective)),
-          },
-          {
-            key: 'consideracao',
-            label: 'Consideração & Conhecimento',
-            icon: '👁',
-            color: 'text-blue-400',
-            borderColor: 'border-blue-500/30',
-            campaigns: sortedCampaigns.filter(c => !CONVERSION_OBJECTIVES.has(c.objective)),
-          },
-        ].filter(g => g.campaigns.length > 0);
-
-        return (
-          <div className="space-y-6">
-            {/* Total cost & KPI summary */}
-            <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-card/60 border border-border flex-wrap shadow-sm">
-              <div className="flex items-center gap-6 flex-wrap">
-                <div>
-                  <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Total de Campanhas</p>
-                  <p className="text-base font-bold text-white mt-0.5">{campaigns.length}</p>
-                </div>
-                <div className="h-8 w-px bg-border/60 hidden sm:block" />
-                <div>
-                  <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Contas Vinculadas</p>
-                  <p className="text-base font-bold text-zinc-200 mt-0.5">
-                    {uniqueAccountsCount} {uniqueAccountsCount === 1 ? 'conta' : 'contas'}
-                  </p>
-                </div>
-                <div className="h-8 w-px bg-border/60 hidden sm:block" />
-                <div className="px-3.5 py-1.5 rounded-lg bg-orange-500/10 border border-orange-500/30">
-                  <p className="text-[10px] text-orange-400 uppercase tracking-wide font-bold">Custo Total de Marketing</p>
-                  <p className="text-base font-extrabold text-orange-400 mt-0.5">R$ {formatBRL(totalMarketingCost)}</p>
-                </div>
-                <div className="h-8 w-px bg-border/60 hidden sm:block" />
-                <div>
-                  <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">Orçamento Total</p>
-                  <p className="text-base font-bold text-foreground mt-0.5">
-                    R$ {formatBRL(totalBudget)}
-                  </p>
-                </div>
+      {/* Main Content when campaigns exist */}
+      {!isLoading && campaigns.length > 0 && (
+        <div className="space-y-5">
+          {/* Top Cost & KPI summary bar */}
+          <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-card/60 border border-border flex-wrap shadow-sm">
+            <div className="flex items-center gap-6 flex-wrap">
+              <div>
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">
+                  Total de Campanhas
+                </p>
+                <p className="text-base font-bold text-white mt-0.5">{campaigns.length}</p>
               </div>
 
-              {/* View toggle */}
-              <div className="flex items-center bg-zinc-900 p-1 rounded-lg border border-zinc-800 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setGroupBy('ad_account')}
-                  className={`px-3 py-1.5 rounded-md font-medium transition-all ${
-                    groupBy === 'ad_account'
-                      ? 'bg-zinc-800 text-white shadow-sm'
-                      : 'text-zinc-400 hover:text-zinc-200'
-                  }`}
-                >
-                  Por Contas de Anúncios
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setGroupBy('objective')}
-                  className={`px-3 py-1.5 rounded-md font-medium transition-all ${
-                    groupBy === 'objective'
-                      ? 'bg-zinc-800 text-white shadow-sm'
-                      : 'text-zinc-400 hover:text-zinc-200'
-                  }`}
-                >
-                  Por Objetivos
-                </button>
+              <div className="h-8 w-px bg-border/60 hidden sm:block" />
+
+              <div>
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">
+                  Contas Vinculadas
+                </p>
+                <p className="text-base font-bold text-zinc-200 mt-0.5">
+                  {uniqueAccountsCount} {uniqueAccountsCount === 1 ? 'conta' : 'contas'}
+                </p>
+              </div>
+
+              <div className="h-8 w-px bg-border/60 hidden sm:block" />
+
+              <div className="px-3.5 py-1.5 rounded-lg bg-orange-500/10 border border-orange-500/30">
+                <p className="text-[10px] text-orange-400 uppercase tracking-wide font-bold">
+                  Custo Total de Marketing
+                </p>
+                <p className="text-base font-extrabold text-orange-400 mt-0.5">
+                  R$ {formatBRL(totalMarketingCost)}
+                </p>
+              </div>
+
+              <div className="h-8 w-px bg-border/60 hidden sm:block" />
+
+              <div>
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">
+                  Orçamento Total
+                </p>
+                <p className="text-base font-bold text-foreground mt-0.5">
+                  R$ {formatBRL(totalBudget)}
+                </p>
               </div>
             </div>
 
-            {/* List rendered by Ad Account or by Objective */}
-            {groupBy === 'ad_account' ? (
-              <div className="space-y-4">
-                {accountGroups.map(group => (
-                  <AccountGroupSection
-                    key={group.key}
-                    groupKey={group.key}
-                    account={group.account}
-                    count={group.campaigns.length}
-                    marketingCost={group.marketingCost}
-                    budget={group.budget}
-                    formatBRL={formatBRL}
-                    defaultOpen={accountGroups.length === 1}
-                  >
-                    {group.campaigns.map((c) => {
-                      const sc = statusConfig[c.status] ?? statusConfig.active;
-                      const logo = MARKETPLACE_LOGOS[c.marketplace];
-                      const adSets = c.campaign_ad_sets ?? [];
-                      return (
-                        <CampaignCard
-                          key={c.id}
-                          campaign={c}
-                          sc={sc}
-                          logo={logo}
-                          adSets={adSets}
-                          onEdit={() => handleEdit(c)}
-                          onDelete={() => setDeleteId(c.id)}
-                          organizationId={organizationId ?? undefined}
-                        />
-                      );
-                    })}
-                  </AccountGroupSection>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {objGroups.map(group => {
-                  const groupCusto = group.campaigns.reduce((sum, c) =>
-                    sum + c.campaign_products.reduce((s, p) => s + (p.marketing_cost_override != null ? Number(p.marketing_cost_override) : 0), 0)
-                  , 0);
-                  return (
-                    <GroupSection
+            {/* View toggle (Por Contas de Anúncios vs Por Objetivos) */}
+            <div className="flex items-center bg-zinc-900 p-1 rounded-lg border border-zinc-800 text-xs">
+              <button
+                type="button"
+                onClick={() => setGroupBy('ad_account')}
+                className={`px-3 py-1.5 rounded-md font-medium transition-all ${
+                  groupBy === 'ad_account'
+                    ? 'bg-zinc-800 text-white shadow-sm'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                Por Contas de Anúncios
+              </button>
+              <button
+                type="button"
+                onClick={() => setGroupBy('objective')}
+                className={`px-3 py-1.5 rounded-md font-medium transition-all ${
+                  groupBy === 'objective'
+                    ? 'bg-zinc-800 text-white shadow-sm'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                Por Objetivos
+              </button>
+            </div>
+          </div>
+
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Input
+              type="text"
+              placeholder="Buscar campanhas por nome, conta ou objetivo..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-8 bg-card/60 border-input text-foreground placeholder:text-muted-foreground text-xs h-9 focus:border-orange-500"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                aria-label="Limpar busca"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Search returned 0 results */}
+          {processedCampaigns.length === 0 && searchQuery && (
+            <div className="text-center py-12 px-4 rounded-xl border border-zinc-800 bg-card/20 space-y-2">
+              <p className="text-white text-sm font-medium">
+                Nenhuma campanha encontrada para &ldquo;{searchQuery}&rdquo;
+              </p>
+              <p className="text-muted-foreground text-xs">
+                Tente buscar com outro termo ou limpe o filtro.
+              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setSearchQuery('')}
+                className="text-xs text-orange-400 hover:text-orange-300 hover:bg-orange-500/10 mt-1"
+              >
+                Limpar busca
+              </Button>
+            </div>
+          )}
+
+          {/* Grouped Lists */}
+          {processedCampaigns.length > 0 && (
+            <div>
+              {groupBy === 'ad_account' ? (
+                <div className="space-y-4">
+                  {accountGroups.map((group) => (
+                    <AccountGroupSection
                       key={group.key}
                       groupKey={group.key}
-                      label={group.label}
-                      icon={group.icon}
-                      color={group.color}
-                      borderColor={group.borderColor}
+                      account={group.account}
                       count={group.campaigns.length}
-                      custo={groupCusto}
+                      marketingCost={group.marketingCost}
+                      budget={group.budget}
                       formatBRL={formatBRL}
+                      defaultOpen={accountGroups.length === 1}
                     >
                       {group.campaigns.map((c) => {
-                        const sc = statusConfig[c.status] ?? statusConfig.active;
+                        const sc = STATUS_CONFIG[c.status] ?? STATUS_CONFIG.active;
                         const logo = MARKETPLACE_LOGOS[c.marketplace];
                         const adSets = c.campaign_ad_sets ?? [];
                         return (
                           <CampaignCard
                             key={c.id}
                             campaign={c}
-                            sc={sc}
+                            statusConfig={sc}
                             logo={logo}
                             adSets={adSets}
                             onEdit={() => handleEdit(c)}
@@ -1191,14 +469,48 @@ const CampaignsPage: React.FC = () => {
                           />
                         );
                       })}
-                    </GroupSection>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        );
-      })()}
+                    </AccountGroupSection>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {objectiveGroups.map((group) => (
+                    <ObjectiveGroupSection
+                      key={group.key}
+                      groupKey={group.key}
+                      label={group.label}
+                      icon={group.icon}
+                      color={group.color}
+                      borderColor={group.borderColor}
+                      count={group.campaigns.length}
+                      custo={group.marketingCost}
+                      formatBRL={formatBRL}
+                    >
+                      {group.campaigns.map((c) => {
+                        const sc = STATUS_CONFIG[c.status] ?? STATUS_CONFIG.active;
+                        const logo = MARKETPLACE_LOGOS[c.marketplace];
+                        const adSets = c.campaign_ad_sets ?? [];
+                        return (
+                          <CampaignCard
+                            key={c.id}
+                            campaign={c}
+                            statusConfig={sc}
+                            logo={logo}
+                            adSets={adSets}
+                            onEdit={() => handleEdit(c)}
+                            onDelete={() => setDeleteId(c.id)}
+                            organizationId={organizationId ?? undefined}
+                          />
+                        );
+                      })}
+                    </ObjectiveGroupSection>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Marketplace picker */}
       <MarketplacePickerModal
@@ -1244,14 +556,21 @@ const CampaignsPage: React.FC = () => {
             editingCampaign
               ? undefined
               : (selectedNewCampaignAdAccountId ??
-                 (selectedAccountId !== 'all' && selectedAccountId !== 'unassigned' ? selectedAccountId : undefined))
+                 (selectedAccountId !== 'all' && selectedAccountId !== 'unassigned'
+                   ? selectedAccountId
+                   : undefined))
           }
           onSaved={() => {}}
         />
       )}
 
-      {/* Delete confirm */}
-      <AlertDialog open={!!deleteId} onOpenChange={(o) => { if (!o) setDeleteId(null); }}>
+      {/* Delete confirmation dialog */}
+      <AlertDialog
+        open={Boolean(deleteId)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteId(null);
+        }}
+      >
         <AlertDialogContent className="bg-card border-border text-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir campanha?</AlertDialogTitle>
@@ -1278,4 +597,3 @@ const CampaignsPage: React.FC = () => {
 };
 
 export default CampaignsPage;
-

@@ -46,7 +46,7 @@ export function useCampaigns(
       if (error) throw new Error(error.message);
       return (data ?? []) as CampaignWithRelations[];
     },
-    enabled: !!organizationId,
+    enabled: Boolean(organizationId),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -62,20 +62,28 @@ export function useCampaigns(
       .insert({
         ...payload.campaign,
         organization_id: organizationId,
-        ad_account_id: payload.campaign.ad_account_id ?? (adAccountId && adAccountId !== 'all' ? adAccountId : null),
+        ad_account_id:
+          payload.campaign.ad_account_id ??
+          (adAccountId && adAccountId !== 'all' && adAccountId !== 'unassigned'
+            ? adAccountId
+            : null),
       })
       .select('id')
       .single();
 
-    if (campaignError || !campaign) throw new Error(campaignError?.message ?? 'Failed to create campaign');
+    if (campaignError || !campaign) {
+      throw new Error(campaignError?.message ?? 'Falha ao criar campanha');
+    }
 
     const campaignId = campaign.id as string;
 
     // 2. Insert ad sets (all in adSets array)
-    const adSetsToInsert = (payload.adSets ?? [payload.adSet]).map(a => ({
+    const adSetsList = payload.adSets && payload.adSets.length > 0 ? payload.adSets : [payload.adSet];
+    const adSetsToInsert = adSetsList.map((a) => ({
       ...a,
       campaign_id: campaignId,
     }));
+
     const { error: adSetError } = await supabase
       .from('campaign_ad_sets')
       .insert(adSetsToInsert);
@@ -83,7 +91,7 @@ export function useCampaigns(
     if (adSetError) throw new Error(adSetError.message);
 
     // 3. Insert product links
-    if (payload.products.length > 0) {
+    if (payload.products && payload.products.length > 0) {
       const { error: productsError } = await supabase
         .from('campaign_products')
         .insert(
@@ -97,7 +105,9 @@ export function useCampaigns(
       if (productsError) throw new Error(productsError.message);
 
       // Sync marketing cost to campaign_order_costs for linked orders
-      const linkedProducts = payload.products.filter(p => p.linked_order_id && p.marketing_cost_override != null);
+      const linkedProducts = payload.products.filter(
+        (p) => p.linked_order_id && p.marketing_cost_override != null
+      );
       if (linkedProducts.length > 0) {
         await supabase
           .from('campaign_order_costs')
@@ -117,7 +127,7 @@ export function useCampaigns(
   };
 
   const updateCampaign = async (id: string, payload: CampaignFormPayload) => {
-    // 1. Update campaign
+    // 1. Update campaign main details
     const { error: campaignError } = await supabase
       .from('campaigns')
       .update({
@@ -126,39 +136,47 @@ export function useCampaigns(
         budget_type: payload.campaign.budget_type,
         budget_amount: payload.campaign.budget_amount,
         status: payload.campaign.status,
-        ...(payload.campaign.ad_account_id !== undefined ? { ad_account_id: payload.campaign.ad_account_id } : {}),
+        ...(payload.campaign.ad_account_id !== undefined
+          ? { ad_account_id: payload.campaign.ad_account_id }
+          : {}),
         updated_at: new Date().toISOString(),
       })
       .eq('id', id);
 
     if (campaignError) throw new Error(campaignError.message);
 
-    // 2. Replace ad sets (delete + insert all)
+    // 2. Safely sync ad sets
+    const adSetsList = payload.adSets && payload.adSets.length > 0 ? payload.adSets : [payload.adSet];
+    const adSetsToInsert = adSetsList.map((a) => ({
+      ...a,
+      campaign_id: id,
+    }));
+
+    // First delete old ad sets, then insert new
     const { error: adSetDeleteError } = await supabase
       .from('campaign_ad_sets')
       .delete()
       .eq('campaign_id', id);
+
     if (adSetDeleteError) throw new Error(adSetDeleteError.message);
 
-    const adSetsToInsert = (payload.adSets ?? [payload.adSet]).map(a => ({
-      ...a,
-      campaign_id: id,
-    }));
-    const { error: adSetError } = await supabase
+    const { error: adSetInsertError } = await supabase
       .from('campaign_ad_sets')
       .insert(adSetsToInsert);
 
-    if (adSetError) throw new Error(adSetError.message);
+    if (adSetInsertError) throw new Error(adSetInsertError.message);
 
-    // 3. Replace product links (delete + insert)
+    // 3. Replace product links
     // First fetch existing linked orders to cascade-delete campaign_order_costs on unlink
     const { data: existingProducts } = await supabase
       .from('campaign_products')
       .select('linked_order_id')
       .eq('campaign_id', id)
       .not('linked_order_id', 'is', null);
+
     const prevOrderIds = ((existingProducts ?? []) as Array<{ linked_order_id: string | null }>)
-      .map(p => p.linked_order_id).filter(Boolean) as string[];
+      .map((p) => p.linked_order_id)
+      .filter(Boolean) as string[];
 
     const { error: deleteError } = await supabase
       .from('campaign_products')
@@ -167,7 +185,7 @@ export function useCampaigns(
 
     if (deleteError) throw new Error(deleteError.message);
 
-    if (payload.products.length > 0) {
+    if (payload.products && payload.products.length > 0) {
       const { error: productsError } = await supabase
         .from('campaign_products')
         .insert(
@@ -181,7 +199,9 @@ export function useCampaigns(
       if (productsError) throw new Error(productsError.message);
 
       // Sync marketing cost to campaign_order_costs for linked orders
-      const linkedProducts = payload.products.filter(p => p.linked_order_id && p.marketing_cost_override != null);
+      const linkedProducts = payload.products.filter(
+        (p) => p.linked_order_id && p.marketing_cost_override != null
+      );
       if (linkedProducts.length > 0) {
         await supabase
           .from('campaign_order_costs')
@@ -197,8 +217,8 @@ export function useCampaigns(
       }
 
       // Delete campaign_order_costs for orders no longer linked to this campaign
-      const newOrderIds = new Set(linkedProducts.map(p => p.linked_order_id!));
-      const removedOrderIds = prevOrderIds.filter(oid => !newOrderIds.has(oid));
+      const newOrderIds = new Set(linkedProducts.map((p) => p.linked_order_id!));
+      const removedOrderIds = prevOrderIds.filter((oid) => !newOrderIds.has(oid));
       if (removedOrderIds.length > 0) {
         await supabase
           .from('campaign_order_costs')
