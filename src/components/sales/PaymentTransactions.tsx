@@ -74,11 +74,14 @@ interface AffEntry {
   created_at: string;
 }
 
+import type { SalesFilters } from '@/hooks/useFilterPersistence';
+
 interface PaymentTransactionsProps {
   organizationId: string;
   refreshTrigger?: number;
   onOrderClick?: (orderId: string) => void;
   onAffClick?: (aff: AffEntry) => void;
+  filters?: SalesFilters;
 }
 
 const TX_PAGE_SIZE = 5;
@@ -108,7 +111,7 @@ const Paginator: React.FC<{ page: number; total: number; onChange: (n: number) =
     </div>
   );
 
-export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organizationId, refreshTrigger, onOrderClick, onAffClick }) => {
+export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organizationId, refreshTrigger, onOrderClick, onAffClick, filters }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [affEntries, setAffEntries] = useState<AffEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,8 +120,6 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
   const [affPage, setAffPage] = useState(0);
 
   useEffect(() => {
-    setTxPage(0);
-    setAffPage(0);
     const doFetch = async () => {
       setLoading(true);
       const startDate = new Date();
@@ -131,17 +132,22 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
         startDate.setHours(0, 0, 0, 0);
         start = startDate.toISOString().split('T')[0];
       } else if (period === 'this_month') {
-        // Start of current month
+        // Start of current month (day 1 prevents month overflow)
         startDate.setDate(1);
         startDate.setHours(0, 0, 0, 0);
         start = startDate.toISOString().split('T')[0];
       } else if (period === 'this_quarter') {
-        // this_quarter: last 3 months
+        // this_quarter: last 3 months (day 1 prevents 31-day rollover)
+        startDate.setDate(1);
         startDate.setMonth(startDate.getMonth() - 3);
         startDate.setHours(0, 0, 0, 0);
         start = startDate.toISOString().split('T')[0];
       } else if (period === 'all') {
         start = null;
+      }
+
+      if (filters?.startDate) {
+        start = filters.startDate;
       }
 
       let txQuery = supabase
@@ -152,6 +158,9 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
       if (start) {
         txQuery = txQuery.gte('order_date', start);
       }
+      if (filters?.endDate) {
+        txQuery = txQuery.lte('order_date', `${filters.endDate}T23:59:59.999Z`);
+      }
 
       txQuery = txQuery.order('order_date', { ascending: false }).limit(200);
 
@@ -161,8 +170,12 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
         .eq('organization_id', organizationId)
         .eq('entry_type', 'pedido_afiliacao');
 
-      if (period !== 'all') {
-        affQuery = affQuery.gte('created_at', startDate.toISOString());
+      if (period !== 'all' || filters?.startDate) {
+        const affStart = filters?.startDate ? new Date(filters.startDate) : startDate;
+        affQuery = affQuery.gte('created_at', affStart.toISOString());
+      }
+      if (filters?.endDate) {
+        affQuery = affQuery.lte('created_at', `${filters.endDate}T23:59:59.999Z`);
       }
 
       affQuery = affQuery.order('created_at', { ascending: false });
@@ -455,12 +468,30 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
         marketplace_name: tx.marketplace_name ?? (tx as unknown as { marketplaces?: { name?: string } }).marketplaces?.name ?? null,
       }));
 
+      if (filters?.marketplaceId && filters.marketplaceId.trim()) {
+        const search = filters.marketplaceId.trim().toLowerCase();
+        finalTxList = finalTxList.filter((tx) => {
+          const mpName = String(tx.marketplace_name ?? '').toLowerCase();
+          const mpId = String(tx.id ?? '').toLowerCase();
+          return mpName.includes(search) || mpId.includes(search);
+        });
+      }
+
       setTransactions(finalTxList);
-      if (!affRes.error && affRes.data) setAffEntries(affRes.data as AffEntry[]);
+      const affData = (!affRes.error && affRes.data) ? (affRes.data as AffEntry[]) : [];
+      setAffEntries(affData);
+      setTxPage(p => {
+        const maxP = Math.max(0, Math.ceil(finalTxList.length / TX_PAGE_SIZE) - 1);
+        return p > maxP ? 0 : p;
+      });
+      setAffPage(p => {
+        const maxP = Math.max(0, Math.ceil(affData.length / AFF_PAGE_SIZE) - 1);
+        return p > maxP ? 0 : p;
+      });
       setLoading(false);
     };
     doFetch();
-  }, [organizationId, period, refreshTrigger]);
+  }, [organizationId, period, refreshTrigger, filters]);
 
   const txTotalPages = Math.max(1, Math.ceil(transactions.length / TX_PAGE_SIZE));
   const affTotalPages = Math.max(1, Math.ceil(affEntries.length / AFF_PAGE_SIZE));
@@ -473,7 +504,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
       {/* ── Header ── */}
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <h3 className="text-base font-semibold text-foreground">Transações</h3>
-        <Select value={period} onValueChange={v => { setPeriod(v); }}>
+        <Select value={period} onValueChange={v => { setPeriod(v); setTxPage(0); setAffPage(0); }}>
           <SelectTrigger className="w-[130px] h-8 text-xs border-gray-200 dark:border-border">
             <SelectValue />
           </SelectTrigger>

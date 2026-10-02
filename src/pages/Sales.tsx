@@ -30,10 +30,11 @@ const Sales: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
   const [novaEntradaOpen, setNovaEntradaOpen] = useState(false);
+  const { filters, setFilters, resetFilters } = useFilterPersistence('sales-filters');
   // Ref to openOrderById function registered by RevenueReportChart
   const openOrderByIdRef = useRef<((orderId: string) => void) | null>(null);
   const openAffByIdRef = useRef<((aff: { id: string; name: string; value: number; ref: string; date: string }) => void) | null>(null);
-  const { stats } = useHeroStats(organizationId || '', period, refreshKey);
+  const { stats } = useHeroStats(organizationId || '', period, refreshKey, filters);
 
   // Free sample lane state — rehydrated from sessionStorage
   const [freeSampleOrders, setFreeSampleOrders] = useState<PendingOrder[]>(() => {
@@ -174,7 +175,6 @@ const Sales: React.FC = () => {
   }, []);
 
   const { isConnected, lastUpdate } = useRealtimeSync({ onUpdate: handleRefresh });
-  const { filters, setFilters, resetFilters } = useFilterPersistence('sales-filters');
 
   if (loading) {
     return (
@@ -314,6 +314,7 @@ const Sales: React.FC = () => {
               onRegisterOpenOrder={(fn) => { openOrderByIdRef.current = fn; }}
               onRegisterOpenAff={(fn) => { openAffByIdRef.current = fn; }}
               onAffDeleted={handleRefresh}
+              filters={filters}
             />
           </div>
         </div>
@@ -323,6 +324,7 @@ const Sales: React.FC = () => {
           <PaymentTransactions
             organizationId={organizationId}
             refreshTrigger={refreshKey}
+            filters={filters}
             onOrderClick={(orderId) => openOrderByIdRef.current?.(orderId)}
             onAffClick={(aff) => openAffByIdRef.current?.({
               id: aff.id,

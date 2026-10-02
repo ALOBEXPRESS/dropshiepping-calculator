@@ -21,7 +21,7 @@ export const TopSellingProductsTable: React.FC<TopSellingProductsTableProps> = (
   // Refetch quando refreshTrigger mudar (apenas se for > 0)
   React.useEffect(() => {
     if (refreshTrigger && refreshTrigger > 0) {
-      console.log('🔄 TopSellingProductsTable: refreshTrigger mudou, refazendo query...', refreshTrigger);
+      setCurrentPage(1);
       refetch();
     }
   }, [refreshTrigger, refetch]);
@@ -39,9 +39,10 @@ export const TopSellingProductsTable: React.FC<TopSellingProductsTableProps> = (
   // Calcular total de vendas
   const totalSales = sortedProducts.reduce((sum, product) => sum + product.quantity_sold, 0);
 
-  // Calcular paginação
-  const totalPages = Math.ceil(sortedProducts.length / limit);
-  const startIndex = (currentPage - 1) * limit;
+  // Calcular paginação com clamping de segurança
+  const totalPages = Math.max(1, Math.ceil(sortedProducts.length / limit));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * limit;
   const endIndex = startIndex + limit;
   const currentProducts = sortedProducts.slice(startIndex, endIndex);
 

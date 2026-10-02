@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { calcOrderProfit, type OrderProfitInput } from '@/utils/calcOrderProfit';
+import { getSafePeriodLabels, calculatePercentageChange, matchesOrderFilters } from '@/components/sales/revenueCalculations';
+import type { SalesFilters } from '@/hooks/useFilterPersistence';
 
 interface HeroStats {
   totalRevenue: number;
@@ -13,29 +15,6 @@ interface HeroStats {
   productsChange?: number;
   previousRevenue?: number;
 }
-
-// Maps period to current/previous period labels returned by get_revenue_report
-const getPeriodLabels = (period: 'daily' | 'weekly' | 'monthly' | 'yearly') => {
-  const now = new Date();
-  // RPC returns English month abbreviations (TO_CHAR 'Mon')
-  const enMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-  if (period === 'monthly') {
-    const cur = enMonths[now.getMonth()];
-    const prevDate = new Date(now);
-    prevDate.setMonth(prevDate.getMonth() - 1);
-    const prev = enMonths[prevDate.getMonth()];
-    return { current: cur, previous: prev };
-  }
-  if (period === 'yearly') {
-    return { current: String(now.getFullYear()), previous: String(now.getFullYear() - 1) };
-  }
-  // daily/weekly — use monthly as fallback
-  const cur = enMonths[now.getMonth()];
-  const prevDate = new Date(now);
-  prevDate.setMonth(prevDate.getMonth() - 1);
-  return { current: cur, previous: enMonths[prevDate.getMonth()] };
-};
 
 type RpcPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
@@ -86,7 +65,8 @@ function computeProfitFromOrders(orders: Record<string, unknown>[]): number {
 export const useHeroStats = (
   organizationId: string,
   period: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'monthly',
-  refreshTrigger?: number
+  refreshTrigger?: number,
+  filters?: SalesFilters
 ) => {
   const [stats, setStats] = useState<HeroStats>({
     totalRevenue: 0,
@@ -116,14 +96,21 @@ export const useHeroStats = (
         });
         if (rpcError) throw rpcError;
 
-        const labels = getPeriodLabels(period);
+        const labels = getSafePeriodLabels(period);
         const rows = (rpcData ?? []) as Array<{ period_label: string; orders_data: Record<string, unknown>[] | null }>;
 
         const currentRow = rows.find((r) => r.period_label === labels.current);
         const previousRow = rows.find((r) => r.period_label === labels.previous);
 
-        const currentOrders = currentRow?.orders_data ?? [];
-        const previousOrders = previousRow?.orders_data ?? [];
+        const rawCurrentOrders = currentRow?.orders_data ?? [];
+        const rawPreviousOrders = previousRow?.orders_data ?? [];
+
+        const currentOrders = filters
+          ? rawCurrentOrders.filter((o) => matchesOrderFilters(o as Parameters<typeof matchesOrderFilters>[0], filters))
+          : rawCurrentOrders;
+        const previousOrders = filters
+          ? rawPreviousOrders.filter((o) => matchesOrderFilters(o as Parameters<typeof matchesOrderFilters>[0], filters))
+          : rawPreviousOrders;
 
         // Coletar IDs de todos os pedidos do período atual e anterior para enriquecimento
         const allOrderIds = [
@@ -443,18 +430,15 @@ export const useHeroStats = (
         const totalCustomers = currentUniqueCustomers.size;
         const previousTotalCustomers = previousUniqueCustomers.size;
 
-        const pct = (cur: number, prev: number) =>
-          prev !== 0 ? ((cur - prev) / Math.abs(prev)) * 100 : cur !== 0 ? 100 : 0;
-
         setStats({
           totalRevenue: totalProfit,
           totalOrders,
           totalCustomers,
           totalProducts: currentProductsSold,
-          revenueChange: Math.round(pct(totalProfit, previousTotalProfit)),
-          ordersChange: Math.round(pct(totalOrders, previousTotalOrders)),
-          customersChange: Math.round(pct(totalCustomers, previousTotalCustomers)),
-          productsChange: Math.round(pct(currentProductsSold, previousProductsSold)),
+          revenueChange: calculatePercentageChange(totalProfit, previousTotalProfit),
+          ordersChange: calculatePercentageChange(totalOrders, previousTotalOrders),
+          customersChange: calculatePercentageChange(totalCustomers, previousTotalCustomers),
+          productsChange: calculatePercentageChange(currentProductsSold, previousProductsSold),
           previousRevenue: previousTotalProfit,
         });
       } catch (err) {
@@ -466,7 +450,7 @@ export const useHeroStats = (
     };
 
     fetchStats();
-  }, [organizationId, period, refreshTrigger]);
+  }, [organizationId, period, refreshTrigger, filters]);
 
   return { stats, loading, error };
 };

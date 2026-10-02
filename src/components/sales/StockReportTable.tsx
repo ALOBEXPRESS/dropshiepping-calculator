@@ -17,7 +17,7 @@ export const StockReportTable: React.FC<StockReportTableProps> = ({ organization
   // Refetch quando refreshTrigger mudar (apenas se for > 0)
   React.useEffect(() => {
     if (refreshTrigger && refreshTrigger > 0) {
-      console.log('🔄 StockReportTable: refreshTrigger mudou, refazendo query...', refreshTrigger);
+      setCurrentPage(1);
       refetch();
     }
   }, [refreshTrigger, refetch]);
@@ -76,9 +76,10 @@ export const StockReportTable: React.FC<StockReportTableProps> = ({ organization
     );
   }
 
-  // Paginação
-  const totalPages = Math.ceil(sortedStock.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  // Paginação com clamping seguro
+  const totalPages = Math.max(1, Math.ceil(sortedStock.length / itemsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentItems = sortedStock.slice(startIndex, endIndex);
 

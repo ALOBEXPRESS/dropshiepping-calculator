@@ -18,6 +18,10 @@ export const SalesFiltersBar: React.FC<SalesFiltersBarProps> = ({
 }) => {
   const hasActiveFilters = !!(filters.startDate || filters.endDate || filters.marketplaceId);
 
+  const isDateRangeInvalid = Boolean(
+    filters.startDate && filters.endDate && filters.startDate > filters.endDate
+  );
+
   return (
     <div
       className="flex flex-wrap items-end gap-3 p-3 rounded-lg border border-border bg-card"
@@ -33,8 +37,9 @@ export const SalesFiltersBar: React.FC<SalesFiltersBarProps> = ({
           type="date"
           value={filters.startDate ?? ''}
           onChange={(e) => onFiltersChange({ ...filters, startDate: e.target.value || undefined })}
-          className="h-8 text-sm w-36"
+          className={`h-8 text-sm w-36 ${isDateRangeInvalid ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
           aria-label="Filtrar por data inicial"
+          aria-invalid={isDateRangeInvalid}
         />
       </div>
 
@@ -47,10 +52,17 @@ export const SalesFiltersBar: React.FC<SalesFiltersBarProps> = ({
           type="date"
           value={filters.endDate ?? ''}
           onChange={(e) => onFiltersChange({ ...filters, endDate: e.target.value || undefined })}
-          className="h-8 text-sm w-36"
+          className={`h-8 text-sm w-36 ${isDateRangeInvalid ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
           aria-label="Filtrar por data final"
+          aria-invalid={isDateRangeInvalid}
         />
       </div>
+
+      {isDateRangeInvalid && (
+        <span className="text-xs text-red-500 self-center">
+          Data inicial maior que final
+        </span>
+      )}
 
       <div className="flex flex-col gap-1">
         <Label htmlFor="filter-marketplace" className="text-xs text-muted-foreground">

@@ -28,7 +28,10 @@ import type { PeriodFilter } from '@/types/sales';
 import { toast } from 'sonner';
 import { ReferenceService, type Marketplace } from '@/services/referenceService';
 import { AffiliateAccordion } from './AffiliateAccordion';
+import { AffiliateDetailModal } from './AffiliateDetailModal';
 import { calcOrderProfit } from '@/utils/calcOrderProfit';
+import { matchesOrderFilters } from './revenueCalculations';
+import type { SalesFilters } from '@/hooks/useFilterPersistence';
 
 interface RevenueReportChartProps {
   organizationId: string;
@@ -42,6 +45,7 @@ interface RevenueReportChartProps {
   /** Register a callback so external components can open the affiliate detail modal */
   onRegisterOpenAff?: (fn: (aff: { id: string; name: string; value: number; ref: string; date: string }) => void) => void;
   onAffDeleted?: () => void;
+  filters?: SalesFilters;
 }
 
 
@@ -96,7 +100,7 @@ interface OrderDetail {
   tiktok_sfp_enabled?: boolean;
 }
 
-export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organizationId, refreshTrigger, onOrderDeleted, onOrderUpdated, period: externalPeriod, onPeriodChange, onRegisterOpenOrder, onRegisterOpenAff, onAffDeleted }) => {
+export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organizationId, refreshTrigger, onOrderDeleted, onOrderUpdated, period: externalPeriod, onPeriodChange, onRegisterOpenOrder, onRegisterOpenAff, onAffDeleted, filters }) => {
   const [period, setPeriod] = useState<PeriodFilter>(externalPeriod || 'monthly');
   const [windowOffset, setWindowOffset] = useState(0);
   const { data, loading, error, refetch } = useRevenueReport(organizationId, period);
@@ -2527,6 +2531,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
       orders.forEach((order: unknown) => {
         const o = order as OrderDetail;
+        if (filters && !matchesOrderFilters(o as Parameters<typeof matchesOrderFilters>[0], filters)) {
+          return;
+        }
         const mergedOrder = mergeOrderForTooltip(o);
         const cfg = resolveMarketplaceConfig(
           (o as { marketplace?: string }).marketplace,
@@ -2584,7 +2591,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         total_marketing_cost: totalMarketingCost,
       };
     });
-  }, [data, orderEnrichmentById, affiliateByOrderId, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig, marketingCostByProductId, manualMarketingCostByOrderId, reembolsoByOrderId]);
+  }, [data, affiliateByOrderId, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig, marketingCostByProductId, manualMarketingCostByOrderId, reembolsoByOrderId, filters]);
 
   // Window size per period — mensal: 3 meses visíveis com scroll, semanal/diário: parcial com setas
   const windowSize = period === 'daily' ? 14 : period === 'weekly' ? 12 : period === 'monthly' ? 3 : 5;
@@ -5037,81 +5044,16 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       </AlertDialog>
 
       {/* Modal de detalhe de afiliação */}
-      {affDetailOpen && affDetailData && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
-          onClick={() => setAffDetailOpen(false)}
-        >
-          <div
-            className="relative w-full max-w-sm rounded-2xl overflow-hidden"
-            style={{ background: 'linear-gradient(160deg,#022c22 0%,#064e3b 60%,#065f46 100%)', border: '1px solid rgba(16,185,129,0.45)', boxShadow: '0 24px 60px rgba(16,185,129,0.25)' }}
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="px-5 pt-5 pb-4" style={{ borderBottom: '1px solid rgba(16,185,129,0.2)' }}>
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">🤝</span>
-                  <div>
-                    <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Comissão de Afiliação</p>
-                    <p className="text-[10px] text-emerald-600">TikTok Shop Vitrine</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setAffDetailOpen(false)}
-                  className="w-7 h-7 flex items-center justify-center rounded-full text-emerald-500 hover:bg-emerald-500/20 transition-colors text-lg leading-none"
-                >×</button>
-              </div>
-            </div>
-
-            {/* Body */}
-            <div className="px-5 py-4 space-y-3">
-              <div>
-                <p className="text-[10px] text-emerald-600 uppercase tracking-wide mb-0.5">Produto / Referência</p>
-                <p className="text-base font-bold text-emerald-100">{affDetailData.name}</p>
-              </div>
-              {affDetailData.ref && (
-                <div>
-                  <p className="text-[10px] text-emerald-600 uppercase tracking-wide mb-0.5">Marketplace / Pedido</p>
-                  <p className="text-sm text-emerald-200">{affDetailData.ref}</p>
-                </div>
-              )}
-              <div>
-                <p className="text-[10px] text-emerald-600 uppercase tracking-wide mb-0.5">Data de Registro</p>
-                <p className="text-sm text-emerald-200">
-                  {affDetailData.date ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(affDetailData.date)) : '—'}
-                </p>
-              </div>
-
-              {/* Commission highlight */}
-              <div className="rounded-xl p-4 flex items-center justify-between" style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)' }}>
-                <div>
-                  <p className="text-[10px] text-emerald-500 uppercase tracking-widest font-bold">Comissão Recebida</p>
-                  <p className="text-[10px] text-emerald-600 mt-0.5">Receita adicional AlobExpress</p>
-                </div>
-                <p className="text-2xl font-black text-emerald-400">
-                  +{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(affDetailData.value)}
-                </p>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="px-5 pb-5 flex gap-3">
-              <button
-                onClick={() => setAffDetailOpen(false)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors"
-                style={{ background: 'rgba(16,185,129,0.12)', color: '#6ee7b7', border: '1px solid rgba(16,185,129,0.3)' }}
-              >Fechar</button>
-              <button
-                onClick={() => { setAffToDelete(affDetailData.id); setAffDetailOpen(false); setDeleteAffDialogOpen(true); }}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors"
-                style={{ background: 'rgba(239,68,68,0.15)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.35)' }}
-              >Excluir Entrada</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AffiliateDetailModal
+        open={affDetailOpen}
+        data={affDetailData}
+        onClose={() => setAffDetailOpen(false)}
+        onRequestDelete={(id) => {
+          setAffToDelete(id);
+          setAffDetailOpen(false);
+          setDeleteAffDialogOpen(true);
+        }}
+      />
 
       <Card className="p-6 border-gray-100 dark:border-zinc-800">
       <div className="flex items-center justify-between mb-6">
