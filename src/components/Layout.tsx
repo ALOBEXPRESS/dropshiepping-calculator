@@ -59,7 +59,8 @@ const NAV_ROUTES: {
     { to: '/vendas',    label: 'Vendas',      adminOnly: true,  accent: 'text-[hsl(var(--success))]',  dot: 'bg-[hsl(var(--success))]',  dotMuted: 'bg-[hsl(var(--success)/0.4)]',  active: 'bg-[hsl(var(--success)/0.08)] text-[hsl(var(--success))] font-semibold' },
     { to: '/campanhas', label: 'Campanhas',   adminOnly: true,  accent: 'text-[hsl(var(--warning))]',  dot: 'bg-[hsl(var(--warning))]',  dotMuted: 'bg-[hsl(var(--warning)/0.4)]',  active: 'bg-[hsl(var(--warning)/0.08)] text-[hsl(var(--warning))] font-semibold' },
     { to: '/repasse',   label: 'Repasse',     adminOnly: true,  accent: 'text-[hsl(var(--chart-6))]',  dot: 'bg-[hsl(var(--chart-6))]',  dotMuted: 'bg-[hsl(var(--chart-6)/0.4)]',  active: 'bg-[hsl(var(--chart-6)/0.08)] text-[hsl(var(--chart-6))] font-semibold' },
-    { to: '/negocio',   aliases: ['/negocio/'], label: 'Negócio', adminOnly: false, accent: 'text-emerald-400', dot: 'bg-emerald-400', dotMuted: 'bg-emerald-400/40', active: 'bg-emerald-500/15 text-emerald-400 font-semibold' },
+    { to: '/negocios',  aliases: ['/negocios/', '/negocio', '/negocio/'], label: 'Negócios', adminOnly: false, accent: 'text-emerald-400', dot: 'bg-emerald-400', dotMuted: 'bg-emerald-400/40', active: 'bg-emerald-500/15 text-emerald-400 font-semibold' },
+    { to: '/mapa',      aliases: ['/contas/mapa'], label: 'Mapa de Conexões', adminOnly: true, accent: 'text-purple-400', dot: 'bg-purple-400', dotMuted: 'bg-purple-400/40', active: 'bg-purple-500/15 text-purple-400 font-semibold' },
   ],
   painel: [
     {
@@ -132,16 +133,6 @@ const NAV_ROUTES: {
       dot: 'bg-[hsl(var(--warning))]',
       dotMuted: 'bg-[hsl(var(--warning)/0.4)]',
       active: 'bg-[hsl(var(--warning)/0.12)] text-[hsl(var(--warning))] font-semibold',
-    },
-    {
-      to: '/mapa',
-      aliases: ['/contas/mapa'],
-      label: 'Mapa de Conexões',
-      adminOnly: true,
-      accent: 'text-purple-400',
-      dot: 'bg-purple-400',
-      dotMuted: 'bg-purple-400/40',
-      active: 'bg-purple-500/15 text-purple-400 font-semibold',
     },
   ],
   responsaveis: [
@@ -373,7 +364,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       setResponsaveisOpen(true);
       setPainelOpen(true);
     }
-    if (location.pathname.startsWith('/negocio')) {
+    if (location.pathname.startsWith('/negocio') || location.pathname.startsWith('/mapa') || location.pathname.startsWith('/contas/mapa')) {
       setEcommerceOpen(true);
     }
   }, [location.pathname, setResponsaveisOpen, setPainelOpen, setEcommerceOpen]);

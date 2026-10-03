@@ -39,6 +39,97 @@ export interface BmcSectionConfig {
   dotColor: string;       // classe Tailwind bg-* estática
 }
 
+export const BMC_RECURRENCE_SECTIONS: BmcSectionKey[] = [
+  'fontes',
+  'custos',
+  'canais',
+  'recursos',
+  'parcerias',
+];
+
+export function isRecurrenceSection(key: BmcSectionKey): boolean {
+  return BMC_RECURRENCE_SECTIONS.includes(key);
+}
+
+export type BmcRecurrence = 'mensal' | 'anual' | 'unico';
+
+export interface BmcItemObject {
+  text: string;
+  value?: number | null;
+  recurrence?: BmcRecurrence | null;
+}
+
+export function parseBmcItem(raw: string): BmcItemObject {
+  if (!raw) return { text: '' };
+  const trimmed = raw.trim();
+
+  // 1. Formato JSON: {"text":"...", "value":150, "recurrence":"mensal"}
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed && typeof parsed === 'object') {
+        const text = parsed.text || parsed.name || '';
+        const value = typeof parsed.value === 'number'
+          ? parsed.value
+          : (parsed.value ? parseFloat(parsed.value) : null);
+        const recurrence = parsed.recurrence || null;
+        return {
+          text,
+          value: value != null && !isNaN(value) ? value : null,
+          recurrence: recurrence === 'anual' || recurrence === 'mensal' || recurrence === 'unico' ? recurrence : null,
+        };
+      }
+    } catch {
+      // continua para outros formatos
+    }
+  }
+
+  // 2. Formato Tag: "Item [R$ 150,00/mês]" ou "Item [150.00 | anual]"
+  const match = trimmed.match(/^(.*?)\s*\[(?:R\$\s*)?([0-9.,]+)(?:\s*(?:\||\/)\s*(mensal|anual|mês|mes|ano|único|unico))?\]\s*$/i);
+  if (match) {
+    const text = match[1].trim();
+    const cleanNum = match[2].replace(/\./g, '').replace(',', '.');
+    const val = parseFloat(cleanNum);
+    const recStr = match[3]?.toLowerCase();
+    let recurrence: BmcRecurrence | null = null;
+    if (recStr === 'mensal' || recStr === 'mês' || recStr === 'mes') recurrence = 'mensal';
+    else if (recStr === 'anual' || recStr === 'ano') recurrence = 'anual';
+    else if (recStr === 'unico' || recStr === 'único') recurrence = 'unico';
+
+    return {
+      text,
+      value: isNaN(val) ? null : val,
+      recurrence,
+    };
+  }
+
+  return { text: trimmed };
+}
+
+export function serializeBmcItem(item: BmcItemObject): string {
+  if ((item.value == null || isNaN(item.value)) && !item.recurrence) {
+    return item.text.trim();
+  }
+  return JSON.stringify({
+    text: item.text.trim(),
+    value: item.value ?? null,
+    recurrence: item.recurrence ?? null,
+  });
+}
+
+export function formatItemRecurrence(recurrence: BmcRecurrence | null | undefined): string {
+  if (recurrence === 'mensal') return '/mês';
+  if (recurrence === 'anual') return '/ano';
+  if (recurrence === 'unico') return ' (único)';
+  return '';
+}
+
+export function getMonthlyEquivalent(item: BmcItemObject): number {
+  if (!item.value || isNaN(item.value)) return 0;
+  if (item.recurrence === 'anual') return item.value / 12;
+  return item.value;
+}
+
 export const BMC_SECTIONS: Record<BmcSectionKey, BmcSectionConfig> = {
   parcerias: {
     key: 'parcerias',
@@ -47,8 +138,8 @@ export const BMC_SECTIONS: Record<BmcSectionKey, BmcSectionConfig> = {
     description: 'Fornecedores, parceiros e aliados estratégicos do negócio.',
     icon: 'Handshake',
     color: 'text-sky-400',
-    bgColor: 'bg-sky-500/10',
-    borderColor: 'border-sky-500/25',
+    bgColor: 'bg-muted/30',
+    borderColor: 'border-border/60',
     dotColor: 'bg-sky-400',
   },
   atividades: {
@@ -58,8 +149,8 @@ export const BMC_SECTIONS: Record<BmcSectionKey, BmcSectionConfig> = {
     description: 'O que o negócio faz de mais importante para funcionar.',
     icon: 'Cog',
     color: 'text-violet-400',
-    bgColor: 'bg-violet-500/10',
-    borderColor: 'border-violet-500/25',
+    bgColor: 'bg-muted/30',
+    borderColor: 'border-border/60',
     dotColor: 'bg-violet-400',
   },
   recursos: {
@@ -69,8 +160,8 @@ export const BMC_SECTIONS: Record<BmcSectionKey, BmcSectionConfig> = {
     description: 'Ativos essenciais para entregar a proposta de valor.',
     icon: 'Package',
     color: 'text-amber-400',
-    bgColor: 'bg-amber-500/10',
-    borderColor: 'border-amber-500/25',
+    bgColor: 'bg-muted/30',
+    borderColor: 'border-border/60',
     dotColor: 'bg-amber-400',
   },
   proposta: {
@@ -80,8 +171,8 @@ export const BMC_SECTIONS: Record<BmcSectionKey, BmcSectionConfig> = {
     description: 'Por que o cliente escolhe este negócio.',
     icon: 'Gem',
     color: 'text-rose-400',
-    bgColor: 'bg-rose-500/10',
-    borderColor: 'border-rose-500/25',
+    bgColor: 'bg-muted/30',
+    borderColor: 'border-border/60',
     dotColor: 'bg-rose-400',
   },
   relacionamentos: {
@@ -91,8 +182,8 @@ export const BMC_SECTIONS: Record<BmcSectionKey, BmcSectionConfig> = {
     description: 'Como o negócio se relaciona com os clientes.',
     icon: 'Users',
     color: 'text-teal-400',
-    bgColor: 'bg-teal-500/10',
-    borderColor: 'border-teal-500/25',
+    bgColor: 'bg-muted/30',
+    borderColor: 'border-border/60',
     dotColor: 'bg-teal-400',
   },
   canais: {
@@ -102,8 +193,8 @@ export const BMC_SECTIONS: Record<BmcSectionKey, BmcSectionConfig> = {
     description: 'Como a proposta de valor chega até o cliente.',
     icon: 'Share2',
     color: 'text-orange-400',
-    bgColor: 'bg-orange-500/10',
-    borderColor: 'border-orange-500/25',
+    bgColor: 'bg-muted/30',
+    borderColor: 'border-border/60',
     dotColor: 'bg-orange-400',
   },
   segmentos: {
@@ -113,8 +204,8 @@ export const BMC_SECTIONS: Record<BmcSectionKey, BmcSectionConfig> = {
     description: 'Para quem o negócio cria valor.',
     icon: 'UserCircle',
     color: 'text-indigo-400',
-    bgColor: 'bg-indigo-500/10',
-    borderColor: 'border-indigo-500/25',
+    bgColor: 'bg-muted/30',
+    borderColor: 'border-border/60',
     dotColor: 'bg-indigo-400',
   },
   custos: {
@@ -124,8 +215,8 @@ export const BMC_SECTIONS: Record<BmcSectionKey, BmcSectionConfig> = {
     description: 'Principais custos para operar o negócio.',
     icon: 'Receipt',
     color: 'text-red-400',
-    bgColor: 'bg-red-500/10',
-    borderColor: 'border-red-500/25',
+    bgColor: 'bg-muted/30',
+    borderColor: 'border-border/60',
     dotColor: 'bg-red-400',
   },
   fontes: {
@@ -135,8 +226,8 @@ export const BMC_SECTIONS: Record<BmcSectionKey, BmcSectionConfig> = {
     description: 'Como o negócio gera receita.',
     icon: 'CircleDollarSign',
     color: 'text-emerald-400',
-    bgColor: 'bg-emerald-500/10',
-    borderColor: 'border-emerald-500/25',
+    bgColor: 'bg-muted/30',
+    borderColor: 'border-border/60',
     dotColor: 'bg-emerald-400',
   },
 };

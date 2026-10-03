@@ -41,16 +41,16 @@ function BCCanvasCard({ bc }: BCCardProps) {
             <p className={`text-xs ${platformConfig.color}`}>{platformConfig.label}</p>
           </div>
           <Link
-            to={`/negocio/${bc.id}/canvas`}
-            className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-medium transition-colors opacity-0 group-hover:opacity-100"
+            to={`/negocios/${bc.id}/canvas`}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-emerald-400 font-medium transition-colors opacity-0 group-hover:opacity-100"
           >
             Ver canvas
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
-        {/* Grid das 9 seções — agora concentradas e direcionadas ao canvas completo */}
-        <div className="p-4 grid grid-cols-3 gap-2">
+        {/* Grid das 9 seções — visual sóbrio, executivo e uniforme */}
+        <div className="p-4 grid grid-cols-3 gap-2.5">
           {BMC_SECTION_KEYS.map((key) => {
             const section = BMC_SECTIONS[key];
             const secData = canvas?.[key];
@@ -60,27 +60,30 @@ function BCCanvasCard({ bc }: BCCardProps) {
             return (
               <Link
                 key={key}
-                to={`/negocio/${bc.id}/canvas?section=${key}`}
+                to={`/negocios/${bc.id}/canvas?section=${key}`}
                 title={`Abrir ${section.label} no Canvas`}
-                className={`
-                  flex flex-col items-center justify-center gap-1 p-2.5 rounded-lg cursor-pointer
-                  border ${section.borderColor} ${section.bgColor}
-                  hover:brightness-115 transition-all text-center min-h-[64px]
-                `}
+                className="group/tile flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl cursor-pointer bg-muted/20 hover:bg-muted/40 border border-border/50 hover:border-border transition-all text-center min-h-[72px] shadow-xs"
               >
-                <span className={`text-xs font-semibold leading-tight ${section.color}`}>
-                  {section.label}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-1.5 h-1.5 rounded-full ${section.dotColor} opacity-75 group-hover/tile:opacity-100 transition-opacity`} />
+                  <span className="text-xs font-medium text-foreground/80 group-hover/tile:text-foreground transition-colors leading-tight">
+                    {section.label}
+                  </span>
+                </div>
 
                 {val != null && val > 0 ? (
-                  <span className="text-[10px] font-mono font-bold text-foreground/90 bg-background/50 px-1.5 py-0.5 rounded border border-border/40">
+                  <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
                     {formatCurrencyCompact(val)}
                   </span>
                 ) : hasItems ? (
-                  <span className="text-[9px] text-muted-foreground/60 font-mono">
+                  <span className="text-[10px] text-muted-foreground/60 font-mono">
                     {secData.items.length} {secData.items.length === 1 ? 'item' : 'itens'}
                   </span>
-                ) : null}
+                ) : (
+                  <span className="text-[10px] text-muted-foreground/30 font-mono">
+                    0 itens
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -101,10 +104,10 @@ function BCCanvasCard({ bc }: BCCardProps) {
         )}
 
         <Link
-          to={`/negocio/${bc.id}/canvas`}
-          className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-lg border border-emerald-500/25 bg-emerald-500/5 hover:bg-emerald-500/15 hover:border-emerald-500/40 text-xs font-semibold text-emerald-400 transition-all cursor-pointer shadow-xs"
+          to={`/negocios/${bc.id}/canvas`}
+          className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-lg border border-border/70 bg-card hover:bg-accent hover:border-border text-xs font-semibold text-foreground/90 hover:text-foreground transition-all cursor-pointer shadow-xs"
         >
-          <LayoutGrid className="w-3.5 h-3.5" />
+          <LayoutGrid className="w-3.5 h-3.5 text-emerald-400" />
           Ver canvas completo
         </Link>
       </div>
@@ -119,7 +122,7 @@ const NegocioPage: React.FC = () => {
   if (!organizationId) {
     return (
       <div className="p-6 text-muted-foreground text-sm">
-        Selecione uma organização nas configurações para acessar a área de Negócio.
+        Selecione uma organização nas configurações para acessar a área de Negócios.
       </div>
     );
   }
@@ -128,11 +131,11 @@ const NegocioPage: React.FC = () => {
     <div className="p-6 max-w-6xl mx-auto space-y-8">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+        <div className="p-2.5 rounded-xl bg-muted/30 border border-border/70">
           <Briefcase className="w-6 h-6 text-emerald-400" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Negócio</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Negócios</h1>
           <p className="text-sm text-muted-foreground">
             Business Model Canvas de cada negócio cadastrado
           </p>

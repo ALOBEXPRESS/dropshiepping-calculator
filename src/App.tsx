@@ -242,7 +242,7 @@ const NegocioRoutePage = () => (
 
 const BMCSectionRedirect = () => {
   const { bcId, section } = useParams();
-  return <Navigate to={`/negocio/${bcId}/canvas${section ? `?section=${section}` : ''}`} replace />;
+  return <Navigate to={`/negocios/${bcId}/canvas${section ? `?section=${section}` : ''}`} replace />;
 };
 
 const BMCCanvasRoutePage = () => (
@@ -304,8 +304,11 @@ function App() {
               <Route path="/contas/responsaveis" element={<ResponsaveisRoutePage />} />
               <Route path="/mapa" element={<InfraMapRoutePage />} />
               <Route path="/contas/mapa" element={<InfraMapRoutePage />} />
-              <Route path="/negocio" element={<NegocioRoutePage />} />
+              <Route path="/negocios" element={<NegocioRoutePage />} />
+              <Route path="/negocio" element={<Navigate to="/negocios" replace />} />
+              <Route path="/negocios/:bcId/canvas" element={<BMCCanvasRoutePage />} />
               <Route path="/negocio/:bcId/canvas" element={<BMCCanvasRoutePage />} />
+              <Route path="/negocios/:bcId/:section" element={<BMCSectionRedirect />} />
               <Route path="/negocio/:bcId/:section" element={<BMCSectionRedirect />} />
               <Route path="/profile" element={
                 <ProtectedRoute>

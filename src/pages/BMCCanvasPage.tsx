@@ -38,9 +38,9 @@ const BMCCanvasPage: React.FC = () => {
 
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Link to="/negocio" className="hover:text-foreground transition-colors flex items-center gap-1">
+        <Link to="/negocios" className="hover:text-foreground transition-colors flex items-center gap-1">
           <Briefcase className="w-3.5 h-3.5" />
-          Negócio
+          Negócios
         </Link>
         <span>/</span>
         {bcLoading ? (

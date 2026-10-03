@@ -5,7 +5,7 @@ import {
   Pencil, Plus, TrendingUp, TrendingDown, WalletCards
 } from 'lucide-react';
 import type { BusinessModelCanvas, BmcSectionKey } from '@/types/businessModelCanvas';
-import { BMC_SECTIONS, formatCurrencyBRL } from '@/types/businessModelCanvas';
+import { BMC_SECTIONS, formatCurrencyBRL, parseBmcItem, formatItemRecurrence } from '@/types/businessModelCanvas';
 import { BMCSectionEditor } from './BMCSectionEditor';
 
 // ── Mapa de ícones ─────────────────────────────────────────────────────────
@@ -41,24 +41,19 @@ function BMCBlock({ sectionKey, canvas, onEdit }: BlockProps) {
 
   return (
     <div
-      className={`
-        group relative flex flex-col h-full min-h-[175px] p-4 rounded-xl
-        border ${config.borderColor} bg-card/90
-        hover:${config.bgColor} hover:border-opacity-60
-        transition-all duration-200 shadow-sm
-      `}
+      className="group relative flex flex-col h-full min-h-[175px] p-4 rounded-xl border border-border/60 bg-card/75 hover:bg-card hover:border-border transition-all duration-200 shadow-xs"
     >
       {/* Header do bloco */}
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 min-w-0">
-          <div className={`p-1.5 rounded-lg ${config.bgColor} border ${config.borderColor} shrink-0`}>
+          <div className="p-1.5 rounded-lg bg-muted/40 border border-border/60 shrink-0">
             <Icon className={`w-3.5 h-3.5 ${config.color}`} />
           </div>
           <div className="min-w-0">
             <p className="text-[10px] text-muted-foreground/60 font-mono font-medium uppercase tracking-wider leading-none mb-0.5">
               {config.number}
             </p>
-            <p className={`text-xs font-semibold ${config.color} leading-tight truncate`}>
+            <p className="text-xs font-semibold text-foreground/90 leading-tight truncate">
               {config.label}
             </p>
           </div>
@@ -71,11 +66,7 @@ function BMCBlock({ sectionKey, canvas, onEdit }: BlockProps) {
               type="button"
               onClick={() => onEdit(sectionKey)}
               title="Clique para editar valor ou itens"
-              className={`
-                px-2 py-0.5 rounded-md text-[11px] font-mono font-bold tracking-tight cursor-pointer
-                border ${config.borderColor} ${config.bgColor} ${config.color}
-                hover:scale-105 transition-transform shadow-xs flex items-center gap-1
-              `}
+              className="px-2 py-0.5 rounded-md text-[11px] font-mono font-bold tracking-tight cursor-pointer border border-border/60 bg-muted/40 hover:bg-muted text-foreground transition-all shadow-xs flex items-center gap-1"
             >
               <span>{formatCurrencyBRL(data.financial_value)}</span>
             </button>
@@ -94,11 +85,7 @@ function BMCBlock({ sectionKey, canvas, onEdit }: BlockProps) {
           <button
             type="button"
             onClick={() => onEdit(sectionKey)}
-            className={`
-              opacity-0 group-hover:opacity-100 shrink-0
-              p-1 rounded-md transition-all duration-150 cursor-pointer
-              text-muted-foreground hover:${config.color} hover:${config.bgColor}
-            `}
+            className="opacity-0 group-hover:opacity-100 shrink-0 p-1 rounded-md transition-all duration-150 cursor-pointer text-muted-foreground hover:text-foreground hover:bg-muted/60"
             aria-label={`Editar ${config.label}`}
           >
             {hasItems || hasValue ? (
@@ -114,12 +101,27 @@ function BMCBlock({ sectionKey, canvas, onEdit }: BlockProps) {
       <div className="flex-1">
         {hasItems ? (
           <ul className="space-y-1.5">
-            {data!.items.map((item, idx) => (
-              <li key={idx} className="flex items-start gap-1.5">
-                <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${config.dotColor}`} />
-                <span className="text-xs text-foreground/80 leading-snug">{item}</span>
-              </li>
-            ))}
+            {data!.items.map((rawItem, idx) => {
+              const parsed = parseBmcItem(rawItem);
+              const hasItemVal = parsed.value != null && !isNaN(parsed.value);
+              const recLabel = formatItemRecurrence(parsed.recurrence);
+
+              return (
+                <li key={idx} className="flex items-start justify-between gap-1.5 group/item">
+                  <div className="flex items-start gap-1.5 min-w-0 flex-1">
+                    <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${config.dotColor} opacity-75`} />
+                    <span className="text-xs text-foreground/80 leading-snug break-words">
+                      {parsed.text}
+                    </span>
+                  </div>
+                  {hasItemVal && (
+                    <span className="shrink-0 text-[10px] font-mono font-medium text-foreground/90 bg-muted/60 px-1.5 py-0.5 rounded border border-border/40">
+                      {formatCurrencyBRL(parsed.value)}{recLabel}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         ) : (
           <button
@@ -127,7 +129,7 @@ function BMCBlock({ sectionKey, canvas, onEdit }: BlockProps) {
             onClick={() => onEdit(sectionKey)}
             className="w-full h-full flex flex-col items-center justify-center gap-1.5 min-h-[80px] rounded-lg border border-dashed border-border/30 hover:border-border/60 transition-colors group/empty cursor-pointer"
           >
-            <Plus className={`w-4 h-4 ${config.color} opacity-30 group-hover/empty:opacity-60 transition-opacity`} />
+            <Plus className="w-4 h-4 text-muted-foreground/30 group-hover/empty:text-muted-foreground/60 transition-colors" />
             <span className="text-[10px] text-muted-foreground/50 group-hover/empty:text-muted-foreground/70 transition-colors">
               Adicionar itens e valor
             </span>
