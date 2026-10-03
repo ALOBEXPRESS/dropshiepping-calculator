@@ -56,6 +56,8 @@ export interface InfraNodeData extends Record<string, unknown> {
   isDimmed?: boolean;
   hasAlert?: boolean;
   alertTypes?: string[];
+  nodeSize?: 'small' | 'medium' | 'large';
+  customColor?: string | null;
 }
 
 // ── Transform functions ───────────────────────────────────────────────────────

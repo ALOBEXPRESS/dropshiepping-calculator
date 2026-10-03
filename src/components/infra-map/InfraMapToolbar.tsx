@@ -11,6 +11,8 @@ import {
   RotateCcw,
   Eye,
   EyeOff,
+  Activity,
+  ZoomIn,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -36,6 +38,7 @@ import {
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
 import type { InfraNodeType } from '@/types/infraGraph';
+import type { NodeSize } from '@/components/infra-map/nodes/BaseNode';
 import type { Node } from '@xyflow/react';
 import { toPng } from 'html-to-image';
 import { NODE_COLORS, type InfraNodeData } from '@/utils/infraGraphTransform';
@@ -61,7 +64,18 @@ interface InfraMapToolbarProps {
   totalNodesCount?: number;
   onResetLayout?: () => void;
   hasCustomPositions?: boolean;
+  /** Node size: small | medium | large */
+  nodeSize?: NodeSize;
+  onNodeSizeChange?: (size: NodeSize) => void;
+  /** Whether the infra diagnostic panel is shown */
+  showDiagnostic?: boolean;
+  onToggleDiagnostic?: () => void;
+  /** Count of manually hidden nodes */
+  hiddenNodeCount?: number;
+  /** Restore all hidden nodes */
+  onShowHiddenNodes?: () => void;
 }
+
 
 const NODE_TYPE_LABELS: Record<InfraNodeType, string> = {
   proxy_provider: 'Provedores de Proxy',
@@ -87,6 +101,12 @@ const ALL_NODE_TYPES: InfraNodeType[] = [
   'titular',
 ];
 
+const NODE_SIZE_LABELS: Record<NodeSize, string> = {
+  small: 'Pequeno',
+  medium: 'Médio',
+  large: 'Grande',
+};
+
 export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
   nodes,
   allNodes,
@@ -106,6 +126,12 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
   totalNodesCount,
   onResetLayout,
   hasCustomPositions,
+  nodeSize = 'medium',
+  onNodeSizeChange,
+  showDiagnostic = false,
+  onToggleDiagnostic,
+  hiddenNodeCount = 0,
+  onShowHiddenNodes,
 }) => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -398,6 +424,75 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
           >
             <AlertTriangle className="h-3.5 w-3.5" />
             <span>Apenas Alertas</span>
+          </Button>
+        )}
+
+        {/* Infra Diagnostic Toggle */}
+        {onToggleDiagnostic && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onToggleDiagnostic}
+            title={showDiagnostic ? 'Ocultar diagnóstico de infraestrutura' : 'Exibir diagnóstico de infraestrutura'}
+            aria-label="Alternar diagnóstico de infraestrutura"
+            className={cn(
+              'h-8 text-xs gap-1.5 cursor-pointer transition-all',
+              showDiagnostic
+                ? 'border-primary/50 bg-primary/10 text-primary hover:bg-primary/20 shadow-[0_0_12px_rgba(255,107,0,0.15)]'
+                : 'border-border/80 bg-background/60 hover:bg-accent text-muted-foreground'
+            )}
+          >
+            <Activity className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Diagnóstico</span>
+          </Button>
+        )}
+
+        {/* Node Size Selector */}
+        {onNodeSizeChange && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs gap-1.5 border-border/80 bg-background/60 hover:bg-accent cursor-pointer"
+                aria-label="Tamanho dos nós"
+              >
+                <ZoomIn className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="hidden sm:inline">{NODE_SIZE_LABELS[nodeSize]}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-40 bg-card border-border">
+              <DropdownMenuLabel className="text-xs text-muted-foreground">Tamanho dos Nós</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {(['small', 'medium', 'large'] as NodeSize[]).map((size) => (
+                <DropdownMenuItem
+                  key={size}
+                  onClick={() => onNodeSizeChange(size)}
+                  className="text-xs cursor-pointer flex items-center justify-between"
+                >
+                  <span>{NODE_SIZE_LABELS[size]}</span>
+                  {nodeSize === size && <Check className="w-3.5 h-3.5 text-primary" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+
+        {/* Restore Hidden Nodes */}
+        {hiddenNodeCount > 0 && onShowHiddenNodes && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onShowHiddenNodes}
+            title={`Restaurar ${hiddenNodeCount} nó(s) ocultados manualmente`}
+            aria-label="Restaurar nós ocultos"
+            className="h-8 text-xs gap-1.5 cursor-pointer border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-all"
+          >
+            <Eye className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">+{hiddenNodeCount} oculto{hiddenNodeCount !== 1 ? 's' : ''}</span>
           </Button>
         )}
 

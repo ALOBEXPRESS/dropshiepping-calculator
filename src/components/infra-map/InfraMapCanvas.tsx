@@ -43,6 +43,7 @@ interface InfraMapCanvasProps {
   onNodeClick: (event: React.MouseEvent, node: Node) => void;
   onPaneClick: () => void;
   onNodeDragStop?: OnNodeDrag<Node>;
+  onNodeContextMenu?: (event: React.MouseEvent, node: Node) => void;
 }
 
 export const InfraMapCanvas: React.FC<InfraMapCanvasProps> = ({
@@ -51,6 +52,7 @@ export const InfraMapCanvas: React.FC<InfraMapCanvasProps> = ({
   onNodeClick,
   onPaneClick,
   onNodeDragStop,
+  onNodeContextMenu,
 }) => {
   const { fitView } = useReactFlow();
   const [nodes, setNodes] = React.useState<Node[]>(inputNodes);
@@ -86,6 +88,14 @@ export const InfraMapCanvas: React.FC<InfraMapCanvasProps> = ({
         onNodesChange={onNodesChange}
         onNodeDragStop={onNodeDragStop}
         onNodeClick={onNodeClick}
+        onNodeContextMenu={
+          onNodeContextMenu
+            ? (event, node) => {
+                event.preventDefault();
+                onNodeContextMenu(event, node);
+              }
+            : undefined
+        }
         onPaneClick={onPaneClick}
         nodesDraggable={true}
         fitView

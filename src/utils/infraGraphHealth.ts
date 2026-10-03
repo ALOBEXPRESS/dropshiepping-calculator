@@ -438,7 +438,12 @@ export function findProxySharedMultipleBCs(graph: InfraGraphResponse): HealthAle
   );
 }
 
-/** Computes all alerts for a graph. */
+/**
+ * Computes all active alerts for a graph.
+ * NOTE: country_mismatch (between holders/titulares and proxies/accounts)
+ * is intentionally excluded — discrepancies in that dimension are irrelevant
+ * to the current business model and should not generate alerts.
+ */
 export function computeAllAlerts(
   graph: InfraGraphResponse,
   now?: Date
@@ -452,7 +457,8 @@ export function computeAllAlerts(
     findProxiesWithoutAccounts(graph),
     findAccountsWithoutProxy(graph),
     findBrowserProfilesWithoutAccount(graph),
-    findCountryMismatches(graph),
+    // findCountryMismatches removed: holder vs proxy/account country differences
+    // are considered irrelevant and should not trigger alerts.
     findSharedDedicatedProxies(graph),
     findAdAccountsWithoutBC(graph),
     findExpiredActiveProxies(graph, now),
