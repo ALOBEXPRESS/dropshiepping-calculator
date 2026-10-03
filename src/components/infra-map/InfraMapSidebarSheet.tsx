@@ -76,21 +76,21 @@ export const InfraMapSidebarSheet: React.FC<InfraMapSidebarSheetProps> = ({
   const navigate = useNavigate();
   const [editingEdgeId, setEditingEdgeId] = useState<string | null>(null);
 
-  if (!node) return null;
-
-  const nodeType = node.type as InfraNodeType;
-  const nodeData = (node.data as unknown) as InfraNodeData;
-  const nodeColor = currentColor || NODE_COLORS[nodeType] || '#6B7280';
-
-  // Filter active alerts belonging to this specific node
-  const nodeAlerts = allAlerts.filter((a) => a.severity !== 'info' && a.nodeIds.includes(node.id));
-  const hasAlerts = nodeAlerts.length > 0;
-
-  // Filter connected edges to/from this node
+  // Filter connected edges to/from this node (unconditional hook call at top level)
   const connectedEdges = useMemo(() => {
     if (!node || !edges) return [];
     return edges.filter((e) => e.source === node.id || e.target === node.id);
   }, [node, edges]);
+
+  if (!node) return null;
+
+  const nodeType = node.type as InfraNodeType;
+  const nodeData = ((node.data || {}) as unknown) as InfraNodeData;
+  const nodeColor = currentColor || NODE_COLORS[nodeType] || '#6B7280';
+
+  // Filter active alerts belonging to this specific node
+  const nodeAlerts = allAlerts.filter((a) => a.severity !== 'info' && a.nodeIds?.includes(node.id));
+  const hasAlerts = nodeAlerts.length > 0;
 
   const handleOpenInModule = () => {
     const routeFn = ROUTE_MAP[nodeType];
