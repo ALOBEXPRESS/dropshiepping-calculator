@@ -220,3 +220,6 @@ tools/lightrag/**/*.pyc
 scratch/*
 .agents/
 .agents
+test-screenshots/
+.playwright-mcp/
+playwright-test-negocio.js

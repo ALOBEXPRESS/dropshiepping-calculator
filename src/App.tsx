@@ -51,6 +51,9 @@ const BrowserProfiles = lazy(() => import('./pages/BrowserProfilesPage'));
 const BusinessCenters = lazy(() => import('./pages/BusinessCentersPage'));
 const InfraMap = lazy(() => import('./pages/InfraMapPage').then(m => ({ default: m.InfraMapPage })));
 const ResponsaveisPg = lazy(() => import('./pages/ResponsaveisPage'));
+const NegocioPage = lazy(() => import('./pages/NegocioPage'));
+const BMCSectionPage = lazy(() => import('./pages/BMCSectionPage'));
+const BMCCanvasPage = lazy(() => import('./pages/BMCCanvasPage'));
 
 const ProductsPage = () => (
   <ProtectedRoute>
@@ -226,6 +229,42 @@ const InfraMapRoutePage = () => (
   </ProtectedRoute>
 );
 
+const NegocioRoutePage = () => (
+  <ProtectedRoute>
+    <AdminRoute>
+      <Layout>
+        <Suspense fallback={<LoadingState />}>
+          <NegocioPage />
+        </Suspense>
+      </Layout>
+    </AdminRoute>
+  </ProtectedRoute>
+);
+
+const BMCSectionRoutePage = () => (
+  <ProtectedRoute>
+    <AdminRoute>
+      <Layout>
+        <Suspense fallback={<LoadingState />}>
+          <BMCSectionPage />
+        </Suspense>
+      </Layout>
+    </AdminRoute>
+  </ProtectedRoute>
+);
+
+const BMCCanvasRoutePage = () => (
+  <ProtectedRoute>
+    <AdminRoute>
+      <Layout>
+        <Suspense fallback={<LoadingState />}>
+          <BMCCanvasPage />
+        </Suspense>
+      </Layout>
+    </AdminRoute>
+  </ProtectedRoute>
+);
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -273,6 +312,9 @@ function App() {
               <Route path="/contas/responsaveis" element={<ResponsaveisRoutePage />} />
               <Route path="/mapa" element={<InfraMapRoutePage />} />
               <Route path="/contas/mapa" element={<InfraMapRoutePage />} />
+              <Route path="/negocio" element={<NegocioRoutePage />} />
+              <Route path="/negocio/:bcId/canvas" element={<BMCCanvasRoutePage />} />
+              <Route path="/negocio/:bcId/:section" element={<BMCSectionRoutePage />} />
               <Route path="/profile" element={
                 <ProtectedRoute>
                   <Layout>

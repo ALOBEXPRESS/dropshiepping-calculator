@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useBusinessCenters } from '@/hooks/useBusinessCenters';
@@ -12,12 +12,13 @@ import {
   Handshake, Cog, Package, Gem, Users,
   Share2, UserCircle, Receipt, CircleDollarSign,
   ChevronLeft, ChevronRight, Briefcase,
-  PlusCircle, FileText,
+  Pencil, FileText, LayoutGrid,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BC_PLATFORM_CONFIG } from '@/types/businessCenters';
+import { BMCSectionEditor } from '@/components/business-model-canvas/BMCSectionEditor';
 
 // Mapa de ícones Lucide por nome string
 const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
@@ -29,6 +30,7 @@ const BMCSectionPage: React.FC = () => {
   const { bcId, section } = useParams<{ bcId: string; section: string }>();
   const { organizationId } = useSettings();
   const navigate = useNavigate();
+  const [editorOpen, setEditorOpen] = useState(false);
 
   const { businessCenters, isLoading: bcLoading } = useBusinessCenters(organizationId);
   const bc = businessCenters.find((b) => b.id === bcId);
@@ -54,8 +56,8 @@ const BMCSectionPage: React.FC = () => {
 
   const SectionIcon = ICON_MAP[sectionConfig.icon] ?? Briefcase;
   const platformConfig = bc ? BC_PLATFORM_CONFIG[bc.platform] : null;
-
   const isLoading = bcLoading || sectionLoading;
+  const hasItems = sectionData && sectionData.items.length > 0;
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
@@ -103,17 +105,28 @@ const BMCSectionPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Botão editar — fase 2 */}
+        {/* Botão editar */}
         <Button
           variant="outline"
           size="sm"
-          disabled
-          className="shrink-0 opacity-50 cursor-not-allowed"
-          title="Edição disponível em breve"
+          onClick={() => setEditorOpen(true)}
+          disabled={isLoading || !bcId}
+          className="shrink-0"
         >
-          <PlusCircle className="w-4 h-4 mr-1.5" />
-          Editar
+          <Pencil className="w-4 h-4 mr-1.5" />
+          {hasItems ? 'Editar' : 'Adicionar itens'}
         </Button>
+      </div>
+
+      {/* Link canvas completo */}
+      <div className="flex justify-end -mt-4">
+        <Link
+          to={`/negocio/${bcId}/canvas`}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-emerald-400 transition-colors"
+        >
+          <LayoutGrid className="w-3.5 h-3.5" />
+          Ver canvas completo
+        </Link>
       </div>
 
       {/* Conteúdo da seção */}
@@ -124,33 +137,38 @@ const BMCSectionPage: React.FC = () => {
               <Skeleton key={i} className="h-5 w-3/4" />
             ))}
           </div>
-        ) : sectionData && sectionData.items.length > 0 ? (
+        ) : hasItems ? (
           <div className="space-y-4">
             <ul className="space-y-2.5">
-              {sectionData.items.map((item, idx) => (
+              {sectionData!.items.map((item, idx) => (
                 <li key={idx} className="flex items-start gap-2.5">
-                  <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${sectionConfig.color.replace('text-', 'bg-')}`} />
+                  <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${sectionConfig.dotColor}`} />
                   <span className="text-sm text-foreground/90">{item}</span>
                 </li>
               ))}
             </ul>
-            {sectionData.notes && (
+            {sectionData!.notes && (
               <div className="mt-4 pt-4 border-t border-border/50 flex gap-2">
                 <FileText className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                <p className="text-sm text-muted-foreground">{sectionData.notes}</p>
+                <p className="text-sm text-muted-foreground">{sectionData!.notes}</p>
               </div>
             )}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-36 gap-2 text-center">
-            <SectionIcon className={`w-8 h-8 ${sectionConfig.color} opacity-30`} />
+          <button
+            type="button"
+            onClick={() => setEditorOpen(true)}
+            disabled={!bcId}
+            className="w-full h-full flex flex-col items-center justify-center min-h-[152px] gap-2 text-center rounded-lg border-2 border-dashed border-border/40 hover:border-border hover:bg-accent/30 transition-all cursor-pointer group"
+          >
+            <SectionIcon className={`w-8 h-8 ${sectionConfig.color} opacity-30 group-hover:opacity-50 transition-opacity`} />
             <p className="text-sm text-muted-foreground">
-              Nenhum item cadastrado para <span className="font-medium">{sectionConfig.label}</span>
+              Nenhum item em <span className="font-medium">{sectionConfig.label}</span>
             </p>
-            <p className="text-xs text-muted-foreground/60">
-              A edição do canvas estará disponível em breve.
+            <p className={`text-xs font-medium ${sectionConfig.color}`}>
+              Clique para adicionar
             </p>
-          </div>
+          </button>
         )}
       </div>
 
@@ -170,7 +188,7 @@ const BMCSectionPage: React.FC = () => {
           <div />
         )}
 
-        {/* Índice rápido de seções */}
+        {/* Dots de navegação */}
         <div className="flex gap-1.5">
           {BMC_SECTION_KEYS.map((key) => (
             <Link
@@ -180,7 +198,7 @@ const BMCSectionPage: React.FC = () => {
               className={`
                 w-2 h-2 rounded-full transition-all
                 ${key === sectionKey
-                  ? `${sectionConfig.color.replace('text-', 'bg-')} scale-125`
+                  ? `${sectionConfig.dotColor} scale-125`
                   : 'bg-muted-foreground/30 hover:bg-muted-foreground/60'
                 }
               `}
@@ -202,6 +220,17 @@ const BMCSectionPage: React.FC = () => {
           <div />
         )}
       </div>
+
+      {/* Dialog de edição */}
+      {bcId && (
+        <BMCSectionEditor
+          open={editorOpen}
+          onOpenChange={setEditorOpen}
+          businessCenterId={bcId}
+          sectionKey={sectionKey}
+          currentData={sectionData ?? null}
+        />
+      )}
     </div>
   );
 };
