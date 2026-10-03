@@ -50,6 +50,7 @@ const Devices = lazy(() => import('./pages/DevicesPage'));
 const BrowserProfiles = lazy(() => import('./pages/BrowserProfilesPage'));
 const BusinessCenters = lazy(() => import('./pages/BusinessCentersPage'));
 const InfraMap = lazy(() => import('./pages/InfraMapPage').then(m => ({ default: m.InfraMapPage })));
+const ResponsaveisPg = lazy(() => import('./pages/ResponsaveisPage'));
 
 const ProductsPage = () => (
   <ProtectedRoute>
@@ -201,6 +202,18 @@ const BusinessCentersRoutePage = () => (
   </ProtectedRoute>
 );
 
+const ResponsaveisRoutePage = () => (
+  <ProtectedRoute>
+    <AdminRoute>
+    <Layout>
+      <Suspense fallback={<LoadingState />}>
+        <ResponsaveisPg />
+      </Suspense>
+    </Layout>
+    </AdminRoute>
+  </ProtectedRoute>
+);
+
 const InfraMapRoutePage = () => (
   <ProtectedRoute>
     <AdminRoute>
@@ -256,6 +269,8 @@ function App() {
               <Route path="/contas/perfis-de-navegador" element={<BrowserProfilesRoutePage />} />
               <Route path="/business-centers" element={<BusinessCentersRoutePage />} />
               <Route path="/contas/business-centers" element={<BusinessCentersRoutePage />} />
+              <Route path="/responsaveis" element={<ResponsaveisRoutePage />} />
+              <Route path="/contas/responsaveis" element={<ResponsaveisRoutePage />} />
               <Route path="/mapa" element={<InfraMapRoutePage />} />
               <Route path="/contas/mapa" element={<InfraMapRoutePage />} />
               <Route path="/profile" element={

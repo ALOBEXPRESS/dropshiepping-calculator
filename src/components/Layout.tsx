@@ -6,6 +6,7 @@ import {
   LogOut, 
   Settings, 
   User, 
+  Users,
   ChevronDown, 
   Sun, 
   Moon, 
@@ -48,6 +49,7 @@ export interface NavRouteItem {
 const NAV_ROUTES: {
   ecommerce: NavRouteItem[];
   painel: NavRouteItem[];
+  responsaveis: NavRouteItem[];
 } = {
   ecommerce: [
     { to: '/dashboard', label: 'Dashboard',   adminOnly: false, accent: 'text-[hsl(var(--chart-2))]',  dot: 'bg-[hsl(var(--chart-2))]',  dotMuted: 'bg-[hsl(var(--chart-2)/0.4)]',  active: 'bg-[hsl(var(--chart-2)/0.08)] text-[hsl(var(--chart-2))] font-semibold' },
@@ -141,11 +143,63 @@ const NAV_ROUTES: {
       active: 'bg-purple-500/15 text-purple-400 font-semibold',
     },
   ],
+  responsaveis: [
+    {
+      to: '/responsaveis?tab=titulares',
+      aliases: ['/responsaveis/titulares', '/titulares', '/contas/responsaveis?tab=titulares'],
+      label: 'Titulares',
+      adminOnly: true,
+      accent: 'text-violet-400',
+      dot: 'bg-violet-400',
+      dotMuted: 'bg-violet-400/40',
+      active: 'bg-violet-500/15 text-violet-400 font-semibold',
+    },
+    {
+      to: '/responsaveis?tab=influenciadores',
+      aliases: ['/responsaveis/influenciadores', '/influenciadores', '/contas/responsaveis?tab=influenciadores'],
+      label: 'Influenciadores',
+      adminOnly: true,
+      accent: 'text-pink-400',
+      dot: 'bg-pink-400',
+      dotMuted: 'bg-pink-400/40',
+      active: 'bg-pink-500/15 text-pink-400 font-semibold',
+    },
+    {
+      to: '/responsaveis?tab=testadores',
+      aliases: ['/responsaveis/testadores', '/testadores', '/contas/responsaveis?tab=testadores'],
+      label: 'Testadores',
+      adminOnly: true,
+      accent: 'text-sky-400',
+      dot: 'bg-sky-400',
+      dotMuted: 'bg-sky-400/40',
+      active: 'bg-sky-500/15 text-sky-400 font-semibold',
+    },
+  ],
 };
 
-function isRouteMatching(item: NavRouteItem, pathname: string): boolean {
+function isRouteMatching(item: NavRouteItem, pathname: string, search: string = ''): boolean {
   const targets = [item.to, ...(item.aliases || [])];
   return targets.some((target) => {
+    if (target.includes('?')) {
+      const [targetPath, targetQuery] = target.split('?');
+      if (pathname === targetPath || (targetPath !== '/' && pathname.startsWith(targetPath + '/'))) {
+        const targetParams = new URLSearchParams(targetQuery);
+        const currentParams = new URLSearchParams(search);
+
+        // Se query é tab=titulares e usuário está em /responsaveis sem parâmetro tab, ativa como padrão
+        if (targetParams.get('tab') === 'titulares' && !currentParams.get('tab')) {
+          return true;
+        }
+
+        let allMatch = true;
+        targetParams.forEach((val, key) => {
+          if (currentParams.get(key) !== val) allMatch = false;
+        });
+        if (allMatch) return true;
+      }
+      return false;
+    }
+
     if (target === '/') {
       return pathname === '/';
     }
@@ -156,6 +210,7 @@ function isRouteMatching(item: NavRouteItem, pathname: string): boolean {
       if (target === '/contas') {
         const isOtherModule =
           pathname.startsWith('/contas/business-centers') ||
+          pathname.startsWith('/contas/responsaveis') ||
           pathname.startsWith('/contas/proxies') ||
           pathname.startsWith('/contas/provedores') ||
           pathname.startsWith('/contas/dispositivos') ||
@@ -192,9 +247,9 @@ function useLocalStorageBoolean(key: string, defaultValue: boolean): [boolean, R
 }
 
 // ── Reusable NavLink ──────────────────────────────────────────────────────────
-function NavLink({ route, pathname, e2eSearch }: { route: NavRouteItem; pathname: string; e2eSearch: string }) {
-  const isDirectActive = isRouteMatching(route, pathname);
-  const isAnyChildActive = Boolean(route.children?.some(c => isRouteMatching(c, pathname)));
+function NavLink({ route, pathname, search = '', e2eSearch }: { route: NavRouteItem; pathname: string; search?: string; e2eSearch: string }) {
+  const isDirectActive = isRouteMatching(route, pathname, search);
+  const isAnyChildActive = Boolean(route.children?.some(c => isRouteMatching(c, pathname, search)));
   const isActive = isDirectActive && !isAnyChildActive;
 
   const [isOpen, setIsOpen] = useState<boolean>(() => {
@@ -208,12 +263,21 @@ function NavLink({ route, pathname, e2eSearch }: { route: NavRouteItem; pathname
     }
   }, [isDirectActive, isAnyChildActive]);
 
+  const getDestination = (targetTo: string) => {
+    if (targetTo.includes('?')) {
+      const [p, q] = targetTo.split('?');
+      const finalSearch = q + (e2eSearch ? '&' + e2eSearch.replace('?', '') : '');
+      return { pathname: p, search: `?${finalSearch}` };
+    }
+    return { pathname: targetTo, search: e2eSearch };
+  };
+
   if (route.children && route.children.length > 0) {
     return (
       <li className="space-y-0.5">
         <div className="flex items-center justify-between group">
           <Link
-            to={{ pathname: route.to, search: e2eSearch }}
+            to={getDestination(route.to)}
             className={`flex items-center flex-1 px-3 py-2 text-sm rounded-lg no-underline transition-all duration-150 ${
               isActive ? route.active : 'text-muted-foreground hover:bg-accent hover:text-foreground'
             }`}
@@ -243,11 +307,11 @@ function NavLink({ route, pathname, e2eSearch }: { route: NavRouteItem; pathname
           <div className="overflow-hidden">
             <div className="ml-4 pl-2.5 border-l border-border/60 space-y-0.5 my-0.5">
               {route.children.map((child) => {
-                const isChildActive = isRouteMatching(child, pathname);
+                const isChildActive = isRouteMatching(child, pathname, search);
                 return (
                   <Link
                     key={child.to}
-                    to={{ pathname: child.to, search: e2eSearch }}
+                    to={getDestination(child.to)}
                     className={`flex items-center w-full px-2.5 py-1.5 text-xs rounded-md no-underline transition-all duration-150 ${
                       isChildActive
                         ? child.active
@@ -273,7 +337,7 @@ function NavLink({ route, pathname, e2eSearch }: { route: NavRouteItem; pathname
   return (
     <li>
       <Link
-        to={{ pathname: route.to, search: e2eSearch }}
+        to={getDestination(route.to)}
         className={`flex items-center w-full px-3 py-2 text-sm rounded-lg no-underline transition-all duration-150
           ${isActive ? route.active : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
       >
@@ -293,6 +357,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [ecommerceOpen, setEcommerceOpen] = useLocalStorageBoolean('nav_group_ecommerce_open', true);
   const [painelOpen, setPainelOpen] = useLocalStorageBoolean('nav_group_painel_open', true);
   const [contasOpen, setContasOpen] = useLocalStorageBoolean('nav_group_contas_open', false);
+  const [responsaveisOpen, setResponsaveisOpen] = useLocalStorageBoolean('nav_group_responsaveis_open', true);
   const [blingNotifications, setBlingNotifications] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
@@ -300,6 +365,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { organizationId } = useSettings();
   const { isAdmin, profile } = useUser();
   const e2eSearch = new URLSearchParams(location.search).get('e2e') === 'true' ? '?e2e=true' : '';
+
+  // Auto-expande grupos quando a rota atual pertencer a eles
+  useEffect(() => {
+    if (location.pathname.startsWith('/responsaveis') || location.pathname.startsWith('/contas/responsaveis')) {
+      setResponsaveisOpen(true);
+      setPainelOpen(true);
+    }
+  }, [location.pathname, setResponsaveisOpen, setPainelOpen]);
 
   // Fecha a sidebar automaticamente ao navegar em telas mobile/tablet (< 1024px)
   useEffect(() => {
@@ -408,7 +481,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       {NAV_ROUTES.ecommerce
                         .filter(r => !r.adminOnly || isAdmin)
                         .map(r => (
-                          <NavLink key={r.to} route={r} pathname={location.pathname} e2eSearch={e2eSearch} />
+                          <NavLink key={r.to} route={r} pathname={location.pathname} search={location.search} e2eSearch={e2eSearch} />
                         ))}
                     </ul>
                   </div>
@@ -441,7 +514,34 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                 {NAV_ROUTES.painel
                                   .filter(r => !r.adminOnly || isAdmin)
                                   .map(r => (
-                                    <NavLink key={r.to} route={r} pathname={location.pathname} e2eSearch={e2eSearch} />
+                                    <NavLink key={r.to} route={r} pathname={location.pathname} search={location.search} e2eSearch={e2eSearch} />
+                                  ))}
+                              </ul>
+                            </div>
+                          </div>
+                        </li>
+                      )}
+
+                      {/* Subgrupo: Responsáveis */}
+                      {isAdmin && (
+                        <li className="pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setResponsaveisOpen(v => !v)}
+                            className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
+                            data-testid="nav-responsaveis-subgroup"
+                          >
+                            <Users className="w-3.5 h-3.5 text-rose-400 flex-shrink-0" />
+                            <span className="flex-1 text-left text-[10px] font-semibold uppercase tracking-widest">Responsáveis</span>
+                            <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${responsaveisOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                          <div className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out ${responsaveisOpen ? 'grid-rows-[1fr] opacity-100 mt-0.5' : 'grid-rows-[0fr] opacity-0 pointer-events-none'}`}>
+                            <div className="overflow-hidden">
+                              <ul className="space-y-0.5 pl-3">
+                                {NAV_ROUTES.responsaveis
+                                  .filter(r => !r.adminOnly || isAdmin)
+                                  .map(r => (
+                                    <NavLink key={r.to} route={r} pathname={location.pathname} search={location.search} e2eSearch={e2eSearch} />
                                   ))}
                               </ul>
                             </div>

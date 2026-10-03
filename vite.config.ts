@@ -15,7 +15,7 @@ export default defineConfig({
     include: ['react', 'react-dom', '@xyflow/react'],
   },
   server: {
-    host: 'localhost',
+    host: '0.0.0.0',
     port: 5173,
   },
 })
