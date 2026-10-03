@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   Search,
   Download,
-  Filter,
   Layers,
   Maximize2,
   RefreshCw,
@@ -13,6 +12,7 @@ import {
   EyeOff,
   Activity,
   ZoomIn,
+  BookmarkCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,13 +24,7 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -74,10 +68,12 @@ interface InfraMapToolbarProps {
   hiddenNodeCount?: number;
   /** Restore all hidden nodes */
   onShowHiddenNodes?: () => void;
+  /** Save current view (viewport, positions, modules, filters) as permanent default */
+  onSaveView?: () => void;
 }
 
 
-const NODE_TYPE_LABELS: Record<InfraNodeType, string> = {
+export const NODE_TYPE_LABELS: Record<InfraNodeType, string> = {
   proxy_provider: 'Provedores de Proxy',
   proxy: 'Proxies',
   platform_account: 'Contas de Plataforma',
@@ -132,8 +128,10 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
   onToggleDiagnostic,
   hiddenNodeCount = 0,
   onShowHiddenNodes,
+  onSaveView,
 }) => {
   const [searchOpen, setSearchOpen] = useState(false);
+  const [modulesOpen, setModulesOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
   // Global keyboard shortcut: Ctrl+K / Cmd+K to open search popover
@@ -219,8 +217,9 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
       {/* Left: Structured Command Clusters */}
       <div className="flex items-center gap-1.5 min-w-0 overflow-x-auto no-scrollbar py-0.5">
         {/* Search Combobox */}
-        <Popover open={searchOpen} onOpenChange={setSearchOpen}>
-          <PopoverTrigger asChild>
+        {/* Search Combobox (Portalled via DropdownMenu) */}
+        <DropdownMenu open={searchOpen} onOpenChange={setSearchOpen}>
+          <DropdownMenuTrigger asChild>
             <Button
               type="button"
               variant="outline"
@@ -234,8 +233,8 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
                 ⌘K
               </kbd>
             </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[360px] p-0 shadow-2xl border-border bg-card" align="start">
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-[360px] p-0 shadow-2xl border-border bg-[#0f1117] z-50 text-foreground" align="start" sideOffset={6}>
             <Command className="bg-transparent">
               <CommandInput placeholder="Buscar por nome, IP, plataforma ou país..." className="text-xs" />
               <CommandList className="max-h-[300px]">
@@ -283,8 +282,8 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
                 </CommandGroup>
               </CommandList>
             </Command>
-          </PopoverContent>
-        </Popover>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* Grouping Mode Dropdown */}
         <DropdownMenu>
@@ -342,8 +341,8 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Node Types Filter Dropdown */}
-        <DropdownMenu>
+        {/* Modules Filter Dropdown Menu (Portalled, Non-closing on toggle) */}
+        <DropdownMenu open={modulesOpen} onOpenChange={setModulesOpen}>
           <DropdownMenuTrigger asChild>
             <Button
               type="button"
@@ -351,63 +350,101 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
               size="sm"
               className={cn(
                 'h-8 text-xs gap-1.5 px-2.5 border-border/80 bg-background/60 hover:bg-accent cursor-pointer shrink-0',
-                visibleNodeTypes.size < ALL_NODE_TYPES.length && 'border-primary/50 text-primary'
+                visibleNodeTypes.size < ALL_NODE_TYPES.length && 'border-primary/60 text-primary bg-primary/10 shadow-[0_0_12px_rgba(255,77,0,0.15)]'
               )}
-              aria-label="Filtrar por tipos de nós visíveis"
+              aria-label="Filtrar módulos visíveis no mapa"
             >
-              <Filter className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Tipos</span>
+              <Layers className="h-3.5 w-3.5 text-primary" />
+              <span>Módulos</span>
               <span className="text-[10px] font-mono px-1 rounded bg-muted/80 font-semibold">
                 {visibleNodeTypes.size}/{ALL_NODE_TYPES.length}
               </span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-64 bg-card border-border">
-            <div className="flex items-center justify-between px-2 py-1.5 border-b border-border/60">
-              <span className="text-xs font-semibold text-foreground">Filtrar Nós</span>
-              <div className="flex items-center gap-1">
+          <DropdownMenuContent
+            align="start"
+            sideOffset={6}
+            className="w-72 p-0 shadow-2xl border-border bg-[#0f1117]/95 backdrop-blur-xl z-50 text-foreground"
+          >
+            <div className="flex items-center justify-between px-3 py-2 border-b border-border/60 bg-muted/30">
+              <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-primary" />
+                Módulos Visíveis
+              </span>
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={handleSelectAllTypes}
-                  className="text-[10px] text-primary hover:underline px-1 py-0.5 cursor-pointer"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleSelectAllTypes();
+                  }}
+                  className="text-[10px] text-primary hover:underline font-medium cursor-pointer"
                 >
                   Todos
                 </button>
                 <span className="text-muted-foreground text-[10px]">•</span>
                 <button
                   type="button"
-                  onClick={handleClearAllTypes}
-                  className="text-[10px] text-muted-foreground hover:underline px-1 py-0.5 cursor-pointer"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleClearAllTypes();
+                  }}
+                  className="text-[10px] text-muted-foreground hover:underline font-medium cursor-pointer"
                 >
                   Nenhum
                 </button>
               </div>
             </div>
 
-            <div className="py-1">
+            <div className="p-1.5 space-y-0.5 max-h-[340px] overflow-y-auto no-scrollbar">
               {ALL_NODE_TYPES.map((type) => {
                 const isChecked = visibleNodeTypes.has(type);
                 const count = nodeCountsByType[type] || 0;
                 const dotColor = NODE_COLORS[type];
 
                 return (
-                  <DropdownMenuCheckboxItem
+                  <div
                     key={type}
-                    checked={isChecked}
-                    onCheckedChange={() => toggleNodeType(type)}
-                    className="text-xs cursor-pointer flex items-center justify-between"
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      toggleNodeType(type);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleNodeType(type);
+                      }
+                    }}
+                    className={cn(
+                      'flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors select-none',
+                      isChecked ? 'hover:bg-accent/80 text-foreground' : 'text-muted-foreground hover:bg-muted/40 opacity-60'
+                    )}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div
+                        className={cn(
+                          'w-4 h-4 rounded flex items-center justify-center border transition-all shrink-0',
+                          isChecked ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/40 bg-transparent'
+                        )}
+                      >
+                        {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                      </div>
                       <span
-                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm"
                         style={{ backgroundColor: dotColor }}
                       />
-                      <span>{NODE_TYPE_LABELS[type]}</span>
+                      <span className="truncate font-medium">{NODE_TYPE_LABELS[type]}</span>
                     </div>
-                    <span className="text-[10px] font-mono text-muted-foreground ml-auto pl-2">
+                    <span className="text-[10px] font-mono text-muted-foreground pl-2 shrink-0">
                       {count}
                     </span>
-                  </DropdownMenuCheckboxItem>
+                  </div>
                 );
               })}
             </div>
@@ -572,6 +609,23 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
           >
             <RotateCcw className="h-3.5 w-3.5" />
             <span className="hidden lg:inline">Restaurar Foco</span>
+          </Button>
+        )}
+
+        {/* Save Current View As Default */}
+        {onSaveView && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onSaveView}
+            className="h-8 text-xs gap-1.5 px-2.5 border-emerald-500/50 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 cursor-pointer shadow-[0_0_12px_rgba(16,185,129,0.2)] transition-all font-medium shrink-0"
+            title="Salvar esta visualização (câmera, zoom, nós e filtros) para abrir sempre assim"
+            aria-label="Salvar visualização atual como padrão"
+          >
+            <BookmarkCheck className="h-3.5 w-3.5 text-emerald-400" />
+            <span className="hidden sm:inline">Salvar Visualização</span>
+            <span className="sm:hidden">Salvar</span>
           </Button>
         )}
 

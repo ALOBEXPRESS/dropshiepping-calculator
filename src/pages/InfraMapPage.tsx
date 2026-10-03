@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { ReactFlowProvider, useReactFlow, type OnNodeDrag } from '@xyflow/react';
+import { ReactFlowProvider, useReactFlow, type OnNodeDrag, type Viewport } from '@xyflow/react';
 import type { Node } from '@xyflow/react';
 import { Loader2, AlertCircle, Network, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { useInfraGraph } from '@/hooks/useInfraGraph';
 import { useInfraMapLayout } from '@/hooks/useInfraMapLayout';
 import { useInfraMapFocus } from '@/hooks/useInfraMapFocus';
 import { InfraMapCanvas } from '@/components/infra-map/InfraMapCanvas';
-import { InfraMapToolbar } from '@/components/infra-map/InfraMapToolbar';
+import { InfraMapToolbar, NODE_TYPE_LABELS } from '@/components/infra-map/InfraMapToolbar';
 import { InfraMapSidebarSheet } from '@/components/infra-map/InfraMapSidebarSheet';
 import { HealthKpis } from '@/components/infra-map/HealthKpis';
 import { InfraMapLegend } from '@/components/infra-map/InfraMapLegend';
@@ -39,7 +39,31 @@ const ALL_NODE_TYPES: InfraNodeType[] = [
 const InfraMapContent: React.FC = () => {
   const { organizationId } = useSettings();
   const { data, isLoading, error, refetch } = useInfraGraph(organizationId);
-  const { fitView } = useReactFlow();
+  const { fitView, getViewport } = useReactFlow();
+
+  // 0. Saved Viewport (camera pan & zoom) with localStorage persistence
+  const [savedViewport, setSavedViewport] = useState<Viewport | null>(() => {
+    try {
+      const raw = localStorage.getItem(`infra_map_viewport_${organizationId || 'default'}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed?.x === 'number' && typeof parsed?.y === 'number' && typeof parsed?.zoom === 'number') {
+          return parsed;
+        }
+      }
+    } catch {}
+    return null;
+  });
+
+  const handleViewportChange = useCallback((vp: Viewport) => {
+    setSavedViewport(vp);
+    try {
+      localStorage.setItem(
+        `infra_map_viewport_${organizationId || 'default'}`,
+        JSON.stringify(vp)
+      );
+    } catch {}
+  }, [organizationId]);
 
   // 1. Group By with localStorage persistence
   const [groupBy, setGroupByState] = useState<'none' | 'provider' | 'platform'>(() => {
@@ -228,9 +252,64 @@ const InfraMapContent: React.FC = () => {
     }
   }, [organizationId]);
 
-  // 9. Context menu state
+  // 9. Hide entire module (all nodes of a specific type)
+  const handleHideModule = useCallback((moduleType: InfraNodeType) => {
+    setVisibleNodeTypesState((prev) => {
+      const next = new Set(prev);
+      next.delete(moduleType);
+      try {
+        localStorage.setItem(
+          `infra_map_visible_types_${organizationId || 'default'}`,
+          JSON.stringify(Array.from(next))
+        );
+      } catch {}
+      return next;
+    });
+    toast.info(`Módulo "${NODE_TYPE_LABELS[moduleType] || moduleType}" ocultado. Reative-o a qualquer momento no botão "Módulos".`);
+  }, [organizationId]);
+
+  // 10. Explicitly Save Current View as Permanent Default
+  const handleSaveView = useCallback(() => {
+    try {
+      const currentVp = getViewport();
+      setSavedViewport(currentVp);
+      localStorage.setItem(
+        `infra_map_viewport_${organizationId || 'default'}`,
+        JSON.stringify(currentVp)
+      );
+      localStorage.setItem(
+        `infra_map_visible_types_${organizationId || 'default'}`,
+        JSON.stringify(Array.from(visibleNodeTypes))
+      );
+      localStorage.setItem(
+        `infra_map_group_by_${organizationId || 'default'}`,
+        groupBy
+      );
+      localStorage.setItem(
+        `infra_map_node_size_${organizationId || 'default'}`,
+        nodeSize
+      );
+      localStorage.setItem(
+        `infra_map_hide_unused_${organizationId || 'default'}`,
+        String(hideUnused)
+      );
+      localStorage.setItem(
+        `infra_map_show_diagnostic_${organizationId || 'default'}`,
+        String(showDiagnostic)
+      );
+      toast.success('Visualização padrão salva com sucesso!', {
+        description: 'Zoom, câmera, módulos visíveis e configurações serão restaurados automaticamente sempre que você entrar.',
+      });
+    } catch (e) {
+      console.warn('Failed to save layout view:', e);
+      toast.error('Erro ao salvar visualização no armazenamento local.');
+    }
+  }, [getViewport, organizationId, visibleNodeTypes, groupBy, nodeSize, hideUnused, showDiagnostic]);
+
+  // 11. Context menu state
   const [contextMenu, setContextMenu] = useState<{
     nodeId: string;
+    nodeType: InfraNodeType;
     nodeLabel: string;
     x: number;
     y: number;
@@ -242,6 +321,7 @@ const InfraMapContent: React.FC = () => {
       const data = node.data as unknown as InfraNodeData;
       setContextMenu({
         nodeId: node.id,
+        nodeType: node.type as InfraNodeType,
         nodeLabel: data?.label || node.id,
         x: event.clientX,
         y: event.clientY,
@@ -287,6 +367,14 @@ const InfraMapContent: React.FC = () => {
       }
       const savedColors = localStorage.getItem(`infra_map_custom_colors_${organizationId || 'default'}`);
       setCustomColors(savedColors ? JSON.parse(savedColors) : {});
+
+      const savedVp = localStorage.getItem(`infra_map_viewport_${organizationId || 'default'}`);
+      if (savedVp) {
+        const parsed = JSON.parse(savedVp);
+        if (typeof parsed?.x === 'number' && typeof parsed?.y === 'number' && typeof parsed?.zoom === 'number') {
+          setSavedViewport(parsed);
+        }
+      }
     } catch {
       setCustomPositions({});
     }
@@ -619,6 +707,7 @@ const InfraMapContent: React.FC = () => {
         onToggleDiagnostic={() => setShowDiagnostic((prev) => !prev)}
         hiddenNodeCount={hiddenNodeIds.size}
         onShowHiddenNodes={handleRestoreHiddenNodes}
+        onSaveView={handleSaveView}
       />
 
       {/* 3. Graph Viewport Canvas */}
@@ -626,6 +715,8 @@ const InfraMapContent: React.FC = () => {
         <InfraMapCanvas
           nodes={focusedNodes}
           edges={focusedEdges}
+          savedViewport={savedViewport}
+          onViewportChange={handleViewportChange}
           onNodeClick={handleNodeClick}
           onPaneClick={handlePaneClick}
           onNodeDragStop={handleNodeDragStop}
@@ -643,17 +734,23 @@ const InfraMapContent: React.FC = () => {
         onOpenChange={setSheetOpen}
         allAlerts={allAlerts}
         onFocusNode={handleNodeFocus}
+        currentColor={selectedNode ? customColors[selectedNode.id] : null}
+        onColorChange={handleColorChange}
+        onHideNode={handleHideNode}
+        onHideModule={handleHideModule}
       />
 
       {/* 5. Right-Click Node Context Menu */}
       {contextMenu && (
         <NodeContextMenu
           nodeId={contextMenu.nodeId}
+          nodeType={contextMenu.nodeType}
           nodeLabel={contextMenu.nodeLabel}
           x={contextMenu.x}
           y={contextMenu.y}
           currentColor={contextMenu.currentColor}
           onHide={handleHideNode}
+          onHideModule={handleHideModule}
           onColorChange={handleColorChange}
           onClose={() => setContextMenu(null)}
         />

@@ -3,8 +3,9 @@
  * Allows: hiding a node, changing its accent color.
  */
 import React, { useEffect, useRef } from 'react';
-import { EyeOff, Palette, RotateCcw, Check } from 'lucide-react';
+import { EyeOff, Palette, RotateCcw, Check, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { InfraNodeType } from '@/types/infraGraph';
 
 // Curated accent palette for node color overrides
 export const NODE_ACCENT_COLORS = [
@@ -21,24 +22,40 @@ export const NODE_ACCENT_COLORS = [
   { label: 'Teal', value: '#14B8A6', swatch: 'bg-teal-500' },
 ];
 
+const NODE_TYPE_NAMES: Partial<Record<InfraNodeType, string>> = {
+  proxy_provider: 'Provedores de Proxy',
+  proxy: 'Proxies',
+  platform_account: 'Contas',
+  browser_profile: 'Perfis de Navegador',
+  device: 'Dispositivos',
+  business_center: 'Business Centers',
+  ad_account: 'Contas de Anúncio',
+  campaign: 'Campanhas',
+  titular: 'Titulares',
+};
+
 interface NodeContextMenuProps {
   nodeId: string;
+  nodeType?: InfraNodeType;
   nodeLabel: string;
   x: number;
   y: number;
   currentColor?: string | null;
   onHide: (nodeId: string) => void;
+  onHideModule?: (moduleType: InfraNodeType) => void;
   onColorChange: (nodeId: string, color: string | null) => void;
   onClose: () => void;
 }
 
 export const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
   nodeId,
+  nodeType,
   nodeLabel,
   x,
   y,
   currentColor,
   onHide,
+  onHideModule,
   onColorChange,
   onClose,
 }) => {
@@ -87,7 +104,7 @@ export const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
       </div>
 
       {/* Actions */}
-      <div className="p-1">
+      <div className="p-1 space-y-0.5">
         <button
           type="button"
           role="menuitem"
@@ -103,6 +120,24 @@ export const NodeContextMenu: React.FC<NodeContextMenuProps> = ({
           <EyeOff className="w-3.5 h-3.5 text-amber-400 shrink-0" />
           <span>Ocultar este nó</span>
         </button>
+
+        {nodeType && onHideModule && (
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              onHideModule(nodeType);
+              onClose();
+            }}
+            className={cn(
+              'w-full flex items-center gap-2.5 px-3 py-2 text-xs text-rose-300 rounded-lg',
+              'hover:bg-rose-500/10 hover:text-rose-200 transition-colors cursor-pointer'
+            )}
+          >
+            <Layers className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+            <span className="truncate">Ocultar módulo {NODE_TYPE_NAMES[nodeType] || ''}</span>
+          </button>
+        )}
       </div>
 
       {/* Color Picker */}

@@ -10,7 +10,7 @@ import {
   type NodeChange,
   type OnNodeDrag,
 } from '@xyflow/react';
-import type { Node, Edge } from '@xyflow/react';
+import type { Node, Edge, Viewport } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 import { ProxyProviderNode } from './nodes/ProxyProviderNode';
@@ -50,6 +50,8 @@ interface InfraMapCanvasProps {
   onPaneClick: () => void;
   onNodeDragStop?: OnNodeDrag<Node>;
   onNodeContextMenu?: (event: React.MouseEvent, node: Node) => void;
+  savedViewport?: Viewport | null;
+  onViewportChange?: (viewport: Viewport) => void;
 }
 
 export const InfraMapCanvas: React.FC<InfraMapCanvasProps> = ({
@@ -59,9 +61,13 @@ export const InfraMapCanvas: React.FC<InfraMapCanvasProps> = ({
   onPaneClick,
   onNodeDragStop,
   onNodeContextMenu,
+  savedViewport,
+  onViewportChange,
 }) => {
-  const { fitView } = useReactFlow();
+  const { fitView, setViewport } = useReactFlow();
   const [nodes, setNodes] = React.useState<Node[]>(inputNodes);
+  const lastAppliedVpRef = React.useRef<string | null>(null);
+  const fitViewDoneRef = React.useRef(false);
 
   // Synchronize internal nodes state with external nodes prop
   useEffect(() => {
@@ -72,9 +78,27 @@ export const InfraMapCanvas: React.FC<InfraMapCanvasProps> = ({
     setNodes((nds) => applyNodeChanges(changes, nds));
   }, []);
 
-  // Automatically fit view when nodes are first loaded or layout changes
+  // Restore saved viewport whenever savedViewport becomes available (e.g. on load or org change)
   useEffect(() => {
-    if (nodes.length > 0) {
+    if (
+      savedViewport &&
+      typeof savedViewport.x === 'number' &&
+      typeof savedViewport.y === 'number' &&
+      typeof savedViewport.zoom === 'number' &&
+      savedViewport.zoom > 0
+    ) {
+      const vpKey = `${Math.round(savedViewport.x)}_${Math.round(savedViewport.y)}_${savedViewport.zoom.toFixed(3)}`;
+      if (lastAppliedVpRef.current !== vpKey) {
+        lastAppliedVpRef.current = vpKey;
+        // Apply immediately and also once more shortly after to guarantee layout stability
+        setViewport(savedViewport, { duration: 0 });
+        const timer = setTimeout(() => {
+          setViewport(savedViewport, { duration: 0 });
+        }, 80);
+        return () => clearTimeout(timer);
+      }
+    } else if (nodes.length > 0 && !savedViewport && !fitViewDoneRef.current) {
+      fitViewDoneRef.current = true;
       const timer = setTimeout(() => {
         fitView({
           padding: 0.15,
@@ -83,7 +107,7 @@ export const InfraMapCanvas: React.FC<InfraMapCanvasProps> = ({
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [nodes.length, fitView]);
+  }, [nodes.length, savedViewport, setViewport, fitView]);
 
   return (
     <div className="w-full h-full relative overflow-hidden bg-[#090a0d]">
@@ -104,12 +128,11 @@ export const InfraMapCanvas: React.FC<InfraMapCanvasProps> = ({
             : undefined
         }
         onPaneClick={onPaneClick}
-        nodesDraggable={true}
-        fitView
-        fitViewOptions={{
-          padding: 0.15,
-          includeHiddenNodes: false,
+        onMoveEnd={(_event, viewport) => {
+          onViewportChange?.(viewport);
         }}
+        nodesDraggable={true}
+        defaultViewport={savedViewport || undefined}
         minZoom={0.05}
         maxZoom={2.5}
         defaultEdgeOptions={{

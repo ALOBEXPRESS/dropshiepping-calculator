@@ -10,11 +10,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ExternalLink, AlertTriangle, Crosshair } from 'lucide-react';
+import { ExternalLink, AlertTriangle, Crosshair, Palette, EyeOff, Layers, RotateCcw, Check } from 'lucide-react';
 import type { InfraNodeType, HealthAlert } from '@/types/infraGraph';
 import { useNavigate } from 'react-router-dom';
 import { NODE_COLORS } from '@/utils/infraGraphTransform';
 import type { InfraNodeData } from '@/utils/infraGraphTransform';
+import { NODE_ACCENT_COLORS } from './NodeContextMenu';
+import { cn } from '@/lib/utils';
 
 interface InfraMapSidebarSheetProps {
   node: Node | null;
@@ -22,6 +24,10 @@ interface InfraMapSidebarSheetProps {
   onOpenChange: (open: boolean) => void;
   allAlerts?: HealthAlert[];
   onFocusNode?: (nodeId: string) => void;
+  currentColor?: string | null;
+  onColorChange?: (nodeId: string, color: string | null) => void;
+  onHideNode?: (nodeId: string) => void;
+  onHideModule?: (moduleType: InfraNodeType) => void;
 }
 
 const NODE_TYPE_LABELS: Record<InfraNodeType, string> = {
@@ -53,6 +59,10 @@ export const InfraMapSidebarSheet: React.FC<InfraMapSidebarSheetProps> = ({
   onOpenChange,
   allAlerts = [],
   onFocusNode,
+  currentColor,
+  onColorChange,
+  onHideNode,
+  onHideModule,
 }) => {
   const navigate = useNavigate();
 
@@ -60,7 +70,7 @@ export const InfraMapSidebarSheet: React.FC<InfraMapSidebarSheetProps> = ({
 
   const nodeType = node.type as InfraNodeType;
   const nodeData = (node.data as unknown) as InfraNodeData;
-  const nodeColor = NODE_COLORS[nodeType] || '#6B7280';
+  const nodeColor = currentColor || NODE_COLORS[nodeType] || '#6B7280';
 
   // Filter active alerts belonging to this specific node
   const nodeAlerts = allAlerts.filter((a) => a.severity !== 'info' && a.nodeIds.includes(node.id));
@@ -134,6 +144,53 @@ export const InfraMapSidebarSheet: React.FC<InfraMapSidebarSheetProps> = ({
               </div>
             </div>
           )}
+
+          {/* Color Accent Picker Section */}
+          <div className="space-y-2.5 p-3.5 rounded-xl bg-muted/20 border border-border/60">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                <Palette className="h-3.5 w-3.5 text-primary" />
+                Cor de Destaque no Mapa
+              </h3>
+              {currentColor && onColorChange && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onColorChange(node.id, null)}
+                  className="h-6 text-[10px] gap-1 text-muted-foreground hover:text-foreground px-2 cursor-pointer"
+                  title="Restaurar cor padrão do tipo"
+                >
+                  <RotateCcw className="h-2.5 w-2.5" />
+                  Padrão
+                </Button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-6 gap-2 pt-1">
+              {NODE_ACCENT_COLORS.map((c) => {
+                const isActive = currentColor === c.value;
+                return (
+                  <button
+                    key={c.value}
+                    type="button"
+                    title={c.label}
+                    onClick={() => onColorChange?.(node.id, c.value)}
+                    className={cn(
+                      'w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-sm',
+                      c.swatch,
+                      isActive
+                        ? 'ring-2 ring-white ring-offset-2 ring-offset-card scale-110'
+                        : 'hover:scale-110 hover:ring-1 hover:ring-white/40 opacity-80 hover:opacity-100'
+                    )}
+                    aria-label={`Cor ${c.label}`}
+                  >
+                    {isActive && <Check className="w-3.5 h-3.5 text-white drop-shadow stroke-[3]" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           {/* Node Summary details */}
           <div className="space-y-3">
@@ -212,8 +269,52 @@ export const InfraMapSidebarSheet: React.FC<InfraMapSidebarSheetProps> = ({
 
           <Separator className="bg-border/60" />
 
+          {/* Visibility Controls */}
+          <div className="space-y-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Controles de Visibilidade
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              {onHideNode && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs text-amber-400 border-amber-500/30 hover:bg-amber-500/10 cursor-pointer"
+                  onClick={() => {
+                    onHideNode(node.id);
+                    onOpenChange(false);
+                  }}
+                  title="Ocultar apenas este recurso do mapa"
+                >
+                  <EyeOff className="h-3.5 w-3.5" />
+                  Ocultar Este Nó
+                </Button>
+              )}
+
+              {onHideModule && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs text-rose-400 border-rose-500/30 hover:bg-rose-500/10 cursor-pointer"
+                  onClick={() => {
+                    onHideModule(nodeType);
+                    onOpenChange(false);
+                  }}
+                  title={`Ocultar todos os nós do módulo "${NODE_TYPE_LABELS[nodeType]}"`}
+                >
+                  <Layers className="h-3.5 w-3.5" />
+                  Ocultar Módulo
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <Separator className="bg-border/60" />
+
           {/* Actions */}
-          <div className="space-y-2 pt-2">
+          <div className="space-y-2 pt-1">
             {onFocusNode && (
               <Button
                 type="button"
