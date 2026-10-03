@@ -29,7 +29,10 @@ export function useTestadores() {
     staleTime: 1000 * 60 * 5,
   });
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey });
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey });
+    queryClient.invalidateQueries({ queryKey: ['business_centers', organizationId] });
+  };
 
   const createMutation = useMutation({
     mutationFn: (data: TestadorFormData) =>
@@ -90,7 +93,12 @@ export function useTitulares() {
     staleTime: 1000 * 60 * 5,
   });
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey });
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey });
+    queryClient.invalidateQueries({ queryKey: ['business_centers', organizationId] });
+    queryClient.invalidateQueries({ queryKey: ['platform_accounts', organizationId] });
+    queryClient.invalidateQueries({ queryKey: ['ad_accounts', organizationId] });
+  };
 
   const createMutation = useMutation({
     mutationFn: (data: TitularFormData) =>
