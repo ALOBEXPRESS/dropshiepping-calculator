@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ExternalLink, AlertTriangle, Crosshair, Palette, EyeOff, Layers, RotateCcw, Check, Network, ArrowRight, ArrowLeft, SlidersHorizontal } from 'lucide-react';
+import { ExternalLink, AlertTriangle, Crosshair, Palette, EyeOff, Layers, RotateCcw, Check, Network, ArrowRight, ArrowLeft } from 'lucide-react';
 import type { InfraNodeType, HealthAlert } from '@/types/infraGraph';
 import { useNavigate } from 'react-router-dom';
 import { NODE_COLORS } from '@/utils/infraGraphTransform';

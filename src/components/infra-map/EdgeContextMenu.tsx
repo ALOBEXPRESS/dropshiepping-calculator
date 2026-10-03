@@ -23,7 +23,6 @@ interface EdgeContextMenuProps {
   x: number;
   y: number;
   currentStyle?: CustomEdgeStyle | null;
-  defaultStroke?: string;
   onStyleChange: (edgeId: string, style: CustomEdgeStyle | null) => void;
   onClose: () => void;
 }
@@ -51,7 +50,6 @@ export const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
   x,
   y,
   currentStyle,
-  defaultStroke = '#4B5563',
   onStyleChange,
   onClose,
 }) => {
@@ -157,6 +155,12 @@ export const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
             {targetLabel || 'Destino'}
           </span>
         </div>
+
+        {relation && (
+          <div className="text-[9px] font-mono text-muted-foreground uppercase tracking-wide">
+            {relation.replace(/_/g, ' ')}
+          </div>
+        )}
 
         {isWarning && (
           <div className="flex items-center gap-1.5 text-[10px] text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-md mt-1">

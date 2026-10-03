@@ -610,13 +610,16 @@ const InfraMapContent: React.FC = () => {
     warningReason?: string;
     x: number;
     y: number;
-    defaultStroke?: string;
   } | null>(null);
 
   const handleEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
     event.stopPropagation();
     const sourceNode = activeNodes.find((n) => n.id === edge.source);
     const targetNode = activeNodes.find((n) => n.id === edge.target);
+    const sourceData = (sourceNode?.data as unknown) as InfraNodeData | undefined;
+    const targetData = (targetNode?.data as unknown) as InfraNodeData | undefined;
+    const sourceCountry = sourceData?.country;
+    const targetCountry = targetData?.country;
     const isWarning = Boolean(edge.data?.isWarning);
     const relation = (edge.data?.relation as string) || '';
 
@@ -624,11 +627,11 @@ const InfraMapContent: React.FC = () => {
     if (relation === 'runs_on' && isWarning) {
       warningReason = 'Dispositivo vinculado a múltiplas contas';
     } else if (
-      sourceNode?.country &&
-      targetNode?.country &&
-      sourceNode.country.trim().toUpperCase() !== targetNode.country.trim().toUpperCase()
+      sourceCountry &&
+      targetCountry &&
+      sourceCountry.trim().toUpperCase() !== targetCountry.trim().toUpperCase()
     ) {
-      warningReason = `Divergência de País (${sourceNode.country} ≠ ${targetNode.country})`;
+      warningReason = `Divergência de País (${sourceCountry} ≠ ${targetCountry})`;
     } else if (isWarning) {
       warningReason = 'Alerta de integridade anti-ban';
     }
@@ -636,14 +639,13 @@ const InfraMapContent: React.FC = () => {
     setContextMenu(null);
     setEdgeMenu({
       edgeId: edge.id,
-      sourceLabel: (sourceNode?.data as any)?.label || sourceNode?.id,
-      targetLabel: (targetNode?.data as any)?.label || targetNode?.id,
+      sourceLabel: sourceData?.label || sourceNode?.id,
+      targetLabel: targetData?.label || targetNode?.id,
       relation,
       isWarning,
       warningReason,
       x: event.clientX,
       y: event.clientY,
-      defaultStroke: (edge.style?.stroke as string) || undefined,
     });
   }, [activeNodes]);
 
@@ -892,7 +894,6 @@ const InfraMapContent: React.FC = () => {
           x={edgeMenu.x}
           y={edgeMenu.y}
           currentStyle={customEdgeStyles[edgeMenu.edgeId] || null}
-          defaultStroke={edgeMenu.defaultStroke}
           onStyleChange={handleEdgeStyleChange}
           onClose={() => setEdgeMenu(null)}
         />
