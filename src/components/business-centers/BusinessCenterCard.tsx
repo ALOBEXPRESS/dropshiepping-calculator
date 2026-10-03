@@ -10,6 +10,7 @@ import {
   FileText,
   Hash,
   Smartphone,
+  FlaskConical,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
@@ -271,6 +272,23 @@ export const BusinessCenterCard: React.FC<BusinessCenterCardProps> = React.memo(
             </span>
             <span className="font-mono text-cyan-300 font-semibold text-[11px]">
               {(center.device_ids?.length || (center.device_id ? 1 : 0))} associado(s)
+            </span>
+          </div>
+        )}
+
+        {/* Testadores operacionais vinculados */}
+        {Boolean(
+          (center.linked_testador_count && center.linked_testador_count > 0) ||
+            center.testador_id ||
+            (center.testador_ids && center.testador_ids.length > 0)
+        ) && (
+          <div className="flex items-center justify-between text-xs text-sky-400 bg-sky-950/20 px-2.5 py-1.5 rounded-lg border border-sky-500/20">
+            <span className="flex items-center gap-1.5 text-sky-300">
+              <FlaskConical className="w-3.5 h-3.5 text-sky-400 flex-shrink-0" />
+              <span>Testadores da Operação:</span>
+            </span>
+            <span className="font-mono text-sky-300 font-semibold text-[11px]">
+              {(center.testador_ids?.length || center.linked_testador_count || 1)} vinculado(s)
             </span>
           </div>
         )}

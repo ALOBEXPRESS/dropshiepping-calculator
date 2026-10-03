@@ -41,12 +41,15 @@ import { useBusinessCenters } from '@/hooks/useBusinessCenters';
 import { usePlatformAccounts } from '@/hooks/usePlatformAccounts';
 import { useProxies } from '@/hooks/useProxies';
 import { useDevices } from '@/hooks/useDevices';
+import { useTestadores } from '@/hooks/useResponsaveis';
 import { BusinessCentersService } from '@/services/businessCentersService';
 import { BusinessCenterAccountLinksManager } from './BusinessCenterAccountLinksManager';
+import { BusinessCenterTestadoresSection } from './BusinessCenterTestadoresSection';
 import type {
   BusinessCenterWithStats,
   BusinessCenterFormData,
   BusinessCenterAccountInput,
+  BusinessCenterTestadorInput,
   CompanyStatus,
 } from '@/types/businessCenters';
 import {
@@ -117,8 +120,11 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
 
   // Gerenciamento de vínculos N:N entre este Business Center e Contas de Plataforma
   const [linkedAccounts, setLinkedAccounts] = useState<BusinessCenterAccountInput[]>([]);
+  // Gerenciamento de testadores e operadores associados (N:N)
+  const [linkedTestadores, setLinkedTestadores] = useState<BusinessCenterTestadorInput[]>([]);
   // Gerenciamento de dispositivos operacionais associados (N:N)
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
+  const { testadores = [] } = useTestadores();
 
   const {
     register,
@@ -233,12 +239,43 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
             .catch((err) => {
               console.warn('Erro ao carregar dispositivos do BC:', err);
             });
+
+          // Carrega testadores da operação N:N
+          BusinessCentersService.getLinkedTestadores(organizationId, center.id)
+            .then((relations) => {
+              if (relations && relations.length > 0) {
+                setLinkedTestadores(
+                  relations.map((r) => ({
+                    testador_id: r.testador_id,
+                    role: r.role,
+                    permission_level: r.permission_level,
+                    status: r.status,
+                    notes: r.notes,
+                  }))
+                );
+              } else if (center.testador_id) {
+                setLinkedTestadores([
+                  {
+                    testador_id: center.testador_id,
+                    role: 'testador',
+                    permission_level: 'standard',
+                    status: 'active',
+                  },
+                ]);
+              } else {
+                setLinkedTestadores([]);
+              }
+            })
+            .catch((err) => {
+              console.warn('Erro ao carregar testadores do BC:', err);
+            });
         }
 
         setCurrentStep(2);
       } else {
         setLinkedAccounts([]);
         setSelectedDeviceIds([]);
+        setLinkedTestadores([]);
         reset(DEFAULT_FORM_VALUES);
         setCurrentStep(1);
       }
@@ -294,6 +331,8 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
         meta_facebook_account_id,
         meta_linked_network,
         meta_linked_account_id,
+        testador_id: linkedTestadores[0]?.testador_id || null,
+        linked_testadores: linkedTestadores,
         device_id: selectedDeviceIds[0] || null,
         device_ids: selectedDeviceIds,
         proxy_id: data.proxy_id || null,
@@ -310,6 +349,7 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
       reset();
       setLinkedAccounts([]);
       setSelectedDeviceIds([]);
+      setLinkedTestadores([]);
       onOpenChange(false);
     } catch (err) {
       toast.error(
@@ -322,6 +362,7 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
     reset();
     setLinkedAccounts([]);
     setSelectedDeviceIds([]);
+    setLinkedTestadores([]);
     onOpenChange(false);
   };
 
@@ -937,6 +978,14 @@ export const BusinessCenterFormDialog: React.FC<BusinessCenterFormDialogProps> =
                       disabled={isBusy}
                     />
                   )}
+
+                  {/* ── SEÇÃO 5: Vínculo de Testadores e Operadores (N:N) ── */}
+                  <BusinessCenterTestadoresSection
+                    linkedTestadores={linkedTestadores}
+                    onChange={setLinkedTestadores}
+                    availableTestadores={testadores}
+                    disabled={isBusy}
+                  />
 
                   {/* ── SEÇÃO 4.5: Infraestrutura de Rede e Operação (Proxy & Dispositivo) ── */}
                   <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-3.5">

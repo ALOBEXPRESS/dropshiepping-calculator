@@ -76,6 +76,79 @@ export interface BusinessCenterAccountInput {
   external_relation_id?: string | null;
 }
 
+// ── Tipos para Relacionamentos N:N entre BCs e Testadores da Operação ────────
+
+export type BusinessCenterTestadorRole = 'testador' | 'operador' | 'admin' | 'analista';
+
+export interface BusinessCenterTestadorRelation {
+  id: string;
+  organization_id: string;
+  business_center_id: string;
+  testador_id: string;
+  role: BusinessCenterTestadorRole;
+  permission_level: PermissionLevel;
+  status: RelationshipStatus;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+  testador?: {
+    id: string;
+    full_name: string;
+    email?: string | null;
+    phone?: string | null;
+    document_number?: string | null;
+    is_active?: boolean;
+  } | null;
+}
+
+export interface BusinessCenterTestadorInput {
+  testador_id: string;
+  role?: BusinessCenterTestadorRole;
+  permission_level?: PermissionLevel;
+  status?: RelationshipStatus;
+  notes?: string | null;
+}
+
+export const BC_TESTADOR_ROLE_CONFIG: Record<
+  BusinessCenterTestadorRole,
+  {
+    label: string;
+    shortLabel: string;
+    description: string;
+    badgeColor: string;
+    icon: string;
+  }
+> = {
+  testador: {
+    label: 'Testador de Criativos / Anúncios',
+    shortLabel: 'Testador',
+    description: 'Valida criativos, produtos e sobe campanhas de teste na conta/BM.',
+    badgeColor: 'bg-sky-500/15 text-sky-300 border-sky-500/30',
+    icon: 'FlaskConical',
+  },
+  operador: {
+    label: 'Operador de Tráfego / Gestor',
+    shortLabel: 'Operador',
+    description: 'Operação diária de anúncios, lances e escala de campanhas.',
+    badgeColor: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+    icon: 'TrendingUp',
+  },
+  admin: {
+    label: 'Administrador da Operação',
+    shortLabel: 'Admin',
+    description: 'Acesso total para vincular ativos, membros e faturamento.',
+    badgeColor: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
+    icon: 'ShieldCheck',
+  },
+  analista: {
+    label: 'Analista de Métricas / BI',
+    shortLabel: 'Analista',
+    description: 'Acompanhamento de relatórios, KPIs e análise de conversão.',
+    badgeColor: 'bg-zinc-700/50 text-zinc-300 border-zinc-600',
+    icon: 'BarChart3',
+  },
+};
+
 export const RELATIONSHIP_TYPE_CONFIG: Record<
   RelationshipType,
   {
@@ -170,6 +243,10 @@ export interface BusinessCenter {
   holder_cpf?: string | null;
   holder_rg?: string | null;
   holder_birth_date?: string | null;
+  titular_id?: string | null;
+
+  // Testador da Operação
+  testador_id?: string | null;
 
   // Dados da Empresa
   company_cnpj?: string | null;
@@ -200,6 +277,9 @@ export interface BusinessCenterWithStats extends BusinessCenter {
   ad_account_count: number;
   linked_account_count?: number;
   linked_accounts?: BusinessCenterAccountRelation[];
+  linked_testador_count?: number;
+  linked_testadores?: BusinessCenterTestadorRelation[];
+  testador_ids?: string[];
 }
 
 // ── Schema Zod para formulário ───────────────────────────────────────────────
@@ -219,6 +299,10 @@ export const businessCenterSchema = z.object({
   holder_cpf: z.string().trim().optional().or(z.literal('')),
   holder_rg: z.string().trim().optional().or(z.literal('')),
   holder_birth_date: z.string().trim().optional().or(z.literal('')),
+  titular_id: z.string().uuid().optional().nullable().or(z.literal('')),
+
+  // Testador da Operação
+  testador_id: z.string().uuid().optional().nullable().or(z.literal('')),
 
   // Dados da Empresa
   company_legal_name: z.string().trim().optional().or(z.literal('')),
@@ -250,6 +334,18 @@ export const businessCenterSchema = z.object({
         status: z.enum(['active', 'pending', 'revoked']).optional(),
         notes: z.string().optional().nullable(),
         external_relation_id: z.string().optional().nullable(),
+      })
+    )
+    .optional(),
+  /** Testadores da Operação vinculados (N:N) */
+  linked_testadores: z
+    .array(
+      z.object({
+        testador_id: z.string().uuid(),
+        role: z.enum(['testador', 'operador', 'admin', 'analista']).optional(),
+        permission_level: z.enum(['admin', 'standard', 'ads_only']).optional(),
+        status: z.enum(['active', 'pending', 'revoked']).optional(),
+        notes: z.string().optional().nullable(),
       })
     )
     .optional(),

@@ -6,6 +6,9 @@ import type {
   BusinessCenterFilters,
   BusinessCenterAccountRelation,
   BusinessCenterAccountInput,
+  BusinessCenterTestadorRole,
+  BusinessCenterTestadorRelation,
+  BusinessCenterTestadorInput,
   RelationshipType,
   PermissionLevel,
   RelationshipStatus,
@@ -83,6 +86,27 @@ export class BusinessCentersService {
       devicesMap.set(cd.business_center_id, arr);
     }
 
+    // Contar e buscar testadores vinculados aos BCs (N:N)
+    const { data: linkedTestadores } = await supabase
+      .from('business_center_testadores')
+      .select('id, business_center_id, testador_id')
+      .eq('organization_id', organizationId)
+      .eq('status', 'active')
+      .in('business_center_id', centerIds);
+
+    const testadorCountMap = new Map<string, number>();
+    const testadorIdsMap = new Map<string, string[]>();
+    for (const lt of linkedTestadores ?? []) {
+      if (!lt.business_center_id) continue;
+      testadorCountMap.set(
+        lt.business_center_id,
+        (testadorCountMap.get(lt.business_center_id) ?? 0) + 1
+      );
+      const arr = testadorIdsMap.get(lt.business_center_id) ?? [];
+      arr.push(lt.testador_id);
+      testadorIdsMap.set(lt.business_center_id, arr);
+    }
+
     return (centers as BusinessCenter[]).map((bc) => {
       const dbDevices = devicesMap.get(bc.id);
       const resolvedDevices =
@@ -92,11 +116,21 @@ export class BusinessCentersService {
           ? [bc.device_id]
           : [];
 
+      const dbTestadorIds = testadorIdsMap.get(bc.id);
+      const resolvedTestadorIds =
+        dbTestadorIds && dbTestadorIds.length > 0
+          ? dbTestadorIds
+          : bc.testador_id
+          ? [bc.testador_id]
+          : [];
+
       return {
         ...bc,
         device_ids: resolvedDevices,
+        testador_ids: resolvedTestadorIds,
         ad_account_count: countMap.get(bc.id) ?? 0,
         linked_account_count: linkedCountMap.get(bc.id) ?? 0,
+        linked_testador_count: testadorCountMap.get(bc.id) ?? (bc.testador_id ? 1 : 0),
       };
     });
   }
@@ -440,6 +474,147 @@ export class BusinessCentersService {
   }
 
   /**
+   * Busca todos os testadores vinculados a um Business Center (N:N).
+   */
+  static async getLinkedTestadores(
+    organizationId: string,
+    businessCenterId: string
+  ): Promise<BusinessCenterTestadorRelation[]> {
+    if (!organizationId || !businessCenterId) return [];
+
+    const { data, error } = await supabase
+      .from('business_center_testadores')
+      .select(`
+        id,
+        organization_id,
+        business_center_id,
+        testador_id,
+        role,
+        permission_level,
+        status,
+        notes,
+        created_at,
+        updated_at,
+        testador:testadores(
+          id,
+          full_name,
+          document_number,
+          phone,
+          email,
+          is_active
+        )
+      `)
+      .eq('organization_id', organizationId)
+      .eq('business_center_id', businessCenterId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Erro ao buscar testadores vinculados ao Business Center:', error);
+      return [];
+    }
+    return (data as unknown as BusinessCenterTestadorRelation[]) || [];
+  }
+
+  /**
+   * Vincula um testador a um Business Center.
+   */
+  static async linkTestador(
+    organizationId: string,
+    data: {
+      business_center_id: string;
+      testador_id: string;
+      role?: BusinessCenterTestadorRole;
+      permission_level?: PermissionLevel;
+      status?: RelationshipStatus;
+      notes?: string | null;
+    }
+  ): Promise<BusinessCenterTestadorRelation> {
+    if (!organizationId) throw new Error('Organização não identificada');
+
+    const payload = {
+      organization_id: organizationId,
+      business_center_id: data.business_center_id,
+      testador_id: data.testador_id,
+      role: data.role || 'testador',
+      permission_level: data.permission_level || 'standard',
+      status: data.status || 'active',
+      notes: data.notes?.trim() || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data: result, error } = await supabase
+      .from('business_center_testadores')
+      .upsert(payload, { onConflict: 'business_center_id,testador_id' })
+      .select('*')
+      .single();
+
+    if (error) throw new Error(error.message);
+    return result as BusinessCenterTestadorRelation;
+  }
+
+  /**
+   * Desvincula um testador de um Business Center.
+   */
+  static async unlinkTestador(
+    organizationId: string,
+    businessCenterId: string,
+    testadorId: string
+  ): Promise<void> {
+    if (!organizationId || !businessCenterId || !testadorId) return;
+
+    const { error } = await supabase
+      .from('business_center_testadores')
+      .delete()
+      .eq('organization_id', organizationId)
+      .eq('business_center_id', businessCenterId)
+      .eq('testador_id', testadorId);
+
+    if (error) throw new Error(error.message);
+  }
+
+  /**
+   * Sincroniza a lista completa de testadores vinculados a um Business Center.
+   */
+  static async syncLinkedTestadores(
+    organizationId: string,
+    businessCenterId: string,
+    testadores: BusinessCenterTestadorInput[]
+  ): Promise<void> {
+    if (!organizationId || !businessCenterId) return;
+
+    const { data: currentLinks } = await supabase
+      .from('business_center_testadores')
+      .select('id, testador_id')
+      .eq('organization_id', organizationId)
+      .eq('business_center_id', businessCenterId);
+
+    const targetIds = new Set(testadores.map((t) => t.testador_id));
+
+    const toDeleteIds = (currentLinks ?? [])
+      .filter((l) => !targetIds.has(l.testador_id))
+      .map((l) => l.id);
+
+    if (toDeleteIds.length > 0) {
+      await supabase
+        .from('business_center_testadores')
+        .delete()
+        .eq('organization_id', organizationId)
+        .in('id', toDeleteIds);
+    }
+
+    for (const t of testadores) {
+      await BusinessCentersService.linkTestador(organizationId, {
+        business_center_id: businessCenterId,
+        testador_id: t.testador_id,
+        role: t.role || 'testador',
+        permission_level: t.permission_level || 'standard',
+        status: t.status || 'active',
+        notes: t.notes,
+      });
+    }
+  }
+
+  /**
    * Cria um novo business center.
    */
   static async create(
@@ -460,6 +635,12 @@ export class BusinessCentersService {
         ? [data.device_id]
         : [];
 
+    const resolvedTestadorId =
+      data.testador_id ||
+      (data.linked_testadores && data.linked_testadores.length > 0
+        ? data.linked_testadores[0].testador_id
+        : null);
+
     const payload = {
       organization_id: organizationId,
       platform: data.platform || 'tiktok',
@@ -475,6 +656,8 @@ export class BusinessCentersService {
       holder_cpf: data.holder_cpf?.trim() || null,
       holder_rg: data.holder_rg?.trim() || null,
       holder_birth_date: data.holder_birth_date?.trim() || null,
+      titular_id: data.titular_id || null,
+      testador_id: resolvedTestadorId,
       company_cnpj: data.company_cnpj?.trim() || null,
       company_state_registration: data.company_state_registration?.trim() || null,
       company_status: data.company_status || 'Ativa',
@@ -529,6 +712,15 @@ export class BusinessCentersService {
       );
     }
 
+    // Sincroniza testadores N:N se informados
+    if (data.linked_testadores && data.linked_testadores.length > 0) {
+      await BusinessCentersService.syncLinkedTestadores(
+        organizationId,
+        bc.id,
+        data.linked_testadores
+      );
+    }
+
     return {
       ...bc,
       device_ids: initialDevices,
@@ -565,6 +757,14 @@ export class BusinessCentersService {
     if (data.holder_rg !== undefined) payload.holder_rg = data.holder_rg?.trim() || null;
     if (data.holder_birth_date !== undefined)
       payload.holder_birth_date = data.holder_birth_date?.trim() || null;
+    if (data.titular_id !== undefined) payload.titular_id = data.titular_id || null;
+    if (data.testador_id !== undefined) {
+      payload.testador_id = data.testador_id || null;
+    } else if (data.linked_testadores && data.linked_testadores.length > 0) {
+      payload.testador_id = data.linked_testadores[0].testador_id;
+    } else if (data.linked_testadores !== undefined && data.linked_testadores.length === 0) {
+      payload.testador_id = null;
+    }
     if (data.company_cnpj !== undefined)
       payload.company_cnpj = data.company_cnpj?.trim() || null;
     if (data.company_state_registration !== undefined)
@@ -628,6 +828,15 @@ export class BusinessCentersService {
         organizationId,
         id,
         data.linked_accounts
+      );
+    }
+
+    // Sincroniza testadores N:N se informados
+    if (data.linked_testadores !== undefined) {
+      await BusinessCentersService.syncLinkedTestadores(
+        organizationId,
+        id,
+        data.linked_testadores
       );
     }
 
