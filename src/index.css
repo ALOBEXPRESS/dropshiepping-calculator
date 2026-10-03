@@ -141,6 +141,15 @@
   .bg-warning-muted { background-color: hsl(var(--warning-muted)); }
   .bg-danger-muted  { background-color: hsl(var(--danger-muted));  }
   .bg-info-muted    { background-color: hsl(var(--info-muted));    }
+
+  /* ── Scrollbar utility — hides native scrollbars smoothly ── */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 

@@ -22,6 +22,7 @@ import { BusinessCenterNode } from './nodes/BusinessCenterNode';
 import { AdAccountNode } from './nodes/AdAccountNode';
 import { CampaignNode } from './nodes/CampaignNode';
 import { TitularNode } from './nodes/TitularNode';
+import { InfraEdge } from './InfraEdge';
 import { NODE_COLORS } from '@/utils/infraGraphTransform';
 import type { InfraNodeType } from '@/types/infraGraph';
 
@@ -35,6 +36,11 @@ const nodeTypes = {
   ad_account: AdAccountNode,
   campaign: CampaignNode,
   titular: TitularNode,
+};
+
+const edgeTypes = {
+  smoothstep: InfraEdge,
+  default: InfraEdge,
 };
 
 interface InfraMapCanvasProps {
@@ -85,6 +91,7 @@ export const InfraMapCanvas: React.FC<InfraMapCanvasProps> = ({
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
         onNodeDragStop={onNodeDragStop}
         onNodeClick={onNodeClick}

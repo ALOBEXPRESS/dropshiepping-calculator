@@ -428,7 +428,8 @@ const InfraMapContent: React.FC = () => {
     activeNodes,
     activeEdges,
     groupBy,
-    customPositions
+    customPositions,
+    nodeSize
   );
 
   // 8. Apply focus state to layouted nodes/edges + inject nodeSize & customColor

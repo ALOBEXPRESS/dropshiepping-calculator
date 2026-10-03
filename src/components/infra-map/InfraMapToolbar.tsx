@@ -215,9 +215,9 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
   };
 
   return (
-    <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-card/80 backdrop-blur-md border-b border-border/80 text-foreground z-20">
-      {/* Left: Search & Filter Controls */}
-      <div className="flex items-center gap-2 flex-wrap min-w-0">
+    <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-[#0c0e14]/95 backdrop-blur-md border-b border-white/[0.08] text-foreground z-20 w-full select-none">
+      {/* Left: Structured Command Clusters */}
+      <div className="flex items-center gap-1.5 min-w-0 overflow-x-auto no-scrollbar py-0.5">
         {/* Search Combobox */}
         <Popover open={searchOpen} onOpenChange={setSearchOpen}>
           <PopoverTrigger asChild>
@@ -225,12 +225,12 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
               type="button"
               variant="outline"
               size="sm"
-              className="h-8 text-xs gap-2 border-border/80 bg-background/60 hover:bg-accent cursor-pointer"
+              className="h-8 text-xs gap-1.5 px-2.5 border-border/80 bg-background/60 hover:bg-accent cursor-pointer shrink-0"
               aria-label="Buscar recurso no mapa (Ctrl+K)"
             >
               <Search className="h-3.5 w-3.5 text-muted-foreground" />
-              <span>Buscar nó...</span>
-              <kbd className="hidden sm:inline-flex h-4 select-none items-center gap-0.5 rounded border border-border/60 bg-muted px-1.5 font-mono text-[9px] font-medium text-muted-foreground">
+              <span className="hidden sm:inline">Buscar</span>
+              <kbd className="hidden md:inline-flex h-4 select-none items-center gap-0.5 rounded border border-border/60 bg-muted px-1 font-mono text-[9px] font-medium text-muted-foreground">
                 ⌘K
               </kbd>
             </Button>
@@ -293,16 +293,23 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
               type="button"
               variant="outline"
               size="sm"
-              className="h-8 text-xs gap-1.5 border-border/80 bg-background/60 hover:bg-accent cursor-pointer"
+              className="h-8 text-xs gap-1.5 px-2.5 border-border/80 bg-background/60 hover:bg-accent cursor-pointer shrink-0"
               aria-label="Modo de agrupamento do grafo"
             >
               <Layers className="h-3.5 w-3.5 text-primary" />
-              <span>
+              <span className="hidden xl:inline">
                 {groupBy === 'none'
                   ? 'Hierarquia Natural'
                   : groupBy === 'provider'
                   ? 'Por Provedor'
                   : 'Por Plataforma'}
+              </span>
+              <span className="xl:hidden">
+                {groupBy === 'none'
+                  ? 'Hierarquia'
+                  : groupBy === 'provider'
+                  ? 'Provedor'
+                  : 'Plataforma'}
               </span>
             </Button>
           </DropdownMenuTrigger>
@@ -343,14 +350,14 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
               variant="outline"
               size="sm"
               className={cn(
-                'h-8 text-xs gap-1.5 border-border/80 bg-background/60 hover:bg-accent cursor-pointer',
+                'h-8 text-xs gap-1.5 px-2.5 border-border/80 bg-background/60 hover:bg-accent cursor-pointer shrink-0',
                 visibleNodeTypes.size < ALL_NODE_TYPES.length && 'border-primary/50 text-primary'
               )}
               aria-label="Filtrar por tipos de nós visíveis"
             >
               <Filter className="h-3.5 w-3.5" />
-              <span>Tipos de Nós</span>
-              <span className="text-[10px] font-mono px-1 rounded bg-muted">
+              <span className="hidden sm:inline">Tipos</span>
+              <span className="text-[10px] font-mono px-1 rounded bg-muted/80 font-semibold">
                 {visibleNodeTypes.size}/{ALL_NODE_TYPES.length}
               </span>
             </Button>
@@ -407,140 +414,152 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Quick Filter: Only with Alerts */}
-        {onToggleOnlyAlerts && (
-          <Button
-            type="button"
-            variant={filterOnlyAlerts ? 'destructive' : 'outline'}
-            size="sm"
-            onClick={onToggleOnlyAlerts}
-            aria-label="Filtrar apenas nós com alertas de saúde"
-            className={cn(
-              'h-8 text-xs gap-1.5 cursor-pointer transition-all',
-              filterOnlyAlerts
-                ? 'bg-rose-500/20 text-rose-300 border-rose-500 hover:bg-rose-500/30'
-                : 'border-border/80 bg-background/60 hover:bg-accent text-muted-foreground'
-            )}
-          >
-            <AlertTriangle className="h-3.5 w-3.5" />
-            <span>Apenas Alertas</span>
-          </Button>
-        )}
+        {/* Divider between exploration and filters */}
+        <div className="h-4 w-px bg-white/10 mx-0.5 shrink-0" />
 
-        {/* Infra Diagnostic Toggle */}
-        {onToggleDiagnostic && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onToggleDiagnostic}
-            title={showDiagnostic ? 'Ocultar diagnóstico de infraestrutura' : 'Exibir diagnóstico de infraestrutura'}
-            aria-label="Alternar diagnóstico de infraestrutura"
-            className={cn(
-              'h-8 text-xs gap-1.5 cursor-pointer transition-all',
-              showDiagnostic
-                ? 'border-primary/50 bg-primary/10 text-primary hover:bg-primary/20 shadow-[0_0_12px_rgba(255,107,0,0.15)]'
-                : 'border-border/80 bg-background/60 hover:bg-accent text-muted-foreground'
-            )}
-          >
-            <Activity className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Diagnóstico</span>
-          </Button>
-        )}
-
-        {/* Node Size Selector */}
-        {onNodeSizeChange && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-8 text-xs gap-1.5 border-border/80 bg-background/60 hover:bg-accent cursor-pointer"
-                aria-label="Tamanho dos nós"
-              >
-                <ZoomIn className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="hidden sm:inline">{NODE_SIZE_LABELS[nodeSize]}</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-40 bg-card border-border">
-              <DropdownMenuLabel className="text-xs text-muted-foreground">Tamanho dos Nós</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {(['small', 'medium', 'large'] as NodeSize[]).map((size) => (
-                <DropdownMenuItem
-                  key={size}
-                  onClick={() => onNodeSizeChange(size)}
-                  className="text-xs cursor-pointer flex items-center justify-between"
-                >
-                  <span>{NODE_SIZE_LABELS[size]}</span>
-                  {nodeSize === size && <Check className="w-3.5 h-3.5 text-primary" />}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-
-        {/* Restore Hidden Nodes */}
-        {hiddenNodeCount > 0 && onShowHiddenNodes && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onShowHiddenNodes}
-            title={`Restaurar ${hiddenNodeCount} nó(s) ocultados manualmente`}
-            aria-label="Restaurar nós ocultos"
-            className="h-8 text-xs gap-1.5 cursor-pointer border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-all"
-          >
-            <Eye className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">+{hiddenNodeCount} oculto{hiddenNodeCount !== 1 ? 's' : ''}</span>
-          </Button>
-        )}
-
-        {/* Quick Toggle: Apenas em Uso / Ocultar Ociosos */}
-        {onToggleHideUnused && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onToggleHideUnused}
-            title={
-              hideUnused
-                ? 'Clique para exibir todos os nós (inclusive provedores e dispositivos sem conexões)'
-                : 'Clique para ocultar nós sem uso/sem conexões ativas'
-            }
-            aria-label={hideUnused ? 'Exibir nós ociosos' : 'Ocultar nós ociosos'}
-            className={cn(
-              'h-8 text-xs gap-1.5 cursor-pointer transition-all',
-              hideUnused
-                ? 'border-border/80 bg-background/60 hover:bg-accent text-zinc-300'
-                : 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 shadow-[0_0_12px_rgba(6,182,212,0.15)]'
-            )}
-          >
-            {hideUnused ? (
-              <>
-                <EyeOff className="h-3.5 w-3.5 text-amber-400" />
-                <span>Apenas em Uso</span>
-                {unusedCount > 0 && (
-                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                    +{unusedCount} ociosos
+        {/* Cluster 2: Graph Filtering */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Quick Toggle: Apenas em Uso / Ocultar Ociosos */}
+          {onToggleHideUnused && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onToggleHideUnused}
+              title={
+                hideUnused
+                  ? 'Exibindo apenas nós com conexões ou alertas. Clique para ver todos (+ ociosos)'
+                  : 'Exibindo todos os nós. Clique para ocultar ociosos'
+              }
+              aria-label={hideUnused ? 'Exibir nós ociosos' : 'Ocultar nós ociosos'}
+              className={cn(
+                'h-8 text-xs gap-1.5 px-2.5 cursor-pointer transition-all shrink-0',
+                hideUnused
+                  ? 'border-border/80 bg-background/60 hover:bg-accent text-zinc-300'
+                  : 'border-cyan-500/50 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 shadow-[0_0_12px_rgba(6,182,212,0.2)]'
+              )}
+            >
+              {hideUnused ? (
+                <>
+                  <EyeOff className="h-3.5 w-3.5 text-amber-400" />
+                  <span className="hidden xl:inline">Em Uso</span>
+                  {unusedCount > 0 && (
+                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                      +{unusedCount}<span className="hidden 2xl:inline"> ociosos</span>
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Eye className="h-3.5 w-3.5 text-cyan-400" />
+                  <span className="hidden xl:inline">Todos</span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-cyan-500/20 text-cyan-400 font-semibold">
+                    {totalNodesCount ?? nodes.length}
                   </span>
-                )}
-              </>
-            ) : (
-              <>
-                <Eye className="h-3.5 w-3.5" />
-                <span>Exibindo Todos</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-cyan-500/20 text-cyan-400">
-                  {totalNodesCount ?? nodes.length}
-                </span>
-              </>
-            )}
-          </Button>
-        )}
+                </>
+              )}
+            </Button>
+          )}
+
+          {/* Quick Filter: Only with Alerts */}
+          {onToggleOnlyAlerts && (
+            <Button
+              type="button"
+              variant={filterOnlyAlerts ? 'destructive' : 'outline'}
+              size="sm"
+              onClick={onToggleOnlyAlerts}
+              aria-label="Filtrar apenas nós com alertas de saúde"
+              className={cn(
+                'h-8 text-xs gap-1.5 px-2.5 cursor-pointer transition-all shrink-0',
+                filterOnlyAlerts
+                  ? 'bg-rose-500/20 text-rose-300 border-rose-500 hover:bg-rose-500/30 shadow-[0_0_12px_rgba(244,63,94,0.2)]'
+                  : 'border-border/80 bg-background/60 hover:bg-accent text-muted-foreground'
+              )}
+            >
+              <AlertTriangle className={cn("h-3.5 w-3.5", filterOnlyAlerts ? "text-rose-400" : "text-amber-400")} />
+              <span className="hidden lg:inline">Alertas</span>
+            </Button>
+          )}
+
+          {/* Restore Hidden Nodes */}
+          {hiddenNodeCount > 0 && onShowHiddenNodes && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onShowHiddenNodes}
+              title={`Restaurar ${hiddenNodeCount} nó(s) ocultados manualmente`}
+              aria-label="Restaurar nós ocultos"
+              className="h-8 text-xs gap-1.5 px-2.5 cursor-pointer border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-all shadow-[0_0_12px_rgba(245,158,11,0.2)] shrink-0"
+            >
+              <Eye className="h-3.5 w-3.5" />
+              <span>+{hiddenNodeCount}<span className="hidden sm:inline"> oculto{hiddenNodeCount !== 1 ? 's' : ''}</span></span>
+            </Button>
+          )}
+        </div>
+
+        {/* Divider between filters and view settings */}
+        <div className="h-4 w-px bg-white/10 mx-0.5 shrink-0" />
+
+        {/* Cluster 3: View Settings & Telemetry */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Infra Diagnostic Toggle */}
+          {onToggleDiagnostic && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onToggleDiagnostic}
+              title={showDiagnostic ? 'Ocultar diagnóstico de infraestrutura' : 'Exibir diagnóstico de infraestrutura'}
+              aria-label="Alternar diagnóstico de infraestrutura"
+              className={cn(
+                'h-8 text-xs gap-1.5 px-2.5 cursor-pointer transition-all shrink-0',
+                showDiagnostic
+                  ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.2)] font-medium'
+                  : 'border-border/80 bg-background/60 hover:bg-accent text-muted-foreground'
+              )}
+            >
+              <Activity className={cn("h-3.5 w-3.5", showDiagnostic ? "text-emerald-400 animate-pulse" : "text-zinc-400")} />
+              <span className="hidden lg:inline">Diagnóstico</span>
+            </Button>
+          )}
+
+          {/* Node Size Selector */}
+          {onNodeSizeChange && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs gap-1.5 px-2.5 border-border/80 bg-background/60 hover:bg-accent cursor-pointer shrink-0"
+                  aria-label="Tamanho dos nós"
+                >
+                  <ZoomIn className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="hidden sm:inline">{NODE_SIZE_LABELS[nodeSize]}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-40 bg-card border-border">
+                <DropdownMenuLabel className="text-xs text-muted-foreground">Tamanho dos Nós</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {(['small', 'medium', 'large'] as NodeSize[]).map((size) => (
+                  <DropdownMenuItem
+                    key={size}
+                    onClick={() => onNodeSizeChange(size)}
+                    className="text-xs cursor-pointer flex items-center justify-between"
+                  >
+                    <span>{NODE_SIZE_LABELS[size]}</span>
+                    {nodeSize === size && <Check className="w-3.5 h-3.5 text-primary" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
 
       {/* Right: Map Utility Actions */}
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center gap-1.5 shrink-0 pl-1">
         {/* Reset Focus Button */}
         {hasActiveFocus && onResetFocus && (
           <Button
@@ -548,11 +567,11 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
             variant="ghost"
             size="sm"
             onClick={onResetFocus}
-            className="h-8 text-xs gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
+            className="h-8 text-xs gap-1 px-2 text-muted-foreground hover:text-foreground cursor-pointer"
             aria-label="Restaurar foco do grafo"
           >
             <RotateCcw className="h-3.5 w-3.5" />
-            <span className="hidden md:inline">Restaurar Foco</span>
+            <span className="hidden lg:inline">Restaurar Foco</span>
           </Button>
         )}
 
@@ -563,26 +582,23 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
             variant="outline"
             size="sm"
             onClick={onFitView}
-            className="h-8 text-xs gap-1.5 border-border/80 bg-background/60 hover:bg-accent cursor-pointer"
+            className="h-8 text-xs gap-1.5 px-2.5 border-border/80 bg-background/60 hover:bg-accent cursor-pointer"
             title="Ajustar visualização para enquadrar todos os nós"
             aria-label="Ajustar zoom para enquadrar todos os nós"
           >
             <Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="hidden sm:inline">Enquadrar</span>
+            <span className="hidden xl:inline">Enquadrar</span>
           </Button>
         )}
 
-        {/* Reset Layout to Default Button */}
-        {onResetLayout && (
+        {/* Reset Layout to Default Button - Only shown when custom positions exist */}
+        {hasCustomPositions && onResetLayout && (
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={onResetLayout}
-            className={cn(
-              "h-8 text-xs gap-1.5 border-border/80 bg-background/60 hover:bg-accent cursor-pointer transition-colors",
-              hasCustomPositions ? "text-cyan-400 border-cyan-500/30 hover:border-cyan-500/50 hover:bg-cyan-500/10" : "text-muted-foreground hover:text-foreground"
-            )}
+            className="h-8 text-xs gap-1.5 px-2.5 border-cyan-500/40 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 cursor-pointer shadow-[0_0_12px_rgba(6,182,212,0.2)] animate-in fade-in"
             title="Redefinir posições de todos os nós para a organização automática"
             aria-label="Resetar layout do mapa"
           >
@@ -598,7 +614,7 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
           size="sm"
           onClick={handleExportPNG}
           disabled={isExporting}
-          className="h-8 text-xs gap-1.5 border-border/80 bg-background/60 hover:bg-accent cursor-pointer text-foreground"
+          className="h-8 text-xs gap-1.5 px-2.5 border-border/80 bg-background/60 hover:bg-accent cursor-pointer text-foreground"
           aria-label="Exportar grafo em formato PNG"
         >
           {isExporting ? (
@@ -606,7 +622,8 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
           ) : (
             <Download className="h-3.5 w-3.5 text-primary" />
           )}
-          <span>Exportar PNG</span>
+          <span className="hidden sm:inline">Exportar PNG</span>
+          <span className="sm:hidden">PNG</span>
         </Button>
       </div>
     </div>

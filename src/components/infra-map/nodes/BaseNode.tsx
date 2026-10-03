@@ -25,9 +25,9 @@ interface BaseNodeProps {
 }
 
 const SIZE_CLASSES: Record<NodeSize, string> = {
-  small:  'min-w-[140px] max-w-[170px] scale-[0.82]',
-  medium: 'min-w-[190px] max-w-[240px]',
-  large:  'min-w-[230px] max-w-[300px] scale-[1.15]',
+  small:  'w-[170px] text-[11px]',
+  medium: 'w-[220px] text-xs',
+  large:  'w-[280px] text-sm',
 };
 
 const SIZE_PADDING: Record<NodeSize, string> = {
@@ -54,7 +54,8 @@ export const BaseNode = React.memo(function BaseNode({
     <div
       className={cn(
         'relative rounded-xl border transition-all duration-200 select-none cursor-pointer',
-        'bg-[#13151a]/95 backdrop-blur-md border-white/10 shadow-lg hover:border-white/30 hover:shadow-2xl hover:scale-[1.02]',
+        'bg-[#12141a]/95 backdrop-blur-md border-white/10 shadow-lg',
+        'hover:border-white/30 hover:shadow-[0_10px_28px_rgba(0,0,0,0.6)] hover:-translate-y-0.5',
         SIZE_CLASSES[nodeSize],
         isHighlighted && 'ring-2 ring-primary border-primary/60 shadow-[0_0_20px_rgba(255,107,0,0.25)]',
         hasAlert && !isHighlighted && 'border-rose-500/50 shadow-[0_0_15px_rgba(244,63,94,0.2)] ring-1 ring-rose-500/30',

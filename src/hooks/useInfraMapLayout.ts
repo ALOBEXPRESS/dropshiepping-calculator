@@ -6,25 +6,40 @@ import type { GroupingMode, InfraNodeData } from '@/utils/infraGraphTransform';
 type LayoutedNodes = RFNode<InfraNodeData>[];
 type LayoutedEdges = RFEdge[];
 
-// Node size estimates for dagre layout
-const NODE_WIDTH = 210;
-const NODE_HEIGHT = 86;
+export type NodeSize = 'small' | 'medium' | 'large';
+
+export const NODE_SIZE_CONFIG: Record<
+  NodeSize,
+  { width: number; height: number; nodesep: number; ranksep: number }
+> = {
+  small:  { width: 170, height: 72,  nodesep: 45, ranksep: 95 },
+  medium: { width: 220, height: 88,  nodesep: 60, ranksep: 120 },
+  large:  { width: 280, height: 108, nodesep: 75, ranksep: 145 },
+};
 
 function runDagreLayout(
   nodes: LayoutedNodes,
   edges: LayoutedEdges,
-  direction: 'LR' | 'TB' = 'LR'
+  direction: 'LR' | 'TB' = 'LR',
+  nodeSize: NodeSize = 'medium'
 ): { nodes: LayoutedNodes; edges: LayoutedEdges } {
   if (nodes.length === 0) {
     return { nodes: [], edges: [] };
   }
 
+  const cfg = NODE_SIZE_CONFIG[nodeSize] || NODE_SIZE_CONFIG.medium;
   const g = new dagre.graphlib.Graph();
   g.setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: direction, nodesep: 60, ranksep: 110, marginx: 40, marginy: 40 });
+  g.setGraph({
+    rankdir: direction,
+    nodesep: cfg.nodesep,
+    ranksep: cfg.ranksep,
+    marginx: 40,
+    marginy: 40,
+  });
 
   for (const node of nodes) {
-    g.setNode(node.id, { width: NODE_WIDTH, height: NODE_HEIGHT });
+    g.setNode(node.id, { width: cfg.width, height: cfg.height });
   }
   for (const edge of edges) {
     // Only add edge to layout graph if both source and target exist in nodes
@@ -44,8 +59,8 @@ function runDagreLayout(
       return {
         ...node,
         position: {
-          x: pos.x - NODE_WIDTH / 2,
-          y: pos.y - NODE_HEIGHT / 2,
+          x: Math.round(pos.x - cfg.width / 2),
+          y: Math.round(pos.y - cfg.height / 2),
         },
       };
     });
@@ -74,9 +89,11 @@ export interface UseInfraMapLayoutReturn {
  */
 function runProviderClusteredLayout(
   nodes: LayoutedNodes,
-  edges: LayoutedEdges
+  edges: LayoutedEdges,
+  nodeSize: NodeSize = 'medium'
 ): { nodes: LayoutedNodes; edges: LayoutedEdges } {
   if (nodes.length === 0) return { nodes: [], edges: [] };
+  const cfg = NODE_SIZE_CONFIG[nodeSize] || NODE_SIZE_CONFIG.medium;
 
   // 1. Mapeia cada nó ao seu provedor de proxy correspondente
   const nodeToProvider = new Map<string, string>();
@@ -153,7 +170,7 @@ function runProviderClusteredLayout(
       (e) => clusterNodeIdSet.has(e.source) && clusterNodeIdSet.has(e.target)
     );
 
-    const layouted = runDagreLayout(clusterNodes, clusterEdges, 'LR');
+    const layouted = runDagreLayout(clusterNodes, clusterEdges, 'LR', nodeSize);
 
     let minX = Infinity;
     let minY = Infinity;
@@ -163,11 +180,11 @@ function runProviderClusteredLayout(
     for (const n of layouted.nodes) {
       minX = Math.min(minX, n.position.x);
       minY = Math.min(minY, n.position.y);
-      maxX = Math.max(maxX, n.position.x + NODE_WIDTH);
-      maxY = Math.max(maxY, n.position.y + NODE_HEIGHT);
+      maxX = Math.max(maxX, n.position.x + cfg.width);
+      maxY = Math.max(maxY, n.position.y + cfg.height);
     }
 
-    const clusterHeight = Math.max(maxY - minY, NODE_HEIGHT);
+    const clusterHeight = Math.max(maxY - minY, cfg.height);
 
     for (const n of layouted.nodes) {
       finalNodes.push({
@@ -190,9 +207,11 @@ function runProviderClusteredLayout(
  */
 function runPlatformClusteredLayout(
   nodes: LayoutedNodes,
-  edges: LayoutedEdges
+  edges: LayoutedEdges,
+  nodeSize: NodeSize = 'medium'
 ): { nodes: LayoutedNodes; edges: LayoutedEdges } {
   if (nodes.length === 0) return { nodes: [], edges: [] };
+  const cfg = NODE_SIZE_CONFIG[nodeSize] || NODE_SIZE_CONFIG.medium;
 
   const nodeToPlatform = new Map<string, string>();
 
@@ -254,7 +273,7 @@ function runPlatformClusteredLayout(
       (e) => clusterNodeIdSet.has(e.source) && clusterNodeIdSet.has(e.target)
     );
 
-    const layouted = runDagreLayout(clusterNodes, clusterEdges, 'LR');
+    const layouted = runDagreLayout(clusterNodes, clusterEdges, 'LR', nodeSize);
 
     let minX = Infinity;
     let minY = Infinity;
@@ -264,11 +283,11 @@ function runPlatformClusteredLayout(
     for (const n of layouted.nodes) {
       minX = Math.min(minX, n.position.x);
       minY = Math.min(minY, n.position.y);
-      maxX = Math.max(maxX, n.position.x + NODE_WIDTH);
-      maxY = Math.max(maxY, n.position.y + NODE_HEIGHT);
+      maxX = Math.max(maxX, n.position.x + cfg.width);
+      maxY = Math.max(maxY, n.position.y + cfg.height);
     }
 
-    const clusterHeight = Math.max(maxY - minY, NODE_HEIGHT);
+    const clusterHeight = Math.max(maxY - minY, cfg.height);
 
     for (const n of layouted.nodes) {
       finalNodes.push({
@@ -290,17 +309,18 @@ export function useInfraMapLayout(
   nodes: LayoutedNodes,
   edges: LayoutedEdges,
   groupingMode: 'none' | 'provider' | 'platform' | GroupingMode,
-  customPositions?: Record<string, { x: number; y: number }>
+  customPositions?: Record<string, { x: number; y: number }>,
+  nodeSize: NodeSize = 'medium'
 ): UseInfraMapLayoutReturn {
   const { nodes: layoutedNodes, edges: layoutedEdges } = useMemo(() => {
     let dagreResult: { nodes: LayoutedNodes; edges: LayoutedEdges };
 
     if (groupingMode === 'provider') {
-      dagreResult = runProviderClusteredLayout(nodes, edges);
+      dagreResult = runProviderClusteredLayout(nodes, edges, nodeSize);
     } else if (groupingMode === 'platform') {
-      dagreResult = runPlatformClusteredLayout(nodes, edges);
+      dagreResult = runPlatformClusteredLayout(nodes, edges, nodeSize);
     } else {
-      dagreResult = runDagreLayout(nodes, edges, 'LR');
+      dagreResult = runDagreLayout(nodes, edges, 'LR', nodeSize);
     }
 
     if (!customPositions || Object.keys(customPositions).length === 0) {
@@ -319,7 +339,7 @@ export function useInfraMapLayout(
     });
 
     return { nodes: mergedNodes, edges: dagreResult.edges };
-  }, [nodes, edges, groupingMode, customPositions]);
+  }, [nodes, edges, groupingMode, customPositions, nodeSize]);
 
   return { layoutedNodes, layoutedEdges, isLayouting: false };
 }

@@ -158,13 +158,13 @@ export const HealthKpis: React.FC<HealthKpisProps> = ({
   }, [alerts]);
 
   return (
-    <div className="bg-card/90 backdrop-blur-md border-b border-border/80 transition-all select-none">
+    <div className="bg-[#0b0c10]/95 backdrop-blur-md border-b border-white/[0.08] transition-all select-none">
       {/* Status Bar Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border/40 gap-3">
+      <div className="flex items-center justify-between px-4 py-1.5 border-b border-white/[0.04] gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <div className="flex items-center gap-2">
-            <Activity className="w-4 h-4 text-primary" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <Activity className="w-3.5 h-3.5 text-primary animate-pulse" />
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 font-mono">
               Diagnóstico de Infraestrutura
             </span>
           </div>
