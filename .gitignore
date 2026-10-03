@@ -143,10 +143,12 @@ scripts/
 .claude/
 tools/
 
-# Documentation — ignore all except knowledge-graph
+# Documentation — ignore all except knowledge-graph (ui-audit is private/local only)
 docs/*
 !docs/knowledge-graph/
 !docs/knowledge-graph/**
+docs/knowledge-graph/ui-audit.md
+ui-audit.md
 
 # Scripts (contain sensitive operations)
 python-scripts/
