@@ -1,5 +1,5 @@
-import React from 'react';
-import type { Node } from '@xyflow/react';
+import React, { useMemo, useState } from 'react';
+import type { Node, Edge } from '@xyflow/react';
 import {
   Sheet,
   SheetContent,
@@ -10,12 +10,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ExternalLink, AlertTriangle, Crosshair, Palette, EyeOff, Layers, RotateCcw, Check } from 'lucide-react';
+import { ExternalLink, AlertTriangle, Crosshair, Palette, EyeOff, Layers, RotateCcw, Check, Network, ArrowRight, ArrowLeft, SlidersHorizontal } from 'lucide-react';
 import type { InfraNodeType, HealthAlert } from '@/types/infraGraph';
 import { useNavigate } from 'react-router-dom';
 import { NODE_COLORS } from '@/utils/infraGraphTransform';
 import type { InfraNodeData } from '@/utils/infraGraphTransform';
 import { NODE_ACCENT_COLORS } from './NodeContextMenu';
+import type { CustomEdgeStyle } from './EdgeContextMenu';
 import { cn } from '@/lib/utils';
 
 interface InfraMapSidebarSheetProps {
@@ -28,6 +29,10 @@ interface InfraMapSidebarSheetProps {
   onColorChange?: (nodeId: string, color: string | null) => void;
   onHideNode?: (nodeId: string) => void;
   onHideModule?: (moduleType: InfraNodeType) => void;
+  edges?: Edge[];
+  allNodes?: Node[];
+  customEdgeStyles?: Record<string, CustomEdgeStyle>;
+  onEdgeStyleChange?: (edgeId: string, style: CustomEdgeStyle | null) => void;
 }
 
 const NODE_TYPE_LABELS: Record<InfraNodeType, string> = {
@@ -63,8 +68,13 @@ export const InfraMapSidebarSheet: React.FC<InfraMapSidebarSheetProps> = ({
   onColorChange,
   onHideNode,
   onHideModule,
+  edges = [],
+  allNodes = [],
+  customEdgeStyles = {},
+  onEdgeStyleChange,
 }) => {
   const navigate = useNavigate();
+  const [editingEdgeId, setEditingEdgeId] = useState<string | null>(null);
 
   if (!node) return null;
 
@@ -75,6 +85,12 @@ export const InfraMapSidebarSheet: React.FC<InfraMapSidebarSheetProps> = ({
   // Filter active alerts belonging to this specific node
   const nodeAlerts = allAlerts.filter((a) => a.severity !== 'info' && a.nodeIds.includes(node.id));
   const hasAlerts = nodeAlerts.length > 0;
+
+  // Filter connected edges to/from this node
+  const connectedEdges = useMemo(() => {
+    if (!node || !edges) return [];
+    return edges.filter((e) => e.source === node.id || e.target === node.id);
+  }, [node, edges]);
 
   const handleOpenInModule = () => {
     const routeFn = ROUTE_MAP[nodeType];
@@ -191,6 +207,230 @@ export const InfraMapSidebarSheet: React.FC<InfraMapSidebarSheetProps> = ({
               })}
             </div>
           </div>
+
+          {/* Connected Lines & Edge Colors Section */}
+          {connectedEdges.length > 0 && (
+            <div className="space-y-3 p-3.5 rounded-xl bg-muted/20 border border-border/60">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                  <Network className="h-3.5 w-3.5 text-primary" />
+                  Linhas de Conexão ({connectedEdges.length})
+                </h3>
+                <span className="text-[10px] text-muted-foreground">
+                  Altere a cor de cada linha
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                {connectedEdges.map((edge) => {
+                  const isOutgoing = edge.source === node.id;
+                  const otherNodeId = isOutgoing ? edge.target : edge.source;
+                  const otherNode = allNodes.find((n) => n.id === otherNodeId);
+                  const otherData = (otherNode?.data as unknown) as InfraNodeData | undefined;
+                  const otherLabel = otherData?.label || otherNodeId;
+                  const otherType = (otherNode?.type as InfraNodeType) || '';
+                  const otherCountry = otherData?.country;
+
+                  const customStyle = customEdgeStyles[edge.id];
+                  const currentStroke = customStyle?.stroke || (edge.style?.stroke as string) || '#6B7280';
+                  const isDashed = customStyle?.strokeDasharray
+                    ? true
+                    : customStyle?.strokeDasharray === ''
+                    ? false
+                    : Boolean(edge.style?.strokeDasharray);
+                  const isWarning = Boolean(edge.data?.isWarning);
+                  const isEditing = editingEdgeId === edge.id;
+
+                  // Determine why warning
+                  let warningText = '';
+                  if (edge.data?.relation === 'runs_on' && isWarning) {
+                    warningText = 'Multi-Contas';
+                  } else if (
+                    nodeData.country &&
+                    otherCountry &&
+                    nodeData.country.trim().toUpperCase() !== otherCountry.trim().toUpperCase()
+                  ) {
+                    warningText = `Divergência (${nodeData.country} ≠ ${otherCountry})`;
+                  } else if (isWarning) {
+                    warningText = 'Alerta Anti-ban';
+                  }
+
+                  return (
+                    <div
+                      key={edge.id}
+                      className={cn(
+                        'rounded-lg border p-2.5 space-y-2 transition-all',
+                        isEditing
+                          ? 'border-primary/50 bg-primary/5 shadow-sm'
+                          : 'border-border/50 bg-card/60 hover:border-border'
+                      )}
+                    >
+                      {/* Connection Row Header */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div
+                            className={cn(
+                              'w-3.5 h-1 rounded shrink-0 transition-all shadow-sm',
+                              isDashed && 'border-b-2 border-dashed'
+                            )}
+                            style={{
+                              backgroundColor: isDashed ? 'transparent' : currentStroke,
+                              borderColor: currentStroke,
+                            }}
+                            title={`Linha ${isDashed ? 'tracejada' : 'contínua'}`}
+                          />
+                          {isOutgoing ? (
+                            <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
+                          ) : (
+                            <ArrowLeft className="w-3 h-3 text-muted-foreground shrink-0" />
+                          )}
+                          <div className="min-w-0">
+                            <span className="text-xs font-medium text-foreground truncate block" title={otherLabel}>
+                              {otherLabel}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground truncate block">
+                              {NODE_TYPE_LABELS[otherType] || otherType}
+                              {otherCountry ? ` • ${otherCountry}` : ''}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {isWarning && (
+                            <Badge variant="destructive" className="h-5 text-[9px] px-1.5 gap-0.5" title={warningText}>
+                              <AlertTriangle className="w-2.5 h-2.5" />
+                              {warningText || 'Alerta'}
+                            </Badge>
+                          )}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingEdgeId(isEditing ? null : edge.id)}
+                            className={cn(
+                              'h-7 px-2 text-[10px] gap-1 cursor-pointer transition-colors',
+                              isEditing ? 'bg-primary/20 text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                            )}
+                            title="Personalizar cor e traço desta linha"
+                          >
+                            <Palette className="w-3 h-3" />
+                            Cor
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Inline Color & Pattern Drawer */}
+                      {isEditing && (
+                        <div className="pt-2 border-t border-border/40 space-y-2.5 animate-in fade-in duration-150">
+                          {/* Color Swatches */}
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                              <span>Escolher Cor da Linha</span>
+                              {customStyle && onEdgeStyleChange && (
+                                <button
+                                  type="button"
+                                  onClick={() => onEdgeStyleChange(edge.id, null)}
+                                  className="text-[10px] text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                                >
+                                  <RotateCcw className="w-2.5 h-2.5" />
+                                  Restaurar Padrão
+                                </button>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-6 gap-1.5 pt-0.5">
+                              {NODE_ACCENT_COLORS.map((c) => {
+                                const isSelected = customStyle?.stroke === c.value;
+                                return (
+                                  <button
+                                    key={c.value}
+                                    type="button"
+                                    title={c.label}
+                                    onClick={() =>
+                                      onEdgeStyleChange?.(edge.id, {
+                                        ...customStyle,
+                                        stroke: c.value,
+                                      })
+                                    }
+                                    className={cn(
+                                      'w-6 h-6 rounded-md flex items-center justify-center transition-all cursor-pointer shadow-sm',
+                                      c.swatch,
+                                      isSelected
+                                        ? 'ring-2 ring-white ring-offset-1 ring-offset-card scale-110'
+                                        : 'hover:scale-105 opacity-80 hover:opacity-100'
+                                    )}
+                                  >
+                                    {isSelected && <Check className="w-3 h-3 text-white stroke-[3]" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Pattern Selector */}
+                          <div className="flex items-center justify-between gap-1 text-[10px] pt-1 border-t border-border/30">
+                            <span className="text-muted-foreground">Estilo do Traço:</span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  onEdgeStyleChange?.(edge.id, {
+                                    ...customStyle,
+                                    strokeDasharray: null,
+                                  })
+                                }
+                                className={cn(
+                                  'px-2 py-0.5 rounded text-[10px] border cursor-pointer transition-colors',
+                                  customStyle?.strokeDasharray === null || customStyle?.strokeDasharray === undefined
+                                    ? 'bg-muted border-border font-semibold text-foreground'
+                                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                                )}
+                              >
+                                Auto
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  onEdgeStyleChange?.(edge.id, {
+                                    ...customStyle,
+                                    strokeDasharray: '',
+                                  })
+                                }
+                                className={cn(
+                                  'px-2 py-0.5 rounded text-[10px] border cursor-pointer transition-colors',
+                                  customStyle?.strokeDasharray === ''
+                                    ? 'bg-primary/20 border-primary text-primary-foreground font-semibold'
+                                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                                )}
+                              >
+                                Sólida
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  onEdgeStyleChange?.(edge.id, {
+                                    ...customStyle,
+                                    strokeDasharray: '6 4',
+                                  })
+                                }
+                                className={cn(
+                                  'px-2 py-0.5 rounded text-[10px] border cursor-pointer transition-colors',
+                                  customStyle?.strokeDasharray === '6 4'
+                                    ? 'bg-primary/20 border-primary text-primary-foreground font-semibold'
+                                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                                )}
+                              >
+                                Tracejada
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Node Summary details */}
           <div className="space-y-3">

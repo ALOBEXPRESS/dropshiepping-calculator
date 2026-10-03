@@ -62,7 +62,13 @@ export const InfraEdge: React.FC<EdgeProps> = ({
   if (isIdeal) {
     return (
       <>
-        <BaseEdge id={id} path={edgePath} style={style} markerEnd={markerEnd} />
+        <BaseEdge
+          id={id}
+          path={edgePath}
+          style={{ ...style, cursor: 'pointer' }}
+          markerEnd={markerEnd}
+          className="transition-all hover:stroke-[3.5px] cursor-pointer"
+        />
         <EdgeLabelRenderer>
           <div
             style={{
@@ -70,8 +76,8 @@ export const InfraEdge: React.FC<EdgeProps> = ({
               transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
               pointerEvents: 'all',
             }}
-            className="opacity-0 hover:opacity-100 transition-opacity flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-medium select-none shadow-md z-10 border bg-[#06180e]/90 text-emerald-300 border-emerald-500/40 cursor-help"
-            title="Conexão 1:1 Ideal (Anti-ban seguro)"
+            className="opacity-0 hover:opacity-100 transition-opacity flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-medium select-none shadow-md z-10 border bg-[#06180e]/90 text-emerald-300 border-emerald-500/40 cursor-pointer"
+            title="Conexão 1:1 Ideal (Clique para personalizar cor e estilo)"
           >
             ✓ 1:1 Ideal
           </div>
@@ -82,7 +88,13 @@ export const InfraEdge: React.FC<EdgeProps> = ({
 
   return (
     <>
-      <BaseEdge id={id} path={edgePath} style={style} markerEnd={markerEnd} />
+      <BaseEdge
+        id={id}
+        path={edgePath}
+        style={{ ...style, cursor: 'pointer' }}
+        markerEnd={markerEnd}
+        className="transition-all hover:stroke-[3.5px] cursor-pointer"
+      />
       {label && (
         <EdgeLabelRenderer>
           <div
@@ -92,13 +104,14 @@ export const InfraEdge: React.FC<EdgeProps> = ({
               pointerEvents: 'all',
             }}
             className={cn(
-              'group flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-medium select-none shadow-md transition-all hover:scale-105 hover:z-50 z-10 border backdrop-blur-md',
+              'group flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-medium select-none shadow-md transition-all hover:scale-105 hover:z-50 z-10 border backdrop-blur-md cursor-pointer',
               isWarning && 'bg-[#180a0d]/95 text-rose-300 border-rose-500/50 shadow-rose-950/40',
               isOwner && 'bg-[#1a1406]/95 text-amber-300 border-amber-500/50 shadow-amber-950/40',
               isPartner && 'bg-[#06121f]/95 text-blue-300 border-blue-500/50 shadow-blue-950/40',
               isAdAuth && 'bg-[#06171a]/95 text-cyan-300 border-cyan-500/50 shadow-cyan-950/40',
               !isWarning && !isOwner && !isPartner && !isAdAuth && 'bg-[#090a0d]/95 text-zinc-300 border-white/10'
             )}
+            title="Clique para personalizar cor e estilo da linha"
           >
             {label}
           </div>

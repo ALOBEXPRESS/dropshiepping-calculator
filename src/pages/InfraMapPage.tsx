@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { ReactFlowProvider, useReactFlow, type OnNodeDrag, type Viewport } from '@xyflow/react';
+import { ReactFlowProvider, useReactFlow, type OnNodeDrag, type Viewport, type Edge } from '@xyflow/react';
 import type { Node } from '@xyflow/react';
 import { Loader2, AlertCircle, Network, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { InfraMapSidebarSheet } from '@/components/infra-map/InfraMapSidebarShee
 import { HealthKpis } from '@/components/infra-map/HealthKpis';
 import { InfraMapLegend } from '@/components/infra-map/InfraMapLegend';
 import { NodeContextMenu } from '@/components/infra-map/NodeContextMenu';
+import { EdgeContextMenu, type CustomEdgeStyle } from '@/components/infra-map/EdgeContextMenu';
 import type { NodeSize } from '@/components/infra-map/nodes/BaseNode';
 import type { InfraNodeType } from '@/types/infraGraph';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -252,6 +253,39 @@ const InfraMapContent: React.FC = () => {
     }
   }, [organizationId]);
 
+  // 8.1 Custom connection line styles (color, dash pattern, stroke width) with localStorage persistence
+  const [customEdgeStyles, setCustomEdgeStyles] = useState<Record<string, CustomEdgeStyle>>(() => {
+    try {
+      const raw = localStorage.getItem(`infra_map_custom_edge_styles_${organizationId || 'default'}`);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const handleEdgeStyleChange = useCallback((edgeId: string, style: CustomEdgeStyle | null) => {
+    setCustomEdgeStyles((prev) => {
+      const next = { ...prev };
+      if (style) {
+        next[edgeId] = style;
+      } else {
+        delete next[edgeId];
+      }
+      try {
+        localStorage.setItem(
+          `infra_map_custom_edge_styles_${organizationId || 'default'}`,
+          JSON.stringify(next)
+        );
+      } catch {}
+      return next;
+    });
+    if (style) {
+      toast.success('Estilo da linha atualizado!');
+    } else {
+      toast.info('Estilo original da linha restaurado!');
+    }
+  }, [organizationId]);
+
   // 9. Hide entire module (all nodes of a specific type)
   const handleHideModule = useCallback((moduleType: InfraNodeType) => {
     setVisibleNodeTypesState((prev) => {
@@ -297,14 +331,22 @@ const InfraMapContent: React.FC = () => {
         `infra_map_show_diagnostic_${organizationId || 'default'}`,
         String(showDiagnostic)
       );
+      localStorage.setItem(
+        `infra_map_custom_colors_${organizationId || 'default'}`,
+        JSON.stringify(customColors)
+      );
+      localStorage.setItem(
+        `infra_map_custom_edge_styles_${organizationId || 'default'}`,
+        JSON.stringify(customEdgeStyles)
+      );
       toast.success('Visualização padrão salva com sucesso!', {
-        description: 'Zoom, câmera, módulos visíveis e configurações serão restaurados automaticamente sempre que você entrar.',
+        description: 'Zoom, câmera, módulos visíveis, cores de nós e linhas serão restaurados automaticamente.',
       });
     } catch (e) {
       console.warn('Failed to save layout view:', e);
       toast.error('Erro ao salvar visualização no armazenamento local.');
     }
-  }, [getViewport, organizationId, visibleNodeTypes, groupBy, nodeSize, hideUnused, showDiagnostic]);
+  }, [getViewport, organizationId, visibleNodeTypes, groupBy, nodeSize, hideUnused, showDiagnostic, customColors, customEdgeStyles]);
 
   // 11. Context menu state
   const [contextMenu, setContextMenu] = useState<{
@@ -367,6 +409,9 @@ const InfraMapContent: React.FC = () => {
       }
       const savedColors = localStorage.getItem(`infra_map_custom_colors_${organizationId || 'default'}`);
       setCustomColors(savedColors ? JSON.parse(savedColors) : {});
+
+      const savedEdgeStyles = localStorage.getItem(`infra_map_custom_edge_styles_${organizationId || 'default'}`);
+      setCustomEdgeStyles(savedEdgeStyles ? JSON.parse(savedEdgeStyles) : {});
 
       const savedVp = localStorage.getItem(`infra_map_viewport_${organizationId || 'default'}`);
       if (savedVp) {
@@ -520,7 +565,7 @@ const InfraMapContent: React.FC = () => {
     nodeSize
   );
 
-  // 8. Apply focus state to layouted nodes/edges + inject nodeSize & customColor
+  // 8. Apply focus state to layouted nodes/edges + inject nodeSize, customColor & customEdgeStyles
   const { nodes: focusedNodes, edges: focusedEdges } = useMemo(() => {
     const res = applyFocusState(layoutedNodes, layoutedEdges, highlightedNodeIds, highlightedEdgeIds);
     const enrichedNodes = res.nodes.map((node) => ({
@@ -531,8 +576,80 @@ const InfraMapContent: React.FC = () => {
         customColor: customColors[node.id] || null,
       },
     }));
-    return { nodes: enrichedNodes, edges: res.edges };
-  }, [layoutedNodes, layoutedEdges, highlightedNodeIds, highlightedEdgeIds, nodeSize, customColors]);
+
+    const enrichedEdges = res.edges.map((edge) => {
+      const custom = customEdgeStyles[edge.id];
+      if (!custom) return edge;
+      return {
+        ...edge,
+        style: {
+          ...edge.style,
+          ...(custom.stroke ? { stroke: custom.stroke } : {}),
+          ...(custom.strokeDasharray !== undefined
+            ? { strokeDasharray: custom.strokeDasharray ? custom.strokeDasharray : undefined }
+            : {}),
+          ...(custom.strokeWidth ? { strokeWidth: custom.strokeWidth } : {}),
+        },
+        data: {
+          ...edge.data,
+          customStyle: custom,
+        },
+      };
+    });
+
+    return { nodes: enrichedNodes, edges: enrichedEdges };
+  }, [layoutedNodes, layoutedEdges, highlightedNodeIds, highlightedEdgeIds, nodeSize, customColors, customEdgeStyles]);
+
+  // 12. Edge Context Menu / Customizer state
+  const [edgeMenu, setEdgeMenu] = useState<{
+    edgeId: string;
+    sourceLabel?: string;
+    targetLabel?: string;
+    relation?: string;
+    isWarning?: boolean;
+    warningReason?: string;
+    x: number;
+    y: number;
+    defaultStroke?: string;
+  } | null>(null);
+
+  const handleEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
+    event.stopPropagation();
+    const sourceNode = activeNodes.find((n) => n.id === edge.source);
+    const targetNode = activeNodes.find((n) => n.id === edge.target);
+    const isWarning = Boolean(edge.data?.isWarning);
+    const relation = (edge.data?.relation as string) || '';
+
+    let warningReason = '';
+    if (relation === 'runs_on' && isWarning) {
+      warningReason = 'Dispositivo vinculado a múltiplas contas';
+    } else if (
+      sourceNode?.country &&
+      targetNode?.country &&
+      sourceNode.country.trim().toUpperCase() !== targetNode.country.trim().toUpperCase()
+    ) {
+      warningReason = `Divergência de País (${sourceNode.country} ≠ ${targetNode.country})`;
+    } else if (isWarning) {
+      warningReason = 'Alerta de integridade anti-ban';
+    }
+
+    setContextMenu(null);
+    setEdgeMenu({
+      edgeId: edge.id,
+      sourceLabel: (sourceNode?.data as any)?.label || sourceNode?.id,
+      targetLabel: (targetNode?.data as any)?.label || targetNode?.id,
+      relation,
+      isWarning,
+      warningReason,
+      x: event.clientX,
+      y: event.clientY,
+      defaultStroke: (edge.style?.stroke as string) || undefined,
+    });
+  }, [activeNodes]);
+
+  const handleEdgeContextMenu = useCallback((event: React.MouseEvent, edge: Edge) => {
+    handleEdgeClick(event, edge);
+  }, [handleEdgeClick]);
 
   const handleNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
     setSelectedNode(node);
@@ -543,6 +660,7 @@ const InfraMapContent: React.FC = () => {
     clearFocus();
     setSelectedAlertType(null);
     setContextMenu(null);
+    setEdgeMenu(null);
   }, [clearFocus]);
 
   const handleNodeFocus = useCallback(
@@ -718,9 +836,11 @@ const InfraMapContent: React.FC = () => {
           savedViewport={savedViewport}
           onViewportChange={handleViewportChange}
           onNodeClick={handleNodeClick}
+          onEdgeClick={handleEdgeClick}
           onPaneClick={handlePaneClick}
           onNodeDragStop={handleNodeDragStop}
           onNodeContextMenu={handleNodeContextMenu}
+          onEdgeContextMenu={handleEdgeContextMenu}
         />
 
         {/* Floating Collapsible Legend */}
@@ -738,6 +858,10 @@ const InfraMapContent: React.FC = () => {
         onColorChange={handleColorChange}
         onHideNode={handleHideNode}
         onHideModule={handleHideModule}
+        edges={activeEdges}
+        allNodes={activeNodes}
+        customEdgeStyles={customEdgeStyles}
+        onEdgeStyleChange={handleEdgeStyleChange}
       />
 
       {/* 5. Right-Click Node Context Menu */}
@@ -753,6 +877,24 @@ const InfraMapContent: React.FC = () => {
           onHideModule={handleHideModule}
           onColorChange={handleColorChange}
           onClose={() => setContextMenu(null)}
+        />
+      )}
+
+      {/* 6. Edge Customizer Context Menu */}
+      {edgeMenu && (
+        <EdgeContextMenu
+          edgeId={edgeMenu.edgeId}
+          sourceLabel={edgeMenu.sourceLabel}
+          targetLabel={edgeMenu.targetLabel}
+          relation={edgeMenu.relation}
+          isWarning={edgeMenu.isWarning}
+          warningReason={edgeMenu.warningReason}
+          x={edgeMenu.x}
+          y={edgeMenu.y}
+          currentStyle={customEdgeStyles[edgeMenu.edgeId] || null}
+          defaultStroke={edgeMenu.defaultStroke}
+          onStyleChange={handleEdgeStyleChange}
+          onClose={() => setEdgeMenu(null)}
         />
       )}
     </div>

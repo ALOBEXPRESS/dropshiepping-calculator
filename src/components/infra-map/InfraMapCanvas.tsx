@@ -47,9 +47,11 @@ interface InfraMapCanvasProps {
   nodes: Node[];
   edges: Edge[];
   onNodeClick: (event: React.MouseEvent, node: Node) => void;
+  onEdgeClick?: (event: React.MouseEvent, edge: Edge) => void;
   onPaneClick: () => void;
   onNodeDragStop?: OnNodeDrag<Node>;
   onNodeContextMenu?: (event: React.MouseEvent, node: Node) => void;
+  onEdgeContextMenu?: (event: React.MouseEvent, edge: Edge) => void;
   savedViewport?: Viewport | null;
   onViewportChange?: (viewport: Viewport) => void;
 }
@@ -58,9 +60,11 @@ export const InfraMapCanvas: React.FC<InfraMapCanvasProps> = ({
   nodes: inputNodes,
   edges,
   onNodeClick,
+  onEdgeClick,
   onPaneClick,
   onNodeDragStop,
   onNodeContextMenu,
+  onEdgeContextMenu,
   savedViewport,
   onViewportChange,
 }) => {
@@ -119,11 +123,20 @@ export const InfraMapCanvas: React.FC<InfraMapCanvasProps> = ({
         onNodesChange={onNodesChange}
         onNodeDragStop={onNodeDragStop}
         onNodeClick={onNodeClick}
+        onEdgeClick={onEdgeClick}
         onNodeContextMenu={
           onNodeContextMenu
             ? (event, node) => {
                 event.preventDefault();
                 onNodeContextMenu(event, node);
+              }
+            : undefined
+        }
+        onEdgeContextMenu={
+          onEdgeContextMenu
+            ? (event, edge) => {
+                event.preventDefault();
+                onEdgeContextMenu(event, edge);
               }
             : undefined
         }
