@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Handshake, Cog, Package, Gem, Users,
   Share2, UserCircle, Receipt, CircleDollarSign,
-  Pencil, Plus,
+  Pencil, Plus, TrendingUp, TrendingDown, WalletCards
 } from 'lucide-react';
 import type { BusinessModelCanvas, BmcSectionKey } from '@/types/businessModelCanvas';
-import { BMC_SECTIONS } from '@/types/businessModelCanvas';
+import { BMC_SECTIONS, formatCurrencyBRL } from '@/types/businessModelCanvas';
 import { BMCSectionEditor } from './BMCSectionEditor';
 
 // ── Mapa de ícones ─────────────────────────────────────────────────────────
@@ -21,6 +21,7 @@ interface BMCCanvasGridProps {
   businessCenterId: string;
   bcName: string;
   canvas: BusinessModelCanvas;
+  initialSection?: BmcSectionKey | null;
 }
 
 // ── Bloco individual ──────────────────────────────────────────────────────
@@ -36,49 +37,77 @@ function BMCBlock({ sectionKey, canvas, onEdit }: BlockProps) {
   const Icon = ICON_MAP[config.icon] ?? Gem;
   const data = canvas[sectionKey];
   const hasItems = data && data.items.length > 0;
+  const hasValue = data?.financial_value != null && !isNaN(data.financial_value);
 
   return (
     <div
       className={`
-        group relative flex flex-col h-full min-h-[160px] p-4 rounded-xl
-        border ${config.borderColor} bg-card
+        group relative flex flex-col h-full min-h-[175px] p-4 rounded-xl
+        border ${config.borderColor} bg-card/90
         hover:${config.bgColor} hover:border-opacity-60
-        transition-all duration-200
+        transition-all duration-200 shadow-sm
       `}
     >
       {/* Header do bloco */}
       <div className="flex items-start justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2">
-          <div className={`p-1.5 rounded-lg ${config.bgColor} border ${config.borderColor} flex-shrink-0`}>
+        <div className="flex items-center gap-2 min-w-0">
+          <div className={`p-1.5 rounded-lg ${config.bgColor} border ${config.borderColor} shrink-0`}>
             <Icon className={`w-3.5 h-3.5 ${config.color}`} />
           </div>
-          <div>
-            <p className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-wider leading-none mb-0.5">
+          <div className="min-w-0">
+            <p className="text-[10px] text-muted-foreground/60 font-mono font-medium uppercase tracking-wider leading-none mb-0.5">
               {config.number}
             </p>
-            <p className={`text-xs font-semibold ${config.color} leading-tight`}>
+            <p className={`text-xs font-semibold ${config.color} leading-tight truncate`}>
               {config.label}
             </p>
           </div>
         </div>
 
-        {/* Botão editar — aparece no hover */}
-        <button
-          type="button"
-          onClick={() => onEdit(sectionKey)}
-          className={`
-            opacity-0 group-hover:opacity-100 flex-shrink-0
-            p-1 rounded-md transition-all duration-150
-            text-muted-foreground hover:${config.color} hover:${config.bgColor}
-          `}
-          aria-label={`Editar ${config.label}`}
-        >
-          {hasItems ? (
-            <Pencil className="w-3 h-3" />
+        {/* Lado direito: Valor em R$ + Botão Editar */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {hasValue ? (
+            <button
+              type="button"
+              onClick={() => onEdit(sectionKey)}
+              title="Clique para editar valor ou itens"
+              className={`
+                px-2 py-0.5 rounded-md text-[11px] font-mono font-bold tracking-tight cursor-pointer
+                border ${config.borderColor} ${config.bgColor} ${config.color}
+                hover:scale-105 transition-transform shadow-xs flex items-center gap-1
+              `}
+            >
+              <span>{formatCurrencyBRL(data.financial_value)}</span>
+            </button>
           ) : (
-            <Plus className="w-3 h-3" />
+            <button
+              type="button"
+              onClick={() => onEdit(sectionKey)}
+              className="text-[10px] font-mono font-medium text-muted-foreground/40 hover:text-muted-foreground transition-colors px-1.5 py-0.5 rounded border border-dashed border-border/40 hover:border-border cursor-pointer opacity-0 group-hover:opacity-100"
+              title="Definir valor em R$"
+            >
+              + R$
+            </button>
           )}
-        </button>
+
+          {/* Botão editar */}
+          <button
+            type="button"
+            onClick={() => onEdit(sectionKey)}
+            className={`
+              opacity-0 group-hover:opacity-100 shrink-0
+              p-1 rounded-md transition-all duration-150 cursor-pointer
+              text-muted-foreground hover:${config.color} hover:${config.bgColor}
+            `}
+            aria-label={`Editar ${config.label}`}
+          >
+            {hasItems || hasValue ? (
+              <Pencil className="w-3 h-3" />
+            ) : (
+              <Plus className="w-3 h-3" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Conteúdo */}
@@ -87,7 +116,7 @@ function BMCBlock({ sectionKey, canvas, onEdit }: BlockProps) {
           <ul className="space-y-1.5">
             {data!.items.map((item, idx) => (
               <li key={idx} className="flex items-start gap-1.5">
-                <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${config.dotColor}`} />
+                <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${config.dotColor}`} />
                 <span className="text-xs text-foreground/80 leading-snug">{item}</span>
               </li>
             ))}
@@ -96,26 +125,51 @@ function BMCBlock({ sectionKey, canvas, onEdit }: BlockProps) {
           <button
             type="button"
             onClick={() => onEdit(sectionKey)}
-            className="w-full h-full flex flex-col items-center justify-center gap-1.5 min-h-[80px] rounded-lg border border-dashed border-border/30 hover:border-border/60 transition-colors group/empty"
+            className="w-full h-full flex flex-col items-center justify-center gap-1.5 min-h-[80px] rounded-lg border border-dashed border-border/30 hover:border-border/60 transition-colors group/empty cursor-pointer"
           >
             <Plus className={`w-4 h-4 ${config.color} opacity-30 group-hover/empty:opacity-60 transition-opacity`} />
             <span className="text-[10px] text-muted-foreground/50 group-hover/empty:text-muted-foreground/70 transition-colors">
-              Adicionar
+              Adicionar itens e valor
             </span>
           </button>
         )}
       </div>
+
+      {/* Rodapé do bloco: notas se houver */}
+      {data?.notes && (
+        <div className="mt-2.5 pt-2 border-t border-border/30">
+          <p className="text-[10px] text-muted-foreground/70 line-clamp-1 italic" title={data.notes}>
+            {data.notes}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
 
 // ── Grid principal ────────────────────────────────────────────────────────
 
-export function BMCCanvasGrid({ businessCenterId, canvas }: BMCCanvasGridProps) {
-  const [editingSection, setEditingSection] = useState<BmcSectionKey | null>(null);
+export function BMCCanvasGrid({ businessCenterId, canvas, initialSection }: BMCCanvasGridProps) {
+  const [editingSection, setEditingSection] = useState<BmcSectionKey | null>(initialSection ?? null);
+
+  useEffect(() => {
+    if (initialSection) {
+      setEditingSection(initialSection);
+    }
+  }, [initialSection]);
+
+  // Cálculos financeiros consolidados
+  const totalCustos = canvas.custos?.financial_value ?? 0;
+  const totalReceitas = canvas.fontes?.financial_value ?? 0;
+  const saldoOperacional = totalReceitas - totalCustos;
+  const margem = totalReceitas > 0 ? ((saldoOperacional / totalReceitas) * 100).toFixed(1) : null;
+  const totalRecursos = canvas.recursos?.financial_value ?? 0;
+  const hasAnyFinancial = Object.values(canvas).some(
+    (sec) => sec?.financial_value != null && sec.financial_value > 0
+  );
 
   return (
-    <>
+    <div className="space-y-4">
       {/*
         Layout do BMC (igual às imagens de referência):
         ┌──────────┬──────────┬──────────────┬──────────────┬──────────┐
@@ -202,6 +256,84 @@ export function BMCCanvasGrid({ businessCenterId, canvas }: BMCCanvasGridProps) 
         </div>
       </div>
 
+      {/* ── Barra de Inteligência Financeira do Negócio ──────────────── */}
+      <div className="rounded-xl border border-border/70 bg-card/60 backdrop-blur-md p-4 shadow-sm transition-all">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+              <WalletCards className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <span>Inteligência Financeira do Canvas</span>
+                {!hasAnyFinancial && (
+                  <span className="text-[10px] text-muted-foreground font-normal font-sans">
+                    (defina valores clicando no + R$ de cada bloco)
+                  </span>
+                )}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Consolidação operacional de receitas, custos e margem estimada
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {/* Custos Totais */}
+            <div className="p-2.5 rounded-lg bg-muted/30 border border-red-500/20">
+              <span className="text-[10px] text-red-400/80 uppercase font-mono font-medium block">
+                Total Custos (8)
+              </span>
+              <span className="text-sm font-bold font-mono text-red-400 block mt-0.5">
+                {formatCurrencyBRL(totalCustos)}
+              </span>
+            </div>
+
+            {/* Receitas Totais */}
+            <div className="p-2.5 rounded-lg bg-muted/30 border border-emerald-500/20">
+              <span className="text-[10px] text-emerald-400/80 uppercase font-mono font-medium block">
+                Total Fontes (9)
+              </span>
+              <span className="text-sm font-bold font-mono text-emerald-400 block mt-0.5">
+                {formatCurrencyBRL(totalReceitas)}
+              </span>
+            </div>
+
+            {/* Recursos / Ativos */}
+            <div className="p-2.5 rounded-lg bg-muted/30 border border-amber-500/20">
+              <span className="text-[10px] text-amber-400/80 uppercase font-mono font-medium block">
+                Recursos (3)
+              </span>
+              <span className="text-sm font-bold font-mono text-amber-400 block mt-0.5">
+                {formatCurrencyBRL(totalRecursos)}
+              </span>
+            </div>
+
+            {/* Resultado Operacional */}
+            <div className={`p-2.5 rounded-lg bg-muted/30 border ${saldoOperacional >= 0 ? 'border-emerald-500/30' : 'border-rose-500/30'}`}>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-muted-foreground uppercase font-mono font-medium block">
+                  Balanço
+                </span>
+                {saldoOperacional >= 0 ? (
+                  <TrendingUp className="w-3 h-3 text-emerald-400" />
+                ) : (
+                  <TrendingDown className="w-3 h-3 text-rose-400" />
+                )}
+              </div>
+              <span className={`text-sm font-bold font-mono block mt-0.5 ${saldoOperacional >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                {saldoOperacional >= 0 ? '+' : ''}{formatCurrencyBRL(saldoOperacional)}
+                {margem && (
+                  <span className="text-[10px] font-normal text-muted-foreground ml-1">
+                    ({margem}%)
+                  </span>
+                )}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Dialog de edição */}
       {editingSection && (
         <BMCSectionEditor
@@ -212,6 +344,6 @@ export function BMCCanvasGrid({ businessCenterId, canvas }: BMCCanvasGridProps) 
           currentData={canvas[editingSection] ?? null}
         />
       )}
-    </>
+    </div>
   );
 }

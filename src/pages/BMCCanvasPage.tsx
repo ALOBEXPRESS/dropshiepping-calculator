@@ -1,16 +1,19 @@
 import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useBusinessCenters } from '@/hooks/useBusinessCenters';
 import { useBusinessModelCanvas } from '@/hooks/useBusinessModelCanvas';
 import { BMCCanvasGrid } from '@/components/business-model-canvas/BMCCanvasGrid';
 import { BC_PLATFORM_CONFIG } from '@/types/businessCenters';
+import type { BmcSectionKey } from '@/types/businessModelCanvas';
 import { Briefcase, LayoutGrid } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 
 const BMCCanvasPage: React.FC = () => {
   const { bcId } = useParams<{ bcId: string }>();
+  const [searchParams] = useSearchParams();
+  const initialSection = (searchParams.get('section') as BmcSectionKey) || null;
   const { organizationId } = useSettings();
 
   const { businessCenters, isLoading: bcLoading } = useBusinessCenters(organizationId);
@@ -96,6 +99,7 @@ const BMCCanvasPage: React.FC = () => {
           businessCenterId={bcId}
           bcName={bc?.name ?? bc?.bc_id ?? bcId}
           canvas={canvas}
+          initialSection={initialSection}
         />
       ) : null}
 

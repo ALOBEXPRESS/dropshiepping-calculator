@@ -150,6 +150,7 @@ export interface BusinessModelCanvasSection {
   section: BmcSectionKey;
   items: string[];
   notes: string | null;
+  financial_value?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -174,6 +175,25 @@ export const bmcSectionUpsertSchema = z.object({
   ]),
   items: z.array(z.string().trim().min(1)).default([]),
   notes: z.string().trim().max(1000).optional().nullable(),
+  financial_value: z.number().optional().nullable(),
 });
 
 export type BmcSectionUpsertData = z.infer<typeof bmcSectionUpsertSchema>;
+
+// ── Utilitário de formatação de moeda BRL ──────────────────────────────────────
+
+export function formatCurrencyBRL(value: number | null | undefined): string {
+  if (value === null || value === undefined || isNaN(value)) return 'R$ 0,00';
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+export function formatCurrencyCompact(value: number | null | undefined): string {
+  if (value === null || value === undefined || isNaN(value)) return 'R$ 0';
+  if (Math.abs(value) >= 1_000_000) {
+    return `R$ ${(value / 1_000_000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}M`;
+  }
+  if (Math.abs(value) >= 1_000) {
+    return `R$ ${(value / 1_000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}k`;
+  }
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+}

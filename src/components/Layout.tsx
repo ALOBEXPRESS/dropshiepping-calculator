@@ -17,7 +17,6 @@ import {
   X,
   ShoppingCart,
   Wallet,
-  Briefcase,
 } from 'lucide-react';
 import { 
   DropdownMenu, 
@@ -34,8 +33,6 @@ import { SettingsDialog } from './SettingsDialog';
 import logo from '@/assets/logo.png';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useUser } from '@/contexts/UserContext';
-import { useBusinessCenters } from '@/hooks/useBusinessCenters';
-import { BMC_SECTIONS, BMC_SECTION_KEYS } from '@/types/businessModelCanvas';
 
 export interface NavRouteItem {
   to: string;
@@ -62,6 +59,7 @@ const NAV_ROUTES: {
     { to: '/vendas',    label: 'Vendas',      adminOnly: true,  accent: 'text-[hsl(var(--success))]',  dot: 'bg-[hsl(var(--success))]',  dotMuted: 'bg-[hsl(var(--success)/0.4)]',  active: 'bg-[hsl(var(--success)/0.08)] text-[hsl(var(--success))] font-semibold' },
     { to: '/campanhas', label: 'Campanhas',   adminOnly: true,  accent: 'text-[hsl(var(--warning))]',  dot: 'bg-[hsl(var(--warning))]',  dotMuted: 'bg-[hsl(var(--warning)/0.4)]',  active: 'bg-[hsl(var(--warning)/0.08)] text-[hsl(var(--warning))] font-semibold' },
     { to: '/repasse',   label: 'Repasse',     adminOnly: true,  accent: 'text-[hsl(var(--chart-6))]',  dot: 'bg-[hsl(var(--chart-6))]',  dotMuted: 'bg-[hsl(var(--chart-6)/0.4)]',  active: 'bg-[hsl(var(--chart-6)/0.08)] text-[hsl(var(--chart-6))] font-semibold' },
+    { to: '/negocio',   aliases: ['/negocio/'], label: 'Negócio', adminOnly: false, accent: 'text-emerald-400', dot: 'bg-emerald-400', dotMuted: 'bg-emerald-400/40', active: 'bg-emerald-500/15 text-emerald-400 font-semibold' },
   ],
   painel: [
     {
@@ -361,7 +359,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [painelOpen, setPainelOpen] = useLocalStorageBoolean('nav_group_painel_open', true);
   const [contasOpen, setContasOpen] = useLocalStorageBoolean('nav_group_contas_open', false);
   const [responsaveisOpen, setResponsaveisOpen] = useLocalStorageBoolean('nav_group_responsaveis_open', true);
-  const [negocioOpen, setNegocioOpen] = useLocalStorageBoolean('nav_group_negocio_open', true);
   const [blingNotifications, setBlingNotifications] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
@@ -370,14 +367,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { isAdmin, profile } = useUser();
   const e2eSearch = new URLSearchParams(location.search).get('e2e') === 'true' ? '?e2e=true' : '';
 
-  // Business Centers para o grupo Negócio
-  const { businessCenters } = useBusinessCenters(isAdmin ? organizationId : null);
-  const [openBCGroups, setOpenBCGroups] = useState<Record<string, boolean>>({});
-
-  const toggleBCGroup = (bcId: string) => {
-    setOpenBCGroups((prev) => ({ ...prev, [bcId]: !prev[bcId] }));
-  };
-
   // Auto-expande grupos quando a rota atual pertencer a eles
   useEffect(() => {
     if (location.pathname.startsWith('/responsaveis') || location.pathname.startsWith('/contas/responsaveis')) {
@@ -385,16 +374,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       setPainelOpen(true);
     }
     if (location.pathname.startsWith('/negocio')) {
-      setNegocioOpen(true);
-      setPainelOpen(true);
-      // Auto-abre o subgrupo do BC ativo
-      const parts = location.pathname.split('/');
-      const bcId = parts[2];
-      if (bcId) {
-        setOpenBCGroups((prev) => ({ ...prev, [bcId]: true }));
-      }
+      setEcommerceOpen(true);
     }
-  }, [location.pathname, setResponsaveisOpen, setPainelOpen, setNegocioOpen]);
+  }, [location.pathname, setResponsaveisOpen, setPainelOpen, setEcommerceOpen]);
 
   // Fecha a sidebar automaticamente ao navegar em telas mobile/tablet (< 1024px)
   useEffect(() => {
@@ -571,82 +553,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         </li>
                       )}
 
-                      {/* Subgrupo: Negócio (Business Model Canvas por BC) */}
-                      {isAdmin && (
-                        <li className="pt-1">
-                          <button
-                            type="button"
-                            onClick={() => setNegocioOpen(v => !v)}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
-                            data-testid="nav-negocio-subgroup"
-                          >
-                            <Briefcase className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-                            <span className="flex-1 text-left text-[10px] font-semibold uppercase tracking-widest">Negócio</span>
-                            <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${negocioOpen ? 'rotate-180' : ''}`} />
-                          </button>
-                          <div className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out ${negocioOpen ? 'grid-rows-[1fr] opacity-100 mt-0.5' : 'grid-rows-[0fr] opacity-0 pointer-events-none'}`}>
-                            <div className="overflow-hidden">
-                              <ul className="space-y-0.5 pl-3">
-                                {businessCenters.length === 0 ? (
-                                  <li className="px-3 py-1.5 text-xs text-muted-foreground/50 italic">
-                                    Nenhum negócio cadastrado
-                                  </li>
-                                ) : (
-                                  businessCenters.map((bc) => {
-                                    const bcIsOpen = !!openBCGroups[bc.id];
-                                    const bcName = bc.name ?? bc.bc_id;
-                                    const isBCActive = location.pathname.startsWith(`/negocio/${bc.id}`);
-                                    return (
-                                      <li key={bc.id}>
-                                        {/* Nome do BC como subgrupo colapsável */}
-                                        <button
-                                          type="button"
-                                          onClick={() => toggleBCGroup(bc.id)}
-                                          className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer text-xs
-                                            ${isBCActive
-                                              ? 'text-emerald-400 bg-emerald-500/10'
-                                              : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-                                            }`}
-                                        >
-                                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isBCActive ? 'bg-emerald-400' : 'bg-emerald-400/40'}`} />
-                                          <span className="flex-1 text-left font-medium truncate">{bcName}</span>
-                                          <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${bcIsOpen ? 'rotate-180' : ''}`} />
-                                        </button>
-                                        {/* 9 seções do BMC */}
-                                        <div className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out ${bcIsOpen ? 'grid-rows-[1fr] opacity-100 mt-0.5' : 'grid-rows-[0fr] opacity-0 pointer-events-none'}`}>
-                                          <div className="overflow-hidden">
-                                            <div className="ml-4 pl-2 border-l border-border/60 space-y-0.5 my-0.5">
-                                              {BMC_SECTION_KEYS.map((key) => {
-                                                const sec = BMC_SECTIONS[key];
-                                                const sectionPath = `/negocio/${bc.id}/${key}`;
-                                                const isSectionActive = location.pathname === sectionPath;
-                                                return (
-                                                  <Link
-                                                    key={key}
-                                                    to={sectionPath}
-                                                    className={`flex items-center w-full px-2.5 py-1.5 text-xs rounded-md no-underline transition-all duration-150
-                                                      ${isSectionActive
-                                                        ? `${sec.bgColor} ${sec.color} font-semibold`
-                                                        : 'text-muted-foreground hover:bg-accent/70 hover:text-foreground'
-                                                      }`}
-                                                  >
-                                                    <span className={`w-1.5 h-1.5 mr-2 rounded-full flex-shrink-0 ${isSectionActive ? sec.color.replace('text-', 'bg-') : 'bg-muted-foreground/30'}`} />
-                                                    <span className="truncate">{sec.label}</span>
-                                                  </Link>
-                                                );
-                                              })}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </li>
-                                    );
-                                  })
-                                )}
-                              </ul>
-                            </div>
-                          </div>
-                        </li>
-                      )}
+
 
                       {/* Fallback se não houver rotas para o usuário */}
                       {!isAdmin && (

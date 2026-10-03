@@ -7,6 +7,35 @@ import type {
 } from '@/types/businessModelCanvas';
 import { BMC_SECTION_KEYS } from '@/types/businessModelCanvas';
 
+/**
+ * Decodifica o valor financeiro serializado em notas caso não haja coluna dedicada.
+ * Padrão: "[VALOR: 15000.00] Notas adicionais..."
+ */
+export function parseBmcNotes(rawNotes: string | null): { financialValue: number | null; notes: string | null } {
+  if (!rawNotes) return { financialValue: null, notes: null };
+  const match = rawNotes.match(/^\[VALOR:\s*([0-9.,]+)\]\s*(.*)$/s);
+  if (match) {
+    const num = parseFloat(match[1].replace(',', '.'));
+    const cleanNotes = match[2]?.trim() || null;
+    return {
+      financialValue: isNaN(num) ? null : num,
+      notes: cleanNotes,
+    };
+  }
+  return { financialValue: null, notes: rawNotes };
+}
+
+/**
+ * Codifica o valor financeiro no campo notes de forma segura e transparente.
+ */
+export function formatBmcNotes(financialValue: number | null | undefined, notes: string | null | undefined): string | null {
+  const cleanNotes = notes?.trim() || '';
+  if (financialValue !== null && financialValue !== undefined && !isNaN(financialValue)) {
+    return `[VALOR: ${financialValue.toFixed(2)}] ${cleanNotes}`.trim();
+  }
+  return cleanNotes || null;
+}
+
 export class BusinessModelCanvasService {
   /**
    * Busca todas as seções do BMC de um Business Center.
@@ -34,7 +63,12 @@ export class BusinessModelCanvasService {
     for (const row of data ?? []) {
       const key = row.section as BmcSectionKey;
       if (BMC_SECTION_KEYS.includes(key)) {
-        canvas[key] = row as BusinessModelCanvasSection;
+        const { financialValue, notes } = parseBmcNotes(row.notes);
+        canvas[key] = {
+          ...row,
+          notes,
+          financial_value: row.financial_value != null ? Number(row.financial_value) : financialValue,
+        } as BusinessModelCanvasSection;
       }
     }
 
@@ -60,7 +94,14 @@ export class BusinessModelCanvasService {
       .maybeSingle();
 
     if (error) throw new Error(error.message);
-    return data as BusinessModelCanvasSection | null;
+    if (!data) return null;
+
+    const { financialValue, notes } = parseBmcNotes(data.notes);
+    return {
+      ...data,
+      notes,
+      financial_value: data.financial_value != null ? Number(data.financial_value) : financialValue,
+    } as BusinessModelCanvasSection;
   }
 
   /**
@@ -72,12 +113,14 @@ export class BusinessModelCanvasService {
   ): Promise<BusinessModelCanvasSection> {
     if (!organizationId) throw new Error('organizationId é obrigatório');
 
+    const serializedNotes = formatBmcNotes(data.financial_value, data.notes);
+
     const payload = {
       organization_id: organizationId,
       business_center_id: data.business_center_id,
       section: data.section,
       items: data.items ?? [],
-      notes: data.notes ?? null,
+      notes: serializedNotes,
     };
 
     const { data: result, error } = await supabase
@@ -90,7 +133,13 @@ export class BusinessModelCanvasService {
       .single();
 
     if (error) throw new Error(error.message);
-    return result as BusinessModelCanvasSection;
+
+    const { financialValue, notes } = parseBmcNotes(result.notes);
+    return {
+      ...result,
+      notes,
+      financial_value: result.financial_value != null ? Number(result.financial_value) : financialValue,
+    } as BusinessModelCanvasSection;
   }
 
   /**

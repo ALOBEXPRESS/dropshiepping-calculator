@@ -52,6 +52,8 @@ export function BMCSectionEditor({
 
   const [items, setItems] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
+  const [financialValue, setFinancialValue] = useState<number | null>(null);
+  const [financialValueText, setFinancialValueText] = useState('');
   const [newItem, setNewItem] = useState('');
   const newItemRef = useRef<HTMLInputElement>(null);
 
@@ -63,10 +65,33 @@ export function BMCSectionEditor({
       setItems(currentData?.items ?? []);
       setNotes(currentData?.notes ?? '');
       setNewItem('');
+      if (currentData?.financial_value != null && !isNaN(currentData.financial_value)) {
+        setFinancialValue(currentData.financial_value);
+        const cents = Math.round(currentData.financial_value * 100);
+        const valStr = (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        setFinancialValueText(valStr);
+      } else {
+        setFinancialValue(null);
+        setFinancialValueText('');
+      }
     }
   }, [open, currentData]);
 
   // ── Handlers ────────────────────────────────────────────────────────────────
+
+  const handleFinancialValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawDigits = e.target.value.replace(/\D/g, '');
+    if (!rawDigits) {
+      setFinancialValueText('');
+      setFinancialValue(null);
+      return;
+    }
+    const cents = parseInt(rawDigits, 10);
+    const valueFloat = cents / 100;
+    const formatted = valueFloat.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    setFinancialValueText(formatted);
+    setFinancialValue(valueFloat);
+  };
 
   const addItem = () => {
     const trimmed = newItem.trim();
@@ -99,6 +124,7 @@ export function BMCSectionEditor({
         section: sectionKey,
         items,
         notes: notes.trim() || null,
+        financial_value: financialValue,
       });
       toast.success(`${sectionConfig.label} atualizado!`);
       onOpenChange(false);
@@ -110,7 +136,8 @@ export function BMCSectionEditor({
 
   const hasChanges =
     JSON.stringify(items) !== JSON.stringify(currentData?.items ?? []) ||
-    (notes.trim() || null) !== (currentData?.notes ?? null);
+    (notes.trim() || null) !== (currentData?.notes ?? null) ||
+    (financialValue ?? null) !== (currentData?.financial_value ?? null);
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
@@ -127,6 +154,35 @@ export function BMCSectionEditor({
         </DialogHeader>
 
         <div className="space-y-5 py-1">
+          {/* ── Valor Financeiro Estimado (R$) ─────────────────────────── */}
+          <div className="p-3.5 rounded-xl bg-muted/30 border border-border/70 space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="bmc-financial-value" className="text-xs font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                <CircleDollarSign className={`w-4 h-4 ${sectionConfig.color}`} />
+                <span>Valor Financeiro Estimado / Alocado</span>
+              </Label>
+              <span className="text-[11px] font-mono text-muted-foreground font-medium">BRL (R$)</span>
+            </div>
+
+            <div className="relative">
+              <span className={`absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold font-mono ${sectionConfig.color}`}>
+                R$
+              </span>
+              <Input
+                id="bmc-financial-value"
+                type="text"
+                inputMode="decimal"
+                placeholder="0,00"
+                value={financialValueText}
+                onChange={handleFinancialValueChange}
+                className="pl-11 font-mono text-base font-bold tracking-tight bg-background/80 focus-visible:ring-1 focus-visible:ring-emerald-500/50"
+              />
+            </div>
+            <p className="text-[11px] text-muted-foreground/75 leading-tight">
+              Defina o orçamento, projeção de receita, investimento em ativos ou custo vinculado a este bloco.
+            </p>
+          </div>
+
           {/* ── Lista de itens ─────────────────────────────────────────── */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">

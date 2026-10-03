@@ -1,5 +1,5 @@
 
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import Layout from './components/Layout';
@@ -52,7 +52,6 @@ const BusinessCenters = lazy(() => import('./pages/BusinessCentersPage'));
 const InfraMap = lazy(() => import('./pages/InfraMapPage').then(m => ({ default: m.InfraMapPage })));
 const ResponsaveisPg = lazy(() => import('./pages/ResponsaveisPage'));
 const NegocioPage = lazy(() => import('./pages/NegocioPage'));
-const BMCSectionPage = lazy(() => import('./pages/BMCSectionPage'));
 const BMCCanvasPage = lazy(() => import('./pages/BMCCanvasPage'));
 
 const ProductsPage = () => (
@@ -241,17 +240,10 @@ const NegocioRoutePage = () => (
   </ProtectedRoute>
 );
 
-const BMCSectionRoutePage = () => (
-  <ProtectedRoute>
-    <AdminRoute>
-      <Layout>
-        <Suspense fallback={<LoadingState />}>
-          <BMCSectionPage />
-        </Suspense>
-      </Layout>
-    </AdminRoute>
-  </ProtectedRoute>
-);
+const BMCSectionRedirect = () => {
+  const { bcId, section } = useParams();
+  return <Navigate to={`/negocio/${bcId}/canvas${section ? `?section=${section}` : ''}`} replace />;
+};
 
 const BMCCanvasRoutePage = () => (
   <ProtectedRoute>
@@ -314,7 +306,7 @@ function App() {
               <Route path="/contas/mapa" element={<InfraMapRoutePage />} />
               <Route path="/negocio" element={<NegocioRoutePage />} />
               <Route path="/negocio/:bcId/canvas" element={<BMCCanvasRoutePage />} />
-              <Route path="/negocio/:bcId/:section" element={<BMCSectionRoutePage />} />
+              <Route path="/negocio/:bcId/:section" element={<BMCSectionRedirect />} />
               <Route path="/profile" element={
                 <ProtectedRoute>
                   <Layout>
