@@ -46,6 +46,8 @@ export const RegisterProductBeforeProcessModal: React.FC<RegisterProductBeforePr
 
   // Product info fetched from bling item
   const [productId, setProductId] = useState<string | null>(null);
+  const [productBlingId, setProductBlingId] = useState<string | null>(null);
+  const [productVariationId, setProductVariationId] = useState<string | null>(null);
   const [productName, setProductName] = useState('');
   const [productImage, setProductImage] = useState<string | null>(null);
   const [productSku, setProductSku] = useState('');
@@ -86,6 +88,9 @@ export const RegisterProductBeforeProcessModal: React.FC<RegisterProductBeforePr
 
         const item = items?.[0];
         if (!item) return;
+
+        setProductBlingId(item.product_bling_id ?? null);
+        setProductVariationId(item.product_variation_id ?? null);
 
         // Get product from products table
         if (item.product_id) {
@@ -160,10 +165,21 @@ export const RegisterProductBeforeProcessModal: React.FC<RegisterProductBeforePr
       const priceNum = parseFloat(price.replace(',', '.')) || 0;
       const costNum = parseFloat(costPrice.replace(',', '.')) || 0;
 
+      const selectedSup = suppliers.find((s) => s.id === supplierId);
+      const isDogama = selectedSup?.name?.toLowerCase().includes('dogama');
+
       const payload = {
         price: priceNum,
         cost_price: costNum,
         supplier_id: supplierId || null,
+        supplier_name: selectedSup?.name || null,
+        ...(isDogama ? {
+          supplier_fee_type: 'percent',
+          supplier_fee_value: 6,
+          supplier_gateway_fee_type: 'fixed',
+          supplier_gateway_fee_value: 2,
+          supplier_gateway_fee_fixed: 2,
+        } : {}),
         account_holder: accountHolder || null,
         account_type: accountType,
       };
@@ -203,6 +219,16 @@ export const RegisterProductBeforeProcessModal: React.FC<RegisterProductBeforePr
               .eq('order_id', bo.id)
               .is('product_id', null);
           }
+        }
+      }
+
+      // Sync cost_price back to products_bling & variations
+      if (costNum > 0) {
+        if (productBlingId) {
+          await supabase.from('products_bling').update({ cost_price: costNum }).eq('id', productBlingId);
+        }
+        if (productVariationId) {
+          await supabase.from('products_variations_bling').update({ cost_price: costNum }).eq('id', productVariationId);
         }
       }
 
