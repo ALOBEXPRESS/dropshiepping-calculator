@@ -137,17 +137,6 @@ export function BMCSectionEditor({
 
     const serialized = serializeBmcItem(itemObj);
 
-    // Evita duplicatas idênticas de texto
-    const exists = items.some((it) => {
-      const parsed = parseBmcItem(it);
-      return parsed.text.toLowerCase() === trimmed.toLowerCase();
-    });
-
-    if (exists) {
-      toast.warning('Item já existe na lista.');
-      return;
-    }
-
     const nextItems = [...items, serialized];
     setItems(nextItems);
     setNewItemText('');
@@ -179,16 +168,28 @@ export function BMCSectionEditor({
 
   const handleSave = async () => {
     try {
+      // Se houver texto digitado no campo de novo item, adiciona-o automaticamente antes de salvar
+      let finalItems = [...items];
+      if (newItemText.trim()) {
+        const itemObj: BmcItemObject = {
+          text: newItemText.trim(),
+          value: newItemValue,
+          recurrence: isRecurrence && newItemValue != null ? newItemRecurrence : null,
+        };
+        finalItems.push(serializeBmcItem(itemObj));
+      }
+
       // Se for seção recorrente e o valor geral estiver zerado, usa a soma dos itens se houver
       let finalFinancialValue = financialValue;
-      if (isRecurrence && (finalFinancialValue === null || isNaN(finalFinancialValue)) && calculatedMonthlySum > 0) {
-        finalFinancialValue = calculatedMonthlySum;
+      if (isRecurrence && (finalFinancialValue === null || isNaN(finalFinancialValue))) {
+        const sum = finalItems.reduce((acc, it) => acc + getMonthlyEquivalent(parseBmcItem(it)), 0);
+        if (sum > 0) finalFinancialValue = sum;
       }
 
       await upsert({
         business_center_id: businessCenterId,
         section: sectionKey,
-        items,
+        items: finalItems,
         notes: notes.trim() || null,
         financial_value: finalFinancialValue,
       });
@@ -201,6 +202,7 @@ export function BMCSectionEditor({
   };
 
   const hasChanges =
+    Boolean(newItemText.trim()) ||
     JSON.stringify(items) !== JSON.stringify(currentData?.items ?? []) ||
     (notes.trim() || null) !== (currentData?.notes ?? null) ||
     (financialValue ?? null) !== (currentData?.financial_value ?? null);
@@ -251,7 +253,7 @@ export function BMCSectionEditor({
                 value={newItemText}
                 onChange={(e) => setNewItemText(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !isRecurrence) {
+                  if (e.key === 'Enter') {
                     e.preventDefault();
                     addItem();
                   }
