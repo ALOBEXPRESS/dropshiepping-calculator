@@ -176,48 +176,45 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
             let matchedItemId: string | null = null;
             let matchedItemQty = 1;
 
-            // 1. Tentar buscar primeiro pelos itens do pedido (SKU/Código direto)
+            // 1. Tentar buscar primeiro pelos itens do pedido (SKU/Código direto ou product_id já vinculado)
             const { data: items } = await supabase
               .from('bling_order_items')
-              .select('id, code, product_bling_id, product_variation_id, quantity')
+              .select('id, code, product_id, product_bling_id, product_variation_id, quantity')
               .eq('order_id', order.bling_order_id);
 
             if (items && items.length > 0) {
               for (const item of items) {
-                const code = item.code;
-                const pBlingId = item.product_bling_id;
-                const pVarId = item.product_variation_id;
-
-                // 1a. Direct SKU match in products table (Mais preciso)
-                if (code) {
-                  const { data: pBySku } = await supabase
+                // 1a. Se o item já tiver product_id vinculado (via rematch ou link manual)
+                if (item.product_id) {
+                  const { data: pLinked } = await supabase
                     .from('products')
-                    .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
-                    .eq('sku', code)
+                    .select('id, cost_price, name, image_url, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type, marketplace')
+                    .eq('id', item.product_id)
                     .maybeSingle();
-                  if (pBySku && Number(pBySku.cost_price ?? 0) > 0) {
-                    resolvedProduct = pBySku;
+                  if (pLinked && Number(pLinked.cost_price ?? 0) > 0) {
+                    resolvedProduct = pLinked;
                     matchedItemId = item.id;
                     matchedItemQty = Number(item.quantity) || 1;
                     break;
                   }
                 }
 
-                // 1b. Match por variação do Bling
-                if (pVarId) {
-                  const { data: pv } = await supabase
-                    .from('products_variations_bling')
-                    .select('product_id')
-                    .eq('id', pVarId)
-                    .maybeSingle();
-                  if (pv?.product_id) {
-                    const { data: pByVarParent } = await supabase
-                      .from('products')
-                      .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
-                      .eq('id', pv.product_id)
-                      .maybeSingle();
-                    if (pByVarParent && Number(pByVarParent.cost_price ?? 0) > 0) {
-                      resolvedProduct = pByVarParent;
+                const code = item.code;
+                const pBlingId = item.product_bling_id;
+                const pVarId = item.product_variation_id;
+
+                // 1b. Direct SKU match in products table (Mais preciso)
+                if (code) {
+                  const { data: pList } = await supabase
+                    .from('products')
+                    .select('id, cost_price, name, image_url, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type, marketplace')
+                    .eq('sku', code)
+                    .limit(5);
+                  if (pList && pList.length > 0) {
+                    const mktName = (order.marketplace_name || '').toLowerCase();
+                    const best = pList.find(p => (p.marketplace || '').toLowerCase().includes(mktName)) || pList[0];
+                    if (best && Number(best.cost_price ?? 0) > 0) {
+                      resolvedProduct = best;
                       matchedItemId = item.id;
                       matchedItemQty = Number(item.quantity) || 1;
                       break;
@@ -225,36 +222,73 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
                   }
                 }
 
-                // 1c. Match por product_bling_id / parent SKU
-                if (pBlingId) {
-                  const { data: pByBlingId } = await supabase
-                    .from('products')
-                    .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
-                    .eq('id', pBlingId)
+                // 1b. Match por variação do Bling -> obter parent SKU
+                if (pVarId) {
+                  const { data: pv } = await supabase
+                    .from('products_variations_bling')
+                    .select('product_id, product_bling_id')
+                    .eq('id', pVarId)
                     .maybeSingle();
-                  if (pByBlingId && Number(pByBlingId.cost_price ?? 0) > 0) {
-                    resolvedProduct = pByBlingId;
-                    matchedItemId = item.id;
-                    matchedItemQty = Number(item.quantity) || 1;
-                    break;
+
+                  let parentBlingSku: string | null = null;
+                  if (pv?.product_id) {
+                    const { data: pb } = await supabase
+                      .from('products_bling')
+                      .select('sku')
+                      .eq('id', pv.product_id)
+                      .maybeSingle();
+                    parentBlingSku = pb?.sku ?? null;
+                  }
+                  if (!parentBlingSku && pv?.product_bling_id) {
+                    const { data: pb } = await supabase
+                      .from('products_bling')
+                      .select('sku')
+                      .eq('bling_id', pv.product_bling_id)
+                      .maybeSingle();
+                    parentBlingSku = pb?.sku ?? null;
                   }
 
+                  if (parentBlingSku) {
+                    const { data: pList } = await supabase
+                      .from('products')
+                      .select('id, cost_price, name, image_url, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type, marketplace')
+                      .eq('sku', parentBlingSku)
+                      .limit(5);
+                    if (pList && pList.length > 0) {
+                      const mktName = (order.marketplace_name || '').toLowerCase();
+                      const best = pList.find(p => (p.marketplace || '').toLowerCase().includes(mktName)) || pList[0];
+                      if (best && Number(best.cost_price ?? 0) > 0) {
+                        resolvedProduct = best;
+                        matchedItemId = item.id;
+                        matchedItemQty = Number(item.quantity) || 1;
+                        break;
+                      }
+                    }
+                  }
+                }
+
+                // 1c. Match por product_bling_id / parent SKU
+                if (pBlingId) {
                   const { data: pb } = await supabase
                     .from('products_bling')
                     .select('sku')
                     .eq('id', pBlingId)
                     .maybeSingle();
                   if (pb?.sku) {
-                    const { data: pByParentSku } = await supabase
+                    const { data: pList } = await supabase
                       .from('products')
-                      .select('id, cost_price, name, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type')
+                      .select('id, cost_price, name, image_url, supplier_fee_value, supplier_fee_type, supplier_gateway_fee_value, supplier_gateway_fee_type, marketplace')
                       .eq('sku', pb.sku)
-                      .maybeSingle();
-                    if (pByParentSku && Number(pByParentSku.cost_price ?? 0) > 0) {
-                      resolvedProduct = pByParentSku;
-                      matchedItemId = item.id;
-                      matchedItemQty = Number(item.quantity) || 1;
-                      break;
+                      .limit(5);
+                    if (pList && pList.length > 0) {
+                      const mktName = (order.marketplace_name || '').toLowerCase();
+                      const best = pList.find(p => (p.marketplace || '').toLowerCase().includes(mktName)) || pList[0];
+                      if (best && Number(best.cost_price ?? 0) > 0) {
+                        resolvedProduct = best;
+                        matchedItemId = item.id;
+                        matchedItemQty = Number(item.quantity) || 1;
+                        break;
+                      }
                     }
                   }
                 }
@@ -278,10 +312,15 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
               const itemQty = Math.max(1, matchedItemQty || Number(order.items_count ?? 1));
               const unitCostPrice = Number(resolvedProduct.cost_price ?? 0);
               const baseCost = unitCostPrice * itemQty;
+              const isTikTok = (order.marketplace_name || '').toLowerCase().includes('tiktok');
+              const defaultSupFee = isTikTok ? 3 : 6;
               const suppFeeType = resolvedProduct.supplier_fee_type || 'percent';
-              const suppFeeVal = Number(resolvedProduct.supplier_fee_value ?? 0);
+              const rawSuppFeeVal = Number(resolvedProduct.supplier_fee_value ?? 0);
+              const suppFeeVal = rawSuppFeeVal > 0 ? rawSuppFeeVal : (isTikTok ? defaultSupFee : 0);
               const suppFee = suppFeeType === 'percent' ? baseCost * (suppFeeVal / 100) : suppFeeVal * itemQty;
-              const suppGtwVal = Number(resolvedProduct.supplier_gateway_fee_value ?? 0);
+              const suppGtwVal = resolvedProduct.supplier_gateway_fee_value != null
+                ? Number(resolvedProduct.supplier_gateway_fee_value)
+                : (isTikTok ? 2 : 0);
               // Fixed gateway fee is per order transaction (not multiplied by quantity), percentage is on baseCost:
               const suppGtw = (resolvedProduct.supplier_gateway_fee_type || 'fixed') === 'fixed'
                 ? suppGtwVal
@@ -326,6 +365,8 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
               return {
                 ...order,
                 first_product_id: resolvedProduct.id,
+                first_product_name: (resolvedProduct as { name?: string }).name || order.first_product_name,
+                first_product_image: (resolvedProduct as { image_url?: string }).image_url || order.first_product_image,
                 items_count: itemQty,
                 total_cost: parseFloat(totalCost.toFixed(2)),
                 estimated_profit: parseFloat(estimatedProfit.toFixed(2)),

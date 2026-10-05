@@ -327,17 +327,17 @@ async function mapProductBlingToLocal(
   // Se não encontrou em products_bling, buscar em products_variations_bling
   let { data: productVariation } = await supabase
     .from('products_variations_bling')
-    .select('id')
+    .select('id, product_id, product_bling_id')
     .eq('bling_id', blingProductId)
-    .single();
+    .maybeSingle();
 
   // Se não encontrar por ID, buscar por SKU em variations
   if (!productVariation && itemCode) {
     const { data } = await supabase
       .from('products_variations_bling')
-      .select('id')
+      .select('id, product_id, product_bling_id')
       .eq('sku', itemCode)
-      .single();
+      .maybeSingle();
     productVariation = data;
   }
 
@@ -345,16 +345,52 @@ async function mapProductBlingToLocal(
     return { productBlingId: null, productId: null, productVariationId: null };
   }
 
-  // Buscar produto local vinculado
-  const { data: product } = await supabase
-    .from('products')
-    .select('id')
-    .eq('sku', itemCode)
-    .single();
+  // Buscar o produto pai em products_bling para obter productBlingId e SKU pai
+  let parentBlingId: string | null = null;
+  let parentBlingSku: string | null = null;
+
+  if (productVariation.product_id) {
+    const { data: pb } = await supabase
+      .from('products_bling')
+      .select('id, sku')
+      .eq('id', productVariation.product_id)
+      .maybeSingle();
+    if (pb) {
+      parentBlingId = pb.id;
+      parentBlingSku = pb.sku;
+    }
+  }
+
+  if (!parentBlingSku && productVariation.product_bling_id) {
+    const { data: pb } = await supabase
+      .from('products_bling')
+      .select('id, sku')
+      .eq('bling_id', productVariation.product_bling_id)
+      .maybeSingle();
+    if (pb) {
+      parentBlingId = pb.id;
+      parentBlingSku = pb.sku;
+    }
+  }
+
+  // Buscar produto local vinculado: primeiro por SKU do item, depois por SKU pai
+  let localProductId: string | null = null;
+  const skusToTry = [itemCode, parentBlingSku].filter(Boolean) as string[];
+  for (const s of skusToTry) {
+    const { data: pList } = await supabase
+      .from('products')
+      .select('id')
+      .eq('sku', s)
+      .limit(1);
+    if (pList && pList.length > 0) {
+      localProductId = pList[0].id;
+      break;
+    }
+  }
 
   return {
-    productBlingId: null,
-    productId: product?.id || null,
+    productBlingId: parentBlingId,
+    productId: localProductId,
     productVariationId: productVariation.id
   };
 }

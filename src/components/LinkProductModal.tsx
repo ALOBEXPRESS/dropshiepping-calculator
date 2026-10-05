@@ -78,6 +78,9 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
   const [linking, setLinking] = useState(false);
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const isTikTokOrder = (order.marketplace_name || '').toLowerCase().includes('tiktok');
+  const defaultDogamaFee = isTikTokOrder ? '3' : '6';
+
   // Suppliers & Product Config (Dogama por padrão)
   const [suppliersList, setSuppliersList] = useState<SupplierItem[]>(DEFAULT_SUPPLIERS);
   const [costPrice, setCostPrice] = useState<string>('');
@@ -88,7 +91,9 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
   const [supplierId, setSupplierId] = useState<string>('dogama');
   const [supplierName, setSupplierName] = useState<string>('Dogama');
   const [supplierFeeType, setSupplierFeeType] = useState<'percent' | 'fixed'>('percent');
-  const [supplierFeeValue, setSupplierFeeValue] = useState<string>('6');
+  const [supplierFeeValue, setSupplierFeeValue] = useState<string>(() => (
+    (order.marketplace_name || '').toLowerCase().includes('tiktok') ? '3' : '6'
+  ));
   const [supplierGatewayFeeType, setSupplierGatewayFeeType] = useState<'percent' | 'fixed'>('fixed');
   const [supplierGatewayFeeValue, setSupplierGatewayFeeValue] = useState<string>('2');
   const [showAdvancedFees, setShowAdvancedFees] = useState(false);
@@ -114,8 +119,9 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
           setSuppliersList(merged);
           // Set real Dogama id if found in DB
           const dogamaFromDb = merged.find((s) => s.name.toLowerCase() === 'dogama');
-          if (dogamaFromDb && (!supplierId || supplierId === 'dogama')) {
+          if (dogamaFromDb && (!supplierId || supplierId === 'dogama' || supplierName.toLowerCase() === 'dogama')) {
             setSupplierId(dogamaFromDb.id);
+            setSupplierName(dogamaFromDb.name);
           }
         }
       } catch (err) {
@@ -251,19 +257,27 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
         if (isMounted) {
           setCostPrice(existingCost != null && existingCost > 0 ? String(existingCost) : '');
           if (existingSupplierId || existingSupplierName) {
-            setSupplierId(existingSupplierId);
-            setSupplierName(existingSupplierName);
+            const foundSupplier = suppliersList.find((s) =>
+              (existingSupplierId && s.id === existingSupplierId) ||
+              (existingSupplierName && s.name.toLowerCase() === existingSupplierName.toLowerCase())
+            );
+            const resolvedId = foundSupplier ? foundSupplier.id : (existingSupplierId || 'dogama');
+            const resolvedName = foundSupplier ? foundSupplier.name : (existingSupplierName || 'Dogama');
+
+            setSupplierId(resolvedId);
+            setSupplierName(resolvedName);
             setSupplierFeeType(existingFeeType);
-            setSupplierFeeValue(existingFeeValue);
+            const isDog = resolvedName.trim().toLowerCase() === 'dogama';
+            setSupplierFeeValue(existingFeeValue || (isDog ? defaultDogamaFee : '0'));
             setSupplierGatewayFeeType(existingGtwType);
-            setSupplierGatewayFeeValue(existingGtwValue);
+            setSupplierGatewayFeeValue(existingGtwValue || (isDog ? '2' : '0'));
           } else {
             // Padrão sempre Dogama se não houver fornecedor cadastrado
             const dogamaSup = suppliersList.find((s) => s.name.toLowerCase() === 'dogama') ?? { id: 'dogama', name: 'Dogama' };
             setSupplierId(dogamaSup.id);
             setSupplierName('Dogama');
             setSupplierFeeType('percent');
-            setSupplierFeeValue('6');
+            setSupplierFeeValue(defaultDogamaFee);
             setSupplierGatewayFeeType('fixed');
             setSupplierGatewayFeeValue('2');
           }
@@ -277,7 +291,7 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
 
     loadExistingInfo();
     return () => { isMounted = false; };
-  }, [selectedProduct, selectedVariation, variations.length, organizationId, suppliersList]);
+  }, [selectedProduct, selectedVariation, variations.length, organizationId, suppliersList, defaultDogamaFee]);
 
   const handleSupplierSelect = (idOrValue: string) => {
     const found = suppliersList.find((s) => s.id === idOrValue);
@@ -288,7 +302,7 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
     const normalized = name.trim().toLowerCase();
     if (normalized === 'dogama') {
       setSupplierFeeType('percent');
-      setSupplierFeeValue('6');
+      setSupplierFeeValue(defaultDogamaFee);
       setSupplierGatewayFeeType('fixed');
       setSupplierGatewayFeeValue('2');
     } else if (normalized === 'tyr' || normalized === 'tyr (yeizidrop)') {
@@ -300,12 +314,13 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
   };
 
   const isDogama = supplierName.trim().toLowerCase() === 'dogama';
+  const defaultDogamaPercent = isTikTokOrder ? 3 : 6;
 
   // Live calculation of product and order cost breakdown
   const unitCostNum = parseFloat(String(costPrice).replace(',', '.')) || 0;
   const totalBaseCost = unitCostNum * quantity;
   const supFeePercent = supplierFeeType === 'percent'
-    ? Number(supplierFeeValue || (isDogama ? 6 : 0))
+    ? Number(supplierFeeValue || (isDogama ? defaultDogamaPercent : 0))
     : 0;
   const suppFeeTotal = supplierFeeType === 'percent'
     ? (totalBaseCost * supFeePercent) / 100
@@ -406,7 +421,7 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
       const normSup = supplierName.trim().toLowerCase();
       const finalSupFeeVal = supplierFeeValue
         ? Number(supplierFeeValue)
-        : (normSup === 'dogama' ? 6 : null);
+        : (normSup === 'dogama' ? (isTikTokOrder ? 3 : 6) : null);
       const finalSupGtwVal = supplierGatewayFeeValue
         ? Number(supplierGatewayFeeValue)
         : (normSup === 'dogama' ? 2 : null);
@@ -529,6 +544,17 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
     onClose,
   ]);
 
+  const selectedSupplierValue = React.useMemo(() => {
+    const byId = suppliersList.find((s) => s.id === supplierId);
+    if (byId) return byId.id;
+    if (supplierName) {
+      const byName = suppliersList.find((s) => s.name.toLowerCase() === supplierName.trim().toLowerCase());
+      if (byName) return byName.id;
+    }
+    const dogama = suppliersList.find((s) => s.name.toLowerCase() === 'dogama');
+    return dogama ? dogama.id : (supplierId || 'dogama');
+  }, [suppliersList, supplierId, supplierName]);
+
   const handleClose = () => {
     setQuery('');
     setResults([]);
@@ -537,10 +563,11 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
     setSelectedVariation(null);
     setCostPrice('');
     setQuantity(1);
-    setSupplierId('dogama');
+    const dogamaSup = suppliersList.find((s) => s.name.toLowerCase() === 'dogama');
+    setSupplierId(dogamaSup ? dogamaSup.id : 'dogama');
     setSupplierName('Dogama');
     setSupplierFeeType('percent');
-    setSupplierFeeValue('6');
+    setSupplierFeeValue(defaultDogamaFee);
     setSupplierGatewayFeeType('fixed');
     setSupplierGatewayFeeValue('2');
     setShowAdvancedFees(false);
@@ -746,7 +773,7 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
                       Fornecedor
                     </Label>
                     <Select
-                      value={supplierId || (supplierName ? `custom:${supplierName}` : 'dogama')}
+                      value={selectedSupplierValue}
                       onValueChange={handleSupplierSelect}
                     >
                       <SelectTrigger id="link-supplier" className="h-9 text-sm font-medium">
@@ -825,7 +852,7 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
                     <div>
                       <p className="font-semibold">Dogama Selecionado</p>
                       <p className="text-[11px] opacity-90">
-                        Taxa de <strong>6%</strong> aplicada sobre o custo dos itens e Gateway de <strong>R$ 2,00 (fixo)</strong> por transação (não multiplicado pela quantidade).
+                        Taxa de <strong>{supplierFeeValue || defaultDogamaFee}%</strong> aplicada sobre o custo dos itens e Gateway de <strong>R$ {supplierGatewayFeeValue || '2,00'} (fixo)</strong> por transação (não multiplicado pela quantidade).
                       </p>
                     </div>
                   </div>
@@ -861,7 +888,7 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
                             step="0.01"
                             value={supplierFeeValue}
                             onChange={(e) => setSupplierFeeValue(e.target.value)}
-                            placeholder="6"
+                            placeholder={defaultDogamaFee}
                             className="h-8 text-xs"
                           />
                         </div>

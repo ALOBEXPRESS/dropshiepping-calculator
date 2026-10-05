@@ -615,14 +615,24 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       if (field === 'sellingPrice' || field === 'marketplace') {
         setSellingPriceWarning('');
       }
+      if (field === 'marketplace') {
+        const isTikTok = (value as string)?.toLowerCase().includes('tiktok');
+        if ((next.supplierName || '').trim().toLowerCase() === 'dogama') {
+          next.supplierFeeValue = isTikTok ? '3' : '6';
+        }
+      }
       // Auto-fill supplier fee defaults when supplier changes
       if (field === 'supplierName') {
         const normalized = (value as string).trim().toLowerCase();
+        const currentMkt = (next.marketplace || '').toLowerCase();
+        const isTikTok = currentMkt.includes('tiktok');
         if (normalized === 'dogama') {
           next.supplierFeeType = 'percent';
-          next.supplierFeeValue = '6';
+          next.supplierFeeValue = isTikTok ? '3' : '6';
           next.supplierGatewayFeeType = 'fixed';
           next.supplierGatewayFeeValue = '2';
+          next.gatewayFeeType = 'fixed';
+          next.gatewayFeeValue = '2';
         } else if (normalized === 'tyr' || normalized === 'tyr (yeizidrop)') {
           next.supplierFeeType = 'percent';
           next.supplierFeeValue = '0';

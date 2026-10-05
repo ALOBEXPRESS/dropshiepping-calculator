@@ -3292,7 +3292,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
             // Taxas do fornecedor — Dogama tem taxa % + gateway fixo
             const isDogama = isTikTok || supFeeVal > 0 || manualSupplierFeePercent !== '';
-            const DEFAULT_SUPPLIER_FEE_PERCENT = 6;
+            const DEFAULT_SUPPLIER_FEE_PERCENT = isTikTok ? 3 : 6;
             const effectiveSupFeePercent = isDogama
               ? (manualSupplierFeePercent !== ''
                   ? parseFloat(manualSupplierFeePercent.replace(',', '.')) || 0

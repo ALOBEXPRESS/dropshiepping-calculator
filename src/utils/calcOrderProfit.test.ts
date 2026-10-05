@@ -218,10 +218,10 @@ describe('calcOrderProfit — TikTok marketplace', () => {
     expect(r.subtotalMarketplace).toBeCloseTo(6, 1);
   });
 
-  it('TikTok: supplier fee 6% applies by default', () => {
+  it('TikTok: supplier fee 3% applies by default', () => {
     const r = calcOrderProfit(tiktokOrder());
-    // totalBaseCost = 15; isDogama = true; supFee = 6% of 15 = 0.9; gateway = 2
-    expect(r.totalProductCost).toBeCloseTo(15 + 0.9 + 2, 1);
+    // totalBaseCost = 15; isDogama = true; supFee = 3% of 15 = 0.45; gateway = 2
+    expect(r.totalProductCost).toBeCloseTo(15 + 0.45 + 2, 2);
   });
 
   it('TikTok: tiktok_reembolso_disabled=true skips discount reembolso', () => {

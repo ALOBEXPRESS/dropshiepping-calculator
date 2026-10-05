@@ -88,7 +88,7 @@ export function calcOrderProfit(
   const productGatewayFee = Number(supFeeProduct?.supplier_gateway_fee_value ?? 2);
 
   const isDogama = isTikTok || supFeeVal > 0;
-  const DEFAULT_SUPPLIER_FEE_PERCENT = 6;
+  const DEFAULT_SUPPLIER_FEE_PERCENT = isTikTok ? 3 : 6;
   const effectiveSupFeePercent = isDogama
     ? supFeeType === 'percent' && supFeeVal > 0
       ? supFeeVal
