@@ -133,6 +133,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     manualSupplierFeePercent: string;
     manualGatewayFee: string;
     manualCostOverrides: Record<number, string>;
+    manualQuantityOverrides: Record<number, number>;
     manualTotalProductCost?: string;
     manualShipping: string;
     manualRetornoLiquido: string;

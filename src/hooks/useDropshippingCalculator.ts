@@ -852,8 +852,9 @@ export const useDropshippingCalculator = () => {
       setSupplierFeePercent('0');
       setSupplierFixedFee('0');
     } else if (normalized === 'dogama') {
+      const isTikTok = (marketplace || '').toLowerCase().includes('tiktok');
       setSupplierFeeType('percent');
-      setSupplierFeePercent('6');
+      setSupplierFeePercent(isTikTok ? '3' : '6');
       setSupplierFixedFee('0');
       setSupplierGatewayFeeType('fixed');
       setSupplierGatewayFee('0');
@@ -865,7 +866,7 @@ export const useDropshippingCalculator = () => {
       setSupplierFeePercent('0');
       setSupplierFixedFee('0');
     }
-  }, []);
+  }, [marketplace]);
 
   const handleDeliveryModeChange = (mode: string) => {
     setDeliveryMode(mode);
