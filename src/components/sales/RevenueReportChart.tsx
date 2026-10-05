@@ -72,8 +72,10 @@ interface OrderDetail {
   product_image_url?: string;
   affiliate_id?: string | null;
   products?: {
+    id?: string;
     name: string;
     sku?: string;
+    image_url?: string;
     quantity?: number;
     unit_price?: number;
     unit_cost?: number;
@@ -308,6 +310,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const rawUnitCost = Number(it.unit_cost ?? 0);
             const resolvedUnitCost = productCostPrice > 0 ? productCostPrice : (rawUnitCost > 0 ? rawUnitCost : 0);
             return {
+              id: (it as { id?: string }).id,
               name: it.products?.name ?? 'Produto',
               sku: it.products?.sku ?? '',
               quantity: it.quantity ?? 1,
@@ -437,6 +440,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     setManualSupplierFeePercent(saved?.manualSupplierFeePercent ?? '');
     setManualGatewayFee(saved?.manualGatewayFee ?? '');
     setManualCostOverrides(saved?.manualCostOverrides ?? {});
+    setManualQuantityOverrides(saved?.manualQuantityOverrides ?? {});
     setManualTotalProductCost(saved?.manualTotalProductCost ?? '');
     setManualShipping(saved?.manualShipping ?? '');
     setManualRetornoLiquido(
@@ -710,6 +714,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [manualSupplierFeePercent, setManualSupplierFeePercent] = useState<string>('');
   const [manualGatewayFee, setManualGatewayFee] = useState<string>('');
   const [manualCostOverrides, setManualCostOverrides] = useState<Record<number, string>>({});
+  const [manualQuantityOverrides, setManualQuantityOverrides] = useState<Record<number, number>>({});
   const [manualTotalProductCost, setManualTotalProductCost] = useState<string>('');
   const [manualShipping, setManualShipping] = useState<string>('');
   const [manualMarketingCost, setManualMarketingCost] = useState<string>('');
@@ -723,6 +728,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   manualSupplierFeePercentRef.current = manualSupplierFeePercent;
   manualGatewayFeeRef.current = manualGatewayFee;
   manualCostOverridesRef.current = manualCostOverrides;
+  manualQuantityOverridesRef.current = manualQuantityOverrides;
   manualTotalProductCostRef.current = manualTotalProductCost;
   manualShippingRef.current = manualShipping;
   manualRetornoLiquidoRef.current = manualRetornoLiquido;
@@ -1328,7 +1334,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
         const { data: itemsRows, error: itemsError } = await supabase
           .from('order_items')
-          .select('order_id, product_id, product_name, quantity, unit_cost, total_price')
+          .select('id, order_id, product_id, product_name, quantity, unit_cost, total_price')
           .in('order_id', actualIds)
           ;
 
@@ -1338,6 +1344,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         }
 
         type OrderItemRow = {
+          id?: string | null;
           order_id?: string | null;
           product_id?: string | null;
           product_name?: string | null;
@@ -1523,6 +1530,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               const resolvedUnitCost = rawUnitCost > 0 ? rawUnitCost : Number(lookup?.cost_price ?? 0);
               const resolvedImageUrl = String(lookup?.image_url ?? '').trim() || undefined;
               return {
+                id: it.id || undefined,
                 name: resolvedName,
                 sku: resolvedSku || undefined,
                 image_url: resolvedImageUrl,
@@ -2336,6 +2344,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     manualTotalCost?: string,
     orderId?: string,
     currentRealProfit?: number,
+    quantityOverrides: Record<number, number> = {},
+    calculatedTotalCost?: number,
   ) => {
     if (!products || products.length === 0) return;
     setSavingCosts(true);
@@ -2368,10 +2378,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         for (let i = 0; i < products.length; i++) {
           const p = products[i];
           const sku = p.sku?.trim();
-          if (!sku) continue;
-
           const overrideRaw = costOverrides[i];
-          if (overrideRaw !== undefined && overrideRaw !== '') {
+          const hasCostOverride = overrideRaw !== undefined && overrideRaw !== '';
+          const newQty = quantityOverrides[i];
+          const hasQtyOverride = newQty !== undefined;
+
+          // 1. Atualizar cost_price do produto cadastrado se o custo unitário foi editado
+          if (sku && hasCostOverride) {
             const costVal = parseBRLFloat(overrideRaw);
             await supabase
               .from('products')
@@ -2383,6 +2396,43 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               .update({ cost_price: costVal })
               .eq('sku', sku)
               .eq('organization_id', organizationId);
+          }
+
+          // 2. Atualizar order_items se quantidade ou custo unitário foi alterado
+          if (hasQtyOverride || hasCostOverride) {
+            const effectiveQty = hasQtyOverride ? newQty : Number(p.quantity ?? 1);
+            const unitCost = hasCostOverride
+              ? parseBRLFloat(overrideRaw)
+              : Number(p.unit_cost ?? 0);
+            const itemTotalCost = unitCost * effectiveQty;
+
+            const itemId = (p as { id?: string }).id;
+            if (itemId) {
+              await supabase
+                .from('order_items')
+                .update({
+                  quantity: effectiveQty,
+                  unit_cost: unitCost > 0 ? unitCost : undefined,
+                  total_cost: itemTotalCost,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', itemId);
+            } else if (orderId) {
+              const q = supabase
+                .from('order_items')
+                .update({
+                  quantity: effectiveQty,
+                  unit_cost: unitCost > 0 ? unitCost : undefined,
+                  total_cost: itemTotalCost,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('order_id', orderId);
+              if (p.name) {
+                await q.ilike('product_name', `%${p.name.slice(0, 30)}%`);
+              } else {
+                await q;
+              }
+            }
           }
         }
 
@@ -2408,18 +2458,63 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         }
       }
 
-      if (orderId && currentRealProfit !== undefined) {
-        await supabase
-          .from('orders')
-          .update({ total_profit: currentRealProfit })
-          .eq('id', orderId);
-        setOrderEnrichmentById(prev => ({
-          ...prev,
-          [orderId]: {
-            ...(prev[orderId] ?? {}),
-            total_profit: currentRealProfit,
-          }
-        }));
+      if (orderId) {
+        const orderUpdates: { total_profit?: number; total_cost?: number } = {};
+        if (currentRealProfit !== undefined) {
+          orderUpdates.total_profit = currentRealProfit;
+        }
+        if (calculatedTotalCost !== undefined) {
+          orderUpdates.total_cost = calculatedTotalCost;
+        }
+        if (Object.keys(orderUpdates).length > 0) {
+          await supabase
+            .from('orders')
+            .update(orderUpdates)
+            .eq('id', orderId);
+        }
+
+        setOrderEnrichmentById(prev => {
+          const cur = prev[orderId] ?? {};
+          const currentProds = cur.products ?? products ?? [];
+          const updatedProds = currentProds.map((prod, idx) => {
+            const qOv = quantityOverrides[idx];
+            const cOv = costOverrides[idx];
+            const uCost = cOv !== undefined && cOv !== '' ? parseBRLFloat(cOv) : prod.unit_cost;
+            return {
+              ...prod,
+              quantity: qOv !== undefined ? qOv : prod.quantity,
+              unit_cost: uCost,
+            };
+          });
+          return {
+            ...prev,
+            [orderId]: {
+              ...cur,
+              ...(currentRealProfit !== undefined ? { total_profit: currentRealProfit } : {}),
+              ...(calculatedTotalCost !== undefined ? { total_cost: calculatedTotalCost } : {}),
+              products: updatedProds,
+            }
+          };
+        });
+
+        setSelectedOrder(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            ...(currentRealProfit !== undefined ? { total_profit: currentRealProfit } : {}),
+            ...(calculatedTotalCost !== undefined ? { total_cost: calculatedTotalCost } : {}),
+            products: prev.products?.map((prod, idx) => {
+              const qOv = quantityOverrides[idx];
+              const cOv = costOverrides[idx];
+              const uCost = cOv !== undefined && cOv !== '' ? parseBRLFloat(cOv) : prod.unit_cost;
+              return {
+                ...prod,
+                quantity: qOv !== undefined ? qOv : prod.quantity,
+                unit_cost: uCost,
+              };
+            }),
+          };
+        });
       }
 
       setCostsSaved(true);
@@ -2487,6 +2582,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       setManualSupplierFeePercent('');
       setManualGatewayFee('');
       setManualCostOverrides({});
+      setManualQuantityOverrides({});
       setManualShipping('');
       setManualRetornoLiquido('');
       setManualOrderDate('');
@@ -3264,7 +3360,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
             // Calcular custos por produto usando os dados de cada item (com override manual por índice)
             const productItems = products.map((p, i) => {
-              const qty = p.quantity ?? 1;
+              const qty = manualQuantityOverrides[i] !== undefined
+                ? manualQuantityOverrides[i]
+                : (p.quantity ?? 1);
               const unitCostRaw = p.unit_cost ?? 0;
               const unitPrice = p.unit_price ?? 0;
               // Manual override: user can type new cost per item
@@ -3274,7 +3372,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 : unitCostRaw;
               const baseCost = unitCost * qty;
               const totalPrice = unitPrice * qty;
-              return { name: p.name, sku: p.sku, qty, unitPrice, totalPrice, baseCost, unitCost, unitCostRaw };
+              return { id: p.id, name: p.name, sku: p.sku, qty, unitPrice, totalPrice, baseCost, unitCost, unitCostRaw };
             });
 
             const totalUnitsInOrder = productItems.reduce((acc, p) => acc + (p.qty || 1), 0);
@@ -3904,7 +4002,40 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                               <div className="flex-1 min-w-0 text-left">
                                 <p className="text-[11px] text-zinc-300 truncate">{p.name}</p>
                                 {p.sku && <p className="text-[10px] text-zinc-600 font-mono">{p.sku}</p>}
-                                {p.qty > 1 && <p className="text-[10px] text-zinc-500">{p.qty}×</p>}
+                                <div className="flex items-center gap-1.5 mt-1">
+                                  <span className="text-[10px] text-zinc-500 font-medium">Qtd:</span>
+                                  <div className="inline-flex items-center rounded-md bg-zinc-800/90 p-0.5 border border-zinc-700/60 gap-0.5">
+                                    {[1, 2, 3, 4, 5, 6].map((q) => {
+                                      const isSelected = p.qty === q;
+                                      return (
+                                        <button
+                                          key={q}
+                                          type="button"
+                                          disabled={hasManualTotalCost}
+                                          onClick={() => {
+                                            setManualQuantityOverrides((prev) => ({
+                                              ...prev,
+                                              [i]: q,
+                                            }));
+                                          }}
+                                          className={`px-1.5 py-0.5 text-[10px] font-bold rounded transition-all ${
+                                            isSelected
+                                              ? 'bg-red-600 text-white shadow-sm'
+                                              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/50'
+                                          } ${hasManualTotalCost ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                                          title={`Definir quantidade como ${q}x`}
+                                        >
+                                          {q}x
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                  {p.qty > 6 && (
+                                    <span className="text-[10px] font-semibold text-amber-400 bg-amber-950/60 border border-amber-800/60 px-1.5 py-0.5 rounded">
+                                      {p.qty}x
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0">
                                 {hasManualTotalCost ? (
@@ -4003,7 +4134,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   </div>
 
                   {/* Salvar custos no banco */}
-                  {(Object.keys(manualCostOverrides).some(k => manualCostOverrides[Number(k)] !== '') || manualSupplierFeePercent !== '' || manualGatewayFee !== '' || manualTotalProductCost !== '') && (
+                  {(
+                    Object.keys(manualCostOverrides).some(k => manualCostOverrides[Number(k)] !== '') ||
+                    Object.keys(manualQuantityOverrides).length > 0 ||
+                    manualSupplierFeePercent !== '' ||
+                    manualGatewayFee !== '' ||
+                    manualTotalProductCost !== ''
+                  ) && (
                     <div className="flex items-center justify-end gap-3 px-1 py-1">
                       {costsSaved && (
                         <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
@@ -4022,6 +4159,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           manualTotalProductCost,
                           selectedOrder?.order_id,
                           finalRealProfit,
+                          manualQuantityOverrides,
+                          totalProductCost,
                         )}
                         disabled={savingCosts}
                         className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
