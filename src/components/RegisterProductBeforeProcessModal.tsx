@@ -167,6 +167,7 @@ export const RegisterProductBeforeProcessModal: React.FC<RegisterProductBeforePr
 
       const selectedSup = suppliers.find((s) => s.id === supplierId);
       const isDogama = selectedSup?.name?.toLowerCase().includes('dogama');
+      const isTikTok = (order.marketplace_name || marketplace || '').toLowerCase().includes('tiktok');
 
       const payload = {
         price: priceNum,
@@ -175,7 +176,7 @@ export const RegisterProductBeforeProcessModal: React.FC<RegisterProductBeforePr
         supplier_name: selectedSup?.name || null,
         ...(isDogama ? {
           supplier_fee_type: 'percent',
-          supplier_fee_value: 6,
+          supplier_fee_value: isTikTok ? 3 : 6,
           supplier_gateway_fee_type: 'fixed',
           supplier_gateway_fee_value: 2,
           supplier_gateway_fee_fixed: 2,

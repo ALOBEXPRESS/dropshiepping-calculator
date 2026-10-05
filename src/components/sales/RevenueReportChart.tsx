@@ -185,6 +185,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const manualSupplierFeePercentRef = useRef('');
   const manualGatewayFeeRef = useRef('');
   const manualCostOverridesRef = useRef<Record<number, string>>({});
+  const manualQuantityOverridesRef = useRef<Record<number, number>>({});
   const manualTotalProductCostRef = useRef('');
   const manualShippingRef = useRef('');
   const manualRetornoLiquidoRef = useRef('');
@@ -200,6 +201,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       manualSupplierFeePercent: manualSupplierFeePercentRef.current,
       manualGatewayFee: manualGatewayFeeRef.current,
       manualCostOverrides: manualCostOverridesRef.current,
+      manualQuantityOverrides: manualQuantityOverridesRef.current,
       manualTotalProductCost: manualTotalProductCostRef.current,
       manualShipping: manualShippingRef.current,
       manualRetornoLiquido: manualRetornoLiquidoRef.current,

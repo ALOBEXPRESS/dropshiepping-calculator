@@ -268,7 +268,10 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
             setSupplierName(resolvedName);
             setSupplierFeeType(existingFeeType);
             const isDog = resolvedName.trim().toLowerCase() === 'dogama';
-            setSupplierFeeValue(existingFeeValue || (isDog ? defaultDogamaFee : '0'));
+            const feeToSet = isDog
+              ? (isTikTokOrder && (existingFeeValue === '6' || !existingFeeValue || existingFeeValue === '0') ? '3' : (existingFeeValue || defaultDogamaFee))
+              : (existingFeeValue || '0');
+            setSupplierFeeValue(feeToSet);
             setSupplierGatewayFeeType(existingGtwType);
             setSupplierGatewayFeeValue(existingGtwValue || (isDog ? '2' : '0'));
           } else {
