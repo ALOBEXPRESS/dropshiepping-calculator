@@ -174,6 +174,7 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
           try {
             let resolvedProduct: { id: string; cost_price?: number | null; [key: string]: unknown } | null = null;
             let matchedItemId: string | null = null;
+            let matchedItemQty = 1;
 
             // 1. Tentar buscar primeiro pelos itens do pedido (SKU/Código direto)
             const { data: items } = await supabase
@@ -197,6 +198,7 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
                   if (pBySku && Number(pBySku.cost_price ?? 0) > 0) {
                     resolvedProduct = pBySku;
                     matchedItemId = item.id;
+                    matchedItemQty = Number(item.quantity) || 1;
                     break;
                   }
                 }
@@ -217,6 +219,7 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
                     if (pByVarParent && Number(pByVarParent.cost_price ?? 0) > 0) {
                       resolvedProduct = pByVarParent;
                       matchedItemId = item.id;
+                      matchedItemQty = Number(item.quantity) || 1;
                       break;
                     }
                   }
@@ -232,6 +235,7 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
                   if (pByBlingId && Number(pByBlingId.cost_price ?? 0) > 0) {
                     resolvedProduct = pByBlingId;
                     matchedItemId = item.id;
+                    matchedItemQty = Number(item.quantity) || 1;
                     break;
                   }
 
@@ -249,6 +253,7 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
                     if (pByParentSku && Number(pByParentSku.cost_price ?? 0) > 0) {
                       resolvedProduct = pByParentSku;
                       matchedItemId = item.id;
+                      matchedItemQty = Number(item.quantity) || 1;
                       break;
                     }
                   }
@@ -265,18 +270,24 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
                 .maybeSingle();
               if (pByFirstId && Number(pByFirstId.cost_price ?? 0) > 0) {
                 resolvedProduct = pByFirstId;
+                matchedItemQty = Math.max(1, Number(order.items_count ?? 1));
               }
             }
 
             if (resolvedProduct) {
-              const costPrice = Number(resolvedProduct.cost_price ?? 0);
+              const itemQty = Math.max(1, matchedItemQty || Number(order.items_count ?? 1));
+              const unitCostPrice = Number(resolvedProduct.cost_price ?? 0);
+              const baseCost = unitCostPrice * itemQty;
               const suppFeeType = resolvedProduct.supplier_fee_type || 'percent';
               const suppFeeVal = Number(resolvedProduct.supplier_fee_value ?? 0);
-              const suppFee = suppFeeType === 'percent' ? costPrice * (suppFeeVal / 100) : suppFeeVal;
+              const suppFee = suppFeeType === 'percent' ? baseCost * (suppFeeVal / 100) : suppFeeVal * itemQty;
               const suppGtwVal = Number(resolvedProduct.supplier_gateway_fee_value ?? 0);
-              const suppGtw = (resolvedProduct.supplier_gateway_fee_type || 'fixed') === 'fixed' ? suppGtwVal : costPrice * (suppGtwVal / 100);
+              // Fixed gateway fee is per order transaction (not multiplied by quantity), percentage is on baseCost:
+              const suppGtw = (resolvedProduct.supplier_gateway_fee_type || 'fixed') === 'fixed'
+                ? suppGtwVal
+                : baseCost * (suppGtwVal / 100);
 
-              const totalCost = costPrice + suppFee + suppGtw;
+              const totalCost = baseCost + suppFee + suppGtw;
               const expectedPrice = Number(order.expected_price || order.total_amount || 0);
               const commissionVal = expectedPrice * (Number(order.commission_rate || 0) / 100);
               // Calcular taxa fixa do marketplace baseado no preço real (Shopee, TikTok, etc.)
@@ -315,6 +326,7 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
               return {
                 ...order,
                 first_product_id: resolvedProduct.id,
+                items_count: itemQty,
                 total_cost: parseFloat(totalCost.toFixed(2)),
                 estimated_profit: parseFloat(estimatedProfit.toFixed(2)),
               };

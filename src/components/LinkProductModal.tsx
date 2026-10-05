@@ -78,19 +78,23 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
   const [linking, setLinking] = useState(false);
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Suppliers & Product Config
+  // Suppliers & Product Config (Dogama por padrão)
   const [suppliersList, setSuppliersList] = useState<SupplierItem[]>(DEFAULT_SUPPLIERS);
   const [costPrice, setCostPrice] = useState<string>('');
-  const [supplierId, setSupplierId] = useState<string>('');
-  const [supplierName, setSupplierName] = useState<string>('');
+  const [quantity, setQuantity] = useState<number>(() => {
+    const initial = Number(order.items_count ?? 1);
+    return initial >= 1 && initial <= 6 ? initial : 1;
+  });
+  const [supplierId, setSupplierId] = useState<string>('dogama');
+  const [supplierName, setSupplierName] = useState<string>('Dogama');
   const [supplierFeeType, setSupplierFeeType] = useState<'percent' | 'fixed'>('percent');
-  const [supplierFeeValue, setSupplierFeeValue] = useState<string>('');
+  const [supplierFeeValue, setSupplierFeeValue] = useState<string>('6');
   const [supplierGatewayFeeType, setSupplierGatewayFeeType] = useState<'percent' | 'fixed'>('fixed');
-  const [supplierGatewayFeeValue, setSupplierGatewayFeeValue] = useState<string>('');
+  const [supplierGatewayFeeValue, setSupplierGatewayFeeValue] = useState<string>('2');
   const [showAdvancedFees, setShowAdvancedFees] = useState(false);
   const [loadingDefaults, setLoadingDefaults] = useState(false);
 
-  // Load suppliers on open
+  // Load suppliers on open & set default Dogama
   useEffect(() => {
     if (!open) return;
     const fetchSuppliers = async () => {
@@ -108,6 +112,11 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
             }
           });
           setSuppliersList(merged);
+          // Set real Dogama id if found in DB
+          const dogamaFromDb = merged.find((s) => s.name.toLowerCase() === 'dogama');
+          if (dogamaFromDb && (!supplierId || supplierId === 'dogama')) {
+            setSupplierId(dogamaFromDb.id);
+          }
         }
       } catch (err) {
         console.warn('Erro ao buscar fornecedores:', err);
@@ -115,6 +124,42 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
     };
     fetchSuppliers();
   }, [open]);
+
+  // Load current order item quantity if already recorded
+  useEffect(() => {
+    if (!open) return;
+    let isMounted = true;
+    const loadOrderQty = async () => {
+      try {
+        const { data: blingOrder } = await supabase
+          .from('bling_orders')
+          .select('id, items_count')
+          .eq('order_number', order.order_number)
+          .eq('organization_id', organizationId)
+          .maybeSingle();
+
+        if (blingOrder) {
+          const { data: items } = await supabase
+            .from('bling_order_items')
+            .select('quantity')
+            .eq('order_id', blingOrder.id)
+            .limit(1);
+
+          const q = Number(items?.[0]?.quantity);
+          if (isMounted && q >= 1 && q <= 6) {
+            setQuantity(q);
+            return;
+          }
+        }
+      } catch { /* ignore */ }
+      const fallback = Number(order.items_count ?? 1);
+      if (isMounted) {
+        setQuantity(fallback >= 1 && fallback <= 6 ? fallback : 1);
+      }
+    };
+    loadOrderQty();
+    return () => { isMounted = false; };
+  }, [open, order.order_number, order.items_count, organizationId]);
 
   const handleSearch = useCallback(async (q: string) => {
     setQuery(q);
@@ -213,13 +258,14 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
             setSupplierGatewayFeeType(existingGtwType);
             setSupplierGatewayFeeValue(existingGtwValue);
           } else {
-            // Default to empty supplier
-            setSupplierId('');
-            setSupplierName('');
+            // Padrão sempre Dogama se não houver fornecedor cadastrado
+            const dogamaSup = suppliersList.find((s) => s.name.toLowerCase() === 'dogama') ?? { id: 'dogama', name: 'Dogama' };
+            setSupplierId(dogamaSup.id);
+            setSupplierName('Dogama');
             setSupplierFeeType('percent');
-            setSupplierFeeValue('');
+            setSupplierFeeValue('6');
             setSupplierGatewayFeeType('fixed');
-            setSupplierGatewayFeeValue('');
+            setSupplierGatewayFeeValue('2');
           }
         }
       } catch (err) {
@@ -231,7 +277,7 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
 
     loadExistingInfo();
     return () => { isMounted = false; };
-  }, [selectedProduct, selectedVariation, variations.length, organizationId]);
+  }, [selectedProduct, selectedVariation, variations.length, organizationId, suppliersList]);
 
   const handleSupplierSelect = (idOrValue: string) => {
     const found = suppliersList.find((s) => s.id === idOrValue);
@@ -254,6 +300,24 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
   };
 
   const isDogama = supplierName.trim().toLowerCase() === 'dogama';
+
+  // Live calculation of product and order cost breakdown
+  const unitCostNum = parseFloat(String(costPrice).replace(',', '.')) || 0;
+  const totalBaseCost = unitCostNum * quantity;
+  const supFeePercent = supplierFeeType === 'percent'
+    ? Number(supplierFeeValue || (isDogama ? 6 : 0))
+    : 0;
+  const suppFeeTotal = supplierFeeType === 'percent'
+    ? (totalBaseCost * supFeePercent) / 100
+    : (Number(supplierFeeValue || 0) * quantity);
+
+  // Gateway fee: FIXED is PER ORDER TRANSACTION (not multiplied by quantity), PERCENT is on totalBaseCost
+  const gtwFeeVal = Number(supplierGatewayFeeValue || (isDogama ? 2 : 0));
+  const gatewayFeeTotal = supplierGatewayFeeType === 'fixed'
+    ? gtwFeeVal
+    : (totalBaseCost * gtwFeeVal) / 100;
+
+  const totalCalculatedCost = totalBaseCost + suppFeeTotal + gatewayFeeTotal;
 
   const handleLink = useCallback(async () => {
     if (!selectedProduct) return;
@@ -289,7 +353,7 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
       const existingItemId = existingItems?.[0]?.id ?? null;
 
       if (existingItemId) {
-        // Update existing item — clear wrong product_id, set correct bling refs
+        // Update existing item — clear wrong product_id, set correct bling refs and quantity
         const { error: updateErr } = await supabase
           .from('bling_order_items')
           .update({
@@ -298,11 +362,14 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
             product_id: null, // clear wrong match; will be set below after product creation
             code: selectedVariation?.sku ?? selectedProduct.sku ?? '',
             description: productName,
+            quantity: quantity,
+            unit_value: unitValue / Math.max(1, quantity),
+            total_value: unitValue,
           })
           .eq('id', existingItemId);
         if (updateErr) throw updateErr;
       } else {
-        // Insert new item
+        // Insert new item with quantity
         const { error: insertErr } = await supabase
           .from('bling_order_items')
           .insert({
@@ -313,8 +380,8 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
             code: selectedVariation?.sku ?? selectedProduct.sku ?? '',
             description: productName,
             unit: 'UN',
-            quantity: 1,
-            unit_value: unitValue,
+            quantity: quantity,
+            unit_value: unitValue / Math.max(1, quantity),
             total_value: unitValue,
             discount: 0,
             ipi_rate: 0,
@@ -325,11 +392,16 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
         if (insertErr) throw insertErr;
       }
 
-      // 3. Upsert in 'products' with user-specified cost and supplier
+      // 3. Update items_count on bling_orders table
+      await supabase
+        .from('bling_orders')
+        .update({ items_count: quantity })
+        .eq('id', blingOrder.id);
+
+      // 4. Upsert in 'products' with user-specified cost and supplier
       const productSku = selectedVariation?.sku ?? selectedProduct.sku ?? '';
       const productImage = selectedVariation?.image_url1 ?? selectedProduct.image_url1 ?? null;
       const productPrice = Number(selectedVariation?.sale_price ?? selectedProduct.sale_price ?? 0);
-      const costPriceNum = parseFloat(String(costPrice).replace(',', '.')) || 0;
 
       const normSup = supplierName.trim().toLowerCase();
       const finalSupFeeVal = supplierFeeValue
@@ -355,7 +427,7 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
         name: productName,
         sku: productSku,
         price: productPrice > 0 ? productPrice : unitValue,
-        cost_price: costPriceNum,
+        cost_price: unitCostNum,
         supplier_id: supplierId || null,
         supplier_name: supplierName || null,
         supplier_fee_type: supplierFeeType,
@@ -394,22 +466,22 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
       }
 
       // Sync cost_price back to products_bling & variation if provided
-      if (costPriceNum > 0) {
+      if (unitCostNum > 0) {
         if (selectedProduct.id) {
           await supabase
             .from('products_bling')
-            .update({ cost_price: costPriceNum })
+            .update({ cost_price: unitCostNum })
             .eq('id', selectedProduct.id);
         }
         if (selectedVariation?.id) {
           await supabase
             .from('products_variations_bling')
-            .update({ cost_price: costPriceNum })
+            .update({ cost_price: unitCostNum })
             .eq('id', selectedVariation.id);
         }
       }
 
-      // 4. Update bling_order_item.product_id to correct product
+      // 5. Update bling_order_item.product_id to correct product
       if (productId) {
         await supabase
           .from('bling_order_items')
@@ -417,14 +489,14 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
           .eq('order_id', blingOrder.id);
       }
 
-      // 5. Rematch order items to populate order_items with correct unit_cost
+      // 6. Rematch order items to populate order_items with correct unit_cost
       if (organizationId) {
         await supabase.rpc('rematch_bling_order_items_products', {
           p_organization_id: organizationId,
         });
       }
 
-      toast.success(`Produto "${productName}" vinculado com sucesso! Custo R$ ${costPriceNum.toFixed(2)} e fornecedor definidos.`);
+      toast.success(`Produto "${productName}" (${quantity}x) vinculado! Custo R$ ${totalCalculatedCost.toFixed(2)} registrado.`);
       onLinked();
       onClose();
     } catch (err) {
@@ -444,12 +516,15 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
     order,
     organizationId,
     costPrice,
+    quantity,
     supplierId,
     supplierName,
     supplierFeeType,
     supplierFeeValue,
     supplierGatewayFeeType,
     supplierGatewayFeeValue,
+    totalCalculatedCost,
+    unitCostNum,
     onLinked,
     onClose,
   ]);
@@ -461,12 +536,13 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
     setVariations([]);
     setSelectedVariation(null);
     setCostPrice('');
-    setSupplierId('');
-    setSupplierName('');
+    setQuantity(1);
+    setSupplierId('dogama');
+    setSupplierName('Dogama');
     setSupplierFeeType('percent');
-    setSupplierFeeValue('');
+    setSupplierFeeValue('6');
     setSupplierGatewayFeeType('fixed');
-    setSupplierGatewayFeeValue('');
+    setSupplierGatewayFeeValue('2');
     setShowAdvancedFees(false);
     onClose();
   };
@@ -561,8 +637,6 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
                   setVariations([]);
                   setSelectedVariation(null);
                   setCostPrice('');
-                  setSupplierId('');
-                  setSupplierName('');
                 }}
                 className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 underline flex-shrink-0"
               >
@@ -618,9 +692,9 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
               <p className="text-xs text-gray-400 text-center py-1">Produto sem variações — será vinculado diretamente.</p>
             )}
 
-            {/* Smart Product Configuration (Cost & Supplier) */}
+            {/* Smart Product Configuration (Cost, Quantity & Supplier) */}
             {isConfigReady && (
-              <div className="p-3.5 rounded-xl border border-indigo-200 dark:border-indigo-900/60 bg-gradient-to-br from-indigo-50/60 via-white to-sky-50/40 dark:from-zinc-900 dark:via-zinc-900 dark:to-indigo-950/30 space-y-3">
+              <div className="p-3.5 rounded-xl border border-indigo-200 dark:border-indigo-900/60 bg-gradient-to-br from-indigo-50/60 via-white to-sky-50/40 dark:from-zinc-900 dark:via-zinc-900 dark:to-indigo-950/30 space-y-3.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-indigo-500" />
@@ -639,12 +713,13 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
                   )}
                 </div>
 
+                {/* Linha 1: Preço de Custo e Fornecedor */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Preço de Custo */}
                   <div className="space-y-1.5">
                     <Label htmlFor="link-cost-price" className="text-xs font-semibold flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
                       <DollarSign className="w-3.5 h-3.5 text-green-500" />
-                      Preço de Custo (R$)
+                      Preço de Custo Unitário (R$)
                     </Label>
                     <Input
                       id="link-cost-price"
@@ -664,18 +739,18 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
                     )}
                   </div>
 
-                  {/* Fornecedor */}
+                  {/* Fornecedor (Dogama por padrão) */}
                   <div className="space-y-1.5">
                     <Label htmlFor="link-supplier" className="text-xs font-semibold flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
                       <Building2 className="w-3.5 h-3.5 text-blue-500" />
                       Fornecedor
                     </Label>
                     <Select
-                      value={supplierId || (supplierName ? `custom:${supplierName}` : '')}
+                      value={supplierId || (supplierName ? `custom:${supplierName}` : 'dogama')}
                       onValueChange={handleSupplierSelect}
                     >
-                      <SelectTrigger id="link-supplier" className="h-9 text-sm">
-                        <SelectValue placeholder="Selecione o fornecedor" />
+                      <SelectTrigger id="link-supplier" className="h-9 text-sm font-medium">
+                        <SelectValue placeholder="Dogama" />
                       </SelectTrigger>
                       <SelectContent>
                         {suppliersList.map((s) => (
@@ -688,21 +763,76 @@ export const LinkProductModal: React.FC<LinkProductModalProps> = ({
                   </div>
                 </div>
 
-                {/* Feedback automático do Dogama */}
+                {/* Linha 2: Quantidade de Peças / Unidades (1 a 6) */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
+                      <Package className="w-3.5 h-3.5 text-indigo-500" />
+                      Quantidade de Peças / Unidades do Pedido
+                    </Label>
+                    <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
+                      {quantity} {quantity === 1 ? 'unidade' : 'unidades'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-6 gap-1.5">
+                    {[1, 2, 3, 4, 5, 6].map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        onClick={() => setQuantity(q)}
+                        className={`h-9 rounded-lg text-xs font-bold transition-all border ${
+                          quantity === q
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-sm scale-[1.02]'
+                            : 'bg-white/80 dark:bg-zinc-800/80 hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-zinc-700'
+                        }`}
+                      >
+                        {q}x
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Detalhes de cálculo em tempo real */}
+                {unitCostNum > 0 && (
+                  <div className="p-3 rounded-lg bg-zinc-50/90 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/60 text-xs space-y-1.5">
+                    <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400 text-[11px]">
+                      <span>Custo base ({quantity}x R$ {unitCostNum.toFixed(2)}):</span>
+                      <span className="font-medium text-zinc-900 dark:text-white">R$ {totalBaseCost.toFixed(2)}</span>
+                    </div>
+                    {suppFeeTotal > 0 && (
+                      <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400 text-[11px]">
+                        <span>Taxa do fornecedor ({supplierFeeType === 'percent' ? `${supFeePercent}%` : `R$ ${supplierFeeValue}`}):</span>
+                        <span className="font-medium text-zinc-900 dark:text-white">+ R$ {suppFeeTotal.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {gatewayFeeTotal > 0 && (
+                      <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400 text-[11px]">
+                        <span>Taxa Gateway ({supplierGatewayFeeType === 'fixed' ? 'transação única R$ 2,00' : `${gtwFeeVal}%`}):</span>
+                        <span className="font-medium text-zinc-900 dark:text-white">+ R$ {gatewayFeeTotal.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between pt-1.5 border-t border-zinc-200 dark:border-zinc-700 font-bold text-xs">
+                      <span className="text-zinc-900 dark:text-white">Custo Total da Mercadoria:</span>
+                      <span className="text-emerald-600 dark:text-emerald-400 text-sm">R$ {totalCalculatedCost.toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Feedback do Dogama */}
                 {isDogama && (
                   <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-300 flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                     <div>
                       <p className="font-semibold">Dogama Selecionado</p>
                       <p className="text-[11px] opacity-90">
-                        Taxa do fornecedor de <strong>6%</strong> e Taxa de Gateway de <strong>R$ 2,00 (fixo)</strong> aplicadas automaticamente.
+                        Taxa de <strong>6%</strong> aplicada sobre o custo dos itens e Gateway de <strong>R$ 2,00 (fixo)</strong> por transação (não multiplicado pela quantidade).
                       </p>
                     </div>
                   </div>
                 )}
 
                 {/* Detalhes avançados de taxas (opcional) */}
-                <div className="pt-1">
+                <div className="pt-0.5">
                   <button
                     type="button"
                     onClick={() => setShowAdvancedFees(!showAdvancedFees)}
