@@ -37,128 +37,124 @@ export const useProductSalesStats = (productId?: string) => {
     setError(null);
 
     try {
-      // 1. Obter SKUs e variação do produto
-      let skus: string[] = [];
-      let varIds: string[] = [];
-
-      // Buscar produto principal
-      const { data: mainProduct } = await supabase
-        .from('products')
-        .select('sku')
-        .eq('id', productId)
-        .maybeSingle();
-
-      if (mainProduct?.sku) {
-        skus.push(mainProduct.sku);
-      }
-
-      // Buscar variações do produto
+      // 1. Obter IDs do produto e variações
+      const varIds: string[] = [];
       const { data: variations } = await supabase
         .from('products_variations_bling')
-        .select('id, sku')
+        .select('id')
         .eq('product_id', productId);
 
       if (variations && variations.length > 0) {
         variations.forEach((v) => {
           if (v.id) varIds.push(v.id);
-          if (v.sku) skus.push(v.sku);
         });
       }
 
-      skus = [...new Set(skus.filter(Boolean))];
-      varIds = [...new Set(varIds.filter(Boolean))];
+      const productIds = [productId, ...varIds];
 
-      // 2. Buscar vendas em bling_order_items (pedidos importados/entrando)
-      const blingQuery = supabase
-        .from('bling_order_items')
-        .select('id, order_id, quantity, unit_value, total_value');
-
-      const filterConditions: string[] = [
-        `product_id.eq.${productId}`,
-        `product_bling_id.eq.${productId}`
-      ];
-
-      if (varIds.length > 0) {
-        filterConditions.push(`product_variation_id.in.(${varIds.map(id => `"${id}"`).join(',')})`);
-      }
-      if (skus.length > 0) {
-        filterConditions.push(`code.in.(${skus.map(s => `"${s}"`).join(',')})`);
-      }
-
-      const { data: blingItems, error: blingError } = await blingQuery.or(filterConditions.join(','));
-
-      if (blingError) {
-        console.warn('Erro ao buscar bling_order_items:', blingError);
-      }
-
-      // 3. Buscar vendas na tabela order_items (pedidos processados)
-      const orderItemsQuery = supabase
+      // 2. Buscar vendas na tabela order_items (pedidos processados)
+      const { data: orderItems, error: itemsError } = await supabase
         .from('order_items')
-        .select('id, order_id, quantity, total_price, profit, unit_cost, total_cost');
-
-      const orderItemConditions: string[] = [`product_id.eq.${productId}`];
-      if (skus.length > 0) {
-        orderItemConditions.push(`product_sku.in.(${skus.map(s => `"${s}"`).join(',')})`);
-      }
-
-      const { data: orderItems, error: itemsError } = await orderItemsQuery.or(orderItemConditions.join(','));
+        .select(`
+          id,
+          order_id,
+          product_id,
+          quantity,
+          unit_price,
+          total_price,
+          unit_cost,
+          total_cost,
+          profit,
+          orders (
+            id,
+            order_number,
+            total_amount,
+            total_cost,
+            total_profit,
+            status,
+            bling_order_id
+          )
+        `)
+        .in('product_id', productIds);
 
       if (itemsError) {
         console.warn('Erro ao buscar order_items:', itemsError);
       }
 
-      // 4. Consolidar vendas dos dois lados, evitando contagem duplicada por order_id se processado
-      const countedOrderIds = new Set<string>();
+      const processedOrderIds = new Set<string>();
+      const processedBlingOrderIds = new Set<string>();
       let totalQty = 0;
       let totalRev = 0;
       let totalProf = 0;
       let totalCst = 0;
 
-      // Buscar custo/lucro estimado para pedidos pendentes em bling_order_items
-      if (blingItems && blingItems.length > 0) {
-        const blingOrderIds = [...new Set(blingItems.map((i) => i.order_id))];
-        const { data: pendingOrders } = await supabase
-          .from('pending_orders_to_process')
-          .select('bling_order_id, total_cost, estimated_profit')
-          .in('bling_order_id', blingOrderIds);
+      // Map to accumulate orders cost and profit without duplicate counts for orders with multiple items
+      const orderMetricsMap = new Map<string, { orderCost: number; orderProfit: number; orderRevenue: number }>();
 
-        const pendingMap = new Map<string, { total_cost: number; estimated_profit: number }>();
-        if (pendingOrders) {
-          pendingOrders.forEach((po) => {
-            pendingMap.set(po.bling_order_id, {
-              total_cost: Number(po.total_cost || 0),
-              estimated_profit: Number(po.estimated_profit || 0),
-            });
-          });
-        }
+      if (orderItems && orderItems.length > 0) {
+        orderItems.forEach((item) => {
+          const order = (Array.isArray(item.orders) ? item.orders[0] : item.orders) as {
+            id?: string;
+            order_number?: string;
+            total_amount?: number | string | null;
+            total_cost?: number | string | null;
+            total_profit?: number | string | null;
+            status?: string | null;
+            bling_order_id?: string | null;
+          } | null;
 
-        blingItems.forEach((item) => {
-          countedOrderIds.add(item.order_id);
-          totalQty += Number(item.quantity || 1);
-          totalRev += Number(item.total_value || (Number(item.quantity || 1) * Number(item.unit_value || 0)));
-          const po = pendingMap.get(item.order_id);
-          if (po) {
-            totalCst += po.total_cost;
-            totalProf += po.estimated_profit;
+          if (!order || order.status === 'cancelled') return;
+
+          const ordId = order.id || item.order_id;
+          processedOrderIds.add(ordId);
+          if (order.bling_order_id) {
+            processedBlingOrderIds.add(order.bling_order_id);
           }
+
+          const qty = Number(item.quantity || 1);
+          const price = Number(item.total_price || (qty * Number(item.unit_price || 0)));
+          totalQty += qty;
+          totalRev += price;
+
+          if (!orderMetricsMap.has(ordId)) {
+            orderMetricsMap.set(ordId, {
+              orderCost: Number(order.total_cost || 0),
+              orderProfit: Number(order.total_profit || 0),
+              orderRevenue: Number(order.total_amount || 0),
+            });
+          }
+        });
+
+        // Somar custo e lucro reais dos pedidos processados
+        orderMetricsMap.forEach((metrics) => {
+          totalCst += metrics.orderCost;
+          totalProf += metrics.orderProfit;
         });
       }
 
-      // Adicionar itens de order_items (se não contados via bling_order_id)
-      if (orderItems && orderItems.length > 0) {
-        orderItems.forEach((item) => {
-          if (!countedOrderIds.has(item.order_id)) {
-            countedOrderIds.add(item.order_id);
-            totalQty += Number(item.quantity || 1);
-            totalRev += Number(item.total_price || 0);
-            totalProf += Number(item.profit || 0);
-            totalCst += Number(item.total_cost || 0);
+      // 3. Buscar pedidos pendentes (que ainda não foram processados para orders)
+      const { data: pendingOrders, error: pendingError } = await supabase
+        .from('pending_orders_to_process')
+        .select('bling_order_id, first_product_id, items_count, total_amount, total_cost, estimated_profit');
+
+      if (!pendingError && pendingOrders && pendingOrders.length > 0) {
+        pendingOrders.forEach((po) => {
+          if (
+            po.first_product_id === productId &&
+            !processedBlingOrderIds.has(po.bling_order_id) &&
+            !processedOrderIds.has(po.bling_order_id)
+          ) {
+            processedOrderIds.add(po.bling_order_id);
+            totalQty += Number(po.items_count || 1);
+            totalRev += Number(po.total_amount || 0);
+            totalCst += Number(po.total_cost || 0);
+            totalProf += Number(po.estimated_profit || 0);
           }
         });
       }
 
       setStats({
-        totalSales: countedOrderIds.size,
+        totalSales: processedOrderIds.size,
         totalQuantity: totalQty,
         totalProfit: totalProf,
         totalRevenue: totalRev,

@@ -3274,6 +3274,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               return { name: p.name, sku: p.sku, qty, unitPrice, totalPrice, baseCost, unitCost, unitCostRaw };
             });
 
+            const totalUnitsInOrder = productItems.reduce((acc, p) => acc + (p.qty || 1), 0);
             const totalBaseCost = productItems.reduce((s, p) => s + p.baseCost, 0);
 
             // Taxas do fornecedor: derivar do produto que tem taxa configurada
@@ -3530,6 +3531,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         : (selectedOrder.product_name || 'Produto não identificado')}
                     </h2>
                     <div className="flex items-center gap-2 flex-wrap">
+                      {totalUnitsInOrder > 1 && (
+                        <span className="text-[11px] font-bold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                          {totalUnitsInOrder} unidades
+                        </span>
+                      )}
                       {!hasMultipleProducts && selectedOrder.product_sku && (
                         <span className="text-[11px] text-zinc-500 font-mono bg-zinc-900 px-2 py-0.5 rounded">
                           SKU: {selectedOrder.product_sku}

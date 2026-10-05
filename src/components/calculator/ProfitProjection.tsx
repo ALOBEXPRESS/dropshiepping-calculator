@@ -269,18 +269,21 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
     }
   })();
   
-  // Use lucro real das vendas se disponível e > 0, senão use netRevenue estimado do produto
-  const estimatedProfitPerUnit = (salesStats.totalSales > 0 && salesStats.totalProfit > 0) 
-    ? (salesStats.totalProfit / salesStats.totalSales) 
-    : (netRevenue > 0 ? netRevenue : Math.max(0, price - cost));
+  // Lucro unitário projetado a partir da precificação e taxas configuradas (netRevenue)
+  const unitProjectedProfit = netRevenue > 0 ? netRevenue : Math.max(0, price - cost);
 
+  // Para projeções de cenários ("Vender 50 UN"): usar a margem unitária projetada do produto
+  const estimatedProfitPerUnit = unitProjectedProfit;
+
+  // Total de lucro acumulado real das vendas (ou estimado caso ainda não processado)
   const displayProfit = salesStats.totalProfit > 0 
     ? salesStats.totalProfit 
-    : (salesStats.totalSales > 0 ? salesStats.totalSales * estimatedProfitPerUnit : 0);
+    : (salesStats.totalQuantity > 0 ? salesStats.totalQuantity * unitProjectedProfit : 0);
 
+  // Total de custo acumulado real das vendas (ou estimado)
   const displayCost = salesStats.totalCost > 0 
     ? salesStats.totalCost 
-    : (salesStats.totalSales > 0 ? Math.max(0, salesStats.totalRevenue - displayProfit) : 0);
+    : (salesStats.totalQuantity > 0 ? Math.max(0, salesStats.totalRevenue - displayProfit) : 0);
 
   const scenarios = [
     { units: 50, label: 'VENDER 50 UN' },
@@ -394,7 +397,11 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
       <div className="flex items-center gap-3 mb-6">
         <div className="inline-flex items-center gap-2 rounded-lg bg-muted border border-border px-3 py-1.5 backdrop-blur-sm">
           <span className="text-xs font-medium text-muted-foreground">Vendas:</span>
-          <span className="text-sm font-bold text-foreground tabular-nums">{salesStats.totalSales}</span>
+          <span className="text-sm font-bold text-foreground tabular-nums">
+            {salesStats.totalQuantity > salesStats.totalSales 
+              ? `${salesStats.totalQuantity} un (${salesStats.totalSales} ped)` 
+              : salesStats.totalSales}
+          </span>
         </div>
         {adsChannels.length > 0 ? (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-muted border border-border px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-foreground">
@@ -472,7 +479,10 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
         <div className="bg-muted/30 border border-border rounded-xl p-4">
           <p className="text-xs font-bold text-muted-foreground mb-2 uppercase">Total de vendas</p>
           <p className="text-2xl font-bold text-foreground tabular-nums">R$ {formatCompactCurrency(salesStats.totalRevenue)}</p>
-          <p className="text-xs text-muted-foreground mt-1">{salesStats.totalSales} {salesStats.totalSales === 1 ? 'pedido' : 'pedidos'}</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {salesStats.totalSales} {salesStats.totalSales === 1 ? 'pedido' : 'pedidos'}
+            {salesStats.totalQuantity > salesStats.totalSales ? ` • ${salesStats.totalQuantity} unidades` : ''}
+          </p>
         </div>
         <div className="bg-muted/30 border border-border rounded-xl p-4">
           <p className="text-xs font-bold text-muted-foreground mb-2 uppercase">Total de lucro</p>

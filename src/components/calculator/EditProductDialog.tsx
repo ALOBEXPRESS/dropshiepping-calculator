@@ -252,6 +252,8 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     const baseSku = source?.sku || '';
     const resolvedName = mode === 'duplicate' && baseName ? `${baseName} (Cópia)` : baseName;
     const resolvedSku = mode === 'duplicate' && baseSku ? `${baseSku}-COPIA-${duplicateSuffix}` : baseSku;
+    const isDogama = (source?.supplierName || '').trim().toLowerCase() === 'dogama';
+    const isTikTok = normalizeMarketplaceValue(source?.marketplace)?.includes('tiktok');
     return ({
       name: resolvedName,
       description: source?.description || '',
@@ -276,13 +278,19 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     operationMode: source?.operationMode || '',
     gatewayMethod: source?.gatewayMethod || '',
     gatewayBank: source?.gatewayBank || '',
-    gatewayFeeValue: source?.gatewayFeeValue !== undefined && source?.gatewayFeeValue !== null ? String(source.gatewayFeeValue) : '',
-    gatewayFeeType: source?.gatewayFeeType || 'percent',
+    gatewayFeeValue: source?.gatewayFeeValue !== undefined && source?.gatewayFeeValue !== null && source?.gatewayFeeValue !== ''
+      ? String(source.gatewayFeeValue)
+      : (isDogama ? '2' : ''),
+    gatewayFeeType: isDogama ? 'fixed' : (source?.gatewayFeeType || 'percent'),
     gatewayInstallments: source?.gatewayInstallments !== undefined && source?.gatewayInstallments !== null ? String(source.gatewayInstallments) : '1',
     supplierFeeType: source?.supplierFeeType || 'percent',
-    supplierFeeValue: source?.supplierFeeValue !== undefined && source?.supplierFeeValue !== null ? String(source.supplierFeeValue) : '',
+    supplierFeeValue: source?.supplierFeeValue !== undefined && source?.supplierFeeValue !== null && source?.supplierFeeValue !== ''
+      ? String(source.supplierFeeValue)
+      : (isDogama ? (isTikTok ? '3' : '6') : ''),
     supplierGatewayFeeType: source?.supplierGatewayFeeType || 'fixed',
-    supplierGatewayFeeValue: source?.supplierGatewayFeeValue !== undefined && source?.supplierGatewayFeeValue !== null ? String(source.supplierGatewayFeeValue) : '',
+    supplierGatewayFeeValue: source?.supplierGatewayFeeValue !== undefined && source?.supplierGatewayFeeValue !== null && source?.supplierGatewayFeeValue !== ''
+      ? String(source.supplierGatewayFeeValue)
+      : (isDogama ? '2' : ''),
     shopeeFreeShipping: source?.shippingOption === 'with',
     shippingFee: source?.marketplaceShippingCost !== undefined && source?.marketplaceShippingCost !== null ? String(source.marketplaceShippingCost) : '',
     videoGenerationLlm: source?.videoGenerationLlm || '',
@@ -1064,6 +1072,10 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       }
       if (value === 'facebook' && !prev.facebookDelivery) {
         next.facebookDelivery = 'entrega';
+      }
+      const isTikTok = value?.toLowerCase().includes('tiktok');
+      if ((prev.supplierName || '').trim().toLowerCase() === 'dogama') {
+        next.supplierFeeValue = isTikTok ? '3' : '6';
       }
       setSellingPriceWarning('');
       return next;
