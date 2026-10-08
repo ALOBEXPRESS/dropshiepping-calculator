@@ -103,7 +103,18 @@ interface OrderDetail {
 }
 
 export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organizationId, refreshTrigger, onOrderDeleted, onOrderUpdated, period: externalPeriod, onPeriodChange, onRegisterOpenOrder, onRegisterOpenAff, onAffDeleted, filters }) => {
-  const [period, setPeriod] = useState<PeriodFilter>(externalPeriod || 'monthly');
+  const [period, setPeriod] = useState<PeriodFilter>(() => {
+    if (externalPeriod) return externalPeriod;
+    try {
+      const saved = localStorage.getItem('sales-period-preference') as PeriodFilter | null;
+      if (saved && ['daily', 'weekly', 'monthly', 'yearly'].includes(saved)) {
+        return saved;
+      }
+    } catch {
+      // ignore
+    }
+    return 'monthly';
+  });
   const [windowOffset, setWindowOffset] = useState(0);
   const { data, loading, error, refetch } = useRevenueReport(organizationId, period);
   // All-time totals — always use yearly to get all data regardless of current period filter
@@ -159,6 +170,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const handlePeriodChange = useCallback((newPeriod: PeriodFilter) => {
     setPeriod(newPeriod);
     setWindowOffset(0);
+    try {
+      localStorage.setItem('sales-period-preference', newPeriod);
+    } catch {
+      // ignore
+    }
     // Reset period marketing cost immediately to avoid stale value showing
     setCampaignProductsCurrentPeriodCost(0);
     setGvmPlayCurrentPeriodCost(0);
@@ -2047,8 +2063,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const currentUnsafe = tooltipPagesRef.current[globalIdx] ?? 0;
           const current = Number.isFinite(max) ? Math.min(currentUnsafe, max) : currentUnsafe;
           const next = dir === 'next'
-            ? Math.min(current + 1, max)
-            : current === 0 ? max : current - 1;
+            ? (current >= max ? 0 : current + 1)
+            : (current <= 0 ? max : current - 1);
 
           // Lock tooltip visible before DOM update
           const tooltipLock = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
@@ -2171,16 +2187,16 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   reembolso_value: (order as { reembolso_value?: number | null }).reembolso_value ?? (reembolsoOv1 !== null ? reembolsoOv1 : null),
                 };
 
-                const navHtml = `
+                const navHtml = ordersCount > 1 ? `
                   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid ${dividerColor};">
                     <button data-tooltip-nav data-nav-dir="prev" data-nav-key="${key}" data-nav-max="${ordersCount - 1}"
-                      style="background:${next === 0 ? navBtnDisabledBg : navBtnBg};color:${next === 0 ? navBtnDisabledColor : navBtnColor};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:${next === 0 ? 'default' : 'pointer'};font-weight:600;line-height:1;"
-                      ${next === 0 ? 'disabled' : ''}>‹</button>
+                      style="background:${navBtnBg};color:${navBtnColor};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;font-weight:600;line-height:1;"
+                      title="Pedido anterior">‹</button>
                     <span style="font-size:11px;color:${textSecondary};font-weight:500">${next + 1} / ${ordersCount} pedido${ordersCount > 1 ? 's' : ''}</span>
                     <button data-tooltip-nav data-nav-dir="next" data-nav-key="${key}" data-nav-max="${ordersCount - 1}"
-                      style="background:${next === ordersCount - 1 ? navBtnDisabledBg : navBtnBg};color:${next === ordersCount - 1 ? navBtnDisabledColor : navBtnColor};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:${next === ordersCount - 1 ? 'default' : 'pointer'};font-weight:600;line-height:1;"
-                      ${next === ordersCount - 1 ? 'disabled' : ''}>›</button>
-                  </div>`;
+                      style="background:${navBtnBg};color:${navBtnColor};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;font-weight:600;line-height:1;"
+                      title="Próximo pedido">›</button>
+                  </div>` : '';
 
                 const freeSampleBadge = isFreeSample ? `
                   <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;padding:5px 8px;background:rgba(109,40,217,0.35);border-radius:6px;border:1px solid rgba(167,139,250,0.4);">
@@ -2625,8 +2641,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   };
 
   // Recalcular totais considerando custos reais do marketplace
-  const recalculatedData = useMemo(() => {
-    return data.map(item => {
+  const recalculateReportItems = useCallback((items: RevenueData[]) => {
+    return items.map(item => {
       const orders = item.orders_data || [];
       let totalRevenue = 0;
       let totalCost = 0;
@@ -2698,7 +2714,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         total_marketing_cost: totalMarketingCost,
       };
     });
-  }, [data, affiliateByOrderId, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig, marketingCostByProductId, manualMarketingCostByOrderId, reembolsoByOrderId, filters]);
+  }, [affiliateByOrderId, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig, marketingCostByProductId, manualMarketingCostByOrderId, reembolsoByOrderId, filters]);
+
+  const recalculatedData = useMemo(() => recalculateReportItems(data), [data, recalculateReportItems]);
+  const recalculatedYearlyData = useMemo(() => recalculateReportItems(yearlyData), [yearlyData, recalculateReportItems]);
 
   // Window size per period — mensal: 3 meses visíveis com scroll, semanal/diário: parcial com setas
   const windowSize = period === 'daily' ? 14 : period === 'weekly' ? 12 : period === 'monthly' ? 3 : 5;
@@ -2734,25 +2753,21 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const lastVisibleIdx = windowOffset + visibleData.length - 1;
   void lastVisibleIdx; // used by cumulativeProfits index
 
-  // Custo/Lucro do PERÍODO ATUAL (label "Jun", "Sem.", etc.) = último item de visibleData
-  // Para período mensal/semanal/diário: mostra só o último item (mês/semana/dia atual)
-  // Para anual: soma simples dos visíveis (já é por ano)
+  // Custo/Lucro do PERÍODO VISÍVEL no gráfico
   const currentPeriodCost = visibleData.reduce((sum, item) => sum + Number(item.total_cost ?? 0), 0);
   const currentPeriodProfit = visibleData.reduce((sum, item) => sum + Number(item.total_profit ?? 0), 0);
 
-  // Lucro total de TODOS os dados — soma direta de recalculatedData (todos os períodos do ano)
-  // recalculatedData já aplica cost_price, reembolsos, marketing e todos os overrides corretamente.
-  // Usar recalculatedData aqui garante consistência com os valores exibidos no gráfico.
+  // Lucro total de TODOS os dados — usa recalculatedYearlyData para garantir total histórico completo mesmo no filtro diário
   const allDataTotalProfit = useMemo(() => {
-    return recalculatedData.reduce((sum, item) => sum + Number(item.total_profit ?? 0), 0);
-  }, [recalculatedData]);
+    const source = recalculatedYearlyData.length > 0 ? recalculatedYearlyData : recalculatedData;
+    return source.reduce((sum, item) => sum + Number(item.total_profit ?? 0), 0);
+  }, [recalculatedYearlyData, recalculatedData]);
 
-  // Custo total = produto + taxas de marketplace (respeitando compra pessoal e reembolso)
-  // Custo total de TODOS os dados — soma direta de recalculatedData (todos os períodos)
-  // Consistente com allDataTotalProfit e com os valores do gráfico.
+  // Custo total de TODOS os dados — usa recalculatedYearlyData para consistência
   const allDataTotalCost = useMemo(() => {
-    return recalculatedData.reduce((sum, item) => sum + Number(item.total_cost ?? 0), 0);
-  }, [recalculatedData]);
+    const source = recalculatedYearlyData.length > 0 ? recalculatedYearlyData : recalculatedData;
+    return source.reduce((sum, item) => sum + Number(item.total_cost ?? 0), 0);
+  }, [recalculatedYearlyData, recalculatedData]);
 
   const marketingCostSeriesData = visibleData.map((periodData) => {
     const periodMarketingCost = (periodData.orders_data ?? []).reduce((sum, order) => {
@@ -2779,30 +2794,18 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
   // Label dinâmico para "Custo {período atual}" — baseado na janela visível (mesmo padrão do periodLabel)
   const costLabel = (() => {
-    const now = new Date();
-    if (period === 'daily') {
-      return `Custo ${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}`;
-    }
-    if (period === 'weekly') {
-      const weekNum = Math.ceil(now.getDate() / 7);
-      const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-      return `Custo Sem. ${weekNum} ${months[now.getMonth()]}`;
-    }
-    if (period === 'monthly') {
-      // Delegate to periodLabel logic — just replace "Lucro" with "Custo"
-      // periodLabel is computed below but we need same logic here
+    if (visibleData.length > 0) {
       const EN_PT: Record<string, string> = {
         Jan: 'Jan', Feb: 'Fev', Mar: 'Mar', Apr: 'Abr', May: 'Mai',
         Jun: 'Jun', Jul: 'Jul', Aug: 'Ago', Sep: 'Set', Oct: 'Out', Nov: 'Nov', Dec: 'Dez'
       };
-      if (visibleData.length > 0) {
-        const firstLabel = EN_PT[visibleData[0].period_label ?? ''] ?? visibleData[0].period_label ?? '';
-        const lastLabel = EN_PT[visibleData[visibleData.length - 1].period_label ?? ''] ?? visibleData[visibleData.length - 1].period_label ?? '';
+      const firstLabel = EN_PT[visibleData[0].period_label ?? ''] ?? visibleData[0].period_label ?? '';
+      const lastLabel = EN_PT[visibleData[visibleData.length - 1].period_label ?? ''] ?? visibleData[visibleData.length - 1].period_label ?? '';
+      if (period === 'monthly' || period === 'daily' || period === 'weekly') {
         return visibleData.length === 1 || firstLabel === lastLabel ? `Custo ${lastLabel}` : `Custo ${firstLabel} a ${lastLabel}`;
       }
-      const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-      return `Custo ${months[new Date().getMonth()]}`;
     }
+    const now = new Date();
     return `Custo ${now.getFullYear()}`;
   })();
 
@@ -2812,28 +2815,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     Jun: 'Jun', Jul: 'Jul', Aug: 'Ago', Sep: 'Set', Oct: 'Out', Nov: 'Nov', Dec: 'Dez'
   };
   const periodLabel = (() => {
-    // For monthly: use visible window range (first to last visible month)
-    if (period === 'monthly' && visibleData.length > 0) {
+    if (visibleData.length > 0) {
       const firstLabel = EN_PT_MONTHS[visibleData[0].period_label ?? ''] ?? visibleData[0].period_label ?? '';
       const lastLabel = EN_PT_MONTHS[visibleData[visibleData.length - 1].period_label ?? ''] ?? visibleData[visibleData.length - 1].period_label ?? '';
-      return visibleData.length === 1 || firstLabel === lastLabel ? `Lucro ${lastLabel}` : `Lucro ${firstLabel} a ${lastLabel}`;
+      if (period === 'monthly' || period === 'daily' || period === 'weekly') {
+        return visibleData.length === 1 || firstLabel === lastLabel ? `Lucro ${lastLabel}` : `Lucro ${firstLabel} a ${lastLabel}`;
+      }
     }
     const now = new Date();
-    if (period === 'daily') {
-      return `Lucro ${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}`;
-    }
-    if (period === 'weekly') {
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay());
-      const d = startOfWeek.getDate().toString().padStart(2, '0');
-      const m = (startOfWeek.getMonth() + 1).toString().padStart(2, '0');
-      return `Lucro Sem. ${d}/${m}`;
-    }
-    if (period === 'monthly') {
-      const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-      return `Lucro ${months[now.getMonth()]}`;
-    }
-    // yearly
     return `Lucro ${now.getFullYear()}`;
   })();
 
@@ -3006,11 +2995,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const navAff = totalItems > 1 ? `
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid rgba(16,185,129,0.2);">
               <button data-tooltip-nav data-nav-dir="prev" data-nav-key="${stateKey}" data-nav-max="${totalItems - 1}"
-                style="background:${affNavColors.bg};color:${affNavColors.txt};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;font-weight:600;line-height:1;">‹</button>
+                style="background:${affNavColors.bg};color:${affNavColors.txt};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;font-weight:600;line-height:1;"
+                title="Item anterior">‹</button>
               <span style="font-size:11px;color:#6ee7b7;font-weight:500;">${currentPage + 1} / ${totalItems} item${totalItems > 1 ? 's' : ''}</span>
               <button data-tooltip-nav data-nav-dir="next" data-nav-key="${stateKey}" data-nav-max="${totalItems - 1}"
-                style="background:${currentPage === totalItems - 1 ? affNavColors.disabledBg : affNavColors.bg};color:${currentPage === totalItems - 1 ? affNavColors.disabledTxt : affNavColors.txt};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:${currentPage === totalItems - 1 ? 'default' : 'pointer'};font-weight:600;line-height:1;"
-                ${currentPage === totalItems - 1 ? 'disabled' : ''}>›</button>
+                style="background:${affNavColors.bg};color:${affNavColors.txt};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;font-weight:600;line-height:1;"
+                title="Próximo item">›</button>
             </div>` : '';
           return `
             ${navAff}
@@ -3167,6 +3157,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 data-nav-key="${stateKey}"
                 data-nav-max="${totalItems - 1}"
                 style="background:${navBtnBg};color:${navBtnColor};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;font-weight:600;line-height:1;"
+                title="Pedido anterior"
               >‹</button>
               <span style="font-size:11px;color:${textSecondary};font-weight:500">${currentPage + 1} / ${totalItems} item${totalItems > 1 ? 's' : ''}</span>
               <button
@@ -3174,8 +3165,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 data-nav-dir="next"
                 data-nav-key="${stateKey}"
                 data-nav-max="${totalItems - 1}"
-                style="background:${currentPage === totalItems - 1 ? navBtnDisabledBg : navBtnBg};color:${currentPage === totalItems - 1 ? navBtnDisabledColor : navBtnColor};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:${currentPage === totalItems - 1 ? 'default' : 'pointer'};font-weight:600;line-height:1;"
-                ${currentPage === totalItems - 1 ? 'disabled' : ''}
+                style="background:${navBtnBg};color:${navBtnColor};border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;font-weight:600;line-height:1;"
+                title="Próximo pedido"
               >›</button>
             </div>
           ` : '';
@@ -3556,10 +3547,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   </DialogClose>
                   <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5">
                     {/* Prev arrow */}
-                    {modalOrderList.length > 1 && modalOrderIdx > 0 && (
+                    {/* Prev arrow */}
+                    {modalOrderList.length > 1 && (
                       <button
                         onClick={() => {
-                          const prevId = modalOrderList[modalOrderIdx - 1];
+                          const prevIdx = modalOrderIdx <= 0 ? modalOrderList.length - 1 : modalOrderIdx - 1;
+                          const prevId = modalOrderList[prevIdx];
                           if (prevId) openOrderById(prevId);
                         }}
                         className="w-6 h-6 flex items-center justify-center rounded-full bg-zinc-900/90 border border-zinc-700/50 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
@@ -3576,10 +3569,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       )}
                     </span>
                     {/* Next arrow */}
-                    {modalOrderList.length > 1 && modalOrderIdx < modalOrderList.length - 1 && (
+                    {modalOrderList.length > 1 && (
                       <button
                         onClick={() => {
-                          const nextId = modalOrderList[modalOrderIdx + 1];
+                          const nextIdx = modalOrderIdx >= modalOrderList.length - 1 ? 0 : modalOrderIdx + 1;
+                          const nextId = modalOrderList[nextIdx];
                           if (nextId) openOrderById(nextId);
                         }}
                         className="w-6 h-6 flex items-center justify-center rounded-full bg-zinc-900/90 border border-zinc-700/50 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"

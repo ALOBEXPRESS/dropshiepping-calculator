@@ -28,13 +28,34 @@ const Sales: React.FC = () => {
   const { organizationId, loading, settingsError, retrySettings } = useSettings();
   const containerRef = useRef<HTMLDivElement>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
+  const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>(() => {
+    try {
+      const saved = localStorage.getItem('sales-period-preference') as 'daily' | 'weekly' | 'monthly' | 'yearly' | null;
+      if (saved && ['daily', 'weekly', 'monthly', 'yearly'].includes(saved)) {
+        return saved;
+      }
+    } catch {
+      // ignore
+    }
+    return 'monthly';
+  });
+
+  const handlePeriodChange = useCallback((newPeriod: 'daily' | 'weekly' | 'monthly' | 'yearly') => {
+    setPeriod(newPeriod);
+    try {
+      localStorage.setItem('sales-period-preference', newPeriod);
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const [novaEntradaOpen, setNovaEntradaOpen] = useState(false);
   const { filters, setFilters, resetFilters } = useFilterPersistence('sales-filters');
   // Ref to openOrderById function registered by RevenueReportChart
   const openOrderByIdRef = useRef<((orderId: string) => void) | null>(null);
   const openAffByIdRef = useRef<((aff: { id: string; name: string; value: number; ref: string; date: string }) => void) | null>(null);
-  const { stats } = useHeroStats(organizationId || '', period, refreshKey, filters);
+  // Hero KPI cards always present the monthly overview ("LUCRO ESTE MÊS")
+  const { stats } = useHeroStats(organizationId || '', 'monthly', refreshKey, filters);
 
   // Free sample lane state — rehydrated from sessionStorage
   const [freeSampleOrders, setFreeSampleOrders] = useState<PendingOrder[]>(() => {
@@ -298,7 +319,7 @@ const Sales: React.FC = () => {
           <div className="animate-on-load">
             <HeroSection 
               stats={stats}
-              period={period}
+              period="monthly"
               hasPendingOrders={false}
               compact={true}
             />
@@ -310,7 +331,7 @@ const Sales: React.FC = () => {
               onOrderDeleted={handleRefresh}
               onOrderUpdated={handleRefresh}
               period={period}
-              onPeriodChange={setPeriod}
+              onPeriodChange={handlePeriodChange}
               onRegisterOpenOrder={(fn) => { openOrderByIdRef.current = fn; }}
               onRegisterOpenAff={(fn) => { openAffByIdRef.current = fn; }}
               onAffDeleted={handleRefresh}

@@ -598,6 +598,18 @@ async function updateOrder(
     throw new Error(`Erro ao atualizar pedido: ${updateError.message}`);
   }
 
+  // Se não houver itens cadastrados, criar a partir do payload recebido
+  if (order.itens && order.itens.length > 0) {
+    const { count } = await supabase
+      .from('bling_order_items')
+      .select('*', { count: 'exact', head: true })
+      .eq('order_id', existing.id);
+
+    if (!count || count === 0) {
+      await createOrderItems(existing.id, order.itens);
+    }
+  }
+
   return existing.id;
 }
 

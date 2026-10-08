@@ -195,6 +195,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
                 id,
                 order_number,
                 total_amount,
+                total_cost,
                 total_profit,
                 discount_value,
                 shipping_cost,
@@ -300,6 +301,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             id: string;
             order_number?: string | number;
             total_amount?: number;
+            total_cost?: number;
             total_profit?: number | null;
             discount_value?: number;
             shipping_cost?: number;
@@ -442,6 +444,9 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
               is_free_sample: dbOrder.is_free_sample,
               is_personal_purchase: dbOrder.is_personal_purchase,
               marketplace: mpName,
+              manual_product_cost: (orderProducts.length === 0 && Number(dbOrder.total_cost ?? 0) > 0)
+                ? Number(dbOrder.total_cost)
+                : undefined,
               products: orderProducts,
             };
 

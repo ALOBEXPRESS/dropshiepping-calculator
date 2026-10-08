@@ -14,7 +14,7 @@ export interface FilterPersistenceResult {
 
 function loadFromStorage(key: string, fallback: SalesFilters): SalesFilters {
   try {
-    const raw = sessionStorage.getItem(key);
+    const raw = localStorage.getItem(key) || sessionStorage.getItem(key);
     if (!raw) return fallback;
     return JSON.parse(raw) as SalesFilters;
   } catch {
@@ -25,9 +25,13 @@ function loadFromStorage(key: string, fallback: SalesFilters): SalesFilters {
 
 function saveToStorage(key: string, filters: SalesFilters): void {
   try {
-    sessionStorage.setItem(key, JSON.stringify(filters));
+    localStorage.setItem(key, JSON.stringify(filters));
   } catch {
-    console.error(`[useFilterPersistence] Failed to save filters for key "${key}"`);
+    try {
+      sessionStorage.setItem(key, JSON.stringify(filters));
+    } catch {
+      console.error(`[useFilterPersistence] Failed to save filters for key "${key}"`);
+    }
   }
 }
 
@@ -49,6 +53,7 @@ export function useFilterPersistence(
 
   const resetFilters = useCallback(() => {
     try {
+      localStorage.removeItem(key);
       sessionStorage.removeItem(key);
     } catch {
       console.error(`[useFilterPersistence] Failed to remove filters for key "${key}"`);
