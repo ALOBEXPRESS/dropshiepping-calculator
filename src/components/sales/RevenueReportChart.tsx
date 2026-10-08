@@ -24,7 +24,7 @@ import type { ApexOptions } from 'apexcharts';
 import { useRevenueReport } from '@/hooks/sales/useRevenueReport';
 import { supabase } from '@/lib/supabase';
 import { Loader2, Trash2 } from 'lucide-react';
-import type { PeriodFilter } from '@/types/sales';
+import type { PeriodFilter, RevenueData } from '@/types/sales';
 import { toast } from 'sonner';
 import { ReferenceService, type Marketplace } from '@/services/referenceService';
 import { AffiliateAccordion } from './AffiliateAccordion';
@@ -2150,8 +2150,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 const dividerColor = isPersonalPurchase ? 'rgba(251,146,60,0.3)' : isFreeSample ? 'rgba(167,139,250,0.3)' : 'rgba(2,6,23,0.08)';
                 const navBtnBg = isPersonalPurchase ? 'rgba(234,88,12,0.4)' : isFreeSample ? 'rgba(109,40,217,0.4)' : '#e5e7eb';
                 const navBtnColor = isPersonalPurchase ? '#fed7aa' : isFreeSample ? '#e9d5ff' : '#374151';
-                const navBtnDisabledBg = isPersonalPurchase ? 'rgba(234,88,12,0.15)' : isFreeSample ? 'rgba(109,40,217,0.15)' : 'rgba(2,6,23,0.06)';
-                const navBtnDisabledColor = isPersonalPurchase ? 'rgba(254,215,170,0.3)' : isFreeSample ? 'rgba(233,213,255,0.3)' : '#d1d5db';
 
                 const orderDetailData = {
                   order_id: order.order_id,
@@ -2770,7 +2768,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   }, [recalculatedYearlyData, recalculatedData]);
 
   const marketingCostSeriesData = visibleData.map((periodData) => {
-    const periodMarketingCost = (periodData.orders_data ?? []).reduce((sum, order) => {
+    const periodMarketingCost = (periodData.orders_data ?? []).reduce((sum: number, order: unknown) => {
       const orderId = (order as { order_id?: string }).order_id;
       if (!orderId) return sum;
 
@@ -3109,8 +3107,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const dividerColor = isPersonalPurchase ? 'rgba(251,146,60,0.3)' : isFreeSample ? 'rgba(167,139,250,0.3)' : 'rgba(2,6,23,0.08)';
           const navBtnBg = isPersonalPurchase ? 'rgba(234,88,12,0.4)' : isFreeSample ? 'rgba(109,40,217,0.4)' : '#e5e7eb';
           const navBtnColor = isPersonalPurchase ? '#fed7aa' : isFreeSample ? '#e9d5ff' : '#374151';
-          const navBtnDisabledBg = isPersonalPurchase ? 'rgba(234,88,12,0.15)' : isFreeSample ? 'rgba(109,40,217,0.15)' : 'rgba(2,6,23,0.06)';
-          const navBtnDisabledColor = isPersonalPurchase ? 'rgba(254,215,170,0.3)' : isFreeSample ? 'rgba(233,213,255,0.3)' : '#d1d5db';
 
           const orderDetailData: OrderDetail = {
             order_id: order.order_id,
