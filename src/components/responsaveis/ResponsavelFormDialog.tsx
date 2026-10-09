@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -48,6 +48,33 @@ import {
   Landmark,
 } from 'lucide-react';
 
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+function toDateInputValue(val?: string | null): string {
+  if (!val) return '';
+  const trimmed = val.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
+    const [d, m, y] = trimmed.split('/');
+    return `${y}-${m}-${d}`;
+  }
+  return '';
+}
+
+export function normalizeMarketplaceName(name: string): string {
+  const lower = name.toLowerCase().replace(/[\s_-]/g, '');
+  if (lower.includes('tiktok')) return 'TikTok Shop';
+  if (lower.includes('mercadolivre') || lower.includes('mercadolibre')) return 'Mercado Livre';
+  if (lower.includes('shopee')) return 'Shopee';
+  if (lower.includes('facebook') || lower.includes('meta')) return 'Facebook';
+  if (lower.includes('amazon')) return 'Amazon';
+  if (lower.includes('magalu') || lower.includes('magazineluiza')) return 'Magalu';
+  if (lower.includes('shein')) return 'Shein';
+  if (lower.includes('kwai')) return 'Kwai';
+  if (lower.includes('nuvemshop')) return 'Nuvemshop';
+  return name;
+}
+
 // ── Config ──────────────────────────────────────────────────────────────────
 
 const TAB_CONFIG = {
@@ -60,6 +87,7 @@ const MARKETPLACE_OPTIONS = [
   'TikTok Shop',
   'Shopee',
   'Mercado Livre',
+  'Facebook',
   'Amazon',
   'Magalu',
   'Kwai',
@@ -69,6 +97,8 @@ const MARKETPLACE_OPTIONS = [
 
 const BANK_OPTIONS = [
   'Nubank',
+  'PagBank',
+  'PicPay',
   'Banco Inter',
   'Itaú Unibanco',
   'Bradesco',
@@ -190,7 +220,7 @@ interface TitularFormProps {
 function TitularForm({ defaultValues, onSubmit, onCancel, isEditing }: TitularFormProps) {
   const { influenciadores } = useInfluenciadores();
 
-  const { register, handleSubmit, formState: { errors, isSubmitting }, setValue, watch } = useForm<TitularFormData>({
+  const { register, handleSubmit, formState: { errors, isSubmitting }, setValue, watch, reset } = useForm<TitularFormData>({
     resolver: zodResolver(TitularSchema),
     defaultValues: {
       account_type: 'cpf',
@@ -205,6 +235,23 @@ function TitularForm({ defaultValues, onSubmit, onCancel, isEditing }: TitularFo
       ...defaultValues,
     },
   });
+
+  useEffect(() => {
+    if (defaultValues) {
+      reset({
+        account_type: 'cpf',
+        document_type: 'cpf',
+        marketplaces: [],
+        marketing_capital: 0,
+        marketing_total_cost: 0,
+        gateway_fee: 0,
+        preferred_payment_method: 'pix',
+        credit_cards: [],
+        is_influencer: false,
+        ...defaultValues,
+      });
+    }
+  }, [defaultValues, reset]);
 
   const accountType = watch('account_type');
   const selectedMarketplaces = watch('marketplaces') || [];
@@ -231,8 +278,10 @@ function TitularForm({ defaultValues, onSubmit, onCancel, isEditing }: TitularFo
   });
 
   const handleToggleMarketplace = (mp: string) => {
-    if (selectedMarketplaces.includes(mp)) {
-      setValue('marketplaces', selectedMarketplaces.filter((m) => m !== mp));
+    const normalized = normalizeMarketplaceName(mp);
+    const exists = selectedMarketplaces.some((m) => normalizeMarketplaceName(m) === normalized);
+    if (exists) {
+      setValue('marketplaces', selectedMarketplaces.filter((m) => normalizeMarketplaceName(m) !== normalized));
     } else {
       setValue('marketplaces', [...selectedMarketplaces, mp]);
     }
@@ -400,7 +449,9 @@ function TitularForm({ defaultValues, onSubmit, onCancel, isEditing }: TitularFo
 
         <div className="flex flex-wrap gap-1.5 pt-1">
           {MARKETPLACE_OPTIONS.map((mp) => {
-            const isSelected = selectedMarketplaces.includes(mp);
+            const isSelected = selectedMarketplaces.some(
+              (m) => normalizeMarketplaceName(m) === normalizeMarketplaceName(mp)
+            );
             return (
               <button
                 key={mp}
@@ -862,7 +913,7 @@ export function ResponsavelFormDialog({
       account_type: (t.account_type || (t.document_type === 'cnpj' ? 'cnpj' : 'cpf')) as TitularFormData['account_type'],
       document_number: t.document_number ?? undefined,
       rg: t.rg ?? undefined,
-      birth_date: t.birth_date ?? undefined,
+      birth_date: toDateInputValue(t.birth_date),
       phone: t.phone ?? undefined,
       email: t.email ?? undefined,
       notes: t.notes ?? undefined,

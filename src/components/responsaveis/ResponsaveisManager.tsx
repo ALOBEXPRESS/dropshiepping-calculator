@@ -298,11 +298,25 @@ function TitularCard({
           )}
 
           {item.credit_cards && item.credit_cards.length > 0 && (
-            <div className="flex items-center gap-1 text-[11px] text-zinc-400 col-span-2">
-              <CreditCard className="w-3 h-3 text-violet-400" />
-              <span>
-                {item.credit_cards.length} cartão{item.credit_cards.length !== 1 ? 'ões' : ''} vinculado{item.credit_cards.length !== 1 ? 's' : ''}
-              </span>
+            <div className="flex flex-col gap-1 text-[11px] text-zinc-400 col-span-2 pt-0.5">
+              <div className="flex items-center gap-1 text-zinc-300">
+                <CreditCard className="w-3 h-3 text-violet-400" />
+                <span className="font-medium">
+                  {item.credit_cards.length} cartão{item.credit_cards.length !== 1 ? 'ões' : ''} vinculado{item.credit_cards.length !== 1 ? 's' : ''}:
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {item.credit_cards.map((c) => (
+                  <span
+                    key={c.id}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-800/80 border border-zinc-700/60 text-[10px] text-zinc-300 font-mono"
+                  >
+                    <span>{c.bank || c.brand}</span>
+                    <span className="text-zinc-500">•</span>
+                    <span>•••• {c.last_digits}</span>
+                  </span>
+                ))}
+              </div>
             </div>
           )}
         </div>
