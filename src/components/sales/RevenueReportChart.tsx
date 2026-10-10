@@ -269,6 +269,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             base_value,
             total_products,
             marketplace_id,
+            sales_channel_id,
+            sales_channels!sales_channel_id (
+              name,
+              marketplace
+            ),
             lead_id,
             marketplaces!marketplace_id (
               name,
@@ -289,6 +294,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 sku,
                 image_url,
                 cost_price,
+                marketplace,
                 supplier_fee_value,
                 supplier_fee_type,
                 supplier_gateway_fee_value,
@@ -301,6 +307,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
         if (dbOrder) {
           const mp = dbOrder.marketplaces as { name?: string; commission_rate?: number; fixed_fee?: number } | null;
+          const sc = dbOrder.sales_channels as { name?: string; marketplace?: string } | null;
           const lead = dbOrder.leads as { name?: string } | null;
           const items = (dbOrder.order_items ?? []) as Array<{
             quantity?: number;
@@ -312,6 +319,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               sku?: string;
               image_url?: string;
               cost_price?: number;
+              marketplace?: string;
               supplier_fee_value?: string;
               supplier_fee_type?: string;
               supplier_gateway_fee_value?: string;
@@ -339,6 +347,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             };
           });
 
+          const fallbackMarketplace = sc?.marketplace
+            || (items[0]?.products as { marketplace?: string } | null)?.marketplace
+            || '';
+          const resolvedMpConfig = mp || (fallbackMarketplace ? resolveMarketplaceConfig(fallbackMarketplace, 0, 0) : null);
+          const resolvedMarketplaceName = mp?.name || fallbackMarketplace || '';
+
           order = {
             order_id: dbOrder.id,
             order_number: dbOrder.order_number,
@@ -352,9 +366,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             discount_value: Number(dbOrder.discount_value ?? 0),
             base_value: Number(dbOrder.base_value ?? 0),
             total_products: Number(dbOrder.total_products ?? dbOrder.total_amount ?? 0),
-            marketplace: mp?.name ?? '',
-            commission_rate: mp?.commission_rate ?? 0,
-            marketplace_fixed_fee: mp?.fixed_fee ?? 0,
+            marketplace: resolvedMarketplaceName,
+            commission_rate: mp?.commission_rate ?? resolvedMpConfig?.commission_rate ?? 0,
+            marketplace_fixed_fee: mp?.fixed_fee ?? resolvedMpConfig?.fixed_fee ?? 0,
             customer_name: lead?.name ?? 'Cliente não identificado',
             product_name: mappedProducts[0]?.name ?? 'Produto não vinculado',
             product_sku: mappedProducts[0]?.sku ?? null,
@@ -647,11 +661,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
     const commissionRate = Number(commissionRateValue ?? 0);
     const fixedFee = Number(fixedFeeValue ?? 0);
-    const shopee = marketplacesForResolution.find((mp) => normalizeMarketplace(mp.name) === 'shopee');
 
     if (!hasExplicit) {
       if (marketplacesForResolution.length === 1) return marketplacesForResolution[0];
-      if (shopee && commissionRate === 0 && fixedFee === 0) return shopee;
     }
 
     const byName = hasExplicit

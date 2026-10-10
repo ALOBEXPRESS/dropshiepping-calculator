@@ -209,6 +209,13 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
                 is_free_sample,
                 is_personal_purchase,
                 marketplace_id,
+                sales_channel_id,
+                sales_channels!sales_channel_id (
+                  id,
+                  name,
+                  marketplace,
+                  marketplace_id
+                ),
                 bling_order_id,
                 bling_orders!bling_order_id (
                   id,
@@ -315,6 +322,8 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             is_free_sample?: boolean | string;
             is_personal_purchase?: boolean | string;
             marketplace_id?: string;
+            sales_channel_id?: string;
+            sales_channels?: { id?: string; name?: string; marketplace?: string; marketplace_id?: string } | null;
             bling_order_id?: string;
             bling_orders?: DbBlingOrder | DbBlingOrder[] | null;
             marketplaces?: DbMarketplace | null;
@@ -359,8 +368,16 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             if (!dbOrder) return tx;
 
             const joinedMp = dbOrder.marketplaces;
-            const mappedMp = dbOrder.marketplace_id ? mktMap.get(dbOrder.marketplace_id) : undefined;
-            const rawMpName = joinedMp?.name || (tx as unknown as { marketplaces?: { name?: string } }).marketplaces?.name || (tx as unknown as { marketplace_name?: string }).marketplace_name || mappedMp?.name || '';
+            const mappedMp = (dbOrder.marketplace_id || dbOrder.sales_channels?.marketplace_id)
+              ? mktMap.get(dbOrder.marketplace_id || dbOrder.sales_channels?.marketplace_id || '')
+              : undefined;
+            const scMarketplace = dbOrder.sales_channels?.marketplace || '';
+            const rawMpName = joinedMp?.name
+              || (tx as unknown as { marketplaces?: { name?: string } }).marketplaces?.name
+              || (tx as unknown as { marketplace_name?: string }).marketplace_name
+              || mappedMp?.name
+              || scMarketplace
+              || '';
             const normalizedMp = rawMpName.toLowerCase().replace(/\s+/g, '');
             const namedMp = mktByName.get(normalizedMp);
 
@@ -377,7 +394,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             const mpName = mp?.name || (isShopee ? 'Shopee' : isTikTok ? 'TikTok Shop' : rawMpName || 'TikTok Shop');
 
             const commissionRate = mp?.commission_rate ?? (isShopee ? 20 : isTikTok ? 10 : 0);
-            const fixedFee = mp?.fixed_fee ?? (isShopee ? 4 : 0);
+            const fixedFee = mp?.fixed_fee ?? (isShopee ? 4 : isTikTok ? 4 : 0);
 
             const orderProducts = (dbOrder.order_items ?? []).map((it) => {
               const candidateKeys = [
