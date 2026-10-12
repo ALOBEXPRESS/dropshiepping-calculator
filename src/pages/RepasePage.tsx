@@ -20,8 +20,6 @@ import {
   PieChart,
   User,
   Building2,
-  TrendingUp,
-  AlertCircle,
   FileSpreadsheet
 } from 'lucide-react';
 import { toast } from 'sonner';
