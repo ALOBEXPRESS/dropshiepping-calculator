@@ -20,7 +20,8 @@ import {
   PieChart,
   User,
   Building2,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Hourglass
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -31,6 +32,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { getSettledOrderProfit, isOrderSettled, round2 } from '@/components/sales/revenueCalculations';
 
 export interface RepasseConfig {
   id?: string;
@@ -61,7 +63,17 @@ interface MonthlyReportRow {
   total_revenue: number;
   total_cost: number;
   total_profit: number;
+  total_settled_profit: number;
+  total_waiting_profit: number;
   orders_count: number;
+  orders_data?: Array<{
+    order_id?: string;
+    order_number?: string;
+    order_date?: string;
+    total_amount?: number;
+    total_cost?: number;
+    total_profit?: number;
+  }>;
 }
 
 const fmt = (v: number) =>
@@ -82,7 +94,7 @@ const MONTH_NAMES_PT: Record<string, string> = {
   Dec: 'Dezembro',
 };
 
-// Known fixed beneficiaries for Empresa Alob
+// Beneficiários padrão da Empresa Alob
 const DEFAULT_BENEFICIARIES = [
   {
     key: 'alyson',
@@ -182,13 +194,71 @@ export default function RepasePage() {
         .order('period_start', { ascending: false });
       setPayments((payRows ?? []) as RepassePayment[]);
 
-      // 3. Monthly revenue & profit report
+      // 3. Monthly revenue & profit report (recalculated with settled canonical rules)
       const { data: rpt } = await supabase.rpc('get_revenue_report', {
         p_organization_id: organizationId,
         p_period: 'monthly',
       });
+
       if (rpt) {
-        setMonthlyReport(rpt as MonthlyReportRow[]);
+        const processedRows: MonthlyReportRow[] = (rpt as Array<Record<string, unknown>>).map((row) => {
+          const orders = ((row.orders_data as unknown[]) || []) as Array<{
+            order_id?: string;
+            order_number?: string;
+            order_date?: string;
+            total_amount?: number;
+            total_cost?: number;
+            total_profit?: number;
+          }>;
+
+          let totalRevenue = 0;
+          let totalCost = 0;
+          let totalProfit = 0;
+          let totalSettledProfit = 0;
+          let totalWaitingProfit = 0;
+
+          if (orders.length > 0) {
+            orders.forEach((o) => {
+              const settledOverride = getSettledOrderProfit(o.order_number);
+              const effectiveProfit = settledOverride !== null ? settledOverride : Number(o.total_profit ?? 0);
+              const rev = Number(o.total_amount ?? 0);
+              const cost = Number(o.total_cost ?? 0);
+              const settlementDays = 7;
+              const settled = isOrderSettled(o.order_date, settlementDays);
+
+              if (settled) {
+                totalSettledProfit += effectiveProfit;
+              } else {
+                totalWaitingProfit += effectiveProfit;
+              }
+
+              totalRevenue += rev;
+              totalCost += cost;
+              totalProfit += effectiveProfit;
+            });
+          } else {
+            totalRevenue = Number(row.total_revenue ?? 0);
+            totalCost = Number(row.total_cost ?? 0);
+            totalProfit = Number(row.total_profit ?? 0);
+            totalSettledProfit = totalProfit;
+            totalWaitingProfit = 0;
+          }
+
+          return {
+            period_label: String(row.period_label ?? ''),
+            period_start: String(row.period_start ?? ''),
+            period_end: String(row.period_end ?? ''),
+            total_revenue: round2(totalRevenue),
+            total_cost: round2(totalCost),
+            total_profit: round2(totalProfit),
+            total_settled_profit: round2(totalSettledProfit),
+            total_waiting_profit: round2(totalWaitingProfit),
+            orders_count: orders.length || Number(row.orders_count ?? 0),
+            orders_data: orders,
+          };
+        });
+
+        setMonthlyReport(processedRows);
       }
     } catch (err) {
       console.error('Erro ao carregar dados de repasse:', err);
@@ -205,10 +275,7 @@ export default function RepasePage() {
   // Map beneficiaries combined with database configs
   const beneficiaries = useMemo(() => {
     return DEFAULT_BENEFICIARIES.map((def) => {
-      // 1. Exact user_id match
       let cfg = configs.find((c) => c.user_id === def.user_id);
-      
-      // 2. Specific fallback if not matched by id
       if (!cfg) {
         if (def.key === 'alyson') {
           cfg = configs.find((c) => c.recipient_name?.toLowerCase().includes('alyson'));
@@ -251,9 +318,17 @@ export default function RepasePage() {
     [beneficiaries, configs]
   );
 
-  // Financial totals
+  // Financial totals: Settled (Disponível), Waiting (Em liquidação), Gross (Total)
+  const totalSettledProfit = useMemo(() => {
+    return round2(monthlyReport.reduce((acc, r) => acc + Number(r.total_settled_profit ?? 0), 0));
+  }, [monthlyReport]);
+
+  const totalWaitingProfit = useMemo(() => {
+    return round2(monthlyReport.reduce((acc, r) => acc + Number(r.total_waiting_profit ?? 0), 0));
+  }, [monthlyReport]);
+
   const totalGrossProfit = useMemo(() => {
-    return monthlyReport.reduce((acc, r) => acc + Number(r.total_profit ?? 0), 0);
+    return round2(monthlyReport.reduce((acc, r) => acc + Number(r.total_profit ?? 0), 0));
   }, [monthlyReport]);
 
   const totalPaid = useMemo(() => {
@@ -272,9 +347,30 @@ export default function RepasePage() {
     return beneficiaries.reduce((s, b) => s + Number(b.percentage), 0);
   }, [beneficiaries]);
 
-  // Beneficiary totals (accumulated share, paid, and pending)
+  // Beneficiary totals (shares strictly on settled profit with remainder safety, plus waiting)
   const beneficiaryMetrics = useMemo(() => {
-    return beneficiaries.map((b) => {
+    let remainingSettled = totalSettledProfit > 0 ? totalSettledProfit : 0;
+    let remainingWaiting = totalWaitingProfit > 0 ? totalWaitingProfit : 0;
+    let remainingGross = totalGrossProfit > 0 ? totalGrossProfit : 0;
+
+    return beneficiaries.map((b, idx) => {
+      const isLast = idx === beneficiaries.length - 1;
+
+      const settledShare = isLast
+        ? Math.max(0, round2(remainingSettled))
+        : Math.max(0, round2((totalSettledProfit * b.percentage) / 100));
+      remainingSettled = round2(remainingSettled - settledShare);
+
+      const waitingShare = isLast
+        ? Math.max(0, round2(remainingWaiting))
+        : Math.max(0, round2((totalWaitingProfit * b.percentage) / 100));
+      remainingWaiting = round2(remainingWaiting - waitingShare);
+
+      const grossShare = isLast
+        ? Math.max(0, round2(remainingGross))
+        : Math.max(0, round2((totalGrossProfit * b.percentage) / 100));
+      remainingGross = round2(remainingGross - grossShare);
+
       const userPayments = payments.filter((p) => p.recipient_user_id === b.user_id);
       const paid = userPayments
         .filter((p) => p.status === 'paid')
@@ -282,26 +378,29 @@ export default function RepasePage() {
       const pending = userPayments
         .filter((p) => p.status === 'pending')
         .reduce((s, p) => s + Number(p.amount ?? 0), 0);
-      const accumulatedShare = Math.max(0, (totalGrossProfit * b.percentage) / 100);
 
       return {
         ...b,
-        accumulatedShare,
-        paid,
-        pending,
+        settledShare,
+        waitingShare,
+        grossShare,
+        accumulatedShare: settledShare,
+        paid: round2(paid),
+        pending: round2(pending),
       };
     });
-  }, [beneficiaries, payments, totalGrossProfit]);
+  }, [beneficiaries, payments, totalSettledProfit, totalWaitingProfit, totalGrossProfit]);
 
   // Monthly Statement (Extrato Mensal)
   const monthlyStatement = useMemo(() => {
-    // Sort months descending (newest month first)
     const sorted = [...monthlyReport].sort(
       (a, b) => new Date(b.period_start).getTime() - new Date(a.period_start).getTime()
     );
 
     return sorted.map((row) => {
-      const profit = Number(row.total_profit ?? 0);
+      const settledProfit = Number(row.total_settled_profit ?? 0);
+      const waitingProfit = Number(row.total_waiting_profit ?? 0);
+      const grossProfit = Number(row.total_profit ?? 0);
       const revenue = Number(row.total_revenue ?? 0);
       const cost = Number(row.total_cost ?? 0);
       const orders = Number(row.orders_count ?? 0);
@@ -312,19 +411,34 @@ export default function RepasePage() {
         new Date(Number(year), Number(monthNum) - 1).toLocaleDateString('pt-BR', { month: 'long' });
       const formattedLabel = `${ptMonth.charAt(0).toUpperCase() + ptMonth.slice(1)} de ${year}`;
 
-      // Check payments for this period
+      // Payments matching this period
       const periodPayments = payments.filter((p) => {
         return p.period_start === row.period_start || p.period_end === row.period_end;
       });
 
-      const shares = beneficiaries.map((b) => {
-        const shareAmount = Math.round(((profit * b.percentage) / 100) * 100) / 100;
+      // Distribute settled profit across beneficiaries with remainder safety
+      let remainingMonthSettled = settledProfit;
+      let remainingMonthWaiting = waitingProfit;
+
+      const shares = beneficiaries.map((b, idx) => {
+        const isLast = idx === beneficiaries.length - 1;
+        const shareAmount = settledProfit < 0
+          ? round2((settledProfit * b.percentage) / 100)
+          : (isLast ? round2(remainingMonthSettled) : round2((settledProfit * b.percentage) / 100));
+        remainingMonthSettled = round2(remainingMonthSettled - shareAmount);
+
+        const waitingAmount = waitingProfit <= 0
+          ? 0
+          : (isLast ? round2(remainingMonthWaiting) : round2((waitingProfit * b.percentage) / 100));
+        remainingMonthWaiting = round2(remainingMonthWaiting - waitingAmount);
+
         const existingPayment = periodPayments.find((p) => p.recipient_user_id === b.user_id);
 
         return {
           beneficiary: b,
           percentage: b.percentage,
           amount: shareAmount,
+          waitingAmount,
           payment: existingPayment || null,
           status: existingPayment ? existingPayment.status : ('unregistered' as const),
         };
@@ -344,7 +458,9 @@ export default function RepasePage() {
         ...row,
         monthKey: `${year}-${monthNum}`,
         formattedLabel,
-        profit,
+        settledProfit,
+        waitingProfit,
+        grossProfit,
         revenue,
         cost,
         orders,
@@ -429,7 +545,7 @@ export default function RepasePage() {
     }
   };
 
-  // Quick-generate all 3 repasse payments for a specific month
+  // Quick-generate all repasse payments for a specific month based on settled profit
   const handleGenerateMonthRepasses = async (statementItem: (typeof monthlyStatement)[0]) => {
     if (!organizationId) return;
     setProcessingMonth(statementItem.monthKey);
@@ -443,7 +559,7 @@ export default function RepasePage() {
           recipient_name: s.beneficiary.name,
           period_start: statementItem.period_start,
           period_end: statementItem.period_end,
-          gross_profit: statementItem.profit,
+          gross_profit: statementItem.settledProfit,
           percentage: s.percentage,
           amount: Math.max(0, s.amount),
           notes: `Repasse referente a ${statementItem.formattedLabel}`,
@@ -519,7 +635,7 @@ export default function RepasePage() {
         recipient_name: b?.name || '',
         period_start: statementItem.period_start,
         period_end: statementItem.period_end,
-        gross_profit: String(statementItem.profit),
+        gross_profit: String(statementItem.settledProfit),
         notes: `Repasse referente a ${statementItem.formattedLabel}`,
       });
     } else {
@@ -530,7 +646,7 @@ export default function RepasePage() {
           .toISOString()
           .split('T')[0],
         period_end: new Date().toISOString().split('T')[0],
-        gross_profit: totalGrossProfit > 0 ? String(totalGrossProfit) : '',
+        gross_profit: totalSettledProfit > 0 ? String(totalSettledProfit) : '',
         notes: '',
       });
     }
@@ -540,7 +656,7 @@ export default function RepasePage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!organizationId || !regForm.recipient_user_id) return;
-    const gp = parseFloat(regForm.gross_profit.replace(',', '.')) || totalGrossProfit;
+    const gp = parseFloat(regForm.gross_profit.replace(',', '.')) || totalSettledProfit;
     const pct = getPct(regForm.recipient_user_id);
     const amount = Math.max(0, Math.round(((gp * pct) / 100) * 100) / 100);
     const recipientName = getName(regForm.recipient_user_id);
@@ -602,7 +718,7 @@ export default function RepasePage() {
             <div>
               <h1 className="text-2xl font-bold text-white tracking-tight">Repasses de Lucro</h1>
               <p className="text-xs md:text-sm text-zinc-400">
-                Divisão de lucros para os titulares e sistema com extrato mensal
+                Divisão de lucros apurados para os titulares e sistema com extrato mensal
               </p>
             </div>
           </div>
@@ -618,22 +734,28 @@ export default function RepasePage() {
         </div>
       </div>
 
-      {/* ── Summary Cards: Fatias dos Titulares e Lucro Total ───────────────── */}
+      {/* ── Summary Cards: Fatias dos Titulares e Lucro Total Liquidado ─────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Profit */}
+        {/* Total Settled Profit (Disponível) */}
         <div className="rounded-xl bg-zinc-900/90 border border-zinc-800 p-4 relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
-              Lucro Líquido Total
+              Lucro Total Liquidado
             </span>
-            <Badge variant="outline" className="text-[10px] bg-zinc-800 text-zinc-300 border-zinc-700">
-              Histórico
+            <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
+              Disponível
             </Badge>
           </div>
           <div>
-            <p className={`text-2xl font-bold ${totalGrossProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              {fmt(totalGrossProfit)}
+            <p className={`text-2xl font-bold ${totalSettledProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              {fmt(totalSettledProfit)}
             </p>
+            {totalWaitingProfit > 0 && (
+              <div className="flex items-center gap-1.5 mt-1 text-[11px] text-amber-400 font-medium">
+                <Hourglass className="w-3 h-3" />
+                <span>Em espera: {fmt(totalWaitingProfit)}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between mt-2 pt-2 border-t border-zinc-800/80 text-[11px]">
               <span className="text-zinc-500">Pago: {fmt(totalPaid)}</span>
               <span className="text-amber-400 font-medium">Pendente: {fmt(totalPending)}</span>
@@ -659,7 +781,13 @@ export default function RepasePage() {
               <p className={`text-2xl font-bold ${b.colorText}`}>
                 {fmt(b.accumulatedShare)}
               </p>
-              <p className="text-[11px] text-zinc-500 mt-0.5">{b.role}</p>
+              {b.waitingShare > 0 ? (
+                <p className="text-[11px] text-amber-400 font-medium mt-0.5">
+                  + {fmt(b.waitingShare)} em espera
+                </p>
+              ) : (
+                <p className="text-[11px] text-zinc-500 mt-0.5">{b.role}</p>
+              )}
             </div>
 
             <div className="mt-3 pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
@@ -678,7 +806,7 @@ export default function RepasePage() {
             <div>
               <h2 className="text-base font-semibold text-white">Extrato Mensal de Repasses</h2>
               <p className="text-xs text-zinc-400">
-                Divisão do lucro apurado a cada mês: 40% Alyson, 40% Jonatan e 20% Alob
+                Divisão do lucro liquidado a cada mês: 40% Alyson, 40% Jonatan e 20% Alob
               </p>
             </div>
           </div>
@@ -696,7 +824,7 @@ export default function RepasePage() {
           <div className="divide-y divide-zinc-800/80">
             {monthlyStatement.map((month) => {
               const isProcessing = processingMonth === month.monthKey;
-              const isNegative = month.profit < 0;
+              const isNegative = month.settledProfit < 0;
 
               return (
                 <div key={month.monthKey} className="p-4 md:p-5 hover:bg-zinc-800/30 transition-colors">
@@ -734,11 +862,16 @@ export default function RepasePage() {
                     <div className="flex items-center gap-4 self-start md:self-auto">
                       <div className="text-right">
                         <span className="text-[10px] text-zinc-500 uppercase tracking-wider block">
-                          Lucro Líquido
+                          Lucro Liquidado
                         </span>
                         <span className={`text-lg font-bold ${isNegative ? 'text-red-400' : 'text-emerald-400'}`}>
-                          {fmt(month.profit)}
+                          {fmt(month.settledProfit)}
                         </span>
+                        {month.waitingProfit > 0 && (
+                          <span className="text-[11px] text-amber-400 font-medium block">
+                            + {fmt(month.waitingProfit)} em espera
+                          </span>
+                        )}
                       </div>
 
                       {/* Month actions */}
@@ -801,8 +934,13 @@ export default function RepasePage() {
 
                           <div className="my-1">
                             <span className={`text-base font-bold ${isNegative ? 'text-zinc-500' : b.colorText}`}>
-                              {isNegative ? `Prejuízo (${fmt(share.amount)})` : fmt(share.amount)}
+                              {isNegative ? `Prejuízo (${fmt(Math.abs(share.amount))})` : fmt(share.amount)}
                             </span>
+                            {share.waitingAmount > 0 && (
+                              <span className="text-[11px] text-amber-400 font-medium block mt-0.5">
+                                + {fmt(share.waitingAmount)} em espera
+                              </span>
+                            )}
                           </div>
 
                           <div className="mt-2 pt-2 border-t border-zinc-900 flex items-center justify-between text-xs">
@@ -866,7 +1004,7 @@ export default function RepasePage() {
         <div className="divide-y divide-zinc-800">
           {beneficiaries.map((b) => {
             const isEditing = editingUserId === b.user_id;
-            const simulatedAmount = (totalGrossProfit * b.percentage) / 100;
+            const simulatedAmount = (totalSettledProfit * b.percentage) / 100;
 
             return (
               <div key={b.key} className="flex items-center justify-between px-5 py-3.5 gap-4">
@@ -1074,12 +1212,12 @@ export default function RepasePage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-sm text-zinc-300">Lucro de Referência (R$)</Label>
+              <Label className="text-sm text-zinc-300">Lucro Liquidado de Referência (R$)</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">R$</span>
                 <Input
                   className="pl-9 bg-zinc-800 border-zinc-700 text-white"
-                  placeholder={totalGrossProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  placeholder={totalSettledProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   value={regForm.gross_profit}
                   onChange={(e) =>
                     setRegForm((f) => ({ ...f, gross_profit: e.target.value.replace(/[^0-9,.]/g, '') }))
@@ -1087,7 +1225,7 @@ export default function RepasePage() {
                 />
               </div>
               <p className="text-[11px] text-zinc-500">
-                Deixe vazio para usar o lucro acumulado atual ({fmt(totalGrossProfit)})
+                Deixe vazio para usar o lucro liquidado disponível ({fmt(totalSettledProfit)})
               </p>
             </div>
 
@@ -1108,7 +1246,7 @@ export default function RepasePage() {
                   {fmt(
                     Math.max(
                       0,
-                      ((parseFloat(regForm.gross_profit.replace(',', '.')) || totalGrossProfit) *
+                      ((parseFloat(regForm.gross_profit.replace(',', '.')) || totalSettledProfit) *
                         getPct(regForm.recipient_user_id)) /
                         100
                     )

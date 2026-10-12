@@ -210,6 +210,7 @@ export const SETTLED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = 
   '226': -1.99,
   '180': 9.76,
   '13': 10.23,
+  '233': 10.23,
 
   // TikTok Shop (17 orders)
   '223': -51.76,
