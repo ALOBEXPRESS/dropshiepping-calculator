@@ -52,7 +52,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     monthly_fee_value: 0,
     fixed_fee: 0,
     affiliate_commission_rate: 0,
-    account_type: '' as '' | 'cpf' | 'cnpj'
+    account_type: '' as '' | 'cpf' | 'cnpj',
+    settlement_period_days: 7
   });
   const [editingMarketplaceId, setEditingMarketplaceId] = useState<string | null>(null);
 
@@ -352,7 +353,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           monthly_fee_value: newMarketplace.monthly_fee_value,
           fixed_fee: newMarketplace.fixed_fee,
           affiliate_commission_rate: newMarketplace.affiliate_commission_rate,
-          account_type: newMarketplace.account_type || null
+          account_type: newMarketplace.account_type || null,
+          settlement_period_days: newMarketplace.settlement_period_days ?? 7
         });
         setEditingMarketplaceId(null);
       } else {
@@ -364,6 +366,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           fixed_fee: newMarketplace.fixed_fee,
           affiliate_commission_rate: newMarketplace.affiliate_commission_rate,
           account_type: newMarketplace.account_type || null,
+          settlement_period_days: newMarketplace.settlement_period_days ?? 7,
           organization_id: formData.id
         });
       }
@@ -374,9 +377,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         monthly_fee_value: 0,
         fixed_fee: 0,
         affiliate_commission_rate: 0,
-        account_type: ''
+        account_type: '',
+        settlement_period_days: 7
       });
-      void loadMarketplaces();
+      await loadMarketplaces();
+      window.dispatchEvent(new CustomEvent('marketplaces-updated'));
     } catch (error) {
       console.error('Error saving marketplace:', error);
     }
@@ -390,7 +395,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       monthly_fee_value: mp.monthly_fee_value,
       fixed_fee: mp.fixed_fee || 0,
       affiliate_commission_rate: mp.affiliate_commission_rate || 0,
-      account_type: (mp.account_type as '' | 'cpf' | 'cnpj') || ''
+      account_type: (mp.account_type as '' | 'cpf' | 'cnpj') || '',
+      settlement_period_days: mp.settlement_period_days ?? 7
     });
     setEditingMarketplaceId(mp.id);
   };
@@ -403,7 +409,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       monthly_fee_value: 0,
       fixed_fee: 0,
       affiliate_commission_rate: 0,
-      account_type: ''
+      account_type: '',
+      settlement_period_days: 7
     });
     setEditingMarketplaceId(null);
   };
@@ -421,7 +428,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const handleDeleteMarketplace = async (id: string) => {
     try {
       await ReferenceService.deleteMarketplace(id);
-      void loadMarketplaces();
+      await loadMarketplaces();
+      window.dispatchEvent(new CustomEvent('marketplaces-updated'));
     } catch (error) {
       console.error('Error deleting marketplace:', error);
     }
@@ -708,6 +716,24 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                      <option value="cnpj">CNPJ (R$ 4,00 taxa fixa Shopee)</option>
                    </select>
                  </div>
+                 <div className="space-y-2">
+                   <Label>Período de Liquidação</Label>
+                   <select
+                     value={newMarketplace.settlement_period_days}
+                     onChange={(e) => setNewMarketplace(prev => ({...prev, settlement_period_days: parseInt(e.target.value) || 7}))}
+                     className="w-full h-9 rounded-md border border-input bg-white dark:bg-zinc-900 px-3 py-1 text-sm shadow-sm"
+                   >
+                     <option value={1}>1 dia</option>
+                     <option value={2}>2 dias</option>
+                     <option value={3}>3 dias</option>
+                     <option value={4}>4 dias</option>
+                     <option value={5}>5 dias</option>
+                     <option value={6}>6 dias</option>
+                     <option value={7}>7 dias (Padrão)</option>
+                     <option value={14}>14 dias (Duas semanas)</option>
+                     <option value={30}>30 dias</option>
+                   </select>
+                 </div>
               </div>
               <div className="flex items-center space-x-2 pt-2">
                 <Checkbox 
@@ -762,6 +788,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                         <span className="text-xs text-gray-500">
                             Comissão: {mp.commission_rate}%
                             {mp.fixed_fee ? ` | Taxa fixa: R$ ${mp.fixed_fee.toFixed(2)}` : ''}
+                            {` | Liquidação: ${mp.settlement_period_days === 14 ? '14 dias (2 semanas)' : `${mp.settlement_period_days ?? 7} dias`}`}
                             {mp.has_monthly_fee && ` | Mensalidade: R$ ${mp.monthly_fee_value.toFixed(2)}`}
                             {mp.affiliate_commission_rate ? ` | Afiliado: ${mp.affiliate_commission_rate}%` : ''}
                             {mp.account_type ? ` | ${mp.account_type.toUpperCase()}` : ''}

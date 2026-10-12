@@ -10,6 +10,7 @@ import {
   getSettledOrderProfit,
   SETTLED_ORDER_PROFIT_OVERRIDES,
   calculatePlatformBreakdown,
+  isOrderSettled,
 } from './revenueCalculations';
 
 describe('revenueCalculations', () => {
@@ -224,6 +225,53 @@ describe('revenueCalculations', () => {
       expect(breakdown.totalProfits).toBe(129.38);
       expect(breakdown.totalLosses).toBe(-154.61);
       expect(breakdown.netProfit).toBe(-25.23);
+    });
+  });
+
+  describe('isOrderSettled', () => {
+    const refDate = new Date(2026, 9, 12); // 2026-10-12
+
+    it('returns true if orderDate is missing or empty', () => {
+      expect(isOrderSettled(null, 7, refDate)).toBe(true);
+      expect(isOrderSettled(undefined, 7, refDate)).toBe(true);
+      expect(isOrderSettled('', 7, refDate)).toBe(true);
+    });
+
+    it('identifies order as pending when within 7-day settlement window', () => {
+      // Order placed 2 days ago (2026-10-10) -> settlement on 2026-10-17
+      expect(isOrderSettled('2026-10-10', 7, refDate)).toBe(false);
+      // Order placed 4 days ago (2026-10-08) -> settlement on 2026-10-15
+      expect(isOrderSettled('2026-10-08', 7, refDate)).toBe(false);
+      // Order placed 6 days ago (2026-10-06) -> settlement on 2026-10-13
+      expect(isOrderSettled('2026-10-06', 7, refDate)).toBe(false);
+    });
+
+    it('identifies order as settled when settlement period has elapsed', () => {
+      // Order placed 7 days ago (2026-10-05) -> settlement on 2026-10-12 (today)
+      expect(isOrderSettled('2026-10-05', 7, refDate)).toBe(true);
+      // Order placed 9 days ago (2026-10-03) -> settlement on 2026-10-10
+      expect(isOrderSettled('2026-10-03', 7, refDate)).toBe(true);
+    });
+
+    it('respects configurable settlement periods (1, 2, 14, 30 days)', () => {
+      // 1 day settlement: order from 2026-10-11 settles on 2026-10-12 (today)
+      expect(isOrderSettled('2026-10-11', 1, refDate)).toBe(true);
+      expect(isOrderSettled('2026-10-12', 1, refDate)).toBe(false);
+
+      // 14 days settlement: order from 2026-10-01 settles on 2026-10-15 (still waiting)
+      expect(isOrderSettled('2026-10-01', 14, refDate)).toBe(false);
+      // Order from 2026-09-25 settles on 2026-10-09 (settled)
+      expect(isOrderSettled('2026-09-25', 14, refDate)).toBe(true);
+
+      // 30 days settlement: order from 2026-09-20 settles on 2026-10-20 (still waiting)
+      expect(isOrderSettled('2026-09-20', 30, refDate)).toBe(false);
+      // Order from 2026-09-10 settles on 2026-10-10 (settled)
+      expect(isOrderSettled('2026-09-10', 30, refDate)).toBe(true);
+    });
+
+    it('handles ISO timestamps with timezone', () => {
+      expect(isOrderSettled('2026-10-10T15:30:00.000Z', 7, refDate)).toBe(false);
+      expect(isOrderSettled('2026-10-02T10:00:00.000Z', 7, refDate)).toBe(true);
     });
   });
 });

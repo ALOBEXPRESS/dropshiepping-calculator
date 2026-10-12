@@ -30,7 +30,7 @@ import { ReferenceService, type Marketplace } from '@/services/referenceService'
 import { AffiliateAccordion } from './AffiliateAccordion';
 import { AffiliateDetailModal } from './AffiliateDetailModal';
 import { calcOrderProfit } from '@/utils/calcOrderProfit';
-import { matchesOrderFilters, getSettledOrderProfit } from './revenueCalculations';
+import { matchesOrderFilters, getSettledOrderProfit, isOrderSettled, round2 } from './revenueCalculations';
 import type { SalesFilters } from '@/hooks/useFilterPersistence';
 
 interface RevenueReportChartProps {
@@ -1923,17 +1923,27 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
   useEffect(() => {
     let cancelled = false;
-    ReferenceService.getMarketplaces(organizationId)
-      .then((list) => {
-        if (!cancelled) setMarketplaces(list || []);
-      })
-      .catch(() => {
-        if (!cancelled) setMarketplaces([]);
-      });
+    const fetchMarketplacesList = () => {
+      ReferenceService.getMarketplaces(organizationId)
+        .then((list) => {
+          if (!cancelled) setMarketplaces(list || []);
+        })
+        .catch(() => {
+          if (!cancelled) setMarketplaces([]);
+        });
+    };
+    fetchMarketplacesList();
+
+    const handleMarketplacesUpdated = () => {
+      fetchMarketplacesList();
+    };
+    window.addEventListener('marketplaces-updated', handleMarketplacesUpdated);
+
     return () => {
       cancelled = true;
+      window.removeEventListener('marketplaces-updated', handleMarketplacesUpdated);
     };
-  }, [organizationId]);
+  }, [organizationId, refreshTrigger]);
 
   // Adicionar CSS global para manter tooltip visível ao passar mouse sobre ele
   useEffect(() => {
@@ -2149,6 +2159,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   : (rawRealProfit - manualMktDeduct1);
                 const settledTooltip1 = !hasReembolsoOv1 ? getSettledOrderProfit(orderNumber) : null;
                 const realProfit = settledTooltip1 !== null ? settledTooltip1 : fallbackRealProfit1;
+                const settlementDays1 = Number(resolvedMarketplaceConfig?.settlement_period_days ?? 7);
+                const isSettled1 = isOrderSettled((order as { order_date?: string }).order_date, settlementDays1);
                 const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true
                   || String(orderNumber).trim() === '208';
                 const profitLabel = realProfit >= 0 ? 'Lucro:' : 'Prejuízo:';
@@ -2235,8 +2247,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         style="background:#ef4444;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer;font-weight:500;white-space:nowrap;">Excluir</button>
                     </div>
                   </div>
-                  <div style="display:flex;justify-content:space-between;font-size:11px;padding-top:6px;border-top:1px solid ${dividerColor}">
-                    <span style="color:${textSecondary};font-weight:600">${profitLabel}</span>
+                  <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;padding-top:6px;border-top:1px solid ${dividerColor}">
+                    <div style="display:flex;align-items:center;gap:4px;">
+                      <span style="color:${textSecondary};font-weight:600">${profitLabel}</span>
+                      ${!isSettled1
+                        ? `<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:rgba(245,158,11,0.15);color:#f59e0b;font-weight:700;border:1px solid rgba(245,158,11,0.3);" title="Aguardando liquidação (${settlementDays1}d)">Em espera</span>`
+                        : `<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:rgba(34,197,94,0.15);color:#22c55e;font-weight:700;border:1px solid rgba(34,197,94,0.3);">Liquidado</span>`
+                      }
+                    </div>
                     <span style="font-weight:800;color:${profitColor}">${profitValue}</span>
                   </div>
                 `;
@@ -2657,6 +2675,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       let totalRevenue = 0;
       let totalCost = 0;
       let totalProfit = 0;
+      let totalWaitingProfit = 0;
+      let totalSettledProfit = 0;
       let totalMarketingCost = 0;
 
       orders.forEach((order: unknown) => {
@@ -2710,6 +2730,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const effectiveMarketplaceCost = isRefunded ? 0 : subtotalMarketplace;
         const realCost = effectiveProductCost + effectiveMarketplaceCost;
 
+        const settlementDays = Number(cfg?.settlement_period_days ?? 7);
+        const settled = isOrderSettled(o.order_date, settlementDays);
+        if (settled) {
+          totalSettledProfit += effectiveProfit;
+        } else {
+          totalWaitingProfit += effectiveProfit;
+        }
+
         totalRevenue += liquidoFinal;
         totalCost += realCost;
         totalProfit += effectiveProfit;
@@ -2721,6 +2749,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         total_revenue: totalRevenue,
         total_cost: totalCost,
         total_profit: totalProfit,
+        total_waiting_profit: totalWaitingProfit,
+        total_settled_profit: totalSettledProfit,
         total_marketing_cost: totalMarketingCost,
       };
     });
@@ -2767,11 +2797,22 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const currentPeriodCost = visibleData.reduce((sum, item) => sum + Number(item.total_cost ?? 0), 0);
   const currentPeriodProfit = visibleData.reduce((sum, item) => sum + Number(item.total_profit ?? 0), 0);
 
-  // Lucro total de TODOS os dados — usa recalculatedYearlyData para garantir total histórico completo mesmo no filtro diário
-  const allDataTotalProfit = useMemo(() => {
+  // Lucro bruto de TODOS os dados
+  const allDataTotalProfitGross = useMemo(() => {
     const source = recalculatedYearlyData.length > 0 ? recalculatedYearlyData : recalculatedData;
     return source.reduce((sum, item) => sum + Number(item.total_profit ?? 0), 0);
   }, [recalculatedYearlyData, recalculatedData]);
+
+  // Lucro em espera de TODOS os dados (aguardando período de liquidação)
+  const allDataWaitingProfit = useMemo(() => {
+    const source = recalculatedYearlyData.length > 0 ? recalculatedYearlyData : recalculatedData;
+    return round2(source.reduce((sum, item) => sum + Number(item.total_waiting_profit ?? 0), 0));
+  }, [recalculatedYearlyData, recalculatedData]);
+
+  // Lucro Total liquidado: abatido do lucro em espera (acumula à medida que os pedidos liquidam)
+  const allDataTotalProfit = useMemo(() => {
+    return round2(allDataTotalProfitGross - allDataWaitingProfit);
+  }, [allDataTotalProfitGross, allDataWaitingProfit]);
 
   // Custo total de TODOS os dados — usa recalculatedYearlyData para consistência
   const allDataTotalCost = useMemo(() => {
@@ -3095,6 +3136,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             : (rawRealProfit2 - manualMktDeduct2);
           const settledTooltip2 = !hasReembolsoOv2 ? getSettledOrderProfit(orderNumber) : null;
           const realProfit = settledTooltip2 !== null ? settledTooltip2 : fallbackRealProfit2;
+          const settlementDays2 = Number(resolvedMarketplaceConfig?.settlement_period_days ?? 7);
+          const isSettled2 = isOrderSettled((order as { order_date?: string }).order_date, settlementDays2);
           const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true
             || String(orderNumber).trim() === '208';
           const profitColor = isPersonalPurchase ? '#fed7aa' : isFreeSample ? '#e9d5ff' : (realProfit >= 0 ? '#16a34a' : '#dc2626');
@@ -3222,8 +3265,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   >Excluir</button>
                 </div>
               </div>
-              <div style="display:flex;justify-content:space-between;font-size:11px;padding-top:6px;border-top:1px solid ${dividerColor}">
-                <span style="color:${textSecondary};font-weight:600">${profitLabel}</span>
+              <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;padding-top:6px;border-top:1px solid ${dividerColor}">
+                <div style="display:flex;align-items:center;gap:4px;">
+                  <span style="color:${textSecondary};font-weight:600">${profitLabel}</span>
+                  ${!isSettled2
+                    ? `<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:rgba(245,158,11,0.15);color:#f59e0b;font-weight:700;border:1px solid rgba(245,158,11,0.3);" title="Aguardando liquidação (${settlementDays2}d)">Em espera</span>`
+                    : `<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:rgba(34,197,94,0.15);color:#22c55e;font-weight:700;border:1px solid rgba(34,197,94,0.3);">Liquidado</span>`
+                  }
+                </div>
                 <span style="font-weight:800;color:${profitColor}">${profitValue}</span>
               </div>
             `,
@@ -5226,10 +5275,34 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               <p className="text-xs text-gray-500 dark:text-gray-400">Receita</p>
               <p className="text-xl font-bold text-green-600">{formatCurrency(totalRevenue)}</p>
             </div>
-            {/* Row 1 alongside Receita: Lucro Total, Lucro {mês} */}
+            {/* Row 1 alongside Receita: Lucro Total, Lucro em espera, Lucro {mês} */}
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Lucro Total</p>
-              <p className={`text-xl font-bold ${allDataTotalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(allDataTotalProfit)}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs text-gray-500 dark:text-gray-400">Lucro Total</p>
+                <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">
+                  Liquidado
+                </span>
+              </div>
+              <p 
+                className={`text-xl font-bold ${allDataTotalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                title={`Lucro já liquidado (Total bruto: ${formatCurrency(allDataTotalProfitGross)} - Em espera: ${formatCurrency(allDataWaitingProfit)})`}
+              >
+                {formatCurrency(allDataTotalProfit)}
+              </p>
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs text-gray-500 dark:text-gray-400">Lucro em espera</p>
+                <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-amber-500/10 text-amber-500 dark:text-amber-400 border border-amber-500/20">
+                  Em liquidação
+                </span>
+              </div>
+              <p 
+                className="text-xl font-bold text-amber-500 dark:text-amber-400"
+                title="Lucro de pedidos aguardando o período de liquidação dos marketplaces para depósito"
+              >
+                {formatCurrency(allDataWaitingProfit)}
+              </p>
             </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">{periodLabel}</p>

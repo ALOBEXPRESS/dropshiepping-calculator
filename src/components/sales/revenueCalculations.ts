@@ -287,3 +287,37 @@ export function calculatePlatformBreakdown(
   };
 }
 
+/**
+ * Checks whether an order is settled based on its order_date and the marketplace settlement period.
+ * 
+ * @param orderDateStr Date string (YYYY-MM-DD or ISO) of the order
+ * @param settlementDays Number of days for settlement (default 7)
+ * @param referenceDate Current date for comparison (default new Date())
+ * @returns true if settled (liquidação concluída), false if pending (em espera)
+ */
+export function isOrderSettled(
+  orderDateStr?: string | null,
+  settlementDays: number = 7,
+  referenceDate: Date = new Date()
+): boolean {
+  if (!orderDateStr) return true;
+  const dateOnly = orderDateStr.split('T')[0];
+  const parts = dateOnly.split('-').map(Number);
+  if (parts.length !== 3 || isNaN(parts[0]) || isNaN(parts[1]) || isNaN(parts[2])) {
+    return true;
+  }
+  const [year, month, day] = parts;
+  // Date when settlement occurs (order date + settlementDays)
+  const settlementDate = new Date(year, month - 1, day + settlementDays);
+  
+  // Normalized end of day for reference date
+  const refEndOfDay = new Date(
+    referenceDate.getFullYear(),
+    referenceDate.getMonth(),
+    referenceDate.getDate(),
+    23, 59, 59, 999
+  );
+
+  return refEndOfDay.getTime() >= settlementDate.getTime();
+}
+
