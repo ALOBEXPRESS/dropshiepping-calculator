@@ -840,9 +840,23 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
             {/* Informações do Pedido */}
             <div className="space-y-2 mb-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  Pedido #{order.order_number}
-                </span>
+                <div>
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                    Pedido #{order.order_number}
+                  </span>
+                  {order.marketplace_order_number && (
+                    <span
+                      className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono block mt-0.5"
+                      title={`Pedido na Loja Virtual: ${order.marketplace_order_number}`}
+                    >
+                      {order.marketplace_order_number.startsWith('NF-chave-')
+                        ? `Chave: ${order.marketplace_order_number.replace('NF-chave-', '').slice(0, 14)}...`
+                        : order.marketplace_order_number.startsWith('NF-')
+                        ? `NF: #${order.marketplace_order_number.replace('NF-', '')}`
+                        : `Loja: #${order.marketplace_order_number}`}
+                    </span>
+                  )}
+                </div>
                 <div className="text-right">
                   <span className="text-xs text-gray-500 dark:text-gray-400 block">
                     {formatDate(order.order_date)}

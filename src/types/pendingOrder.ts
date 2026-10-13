@@ -1,6 +1,8 @@
 export interface PendingOrder {
   bling_order_id: string;
   order_number: number;
+  marketplace_order_number?: string | null;
+  purchase_order_number?: string | null;
   order_date: string;
   order_created_at: string | null;
   total_amount: number;

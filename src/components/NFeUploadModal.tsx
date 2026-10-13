@@ -30,6 +30,7 @@ interface ParsedNFe {
   items: { descricao: string; qtd: number; vUnit: number; vTotal: number; sku: string }[];
   intermediadorCnpj: string | null;
   chNFe: string;
+  numeroPedidoLoja: string | null;
 }
 
 export function parseNFe(xml: string): ParsedNFe {
@@ -46,6 +47,7 @@ export function parseNFe(xml: string): ParsedNFe {
   const total = doc.getElementsByTagNameNS(ns, 'ICMSTot')[0];
   const cobr = doc.getElementsByTagNameNS(ns, 'fat')[0];
   const infIntermed = doc.getElementsByTagNameNS(ns, 'infIntermed')[0];
+  const infAdic = doc.getElementsByTagNameNS(ns, 'infAdic')[0];
 
   // Items
   const detNodes = doc.getElementsByTagNameNS(ns, 'det');
@@ -69,6 +71,58 @@ export function parseNFe(xml: string): ParsedNFe {
   const dhEmi = g('dhEmi', ide);
   const orderDate = dhEmi ? dhEmi.split('T')[0] : new Date().toISOString().split('T')[0];
 
+  // Extrair número do pedido na loja virtual (e.g. TikTok, Shopee, Mercado Livre, etc.)
+  const infCpl = g('infCpl', infAdic);
+  const infAdFisco = g('infAdFisco', infAdic);
+  const fullInfAdic = `${infCpl} ${infAdFisco}`;
+
+  let numeroPedidoLoja: string | null = null;
+  const infCplPatterns = [
+    /N[ºo]?\s*Pedido\s*(?:da\s*)?Loja\s*[:=]?\s*([0-9a-zA-Z\-_]+)/i,
+    /Pedido\s*(?:da\s*)?Loja(?:\s*Virtual)?\s*[:=]?\s*([0-9a-zA-Z\-_]+)/i,
+    /N[ºo]?\s*Pedido\s*Virtual\s*[:=]?\s*([0-9a-zA-Z\-_]+)/i,
+    /Pedido\s*Marketplace\s*[:=]?\s*([0-9a-zA-Z\-_]+)/i,
+    /Pedido\s*(?:Shopee|TikTok|ML|Mercado\s*Livre)\s*[:=]?\s*([0-9a-zA-Z\-_]+)/i,
+    /Order\s*ID\s*[:=]?\s*([0-9a-zA-Z\-_]+)/i,
+  ];
+
+  for (const pattern of infCplPatterns) {
+    const match = fullInfAdic.match(pattern);
+    if (match?.[1] && match[1].trim()) {
+      numeroPedidoLoja = match[1].trim();
+      break;
+    }
+  }
+
+  // Fallback 1: tag <compra><xPed>
+  if (!numeroPedidoLoja) {
+    const compra = doc.getElementsByTagNameNS(ns, 'compra')[0];
+    const xPedCompra = g('xPed', compra);
+    if (xPedCompra) numeroPedidoLoja = xPedCompra;
+  }
+
+  // Fallback 2: tag <prod><xPed>
+  if (!numeroPedidoLoja && detNodes.length > 0) {
+    const firstProd = detNodes[0].getElementsByTagNameNS(ns, 'prod')[0];
+    const xPedProd = g('xPed', firstProd);
+    if (xPedProd) numeroPedidoLoja = xPedProd;
+  }
+
+  // Fallback 3: tag <obsCont xCampo="...">
+  if (!numeroPedidoLoja) {
+    const obsContNodes = doc.getElementsByTagNameNS(ns, 'obsCont');
+    for (const obs of Array.from(obsContNodes)) {
+      const xCampo = obs.getAttribute('xCampo') || '';
+      if (/pedido|loja|order/i.test(xCampo)) {
+        const xTexto = g('xTexto', obs);
+        if (xTexto) {
+          numeroPedidoLoja = xTexto;
+          break;
+        }
+      }
+    }
+  }
+
   return {
     nNF: parseInt(g('nNF', ide) || '0'),
     dhEmi: orderDate,
@@ -88,6 +142,7 @@ export function parseNFe(xml: string): ParsedNFe {
     items,
     intermediadorCnpj: infIntermed?.getElementsByTagNameNS(ns, 'CNPJ')[0]?.textContent?.trim() || null,
     chNFe: doc.getElementsByTagNameNS(ns, 'chNFe')[0]?.textContent?.trim() ?? String(Date.now()),
+    numeroPedidoLoja,
   };
 }
 
@@ -158,11 +213,12 @@ async function importSingleNFe(nfe: ParsedNFe, organizationId: string | null): P
   // Use chNFe hash as synthetic bling_order_id (negative to avoid collision)
   const syntheticBlingId = -Math.abs((parseInt(nfe.chNFe.slice(-8), 16) || Math.floor(Math.random() * 1000000)) % 2147483647);
 
-  // Check if already inserted (by chNFe stored in marketplace_order_number)
+  // Check if already inserted (by chNFe or invoice_id)
   const { data: existingByChNFe } = await supabase
     .from('bling_orders')
     .select('id')
-    .eq('marketplace_order_number', `NF-chave-${nfe.chNFe}`)
+    .eq('organization_id', organizationId)
+    .or(`marketplace_order_number.eq.NF-chave-${nfe.chNFe},invoice_id.eq.${nfe.nNF}`)
     .limit(1);
 
   if (existingByChNFe && existingByChNFe.length > 0) {
@@ -173,6 +229,7 @@ async function importSingleNFe(nfe: ParsedNFe, organizationId: string | null): P
   const { data: existing } = await supabase
     .from('bling_orders')
     .select('id')
+    .eq('organization_id', organizationId)
     .eq('bling_order_id', syntheticBlingId)
     .limit(1);
 
@@ -181,33 +238,59 @@ async function importSingleNFe(nfe: ParsedNFe, organizationId: string | null): P
   }
 
   // --- Match NF to existing pending Bling order ---
-  // Try to find unprocessed order with same CPF/CNPJ + matching product value
   const destDoc = nfe.contactCpf ?? nfe.contactCnpj ?? null;
-  let matchedBlingOrderId: string | null = null;
+  let matchedBlingOrder: { id: string; marketplace_order_number?: string | null } | null = null;
 
-  if (destDoc) {
-    const cleanDoc = destDoc.replace(/\D/g, '');
-    const { data: candidateOrders } = await supabase
+  // 1. Prioridade máxima: vincular pelo número do pedido na loja virtual (e.g. 586554369986561853)
+  if (nfe.numeroPedidoLoja) {
+    const { data: byStoreNumber } = await supabase
       .from('bling_orders')
-      .select('id, bling_order_id, order_number, total_products, total_amount')
+      .select('id, marketplace_order_number, order_number')
       .eq('organization_id', organizationId)
-      .eq('contact_document', cleanDoc)
       .eq('processed_to_orders', false)
-      .gte('total_products', nfe.totalProdutos - 1)
-      .lte('total_products', nfe.totalProdutos + 1)
-      .limit(5);
+      .or(`marketplace_order_number.eq.${nfe.numeroPedidoLoja},purchase_order_number.eq.${nfe.numeroPedidoLoja}`)
+      .limit(1);
 
-    if (candidateOrders && candidateOrders.length > 0) {
-      matchedBlingOrderId = candidateOrders[0].id;
+    if (byStoreNumber && byStoreNumber.length > 0) {
+      matchedBlingOrder = byStoreNumber[0];
     }
   }
 
-  // If matched existing order, tag it with NF chave and skip creating synthetic
-  if (matchedBlingOrderId) {
-    await supabase.from('bling_orders').update({
-      marketplace_order_number: `NF-chave-${nfe.chNFe}`,
+  // 2. Fallback: buscar por CPF/CNPJ (comparando apenas dígitos) + valor aproximado dos produtos
+  if (!matchedBlingOrder && destDoc) {
+    const cleanDoc = destDoc.replace(/\D/g, '');
+    const { data: candidateOrders } = await supabase
+      .from('bling_orders')
+      .select('id, contact_document, marketplace_order_number, total_products, total_amount')
+      .eq('organization_id', organizationId)
+      .eq('processed_to_orders', false)
+      .gte('total_products', nfe.totalProdutos - 1)
+      .lte('total_products', nfe.totalProdutos + 1)
+      .limit(25);
+
+    if (candidateOrders && candidateOrders.length > 0) {
+      const found = candidateOrders.find(o => {
+        const oClean = String(o.contact_document ?? '').replace(/\D/g, '');
+        return oClean && oClean === cleanDoc;
+      });
+      if (found) {
+        matchedBlingOrder = found;
+      }
+    }
+  }
+
+  // Se vinculou a um pedido Bling já existente: atualiza invoice_id, order_date e preserva o número da loja
+  if (matchedBlingOrder) {
+    const updatePayload: Record<string, unknown> = {
       order_date: nfe.dhEmi,
-    }).eq('id', matchedBlingOrderId);
+      invoice_id: nfe.nNF,
+    };
+    const currentMkt = matchedBlingOrder.marketplace_order_number;
+    if (nfe.numeroPedidoLoja && (!currentMkt || currentMkt.startsWith('NF-'))) {
+      updatePayload.marketplace_order_number = nfe.numeroPedidoLoja;
+    }
+
+    await supabase.from('bling_orders').update(updatePayload).eq('id', matchedBlingOrder.id);
 
     return { status: 'matched_existing', nNF: nfe.nNF, contactName: nfe.contactName };
   }
@@ -302,7 +385,9 @@ async function importSingleNFe(nfe: ParsedNFe, organizationId: string | null): P
     organization_id: organizationId,
     bling_order_id: syntheticBlingId,
     order_number: nfe.nNF,
-    marketplace_order_number: `NF-${nfe.nNF}`,
+    marketplace_order_number: nfe.numeroPedidoLoja || `NF-${nfe.nNF}`,
+    purchase_order_number: nfe.numeroPedidoLoja || null,
+    invoice_id: nfe.nNF,
     sales_channel_id: salesChannelId,
     bling_store_id: blingStoreId,
     lead_id: leadId,
