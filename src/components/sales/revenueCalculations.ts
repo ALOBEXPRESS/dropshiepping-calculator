@@ -289,28 +289,112 @@ export function calculatePlatformBreakdown(
 }
 
 /**
- * Checks whether an order is settled based on its order_date and the marketplace settlement period.
+ * Formats a date string (YYYY-MM-DD or ISO) into Brazilian format DD/MM/YYYY without timezone drift.
+ */
+export function formatDateBR(dateStr?: string | null): string {
+  if (!dateStr) return '';
+  const dateOnly = dateStr.split('T')[0];
+  const parts = dateOnly.split('-').map(Number);
+  if (parts.length !== 3 || isNaN(parts[0]) || isNaN(parts[1]) || isNaN(parts[2])) {
+    return dateStr;
+  }
+  const dd = String(parts[2]).padStart(2, '0');
+  const mm = String(parts[1]).padStart(2, '0');
+  const yyyy = parts[0];
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+/**
+ * Calculates the default delivery date (order date + default 7 days).
+ */
+export function calculateDefaultDeliveryDate(
+  orderDateStr?: string | null,
+  daysToAdd: number = 7
+): string | null {
+  if (!orderDateStr) return null;
+  const dateOnly = orderDateStr.split('T')[0];
+  const parts = dateOnly.split('-').map(Number);
+  if (parts.length !== 3 || isNaN(parts[0]) || isNaN(parts[1]) || isNaN(parts[2])) {
+    return null;
+  }
+  const d = new Date(parts[0], parts[1] - 1, parts[2] + daysToAdd);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/**
+ * Calculates the expected settlement date:
+ * base delivery date (custom delivery_date OR order_date + 7 days) + settlementDays.
+ */
+export function calculateSettlementDate(
+  orderDateStr?: string | null,
+  deliveryDateStr?: string | null,
+  settlementDays: number = 7
+): string | null {
+  const effectiveDeliv = deliveryDateStr || calculateDefaultDeliveryDate(orderDateStr, 7);
+  if (!effectiveDeliv) return null;
+  const parts = effectiveDeliv.split('T')[0].split('-').map(Number);
+  if (parts.length !== 3 || isNaN(parts[0]) || isNaN(parts[1]) || isNaN(parts[2])) {
+    return null;
+  }
+  const d = new Date(parts[0], parts[1] - 1, parts[2] + settlementDays);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/**
+ * Checks whether an order is settled based on its delivery date (or default order_date + 7 days)
+ * and the marketplace settlement period.
+ * 
+ * Business rule: The settlement countdown begins from the delivery date.
+ * By default, the product is delivered up to 7 days after the order date.
  * 
  * @param orderDateStr Date string (YYYY-MM-DD or ISO) of the order
  * @param settlementDays Number of days for settlement (default 7)
  * @param referenceDate Current date for comparison (default new Date())
+ * @param deliveryDateStr Optional custom delivery date (YYYY-MM-DD or ISO)
  * @returns true if settled (liquidação concluída), false if pending (em espera)
  */
 export function isOrderSettled(
   orderDateStr?: string | null,
   settlementDays: number = 7,
-  referenceDate: Date = new Date()
+  referenceDate: Date = new Date(),
+  deliveryDateStr?: string | null
 ): boolean {
-  if (!orderDateStr) return true;
-  const dateOnly = orderDateStr.split('T')[0];
-  const parts = dateOnly.split('-').map(Number);
-  if (parts.length !== 3 || isNaN(parts[0]) || isNaN(parts[1]) || isNaN(parts[2])) {
+  if (!orderDateStr && !deliveryDateStr) return true;
+
+  let baseDate: Date;
+
+  if (deliveryDateStr) {
+    const parts = deliveryDateStr.split('T')[0].split('-').map(Number);
+    if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+      baseDate = new Date(parts[0], parts[1] - 1, parts[2]);
+    } else {
+      return true;
+    }
+  } else if (orderDateStr) {
+    const parts = orderDateStr.split('T')[0].split('-').map(Number);
+    if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+      // By default: delivered up to 7 days after the order date
+      baseDate = new Date(parts[0], parts[1] - 1, parts[2] + 7);
+    } else {
+      return true;
+    }
+  } else {
     return true;
   }
-  const [year, month, day] = parts;
-  // Date when settlement occurs (order date + settlementDays)
-  const settlementDate = new Date(year, month - 1, day + settlementDays);
-  
+
+  // Settlement occurs settlementDays after delivery base date
+  const settlementDate = new Date(
+    baseDate.getFullYear(),
+    baseDate.getMonth(),
+    baseDate.getDate() + settlementDays
+  );
+
   // Normalized end of day for reference date
   const refEndOfDay = new Date(
     referenceDate.getFullYear(),
@@ -321,4 +405,5 @@ export function isOrderSettled(
 
   return refEndOfDay.getTime() >= settlementDate.getTime();
 }
+
 

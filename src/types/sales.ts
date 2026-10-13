@@ -11,6 +11,7 @@ export interface OrderData {
   order_id: string;
   order_number: string;
   order_date: string;
+  delivery_date?: string | null;
   marketplace_name: string;
   marketplace?: string;
   total_amount: number;

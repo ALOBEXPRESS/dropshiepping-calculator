@@ -224,7 +224,7 @@ export default function RepasePage() {
               const rev = Number(o.total_amount ?? 0);
               const cost = Number(o.total_cost ?? 0);
               const settlementDays = 7;
-              const settled = isOrderSettled(o.order_date, settlementDays);
+              const settled = isOrderSettled(o.order_date, settlementDays, new Date(), (o as { delivery_date?: string | null }).delivery_date);
 
               if (settled) {
                 totalSettledProfit += effectiveProfit;
