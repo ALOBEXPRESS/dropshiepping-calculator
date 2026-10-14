@@ -308,11 +308,36 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
               }
             }
 
+            const expectedPrice = Number(order.expected_price || order.total_amount || 0);
+            const marketplaceNameLower = (order.marketplace_name || '').toLowerCase();
+            const isTikTok = marketplaceNameLower.includes('tiktok');
+            const isShopee = marketplaceNameLower.includes('shopee');
+            const rawCommRate = Number(order.commission_rate ?? 0);
+            const commissionRate = rawCommRate > 0 ? rawCommRate : (isShopee ? 20 : isTikTok ? 10 : 0);
+            const commissionVal = expectedPrice * (commissionRate / 100);
+
+            const getMarketplaceFixedFee = (price: number): number => {
+              if (isShopee) {
+                // Regras Shopee 2025: faixas de taxa fixa por preço
+                if (price <= 79.99) return 4.00;
+                if (price <= 99.99) return 16.00;
+                if (price <= 199.99) return 20.00;
+                if (price <= 499.99) return 26.00;
+                return 26.00;
+              }
+              if (isTikTok) {
+                // TikTok Shop: R$4 para < R$50, R$6 para >= R$50
+                return price < 50 ? 4.00 : 6.00;
+              }
+              return 0;
+            };
+            const marketplaceFixedFee = getMarketplaceFixedFee(expectedPrice);
+            const marketplaceFee = commissionVal + marketplaceFixedFee;
+
             if (resolvedProduct) {
               const itemQty = Math.max(1, matchedItemQty || Number(order.items_count ?? 1));
               const unitCostPrice = Number(resolvedProduct.cost_price ?? 0);
               const baseCost = unitCostPrice * itemQty;
-              const isTikTok = (order.marketplace_name || '').toLowerCase().includes('tiktok');
               const defaultSupFee = isTikTok ? 3 : 6;
               const suppFeeType = resolvedProduct.supplier_fee_type || 'percent';
               const rawSuppFeeVal = Number(resolvedProduct.supplier_fee_value ?? 0);
@@ -327,27 +352,7 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
                 : baseCost * (suppGtwVal / 100);
 
               const totalCost = baseCost + suppFee + suppGtw;
-              const expectedPrice = Number(order.expected_price || order.total_amount || 0);
-              const commissionVal = expectedPrice * (Number(order.commission_rate || 0) / 100);
-              // Calcular taxa fixa do marketplace baseado no preço real (Shopee, TikTok, etc.)
-              const marketplaceNameLower = (order.marketplace_name || '').toLowerCase();
-              const getMarketplaceFixedFee = (price: number): number => {
-                if (marketplaceNameLower.includes('shopee')) {
-                  // Regras Shopee 2025: faixas de taxa fixa por preço
-                  if (price <= 79.99) return 4.00;
-                  if (price <= 99.99) return 16.00;
-                  if (price <= 199.99) return 20.00;
-                  if (price <= 499.99) return 26.00;
-                  return 26.00;
-                }
-                if (marketplaceNameLower.includes('tiktok')) {
-                  // TikTok Shop: R$4 para < R$50, R$6 para >= R$50
-                  return price < 50 ? 4.00 : 6.00;
-                }
-                return 0;
-              };
-              const marketplaceFixedFee = getMarketplaceFixedFee(expectedPrice);
-              const estimatedProfit = expectedPrice - totalCost - commissionVal - marketplaceFixedFee;
+              const estimatedProfit = expectedPrice - totalCost - marketplaceFee;
 
               if (matchedItemId) {
                 (async () => {
@@ -368,10 +373,26 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
                 first_product_name: (resolvedProduct as { name?: string }).name || order.first_product_name,
                 first_product_image: (resolvedProduct as { image_url?: string }).image_url || order.first_product_image,
                 items_count: itemQty,
+                commission_rate: commissionRate,
+                commission_value: parseFloat(commissionVal.toFixed(2)),
+                marketplace_fixed_fee: parseFloat(marketplaceFixedFee.toFixed(2)),
+                marketplace_fee: parseFloat(marketplaceFee.toFixed(2)),
                 total_cost: parseFloat(totalCost.toFixed(2)),
                 estimated_profit: parseFloat(estimatedProfit.toFixed(2)),
               };
             }
+
+            const totalCost = Number(order.total_cost || 0);
+            const estimatedProfit = expectedPrice - totalCost - marketplaceFee;
+            return {
+              ...order,
+              commission_rate: commissionRate,
+              commission_value: parseFloat(commissionVal.toFixed(2)),
+              marketplace_fixed_fee: parseFloat(marketplaceFixedFee.toFixed(2)),
+              marketplace_fee: parseFloat(marketplaceFee.toFixed(2)),
+              total_cost: parseFloat(totalCost.toFixed(2)),
+              estimated_profit: parseFloat(estimatedProfit.toFixed(2)),
+            };
           } catch (e) {
             console.warn('Error resolving order cost:', e);
           }
@@ -522,6 +543,37 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
       style: 'currency',
       currency: 'BRL',
     }).format(value);
+  };
+
+  const getOrderMarketplaceFee = (order: PendingOrder): number => {
+    if (order.marketplace_fee != null && order.marketplace_fee > 0) {
+      return order.marketplace_fee;
+    }
+    const expected = Number(order.expected_price || order.total_amount || 0);
+    const mktLower = (order.marketplace_name || '').toLowerCase();
+    const isTikTok = mktLower.includes('tiktok');
+    const isShopee = mktLower.includes('shopee');
+    const rawCommRate = Number(order.commission_rate ?? 0);
+    const commRate = rawCommRate > 0 ? rawCommRate : (isShopee ? 20 : isTikTok ? 10 : 0);
+    const commVal = expected * (commRate / 100);
+    let fixedFee = 0;
+    if (isShopee) {
+      if (expected <= 79.99) fixedFee = 4.00;
+      else if (expected <= 99.99) fixedFee = 16.00;
+      else if (expected <= 199.99) fixedFee = 20.00;
+      else fixedFee = 26.00;
+    } else if (isTikTok) {
+      fixedFee = expected < 50 ? 4.00 : 6.00;
+    }
+    const fee = commVal + fixedFee;
+    return fee > 0 ? parseFloat(fee.toFixed(2)) : 0;
+  };
+
+  const getOrderEstimatedProfit = (order: PendingOrder): number => {
+    const expected = Number(order.expected_price || order.total_amount || 0);
+    const cost = Number(order.total_cost || 0);
+    const mktFee = getOrderMarketplaceFee(order);
+    return parseFloat((expected - cost - mktFee).toFixed(2));
   };
 
   const formatDate = (dateString: string) => {
@@ -925,17 +977,38 @@ export const PendingOrders: React.FC<PendingOrdersProps> = ({ onOrderProcessed, 
                     {formatCurrency(order.total_cost)}
                   </p>
                 </div>
+                {/* Taxa do Marketplace */}
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Marketplace
+                    </p>
+                    {order.commission_rate > 0 && (
+                      <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                        ({order.commission_rate}%{order.marketplace_fixed_fee ? ` + ${formatCurrency(order.marketplace_fixed_fee)}` : ''})
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    {formatCurrency(getOrderMarketplaceFee(order))}
+                  </p>
+                </div>
                 <div className="flex items-center justify-between pt-1 border-t border-dashed border-gray-300 dark:border-zinc-600">
                   <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                     Lucro Estimado
                   </p>
-                  <p className={`text-base font-bold ${
-                    order.estimated_profit > 0 
-                      ? 'text-green-600 dark:text-green-400' 
-                      : 'text-red-600 dark:text-red-400'
-                  }`}>
-                    {formatCurrency(order.estimated_profit)}
-                  </p>
+                  {(() => {
+                    const profit = getOrderEstimatedProfit(order);
+                    return (
+                      <p className={`text-base font-bold ${
+                        profit > 0 
+                          ? 'text-green-600 dark:text-green-400' 
+                          : 'text-red-600 dark:text-red-400'
+                      }`}>
+                        {formatCurrency(profit)}
+                      </p>
+                    );
+                  })()}
                 </div>
               </div>
 
