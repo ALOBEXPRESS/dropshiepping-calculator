@@ -254,7 +254,7 @@ export default function RepasePage() {
             total_revenue: round2(totalRevenue),
             total_cost: round2(totalCost),
             total_profit: round2(totalProfit),
-            total_settled_profit: round2(totalSettledProfit),
+            total_settled_profit: round2(totalProfit),
             total_waiting_profit: round2(totalWaitingProfit),
             orders_count: orders.length || Number(row.orders_count ?? 0),
             orders_data: orders,
@@ -754,10 +754,6 @@ export default function RepasePage() {
               {fmt(totalSettledProfit)}
             </p>
             <div className="flex flex-col gap-0.5 mt-1.5 text-[11px]">
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400">Lucro Total:</span>
-                <span className="text-white font-semibold">{fmt(totalGrossProfit)}</span>
-              </div>
               {totalWaitingProfit > 0 && (
                 <div className="flex items-center justify-between text-amber-400 font-medium">
                   <span className="flex items-center gap-1">
@@ -794,12 +790,9 @@ export default function RepasePage() {
                 {fmt(b.accumulatedShare)}
               </p>
               <div className="mt-1 space-y-0.5 text-[11px]">
-                <div className="flex items-center justify-between text-zinc-400">
-                  <span>Total com espera:</span>
-                  <span className="text-zinc-200 font-medium">{fmt(b.grossShare)}</span>
-                </div>
                 {b.waitingShare > 0 ? (
-                  <p className="text-amber-400 font-medium">
+                  <p className="text-amber-400 font-medium flex items-center gap-1">
+                    <Hourglass className="w-3 h-3" />
                     + {fmt(b.waitingShare)} em espera
                   </p>
                 ) : (
@@ -879,23 +872,13 @@ export default function RepasePage() {
 
                     <div className="flex items-center gap-4 self-start md:self-auto">
                       <div className="text-right">
-                        <div className="flex items-center justify-end gap-3">
-                          <div>
-                            <span className="text-[10px] text-zinc-500 uppercase tracking-wider block">
-                              Lucro Liquidado
-                            </span>
-                            <span className={`text-base font-bold ${isNegative ? 'text-red-400' : 'text-emerald-400'}`}>
-                              {fmt(month.settledProfit)}
-                            </span>
-                          </div>
-                          <div className="border-l border-zinc-800 pl-3">
-                            <span className="text-[10px] text-zinc-500 uppercase tracking-wider block">
-                              Lucro Total
-                            </span>
-                            <span className="text-base font-bold text-white">
-                              {fmt(month.grossProfit)}
-                            </span>
-                          </div>
+                        <div>
+                          <span className="text-[10px] text-zinc-500 uppercase tracking-wider block">
+                            Lucro Liquidado
+                          </span>
+                          <span className={`text-base font-bold ${isNegative ? 'text-red-400' : 'text-emerald-400'}`}>
+                            {fmt(month.settledProfit)}
+                          </span>
                         </div>
                         {month.waitingProfit > 0 && (
                           <span className="text-[11px] text-amber-400 font-medium block mt-0.5">
