@@ -127,6 +127,7 @@ export const useHeroStats = (
           name: string;
           commission_rate?: number;
           fixed_fee?: number;
+          affiliate_commission_rate?: number;
         }
         interface DbProduct {
           id?: string;
@@ -175,6 +176,8 @@ export const useHeroStats = (
           is_free_sample?: boolean | string;
           is_personal_purchase?: boolean | string;
           marketplace_id?: string;
+          affiliate_id?: string | null;
+          influencers?: { id: string; name: string; percentage?: number | null } | null;
           bling_order_id?: string;
           bling_orders?: DbBlingOrder | DbBlingOrder[] | null;
           marketplaces?: DbMarketplace | null;
@@ -223,6 +226,12 @@ export const useHeroStats = (
                   is_free_sample,
                   is_personal_purchase,
                   marketplace_id,
+                  affiliate_id,
+                  influencers!affiliate_id (
+                    id,
+                    name,
+                    percentage
+                  ),
                   bling_order_id,
                   bling_orders!bling_order_id (
                     id,
@@ -237,7 +246,8 @@ export const useHeroStats = (
                     id,
                     name,
                     commission_rate,
-                    fixed_fee
+                    fixed_fee,
+                    affiliate_commission_rate
                   ),
                   order_items (
                     id,
@@ -261,7 +271,7 @@ export const useHeroStats = (
                 .in('id', allOrderIds),
               supabase
                 .from('marketplaces')
-                .select('id, name, commission_rate, fixed_fee'),
+                .select('id, name, commission_rate, fixed_fee, affiliate_commission_rate'),
               supabase
                 .from('campaign_order_costs')
                 .select('order_id, marketing_cost')
@@ -372,6 +382,11 @@ export const useHeroStats = (
             ? calculatedTotalProducts
             : Number(dbOrder.total_amount ?? 0) - Number(dbOrder.discount_value ?? 0);
 
+          const infPct = dbOrder.influencers?.percentage != null ? Number(dbOrder.influencers.percentage) : undefined;
+          const mpAffRate = mp?.affiliate_commission_rate != null ? Number(mp.affiliate_commission_rate) : undefined;
+          const affiliateRate = infPct ?? mpAffRate ?? (isTikTok ? 10.5 : 0);
+          const hasAffiliate = Boolean(dbOrder.affiliate_id);
+
           const profitInput: OrderProfitInput = {
             order_id: dbOrder.id,
             total_amount: dbOrder.total_amount,
@@ -384,6 +399,8 @@ export const useHeroStats = (
             commission_rate: commissionRate,
             marketplace_fixed_fee: fixedFee,
             fixed_fee: fixedFee,
+            affiliate_id: dbOrder.affiliate_id,
+            affiliate_commission_rate: affiliateRate,
             tiktok_sfp_enabled: isTikTok,
             tiktok_reembolso_disabled: bo?.tiktok_reembolso_disabled === true,
             tiktok_retorno_liquido: bo?.tiktok_retorno_liquido != null ? Number(bo.tiktok_retorno_liquido) : undefined,
@@ -404,7 +421,8 @@ export const useHeroStats = (
           const result = calcOrderProfit(profitInput, {
             commission_rate: commissionRate,
             fixed_fee: fixedFee,
-          });
+            affiliate_commission_rate: affiliateRate,
+          }, hasAffiliate);
 
           const mktCost = mktCostMap.get(orderId) ?? 0;
           return Math.round((result.realProfit - mktCost) * 100) / 100;

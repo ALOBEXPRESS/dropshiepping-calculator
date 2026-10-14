@@ -296,7 +296,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             marketplaces!marketplace_id (
               name,
               commission_rate,
-              fixed_fee
+              fixed_fee,
+              affiliate_commission_rate
             ),
             leads!lead_id (
               name
@@ -756,12 +757,15 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   ) => {
     const o = order as {
       order_id?: string;
+      affiliate_id?: string | null;
       tiktok_sfp_enabled?: boolean | string;
       tiktok_reembolso_disabled?: boolean;
       tiktok_retorno_liquido?: number | null;
     };
     const cameFromAffiliate =
-      cameFromAffiliateOverride ?? Boolean(o.order_id && affiliateByOrderIdRef.current?.[o.order_id]);
+      cameFromAffiliateOverride ??
+      Boolean(o.affiliate_id) ??
+      Boolean(o.order_id && affiliateByOrderIdRef.current?.[o.order_id]);
     return calcOrderProfit(
       order as Parameters<typeof calcOrderProfit>[0],
       marketplaceConfig,
@@ -2761,7 +2765,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           Number((o as { marketplace_fixed_fee?: number }).marketplace_fixed_fee ?? 0)
         );
 
-        const result = computeOrderRealProfit(mergedOrder, cfg, affiliateByOrderId[o.order_id]);
+        const hasAffiliate = Boolean((o as { affiliate_id?: string }).affiliate_id) || Boolean(affiliateByOrderId[o.order_id]);
+        const result = computeOrderRealProfit(mergedOrder, cfg, hasAffiliate);
         const realProfit = typeof result === 'number' ? result : result.realProfit;
         const totalProductCost = typeof result === 'number' ? 0 : result.totalProductCost;
         const subtotalMarketplace = typeof result === 'number' ? 0 : result.subtotalMarketplace;
@@ -4582,6 +4587,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                               affiliate_id: affiliateId,
                             },
                           }));
+                          refetch();
+                          refetchYearly();
+                          onOrderUpdated?.();
                         }
                       }}
                     />

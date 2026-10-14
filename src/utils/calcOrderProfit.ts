@@ -15,6 +15,8 @@ export interface OrderProfitInput {
   commission_rate?: number | string;
   marketplace_fixed_fee?: number | string;
   fixed_fee?: number | string;
+  affiliate_id?: string | null;
+  affiliate_commission_rate?: number | string;
   tiktok_sfp_enabled?: boolean | string | null;
   tiktok_reembolso_disabled?: boolean;
   tiktok_retorno_liquido?: number | null;
@@ -129,12 +131,19 @@ export function calcOrderProfit(
   const commissionRate = Number(
     marketplaceConfig?.commission_rate ?? order.commission_rate ?? 0
   );
-  const affiliateRate = Number(marketplaceConfig?.affiliate_commission_rate ?? 0);
+  const rawAffiliateRate = order.affiliate_commission_rate ?? marketplaceConfig?.affiliate_commission_rate;
+  const affiliateRate = rawAffiliateRate != null && !isNaN(Number(rawAffiliateRate))
+    ? Number(rawAffiliateRate)
+    : (isTikTok ? 10.5 : 0);
+
+  const isAffiliated = cameFromAffiliate !== undefined
+    ? cameFromAffiliate
+    : Boolean(order.affiliate_id);
 
   const commissionBase = precoVendaBruto;
 
   const affiliateCommission =
-    isFreeSample || !cameFromAffiliate || affiliateRate <= 0
+    isFreeSample || !isAffiliated || affiliateRate <= 0
       ? 0
       : (commissionBase * affiliateRate) / 100;
 
