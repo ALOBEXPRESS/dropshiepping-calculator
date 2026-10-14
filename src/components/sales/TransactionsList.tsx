@@ -6,6 +6,8 @@ import { Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Avatar from 'react-avatar';
+import { calcOrderProfit } from '@/utils/calcOrderProfit';
+import { getSettledOrderProfit } from './revenueCalculations';
 
 interface TransactionsListProps {
   organizationId: string;
@@ -14,9 +16,13 @@ interface TransactionsListProps {
 
 interface Transaction {
   id: string;
+  order_number?: string;
+  virtual_order_number?: string | null;
   order_date: string;
   total_amount: number;
   total_profit: number;
+  product_cost: number;
+  marketplace_cost: number;
   marketplace_name: string;
   customer_name: string;
   status: string;
@@ -57,7 +63,8 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
       setError(null);
 
       try {
-        const startDate = new Date();
+        const now = new Date();
+        let startDate = new Date();
         let filterDate = true;
         
         switch (period) {
@@ -65,56 +72,150 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
             filterDate = false;
             break;
           case 'this_week':
-            startDate.setDate(startDate.getDate() - 7);
+            startDate.setDate(now.getDate() - 7);
             break;
           case 'this_month':
-            startDate.setMonth(startDate.getMonth() - 1);
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
             break;
           case 'this_quarter':
-            startDate.setMonth(startDate.getMonth() - 3);
+            startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
             break;
           default:
-            startDate.setMonth(startDate.getMonth() - 1);
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
         }
 
         let query = supabase
           .from('orders')
           .select(`
             id,
+            order_number,
             order_date,
+            created_at,
             total_amount,
+            total_cost,
             total_profit,
             status,
-            lead_id,
+            marketplace_commission,
+            discount_value,
+            shipping_cost,
+            other_expenses,
+            is_free_sample,
+            is_personal_purchase,
+            affiliate_id,
             marketplace_id,
+            marketplaces!marketplace_id (
+              id,
+              name,
+              commission_rate,
+              fixed_fee,
+              affiliate_commission_rate
+            ),
             leads!lead_id (
               name
             ),
-            marketplaces!marketplace_id (
-              name
+            bling_orders!bling_order_id (
+              marketplace_order_number,
+              purchase_order_number,
+              contact_name,
+              total_products,
+              base_value,
+              tiktok_reembolso_disabled,
+              tiktok_retorno_liquido
+            ),
+            order_items (
+              quantity,
+              unit_cost,
+              unit_price,
+              products (
+                cost_price,
+                supplier_fee_value,
+                supplier_fee_type,
+                supplier_gateway_fee_value,
+                supplier_gateway_fee_type
+              )
             )
           `)
           .eq('organization_id', organizationId);
 
         if (filterDate) {
-          query = query.gte('order_date', startDate.toISOString());
+          query = query.gte('order_date', startDate.toISOString().split('T')[0]);
         }
 
         const { data: ordersData, error: fetchError } = await query
           .order('order_date', { ascending: false })
-          .limit(10);
+          .limit(20);
 
         if (fetchError) throw fetchError;
 
-        const formattedTransactions: Transaction[] = (ordersData || []).map((order) => ({
-          id: order.id,
-          order_date: order.order_date,
-          total_amount: Number(order.total_amount),
-          total_profit: Number(order.total_profit ?? order.total_amount),
-          marketplace_name: (order.marketplaces as { name?: string })?.name || 'N/A',
-          customer_name: (order.leads as { name?: string })?.name || 'Cliente',
-          status: order.status,
-        }));
+        const formattedTransactions: Transaction[] = (ordersData || []).map((order: any) => {
+          const bo = Array.isArray(order.bling_orders) ? order.bling_orders[0] : order.bling_orders;
+          const mkt = Array.isArray(order.marketplaces) ? order.marketplaces[0] : order.marketplaces;
+          const lead = Array.isArray(order.leads) ? order.leads[0] : order.leads;
+
+          const customerName = lead?.name || bo?.contact_name || 'Cliente';
+          const marketplaceName = mkt?.name || 'N/A';
+          const rawVirtual = bo?.marketplace_order_number || bo?.purchase_order_number || (order.order_number ? String(order.order_number) : null);
+
+          const prods = (order.order_items ?? []).map((it: any) => ({
+            quantity: it.quantity,
+            unit_cost: it.products?.cost_price ?? it.unit_cost,
+            unit_price: it.unit_price,
+            supplier_fee_value: it.products?.supplier_fee_value,
+            supplier_fee_type: it.products?.supplier_fee_type,
+            supplier_gateway_fee_value: it.products?.supplier_gateway_fee_value,
+            supplier_gateway_fee_type: it.products?.supplier_gateway_fee_type,
+          }));
+
+          const profitInput = {
+            order_id: order.id,
+            total_amount: order.total_amount,
+            total_products: bo?.total_products ?? order.total_amount,
+            base_value: bo?.base_value ?? (Number(order.total_amount) - Number(order.discount_value ?? 0)),
+            discount_value: order.discount_value,
+            shipping_cost: order.shipping_cost,
+            other_expenses: order.other_expenses,
+            marketplace_commission: order.marketplace_commission,
+            commission_rate: mkt?.commission_rate,
+            marketplace_fixed_fee: mkt?.fixed_fee,
+            fixed_fee: mkt?.fixed_fee,
+            affiliate_id: order.affiliate_id,
+            affiliate_commission_rate: mkt?.affiliate_commission_rate,
+            tiktok_sfp_enabled: mkt?.name?.toLowerCase().includes('tiktok'),
+            tiktok_reembolso_disabled: bo?.tiktok_reembolso_disabled === true,
+            tiktok_retorno_liquido: bo?.tiktok_retorno_liquido != null ? Number(bo.tiktok_retorno_liquido) : undefined,
+            products: prods,
+            marketplace: mkt?.name,
+          };
+
+          const hasAffiliate = Boolean(order.affiliate_id);
+          const profitRes = calcOrderProfit(profitInput, mkt, hasAffiliate);
+          const settledOv = getSettledOrderProfit(order.order_number);
+          const finalProfit = settledOv !== null 
+            ? settledOv 
+            : (order.total_profit != null ? Number(order.total_profit) : profitRes.realProfit);
+
+          const productCost = profitRes.effectiveProductCost > 0 
+            ? profitRes.effectiveProductCost 
+            : (order.total_cost != null && Number(order.total_cost) > 0 ? Number(order.total_cost) : profitRes.totalProductCost);
+
+          const marketplaceCost = profitRes.subtotalMarketplace > 0
+            ? profitRes.subtotalMarketplace
+            : Math.max(0, Math.round((Number(order.total_amount ?? 0) - productCost - finalProfit) * 100) / 100);
+
+          return {
+            id: order.id,
+            order_number: order.order_number ? String(order.order_number) : undefined,
+            virtual_order_number: rawVirtual ? String(rawVirtual).trim() : null,
+            order_date: order.created_at || order.order_date,
+            total_amount: Number(order.total_amount ?? 0),
+            total_profit: finalProfit,
+            product_cost: productCost,
+            marketplace_cost: marketplaceCost,
+            marketplace_name: marketplaceName,
+            customer_name: customerName,
+            status: order.status,
+          };
+        });
 
         setTransactions(formattedTransactions);
       } catch (err) {
@@ -147,6 +248,24 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
     } catch {
       return 'Data inválida';
     }
+  };
+
+  const formatVirtualOrderNumber = (num?: string | null) => {
+    if (!num) return null;
+    const s = String(num).trim();
+    if (s.startsWith('NF-chave-')) {
+      return `Chave: ${s.replace('NF-chave-', '').slice(0, 14)}...`;
+    }
+    if (s.startsWith('NF-')) {
+      return `NF: #${s.replace('NF-', '')}`;
+    }
+    if (s.startsWith('Loja:')) {
+      return s;
+    }
+    if (s.startsWith('#')) {
+      return `Loja: ${s}`;
+    }
+    return `Loja: #${s}`;
   };
 
   const getStatusLabel = (status: string) => {
@@ -203,36 +322,66 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
             return (
               <div
                 key={transaction.id}
-                className="flex items-center gap-4 py-3 border-b border-border last:border-0"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3.5 border-b border-border last:border-0"
               >
-                <Avatar
-                  name={transaction.customer_name}
-                  size="48"
-                  round={true}
-                  color={getAvatarColor(transaction.customer_name)}
-                  maxInitials={2}
-                  textSizeRatio={2}
-                />
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <Avatar
+                    name={transaction.customer_name}
+                    size="48"
+                    round={true}
+                    color={getAvatarColor(transaction.customer_name)}
+                    maxInitials={2}
+                    textSizeRatio={2}
+                    className="flex-shrink-0"
+                  />
 
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {transaction.marketplace_name}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {transaction.customer_name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDate(transaction.order_date)}
-                  </p>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-semibold text-foreground">
+                        {transaction.marketplace_name}
+                      </p>
+                      {transaction.virtual_order_number && (
+                        <span
+                          className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 border border-zinc-700/60 font-medium"
+                          title={`Pedido na Loja Virtual: ${transaction.virtual_order_number}`}
+                        >
+                          {formatVirtualOrderNumber(transaction.virtual_order_number)}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">
+                      {transaction.customer_name}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground/80">
+                      {formatDate(transaction.order_date)}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="text-right">
-                  <p className={`text-sm font-bold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                    {isPositive ? '+' : '-'}{formatCurrency(Math.abs(profit))}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {getStatusLabel(transaction.status)}
-                  </p>
+                <div className="text-left sm:text-right flex-shrink-0 pl-14 sm:pl-0">
+                  <div className="flex items-center sm:justify-end gap-2">
+                    <p className={`text-base font-bold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                      {isPositive ? '+' : '-'}{formatCurrency(Math.abs(profit))}
+                    </p>
+                    <span className="text-[10px] text-muted-foreground bg-zinc-800/60 px-1.5 py-0.5 rounded border border-zinc-700/40">
+                      {getStatusLabel(transaction.status)}
+                    </span>
+                  </div>
+
+                  <div className="mt-1 space-y-0.5 text-xs">
+                    <p className="text-muted-foreground">
+                      Custo Produto(inclui taxas):{' '}
+                      <span className="text-foreground font-semibold tabular-nums">
+                        {formatCurrency(transaction.product_cost)}
+                      </span>
+                    </p>
+                    <p className="text-muted-foreground">
+                      Custo Marketplace:{' '}
+                      <span className="text-foreground font-semibold tabular-nums">
+                        {formatCurrency(transaction.marketplace_cost)}
+                      </span>
+                    </p>
+                  </div>
                 </div>
               </div>
             );
