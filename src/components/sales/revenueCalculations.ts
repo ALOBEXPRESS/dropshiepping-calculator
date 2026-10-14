@@ -326,14 +326,15 @@ export function calculateDefaultDeliveryDate(
 
 /**
  * Calculates the expected settlement date:
- * base delivery date (custom delivery_date OR order_date + 7 days) + settlementDays.
+ * If deliveryDateStr is provided: deliveryDateStr + settlementDays.
+ * If not provided: orderDateStr + settlementDays.
  */
 export function calculateSettlementDate(
   orderDateStr?: string | null,
   deliveryDateStr?: string | null,
   settlementDays: number = 7
 ): string | null {
-  const effectiveDeliv = deliveryDateStr || calculateDefaultDeliveryDate(orderDateStr, 7);
+  const effectiveDeliv = deliveryDateStr || orderDateStr;
   if (!effectiveDeliv) return null;
   const parts = effectiveDeliv.split('T')[0].split('-').map(Number);
   if (parts.length !== 3 || isNaN(parts[0]) || isNaN(parts[1]) || isNaN(parts[2])) {
@@ -347,11 +348,8 @@ export function calculateSettlementDate(
 }
 
 /**
- * Checks whether an order is settled based on its delivery date (or default order_date + 7 days)
+ * Checks whether an order is settled based on its delivery date (or order date if delivery not yet set)
  * and the marketplace settlement period.
- * 
- * Business rule: The settlement countdown begins from the delivery date.
- * By default, the product is delivered up to 7 days after the order date.
  * 
  * @param orderDateStr Date string (YYYY-MM-DD or ISO) of the order
  * @param settlementDays Number of days for settlement (default 7)
@@ -379,8 +377,7 @@ export function isOrderSettled(
   } else if (orderDateStr) {
     const parts = orderDateStr.split('T')[0].split('-').map(Number);
     if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
-      // By default: delivered up to 7 days after the order date
-      baseDate = new Date(parts[0], parts[1] - 1, parts[2] + 7);
+      baseDate = new Date(parts[0], parts[1] - 1, parts[2]);
     } else {
       return true;
     }
@@ -388,7 +385,7 @@ export function isOrderSettled(
     return true;
   }
 
-  // Settlement occurs settlementDays after delivery base date
+  // Settlement occurs settlementDays after base date
   const settlementDate = new Date(
     baseDate.getFullYear(),
     baseDate.getMonth(),

@@ -240,18 +240,18 @@ describe('revenueCalculations', () => {
       expect(isOrderSettled('', 7, refDate)).toBe(true);
     });
 
-    it('identifies order as pending by default when within default 7d delivery + 7d settlement window', () => {
-      // Order placed 2 days ago (2026-10-10) -> default delivery 2026-10-17 -> settlement on 2026-10-24
+    it('identifies order as pending by default when within settlementDays window from order date', () => {
+      // Order placed 2 days ago (2026-10-10) -> settlement on 2026-10-17
       expect(isOrderSettled('2026-10-10', 7, refDate)).toBe(false);
-      // Order placed 6 days ago (2026-10-06) -> default delivery 2026-10-13 -> settlement on 2026-10-20
+      // Order placed 6 days ago (2026-10-06) -> settlement on 2026-10-13 (refDate is 2026-10-12)
       expect(isOrderSettled('2026-10-06', 7, refDate)).toBe(false);
     });
 
-    it('identifies order as settled by default when 14 days (7d delivery + 7d settlement) have elapsed', () => {
-      // Order placed 14 days ago (2026-09-28) -> default delivery 2026-10-05 -> settlement on 2026-10-12
-      expect(isOrderSettled('2026-09-28', 7, refDate)).toBe(true);
-      // Order placed 20 days ago (2026-09-22) -> settled
-      expect(isOrderSettled('2026-09-22', 7, refDate)).toBe(true);
+    it('identifies order as settled by default when settlementDays (7 days) have elapsed from order date', () => {
+      // Order placed 7 days ago (2026-10-05) -> settlement on 2026-10-12 (refDate is 2026-10-12)
+      expect(isOrderSettled('2026-10-05', 7, refDate)).toBe(true);
+      // Order placed 10 days ago (2026-10-02) -> settled
+      expect(isOrderSettled('2026-10-02', 7, refDate)).toBe(true);
     });
 
     it('starts countdown from custom delivery_date when provided', () => {
@@ -280,11 +280,11 @@ describe('revenueCalculations', () => {
       expect(calculateDefaultDeliveryDate(null)).toBeNull();
     });
 
-    it('calculates settlement date based on custom delivery date or default', () => {
+    it('calculates settlement date based on custom delivery date or default order date', () => {
       // Custom delivery: 2026-10-12 + 7 days settlement = 2026-10-19
       expect(calculateSettlementDate('2026-10-10', '2026-10-12', 7)).toBe('2026-10-19');
-      // Default delivery (+7d = 2026-10-17) + 7 days settlement = 2026-10-24
-      expect(calculateSettlementDate('2026-10-10', null, 7)).toBe('2026-10-24');
+      // Default order date: 2026-10-10 + 7 days settlement = 2026-10-17
+      expect(calculateSettlementDate('2026-10-10', null, 7)).toBe('2026-10-17');
     });
 
     it('formats dates in DD/MM/YYYY without timezone drift', () => {
