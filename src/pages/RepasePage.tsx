@@ -33,6 +33,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { getSettledOrderProfit, isOrderSettled, round2 } from '@/components/sales/revenueCalculations';
+import { calcOrderProfit } from '@/utils/calcOrderProfit';
 
 export interface RepasseConfig {
   id?: string;
@@ -194,6 +195,12 @@ export default function RepasePage() {
         .order('period_start', { ascending: false });
       setPayments((payRows ?? []) as RepassePayment[]);
 
+      // Fetch marketplaces for real commission and fee calculations
+      const { data: mkts } = await supabase
+        .from('marketplaces')
+        .select('*');
+      const mktById = new Map((mkts ?? []).map((m: any) => [m.id, m]));
+
       // 3. Monthly revenue & profit report (recalculated with settled canonical rules)
       const { data: rpt } = await supabase.rpc('get_revenue_report', {
         p_organization_id: organizationId,
@@ -202,14 +209,7 @@ export default function RepasePage() {
 
       if (rpt) {
         const processedRows: MonthlyReportRow[] = (rpt as Array<Record<string, unknown>>).map((row) => {
-          const orders = ((row.orders_data as unknown[]) || []) as Array<{
-            order_id?: string;
-            order_number?: string;
-            order_date?: string;
-            total_amount?: number;
-            total_cost?: number;
-            total_profit?: number;
-          }>;
+          const orders = ((row.orders_data as unknown[]) || []) as Array<any>;
 
           let totalRevenue = 0;
           let totalCost = 0;
@@ -220,10 +220,13 @@ export default function RepasePage() {
           if (orders.length > 0) {
             orders.forEach((o) => {
               const settledOverride = getSettledOrderProfit(o.order_number);
-              const effectiveProfit = settledOverride !== null ? settledOverride : Number(o.total_profit ?? 0);
-              const rev = Number(o.total_amount ?? 0);
-              const cost = Number(o.total_cost ?? 0);
-              const settlementDays = 7;
+              const mkt = mktById.get(o.marketplace_id);
+              const hasAffiliate = Boolean(o.affiliate_id);
+              const profitResult = calcOrderProfit(o, mkt, hasAffiliate);
+              const effectiveProfit = settledOverride !== null ? settledOverride : profitResult.realProfit;
+              const rev = profitResult.precoVendaLiquidoFinal;
+              const cost = profitResult.effectiveProductCost + profitResult.subtotalMarketplace;
+              const settlementDays = Number(mkt?.settlement_period_days ?? 7);
               const settled = isOrderSettled(o.order_date, settlementDays, new Date(), (o as { delivery_date?: string | null }).delivery_date);
 
               if (settled) {
@@ -750,12 +753,21 @@ export default function RepasePage() {
             <p className={`text-2xl font-bold ${totalSettledProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
               {fmt(totalSettledProfit)}
             </p>
-            {totalWaitingProfit > 0 && (
-              <div className="flex items-center gap-1.5 mt-1 text-[11px] text-amber-400 font-medium">
-                <Hourglass className="w-3 h-3" />
-                <span>Em espera: {fmt(totalWaitingProfit)}</span>
+            <div className="flex flex-col gap-0.5 mt-1.5 text-[11px]">
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-400">Lucro Total:</span>
+                <span className="text-white font-semibold">{fmt(totalGrossProfit)}</span>
               </div>
-            )}
+              {totalWaitingProfit > 0 && (
+                <div className="flex items-center justify-between text-amber-400 font-medium">
+                  <span className="flex items-center gap-1">
+                    <Hourglass className="w-3 h-3" />
+                    Em espera:
+                  </span>
+                  <span>{fmt(totalWaitingProfit)}</span>
+                </div>
+              )}
+            </div>
             <div className="flex items-center justify-between mt-2 pt-2 border-t border-zinc-800/80 text-[11px]">
               <span className="text-zinc-500">Pago: {fmt(totalPaid)}</span>
               <span className="text-amber-400 font-medium">Pendente: {fmt(totalPending)}</span>
@@ -781,13 +793,19 @@ export default function RepasePage() {
               <p className={`text-2xl font-bold ${b.colorText}`}>
                 {fmt(b.accumulatedShare)}
               </p>
-              {b.waitingShare > 0 ? (
-                <p className="text-[11px] text-amber-400 font-medium mt-0.5">
-                  + {fmt(b.waitingShare)} em espera
-                </p>
-              ) : (
-                <p className="text-[11px] text-zinc-500 mt-0.5">{b.role}</p>
-              )}
+              <div className="mt-1 space-y-0.5 text-[11px]">
+                <div className="flex items-center justify-between text-zinc-400">
+                  <span>Total com espera:</span>
+                  <span className="text-zinc-200 font-medium">{fmt(b.grossShare)}</span>
+                </div>
+                {b.waitingShare > 0 ? (
+                  <p className="text-amber-400 font-medium">
+                    + {fmt(b.waitingShare)} em espera
+                  </p>
+                ) : (
+                  <p className="text-zinc-500">{b.role}</p>
+                )}
+              </div>
             </div>
 
             <div className="mt-3 pt-2 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
@@ -861,14 +879,26 @@ export default function RepasePage() {
 
                     <div className="flex items-center gap-4 self-start md:self-auto">
                       <div className="text-right">
-                        <span className="text-[10px] text-zinc-500 uppercase tracking-wider block">
-                          Lucro Liquidado
-                        </span>
-                        <span className={`text-lg font-bold ${isNegative ? 'text-red-400' : 'text-emerald-400'}`}>
-                          {fmt(month.settledProfit)}
-                        </span>
+                        <div className="flex items-center justify-end gap-3">
+                          <div>
+                            <span className="text-[10px] text-zinc-500 uppercase tracking-wider block">
+                              Lucro Liquidado
+                            </span>
+                            <span className={`text-base font-bold ${isNegative ? 'text-red-400' : 'text-emerald-400'}`}>
+                              {fmt(month.settledProfit)}
+                            </span>
+                          </div>
+                          <div className="border-l border-zinc-800 pl-3">
+                            <span className="text-[10px] text-zinc-500 uppercase tracking-wider block">
+                              Lucro Total
+                            </span>
+                            <span className="text-base font-bold text-white">
+                              {fmt(month.grossProfit)}
+                            </span>
+                          </div>
+                        </div>
                         {month.waitingProfit > 0 && (
-                          <span className="text-[11px] text-amber-400 font-medium block">
+                          <span className="text-[11px] text-amber-400 font-medium block mt-0.5">
                             + {fmt(month.waitingProfit)} em espera
                           </span>
                         )}
