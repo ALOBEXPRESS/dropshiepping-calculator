@@ -82,6 +82,8 @@ interface OrderDetail {
   product_sku?: string;
   product_image_url?: string;
   affiliate_id?: string | null;
+  affiliate_name?: string | null;
+  affiliate_percentage?: number | null;
   products?: {
     id?: string;
     name: string;
