@@ -23,7 +23,7 @@ import Chart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
 import { useRevenueReport } from '@/hooks/sales/useRevenueReport';
 import { supabase } from '@/lib/supabase';
-import { Loader2, Trash2, Truck, CheckCircle2, Clock } from 'lucide-react';
+import { Loader2, Trash2, Truck, CheckCircle2, Clock, ShoppingBag } from 'lucide-react';
 import type { PeriodFilter, RevenueData } from '@/types/sales';
 import { toast } from 'sonner';
 import { ReferenceService, type Marketplace } from '@/services/referenceService';
@@ -61,6 +61,8 @@ interface OrderDetail {
   order_id: string;
   bling_order_id?: string | null;
   order_number: string;
+  marketplace_order_number?: string | null;
+  purchase_order_number?: string | null;
   order_date?: string | null;
   delivery_date?: string | null;
   marketplace: string;
@@ -313,6 +315,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 supplier_gateway_fee_value,
                 supplier_gateway_fee_type
               )
+            ),
+            bling_order_id,
+            bling_orders!bling_order_id (
+              marketplace_order_number,
+              purchase_order_number
             )
           `)
           .eq('id', orderId)
@@ -366,9 +373,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const resolvedMpConfig = mp || (fallbackMarketplace ? resolveMarketplaceConfig(fallbackMarketplace, 0, 0) : null);
           const resolvedMarketplaceName = mp?.name || fallbackMarketplace || '';
 
+          const boFallback = Array.isArray(dbOrder.bling_orders) ? dbOrder.bling_orders[0] : dbOrder.bling_orders;
           order = {
             order_id: dbOrder.id,
             order_number: dbOrder.order_number,
+            marketplace_order_number: (boFallback as { marketplace_order_number?: string | null })?.marketplace_order_number ?? null,
+            purchase_order_number: (boFallback as { purchase_order_number?: string | null })?.purchase_order_number ?? null,
             order_date: dbOrder.order_date,
             delivery_date: (dbOrder as { delivery_date?: string | null }).delivery_date ?? null,
             total_amount: Number(dbOrder.total_amount ?? 0),
@@ -434,6 +444,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       ...((enrichment ?? {}) as Partial<OrderDetail>),
       order_id: orderId,
       bling_order_id: (order as { bling_order_id?: string | null }).bling_order_id ?? null,
+      marketplace_order_number: (order as { marketplace_order_number?: string | null }).marketplace_order_number
+        ?? (enrichment as Partial<OrderDetail>)?.marketplace_order_number
+        ?? null,
+      purchase_order_number: (order as { purchase_order_number?: string | null }).purchase_order_number
+        ?? (enrichment as Partial<OrderDetail>)?.purchase_order_number
+        ?? null,
       order_date: (order as { order_date?: string | null }).order_date ?? null,
       delivery_date: (order as { delivery_date?: string | null }).delivery_date ?? null,
       tiktok_reembolso_disabled: (order as { tiktok_reembolso_disabled?: boolean }).tiktok_reembolso_disabled === true,
@@ -1053,6 +1069,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           bling_order_id?: string | null;
           bling_orders?: {
             id?: string;
+            marketplace_order_number?: string | null;
+            purchase_order_number?: string | null;
             total_products?: number | string | null;
             base_value?: number | string | null;
             commission_tax?: number | string | null;
@@ -1061,6 +1079,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             tiktok_retorno_liquido?: number | null;
           } | Array<{
             id?: string;
+            marketplace_order_number?: string | null;
+            purchase_order_number?: string | null;
             total_products?: number | string | null;
             base_value?: number | string | null;
             commission_tax?: number | string | null;
@@ -1092,6 +1112,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           bling_order_id,
           bling_orders!bling_order_id (
             id,
+            marketplace_order_number,
+            purchase_order_number,
             total_products,
             base_value,
             commission_tax,
@@ -1325,6 +1347,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const bo = Array.isArray(resolved.bling_orders) ? resolved.bling_orders[0] : resolved.bling_orders;
           updates[reportId] = {
             ...(updates[reportId] ?? existing ?? {}),
+            marketplace_order_number: bo?.marketplace_order_number ?? bo?.purchase_order_number ?? (existing as Partial<OrderDetail>)?.marketplace_order_number,
+            purchase_order_number: bo?.purchase_order_number ?? (existing as Partial<OrderDetail>)?.purchase_order_number,
             customer_name: derivedCustomerNameWithFixes ?? existing?.customer_name,
             total_profit: resolved.total_profit != null ? Number(resolved.total_profit) : (existing?.total_profit ?? undefined),
             reembolso_value: resolved.reembolso_value ?? existing?.reembolso_value,
@@ -3724,6 +3748,46 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
                   {/* Nome + cliente */}
                   <div className="pt-2">
+                    {/* Badges de Identificação do Pedido */}
+                    <div className="flex items-center gap-2 flex-wrap mb-2">
+                      <span
+                        onClick={() => {
+                          if (selectedOrder.order_number && selectedOrder.order_number !== 'S/N') {
+                            navigator.clipboard.writeText(selectedOrder.order_number);
+                            toast.success(`Pedido #${selectedOrder.order_number} copiado!`);
+                          }
+                        }}
+                        className="text-xs font-bold text-white bg-zinc-800/90 hover:bg-zinc-700/90 border border-zinc-700 px-2.5 py-1 rounded flex items-center gap-1.5 shadow-sm cursor-pointer transition-colors"
+                        title="Clique para copiar o número do pedido"
+                      >
+                        <ShoppingBag className="w-3.5 h-3.5 text-cyan-400" />
+                        Pedido #{selectedOrder.order_number}
+                      </span>
+
+                      {(selectedOrder.marketplace_order_number || selectedOrder.purchase_order_number) && (() => {
+                        const mktNum = selectedOrder.marketplace_order_number || selectedOrder.purchase_order_number || '';
+                        const formattedMktNum = mktNum.startsWith('NF-chave-')
+                          ? `Chave: ${mktNum.replace('NF-chave-', '').slice(0, 14)}...`
+                          : mktNum.startsWith('NF-')
+                          ? `NF: #${mktNum.replace('NF-', '')}`
+                          : `Loja: #${mktNum}`;
+
+                        return (
+                          <span
+                            onClick={() => {
+                              navigator.clipboard.writeText(mktNum);
+                              toast.success(`Número da loja virtual (${mktNum}) copiado!`);
+                            }}
+                            className="text-xs font-mono font-medium text-cyan-300 bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-800/60 px-2.5 py-1 rounded flex items-center gap-1.5 shadow-sm cursor-pointer transition-colors"
+                            title="Clique para copiar o número do pedido na loja virtual"
+                          >
+                            <span className="text-[10px] text-cyan-400/80 font-sans uppercase font-bold">Loja Virtual:</span>
+                            {formattedMktNum.replace(/^Loja:\s*/, '')}
+                          </span>
+                        );
+                      })()}
+                    </div>
+
                     <h2 className="text-white font-semibold text-sm leading-snug mb-1.5">
                       {hasMultipleProducts
                         ? `${products.length} produtos — Pedido #${selectedOrder.order_number}`
