@@ -20,8 +20,28 @@ export interface MarketplaceOption {
   affiliate_commission_rate: number;
 }
 
+export interface AffiliateOrderProduct {
+  name: string;
+  quantity: number;
+  sku?: string;
+}
+
+export interface AffiliateOrderGroup {
+  affiliate_id: string;
+  affiliate_name: string;
+  affiliate_username?: string;
+  orders_count: number;
+  total_profit: number;
+  total_amount: number;
+  marketplace_names: string[];
+  marketplace_ids: string[];
+  products: AffiliateOrderProduct[];
+  order_numbers: string[];
+}
+
 export const useAffiliateCommissionData = (organizationId: string, refreshTrigger?: number) => {
   const [data, setData] = useState<AffiliateCommissionProduct[]>([]);
+  const [orderGroups, setOrderGroups] = useState<AffiliateOrderGroup[]>([]);
   const [marketplaces, setMarketplaces] = useState<MarketplaceOption[]>([]);
   const [selectedMarketplace, setSelectedMarketplace] = useState<string>('all');
   const [loading, setLoading] = useState(true);
@@ -110,10 +130,124 @@ export const useAffiliateCommissionData = (organizationId: string, refreshTrigge
           });
         }
 
-        // 4. Ordenar por comissão (maior primeiro)
+        // Ordenar produtos por comissão (maior primeiro)
         processedProducts.sort((a, b) => b.max_affiliate_percentage - a.max_affiliate_percentage);
-
         setData(processedProducts);
+
+        // 4. Buscar pedidos com afiliados vinculados
+        const { data: ordersData, error: ordersErr } = await supabase
+          .from('orders')
+          .select(`
+            id,
+            order_number,
+            affiliate_id,
+            total_amount,
+            total_profit,
+            order_date,
+            marketplace_id,
+            marketplaces!marketplace_id (
+              id,
+              name
+            ),
+            order_items (
+              id,
+              product_name,
+              quantity,
+              unit_price
+            )
+          `)
+          .eq('organization_id', organizationId)
+          .not('affiliate_id', 'is', null);
+
+        if (ordersErr) {
+          console.warn('Error fetching affiliate orders:', ordersErr);
+        }
+
+        // Buscar nomes dos afiliados e influenciadores
+        const { data: affList } = await supabase
+          .from('affiliates')
+          .select('id, name, tiktok, instagram')
+          .or(`organization_id.eq.${organizationId},organization_id.is.null`);
+
+        const { data: infList } = await supabase
+          .from('influencers')
+          .select('id, name, tiktok, instagram')
+          .or(`organization_id.eq.${organizationId},organization_id.is.null`);
+
+        const affMetaMap = new Map<string, { name: string; username?: string }>();
+        for (const it of [...(affList || []), ...(infList || [])]) {
+          if (!it.name) continue;
+          if (!affMetaMap.has(it.id)) {
+            affMetaMap.set(it.id, {
+              name: it.name.trim(),
+              username: it.tiktok || it.instagram || undefined,
+            });
+          }
+        }
+
+        const groupsMap = new Map<string, AffiliateOrderGroup>();
+        for (const o of (ordersData || [])) {
+          if (!o.affiliate_id) continue;
+          const affId = o.affiliate_id;
+          const meta = affMetaMap.get(affId);
+          const affName = meta?.name || 'Afiliado ' + affId.slice(0, 8);
+          const affUser = meta?.username;
+
+          const mp = o.marketplaces as { id?: string; name?: string } | null;
+          const mpId = o.marketplace_id || mp?.id || '';
+          const mpName = mp?.name || '';
+
+          const profit = Number(o.total_profit ?? 0);
+          const amount = Number(o.total_amount ?? 0);
+          const items = (o.order_items || []) as Array<{
+            id?: string;
+            product_name?: string;
+            quantity?: number;
+          }>;
+
+          if (!groupsMap.has(affId)) {
+            groupsMap.set(affId, {
+              affiliate_id: affId,
+              affiliate_name: affName,
+              affiliate_username: affUser,
+              orders_count: 0,
+              total_profit: 0,
+              total_amount: 0,
+              marketplace_names: [],
+              marketplace_ids: [],
+              products: [],
+              order_numbers: [],
+            });
+          }
+
+          const grp = groupsMap.get(affId)!;
+          grp.orders_count += 1;
+          grp.total_profit = Math.round((grp.total_profit + profit) * 100) / 100;
+          grp.total_amount = Math.round((grp.total_amount + amount) * 100) / 100;
+          if (mpName && !grp.marketplace_names.includes(mpName)) {
+            grp.marketplace_names.push(mpName);
+          }
+          if (mpId && !grp.marketplace_ids.includes(mpId)) {
+            grp.marketplace_ids.push(mpId);
+          }
+          if (o.order_number && !grp.order_numbers.includes(String(o.order_number))) {
+            grp.order_numbers.push(String(o.order_number));
+          }
+
+          for (const it of items) {
+            const pName = it.product_name || 'Produto sem nome';
+            const qty = Number(it.quantity ?? 1);
+            const existingProd = grp.products.find(p => p.name === pName);
+            if (existingProd) {
+              existingProd.quantity += qty;
+            } else {
+              grp.products.push({ name: pName, quantity: qty });
+            }
+          }
+        }
+
+        const processedGroups = Array.from(groupsMap.values()).sort((a, b) => b.orders_count - a.orders_count);
+        setOrderGroups(processedGroups);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erro ao carregar dados de comissão');
         console.error('Error fetching affiliate commission data:', err);
@@ -130,9 +264,15 @@ export const useAffiliateCommissionData = (organizationId: string, refreshTrigge
     ? data
     : data.filter(p => p.marketplace_id === selectedMarketplace);
 
+  const filteredOrderGroups = selectedMarketplace === 'all'
+    ? orderGroups
+    : orderGroups.filter(g => g.marketplace_ids.includes(selectedMarketplace));
+
   return {
     data: filteredData,
-    allData: data, // Dados originais sem filtro de marketplace
+    allData: data, // Dados originais de produtos sem filtro de marketplace
+    orderGroups: filteredOrderGroups,
+    allOrderGroups: orderGroups, // Dados originais de pedidos sem filtro de marketplace
     marketplaces,
     selectedMarketplace,
     setSelectedMarketplace,

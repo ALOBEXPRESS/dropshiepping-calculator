@@ -3,7 +3,7 @@
  * 
  * Accordion para associar pedidos a influenciadores/afiliados
  * Permite selecionar afiliado existente ou criar novo
- * Salva em settings quando é um novo afiliado
+ * Exibe custo/comissão calculada e respeita retorno líquido do marketplace
  */
 
 import React, { useState, useEffect } from 'react';
@@ -16,15 +16,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Plus, X, Instagram, AtSign, ChevronDown, ChevronUp, Users } from 'lucide-react';
+import { Loader2, Plus, X, Instagram, AtSign, ChevronDown, Users, Info } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
-interface InfluencerOption {
+const formatCurrency = (val: number | string | null | undefined): string => {
+  const n = Number(val ?? 0);
+  return isNaN(n) ? 'R$ 0,00' : n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+};
+
+export interface InfluencerOption {
   id: string;
   name: string;
   instagram?: string | null;
   tiktok?: string | null;
+  percentage?: number | null;
+}
+
+export interface AffiliateInfo {
+  name: string;
+  percentage: number;
+  cost: number;
 }
 
 interface AffiliateAccordionProps {
@@ -32,7 +44,9 @@ interface AffiliateAccordionProps {
   marketplaceId: string;
   organizationId: string;
   currentAffiliateId?: string | null;
-  onAffiliateChange?: (affiliateId: string | null) => void;
+  hasRetornoLiquido?: boolean;
+  orderSaleAmount?: number;
+  onAffiliateChange?: (affiliateId: string | null, affiliateInfo?: AffiliateInfo) => void;
 }
 
 interface NewInfluencerForm {
@@ -56,23 +70,25 @@ export const AffiliateAccordion: React.FC<AffiliateAccordionProps> = ({
   marketplaceId,
   organizationId,
   currentAffiliateId,
+  hasRetornoLiquido = false,
+  orderSaleAmount = 0,
   onAffiliateChange,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [influencers, setInfluencers] = useState<InfluencerOption[]>([]);
   const [selectedInfluencerId, setSelectedInfluencerId] = useState<string>(currentAffiliateId || '');
-
-  // Sync when prop changes (different order opened)
-  useEffect(() => {
-    setSelectedInfluencerId(currentAffiliateId || '');
-  }, [currentAffiliateId]);
   const [showNewForm, setShowNewForm] = useState(false);
   const [form, setForm] = useState<NewInfluencerForm>(EMPTY_FORM);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  // Carregar influenciadores quando abrir o accordion ou quando tiver afiliado já selecionado
+  // Sync when prop changes (different order opened)
+  useEffect(() => {
+    setSelectedInfluencerId(currentAffiliateId || '');
+  }, [currentAffiliateId]);
+
+  // Carregar influenciadores/afiliados quando abrir o accordion ou quando tiver afiliado já selecionado
   useEffect(() => {
     if ((isOpen || currentAffiliateId) && influencers.length === 0) {
       loadInfluencers();
@@ -82,25 +98,86 @@ export const AffiliateAccordion: React.FC<AffiliateAccordionProps> = ({
   const loadInfluencers = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('influencers')
-        .select('id, name, instagram, tiktok')
-        .eq('organization_id', organizationId)
-        .eq('is_active', true)
-        .order('name');
+      // 1. Buscar da tabela affiliates
+      let affQuery = supabase
+        .from('affiliates')
+        .select('id, name, instagram, tiktok, percentage, is_active')
+        .eq('is_active', true);
+      if (organizationId) {
+        affQuery = affQuery.or(`organization_id.eq.${organizationId},organization_id.is.null`);
+      }
+      const { data: affData } = await affQuery;
 
-      if (error) throw error;
-      setInfluencers(data || []);
+      // 2. Buscar da tabela influencers
+      let infQuery = supabase
+        .from('influencers')
+        .select('id, name, instagram, tiktok, percentage, is_active')
+        .eq('is_active', true);
+      if (organizationId) {
+        infQuery = infQuery.or(`organization_id.eq.${organizationId},organization_id.is.null`);
+      }
+      const { data: infData } = await infQuery;
+
+      // Consolidar e desduplicar por ID
+      const map = new Map<string, InfluencerOption>();
+      for (const item of [...(affData || []), ...(infData || [])]) {
+        const id = item.id;
+        const name = (item.name || '').trim();
+        if (!name) continue;
+        const pct = item.percentage != null ? Number(item.percentage) : 10.5;
+        if (!map.has(id)) {
+          map.set(id, {
+            id,
+            name,
+            instagram: item.instagram,
+            tiktok: item.tiktok,
+            percentage: pct,
+          });
+        }
+      }
+
+      const list = Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+      setInfluencers(list);
     } catch (err) {
-      console.error('Error loading influencers:', err);
-      toast.error('Erro ao carregar influenciadores');
+      console.error('Error loading influencers/affiliates:', err);
+      toast.error('Erro ao carregar afiliados');
     } finally {
       setLoading(false);
     }
   };
 
+  const selectedAffiliate = influencers.find(i => i.id === selectedInfluencerId);
+  const affiliatePercentage = selectedAffiliate?.percentage != null ? Number(selectedAffiliate.percentage) : 10.5;
+  const affiliateCost = selectedAffiliate && selectedInfluencerId !== '__none__'
+    ? Math.round((Number(orderSaleAmount || 0) * (affiliatePercentage / 100)) * 100) / 100
+    : 0;
+
+  const handleAssociateAffiliate = async (affiliateId: string | null) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ affiliate_id: affiliateId })
+        .eq('id', orderId);
+
+      if (error) {
+        throw error;
+      }
+
+      const chosen = influencers.find(i => i.id === affiliateId);
+      const chosenPct = chosen?.percentage != null ? Number(chosen.percentage) : 10.5;
+      const chosenCost = chosen && affiliateId
+        ? Math.round((Number(orderSaleAmount || 0) * (chosenPct / 100)) * 100) / 100
+        : 0;
+
+      toast.success(affiliateId ? `Afiliado "${chosen?.name ?? ''}" associado!` : 'Afiliado removido do pedido');
+      onAffiliateChange?.(affiliateId, chosen ? { name: chosen.name, percentage: chosenPct, cost: chosenCost } : undefined);
+    } catch (err) {
+      console.error('Error associating affiliate:', err);
+      toast.error('Erro ao associar afiliado');
+    }
+  };
+
   const handleSaveNewInfluencer = async () => {
-    // Validate
     if (!form.name.trim()) {
       setFormError('O nome é obrigatório.');
       return;
@@ -114,11 +191,11 @@ export const AffiliateAccordion: React.FC<AffiliateAccordionProps> = ({
     setSaving(true);
 
     try {
-      // Insert influencer
+      // 1. Inserir em influencers (satisfaz FK em orders.affiliate_id)
       const { data: newInf, error: infError } = await supabase
         .from('influencers')
         .insert({
-          organization_id: organizationId,
+          organization_id: organizationId || null,
           name: form.name.trim(),
           instagram: form.instagram.trim().replace(/^@/, '') || null,
           tiktok: form.tiktok.trim().replace(/^@/, '') || null,
@@ -126,25 +203,52 @@ export const AffiliateAccordion: React.FC<AffiliateAccordionProps> = ({
           percentage: pct,
           is_active: true,
         })
-        .select('id, name, instagram, tiktok')
+        .select('id, name, instagram, tiktok, percentage')
         .single();
 
       if (infError) throw infError;
 
-      // Link to marketplace
-      await supabase.from('influencer_marketplaces').insert({
-        influencer_id: newInf.id,
-        marketplace_id: marketplaceId,
-      });
+      // 2. Inserir em affiliates para manter espelhado
+      try {
+        await supabase.from('affiliates').insert({
+          id: newInf.id,
+          organization_id: organizationId || null,
+          name: form.name.trim(),
+          instagram: form.instagram.trim().replace(/^@/, '') || null,
+          tiktok: form.tiktok.trim().replace(/^@/, '') || null,
+          twitter: form.twitter.trim().replace(/^@/, '') || null,
+          percentage: pct,
+          is_active: true,
+        });
+      } catch {
+        // Ignora duplicidade caso já inserido
+      }
 
-      toast.success(`Influenciador "${newInf.name}" criado com sucesso!`);
-      
-      // Adicionar à lista
-      setInfluencers(prev => [...prev, newInf as InfluencerOption]);
+      // 3. Vincular marketplace se houver
+      if (marketplaceId) {
+        try {
+          await supabase.from('influencer_marketplaces').insert({
+            influencer_id: newInf.id,
+            marketplace_id: marketplaceId,
+          });
+        } catch {
+          // Ignora erro de link secundário
+        }
+      }
+
+      const createdOpt: InfluencerOption = {
+        id: newInf.id,
+        name: newInf.name,
+        instagram: newInf.instagram,
+        tiktok: newInf.tiktok,
+        percentage: Number(newInf.percentage ?? pct),
+      };
+
+      setInfluencers(prev => [...prev, createdOpt].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')));
       setSelectedInfluencerId(newInf.id);
       setShowNewForm(false);
       setForm(EMPTY_FORM);
-      
+
       // Associar ao pedido
       await handleAssociateAffiliate(newInf.id);
     } catch (err) {
@@ -153,35 +257,6 @@ export const AffiliateAccordion: React.FC<AffiliateAccordionProps> = ({
       toast.error('Erro ao criar influenciador', { description: msg });
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleAssociateAffiliate = async (affiliateId: string | null) => {
-    try {
-      // Atualizar a associação do pedido com o afiliado
-      // Nota: Requer coluna affiliate_id na tabela orders
-      const { error } = await supabase
-        .from('orders')
-        .update({ affiliate_id: affiliateId })
-        .eq('id', orderId);
-
-      if (error) {
-        // Se o erro for sobre coluna não existente, dar feedback específico
-        if (error.message?.includes('column') && error.message?.includes('affiliate_id')) {
-          toast.error('Coluna affiliate_id não existe na tabela orders', {
-            description: 'Execute a migração do banco de dados para adicionar esta coluna.',
-          });
-        } else {
-          throw error;
-        }
-        return;
-      }
-
-      toast.success(affiliateId ? 'Afiliado associado com sucesso!' : 'Afiliado removido');
-      onAffiliateChange?.(affiliateId);
-    } catch (err) {
-      console.error('Error associating affiliate:', err);
-      toast.error('Erro ao associar afiliado');
     }
   };
 
@@ -200,28 +275,53 @@ export const AffiliateAccordion: React.FC<AffiliateAccordionProps> = ({
     <div className="rounded-xl overflow-hidden bg-violet-950/15 border border-violet-800/30">
       {/* Header - Clicável para expandir/recolher */}
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between bg-violet-900/20 px-4 py-3 hover:bg-violet-900/30 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-violet-950/60 to-zinc-900/60 hover:from-violet-950/80 transition-colors cursor-pointer text-left"
       >
-        <div className="flex items-center gap-2">
-          <Users className="w-4 h-4 text-violet-400" />
-          <span className="text-sm font-semibold text-violet-300">AFILIADOS</span>
-          {selectedInfluencerId && selectedInfluencerId !== '__none__' && (
-            <span className="text-xs text-violet-400">
-              ({influencers.find(i => i.id === selectedInfluencerId)?.name || 'Associado'})
+        <div className="flex items-center gap-2 flex-wrap">
+          <Users className="w-3.5 h-3.5 text-violet-400 flex-shrink-0" />
+          <span className={`font-semibold text-xs uppercase tracking-wide ${hasRetornoLiquido && selectedAffiliate && selectedInfluencerId !== '__none__' ? 'text-zinc-500 line-through' : 'text-violet-400'}`}>
+            AFILIADOS
+          </span>
+          {selectedAffiliate && selectedInfluencerId !== '__none__' && (
+            <span className="text-xs text-violet-300 font-medium">
+              — {selectedAffiliate.name} ({affiliatePercentage}%)
+            </span>
+          )}
+          {hasRetornoLiquido && (
+            <span className="text-[10px] text-teal-400 font-medium bg-teal-950/60 border border-teal-800/40 px-2 py-0.5 rounded">
+              (retorno líquido aplicado)
             </span>
           )}
         </div>
-        {isOpen ? (
-          <ChevronUp className="w-4 h-4 text-violet-400" />
-        ) : (
-          <ChevronDown className="w-4 h-4 text-violet-400" />
-        )}
+        <div className="flex items-center gap-3">
+          {selectedAffiliate && selectedInfluencerId !== '__none__' && affiliateCost > 0 ? (
+            <span className={`font-semibold text-sm tabular-nums ${hasRetornoLiquido ? 'text-zinc-600 line-through' : 'text-violet-400'}`}>
+              -{formatCurrency(affiliateCost)}
+            </span>
+          ) : (
+            <span className="text-xs text-zinc-500">
+              {selectedAffiliate && selectedInfluencerId !== '__none__' ? formatCurrency(0) : 'Nenhum'}
+            </span>
+          )}
+          <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        </div>
       </button>
 
       {/* Conteúdo do Accordion */}
       {isOpen && (
-        <div className="p-4 space-y-3">
+        <div className="p-4 space-y-3 bg-zinc-900/40 border-t border-violet-950/30">
+          {hasRetornoLiquido && (
+            <div className="p-2.5 rounded-lg bg-teal-950/30 border border-teal-800/40 text-xs text-teal-300/90 flex items-start gap-2">
+              <Info className="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
+              <p>
+                O retorno líquido está ativo neste pedido. A comissão do afiliado
+                {affiliateCost > 0 && <strong className="text-white"> (-{formatCurrency(affiliateCost)})</strong>} não desconta do retorno líquido, mas o afiliado selecionado permanece salvo e vinculado ao pedido para fins de relatório.
+              </p>
+            </div>
+          )}
+
           {loading ? (
             <div className="flex items-center justify-center py-4">
               <Loader2 className="w-5 h-5 animate-spin text-violet-400" />
@@ -233,39 +333,58 @@ export const AffiliateAccordion: React.FC<AffiliateAccordionProps> = ({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-medium text-violet-300">
-                      Selecionar Influenciador
+                      Selecionar Afiliado / Influenciador
                     </label>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="h-7 text-xs text-violet-400 hover:text-violet-300 hover:bg-violet-900/30 gap-1"
+                      className="h-7 text-xs text-violet-400 hover:text-violet-300 hover:bg-violet-900/30 gap-1 cursor-pointer"
                       onClick={() => setShowNewForm(true)}
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      Novo
+                      Novo Afiliado
                     </Button>
                   </div>
                   
                   <Select
-                    value={selectedInfluencerId}
+                    value={selectedInfluencerId || '__none__'}
                     onValueChange={handleSelectChange}
                   >
-                    <SelectTrigger className="bg-card border-violet-800/50 text-white">
-                      <SelectValue placeholder="Sem influenciador" />
+                    <SelectTrigger className="bg-zinc-900/90 border-violet-800/50 text-white">
+                      <SelectValue placeholder="Sem afiliado" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">Sem influenciador</SelectItem>
+                    <SelectContent className="bg-zinc-900 border-zinc-800 text-white max-h-60">
+                      <SelectItem value="__none__">Sem afiliado</SelectItem>
                       {influencers.map((inf) => (
                         <SelectItem key={inf.id} value={inf.id}>
-                          <span className="font-medium">{inf.name}</span>
-                          {inf.instagram && (
-                            <span className="text-muted-foreground ml-1 text-xs">@{inf.instagram}</span>
-                          )}
+                          <div className="flex items-center justify-between gap-3 w-full">
+                            <span className="font-medium text-zinc-200">{inf.name}</span>
+                            <span className="text-xs text-violet-400 font-mono">
+                              {inf.percentage != null ? `${inf.percentage}%` : '10.5%'}
+                              {orderSaleAmount > 0 && inf.percentage ? (
+                                ` (${formatCurrency((orderSaleAmount * Number(inf.percentage)) / 100)})`
+                              ) : ''}
+                            </span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+
+                  {selectedAffiliate && selectedInfluencerId !== '__none__' && (
+                    <div className="pt-2 border-t border-violet-900/30 flex items-center justify-between text-xs">
+                      <span className="text-zinc-400">Comissão de afiliado:</span>
+                      <div className="text-right">
+                        <span className={`font-semibold tabular-nums ${hasRetornoLiquido ? 'text-zinc-500 line-through' : 'text-violet-300'}`}>
+                          -{formatCurrency(affiliateCost)}
+                        </span>
+                        <span className="text-zinc-500 ml-1.5">
+                          ({affiliatePercentage}% sobre {formatCurrency(orderSaleAmount)})
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -274,7 +393,7 @@ export const AffiliateAccordion: React.FC<AffiliateAccordionProps> = ({
                 <div className="space-y-3 p-3 rounded-lg bg-violet-900/20 border border-violet-800/40">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-violet-300">
-                      Novo Influenciador
+                      Cadastrar Novo Afiliado
                     </span>
                     <Button
                       type="button"
@@ -298,7 +417,7 @@ export const AffiliateAccordion: React.FC<AffiliateAccordionProps> = ({
                       Nome <span className="text-red-400">*</span>
                     </label>
                     <Input
-                      placeholder="Nome do influenciador"
+                      placeholder="Nome do influenciador/afiliado"
                       value={form.name}
                       onChange={(e) => setField('name', e.target.value)}
                       disabled={saving}
@@ -340,7 +459,7 @@ export const AffiliateAccordion: React.FC<AffiliateAccordionProps> = ({
                     </div>
                     <div className="space-y-1">
                       <label className="text-xs font-medium text-violet-300 flex items-center gap-1">
-                        <AtSign className="w-3 h-3" /> X
+                        <AtSign className="w-3 h-3" /> X / Outro
                       </label>
                       <div className="relative">
                         <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-violet-400">@</span>
@@ -385,7 +504,7 @@ export const AffiliateAccordion: React.FC<AffiliateAccordionProps> = ({
                   <Button
                     type="button"
                     size="sm"
-                    className="w-full bg-violet-600 hover:bg-violet-700 text-white h-8 text-xs"
+                    className="w-full bg-violet-600 hover:bg-violet-700 text-white h-8 text-xs cursor-pointer"
                     onClick={handleSaveNewInfluencer}
                     disabled={saving || !form.name.trim()}
                   >

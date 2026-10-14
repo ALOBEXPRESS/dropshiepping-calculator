@@ -272,6 +272,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           .select(`
             id,
             order_number,
+            affiliate_id,
             order_date,
             delivery_date,
             total_amount,
@@ -377,6 +378,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           order = {
             order_id: dbOrder.id,
             order_number: dbOrder.order_number,
+            affiliate_id: (dbOrder as { affiliate_id?: string | null }).affiliate_id ?? null,
             marketplace_order_number: (boFallback as { marketplace_order_number?: string | null })?.marketplace_order_number ?? null,
             purchase_order_number: (boFallback as { purchase_order_number?: string | null })?.purchase_order_number ?? null,
             order_date: dbOrder.order_date,
@@ -480,10 +482,18 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       is_personal_purchase: (order as { is_personal_purchase?: boolean }).is_personal_purchase === true
         || String((order as { order_number?: string | number }).order_number ?? '').trim() === '208',
       reembolso_value: (order as { reembolso_value?: number | null }).reembolso_value ?? (reembolsoOv !== null ? reembolsoOv : null),
+      affiliate_id: (order as { affiliate_id?: string | null }).affiliate_id
+        ?? (enrichment as Partial<OrderDetail>)?.affiliate_id
+        ?? null,
     };
 
     setSelectedOrder(detail);
-    setCameFromAffiliate(Boolean(affiliateByOrderIdRef.current?.[orderId]) || Boolean((detail as { affiliate_id?: string }).affiliate_id));
+    setCameFromAffiliate(
+      Boolean(affiliateByOrderIdRef.current?.[orderId]) ||
+      Boolean((order as { affiliate_id?: string }).affiliate_id) ||
+      Boolean((detail as { affiliate_id?: string }).affiliate_id) ||
+      Boolean((enrichment as Partial<OrderDetail>)?.affiliate_id)
+    );
     setOpenProduto(false);
     setOpenMarketplace(false);
     setOpenDescontos(false);
@@ -1053,6 +1063,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         type OrderCustomerRow = {
           id?: string | null;
           order_number?: string | number | null;
+          affiliate_id?: string | null;
           total_profit?: number | null;
           discount_value?: number | null;
           shipping_cost?: number | null;
@@ -1096,6 +1107,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const baseSelect = `
           id,
           order_number,
+          affiliate_id,
           total_profit,
           discount_value,
           shipping_cost,
@@ -1347,6 +1359,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const bo = Array.isArray(resolved.bling_orders) ? resolved.bling_orders[0] : resolved.bling_orders;
           updates[reportId] = {
             ...(updates[reportId] ?? existing ?? {}),
+            affiliate_id: resolved.affiliate_id ?? existing?.affiliate_id ?? null,
             marketplace_order_number: bo?.marketplace_order_number ?? bo?.purchase_order_number ?? (existing as Partial<OrderDetail>)?.marketplace_order_number,
             purchase_order_number: bo?.purchase_order_number ?? (existing as Partial<OrderDetail>)?.purchase_order_number,
             customer_name: derivedCustomerNameWithFixes ?? existing?.customer_name,
@@ -4142,7 +4155,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                 if (selectedOrder.order_id) {
                                   await supabase
                                     .from('orders')
-                                    .update({ total_profit: finalRealProfit })
+                                    .update({
+                                      total_profit: finalRealProfit,
+                                      ...(selectedOrder.affiliate_id !== undefined ? { affiliate_id: selectedOrder.affiliate_id } : {})
+                                    })
                                     .eq('id', selectedOrder.order_id);
                                   setOrderEnrichmentById(prev => ({
                                     ...prev,
@@ -4150,6 +4166,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                       ...(prev[selectedOrder.order_id] ?? {}),
                                       tiktok_retorno_liquido: saveVal ?? undefined,
                                       total_profit: finalRealProfit,
+                                      ...(selectedOrder.affiliate_id !== undefined ? { affiliate_id: selectedOrder.affiliate_id } : {}),
                                     }
                                   }));
                                 }
@@ -4533,29 +4550,39 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   )}
 
                   {/* Accordion de Afiliados */}
-                  {selectedOrder?.order_id && selectedOrder?.marketplace && (
-                    <div className={hasRetornoLiquido ? 'opacity-40 pointer-events-none relative' : ''}>
-                      {hasRetornoLiquido && (
-                        <div className="absolute inset-0 flex items-center justify-center z-10">
-                          <span className="text-[10px] text-teal-500 font-medium bg-zinc-950/80 px-2 py-0.5 rounded">desconsiderado</span>
-                        </div>
-                      )}
-                      <AffiliateAccordion
-                        orderId={selectedOrder.order_id}
-                        marketplaceId={resolvedMarketplaceConfig?.id || ''}
-                        organizationId={organizationId}
-                        currentAffiliateId={selectedOrder.affiliate_id}
-                        onAffiliateChange={(affiliateId) => {
-                          if (selectedOrder) {
-                            setSelectedOrder({ ...selectedOrder, affiliate_id: affiliateId });
-                            // Set cameFromAffiliate based on whether an affiliate is selected
-                            const hasAffiliate = !!affiliateId;
-                            setCameFromAffiliate(hasAffiliate);
-                            setAffiliateByOrderId((prev) => ({ ...prev, [selectedOrder.order_id]: hasAffiliate }));
-                          }
-                        }}
-                      />
-                    </div>
+                  {selectedOrder?.order_id && (
+                    <AffiliateAccordion
+                      orderId={selectedOrder.order_id}
+                      marketplaceId={resolvedMarketplaceConfig?.id || ''}
+                      organizationId={organizationId}
+                      currentAffiliateId={selectedOrder.affiliate_id}
+                      hasRetornoLiquido={hasRetornoLiquido}
+                      orderSaleAmount={precoVendaBruto}
+                      onAffiliateChange={(affiliateId, affiliateInfo) => {
+                        if (selectedOrder) {
+                          setSelectedOrder({
+                            ...selectedOrder,
+                            affiliate_id: affiliateId,
+                            affiliate_name: affiliateInfo?.name ?? null,
+                            affiliate_percentage: affiliateInfo?.percentage ?? null,
+                          });
+                          const hasAffiliate = !!affiliateId;
+                          setCameFromAffiliate(hasAffiliate);
+                          setAffiliateByOrderId((prev) => ({ ...prev, [selectedOrder.order_id]: hasAffiliate }));
+                          orderEnrichmentByIdRef.current[selectedOrder.order_id] = {
+                            ...(orderEnrichmentByIdRef.current[selectedOrder.order_id] ?? {}),
+                            affiliate_id: affiliateId,
+                          };
+                          setOrderEnrichmentById((prev) => ({
+                            ...prev,
+                            [selectedOrder.order_id]: {
+                              ...(prev[selectedOrder.order_id] ?? {}),
+                              affiliate_id: affiliateId,
+                            },
+                          }));
+                        }
+                      }}
+                    />
                   )}
 
                   {/* Accordion de Descontos */}
