@@ -2828,10 +2828,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const currentPeriodCost = visibleData.reduce((sum, item) => sum + Number(item.total_cost ?? 0), 0);
   const currentPeriodProfit = visibleData.reduce((sum, item) => sum + Number(item.total_profit ?? 0), 0);
 
-  // Lucro bruto de TODOS os dados
-  const allDataTotalProfitGross = useMemo(() => {
+  // Lucro total consolidado de TODOS os dados
+  const allDataTotalProfit = useMemo(() => {
     const source = recalculatedYearlyData.length > 0 ? recalculatedYearlyData : recalculatedData;
-    return source.reduce((sum, item) => sum + Number(item.total_profit ?? 0), 0);
+    return round2(source.reduce((sum, item) => sum + Number(item.total_profit ?? 0), 0));
   }, [recalculatedYearlyData, recalculatedData]);
 
   // Lucro em espera de TODOS os dados (aguardando período de liquidação)
@@ -2839,11 +2839,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     const source = recalculatedYearlyData.length > 0 ? recalculatedYearlyData : recalculatedData;
     return round2(source.reduce((sum, item) => sum + Number(item.total_waiting_profit ?? 0), 0));
   }, [recalculatedYearlyData, recalculatedData]);
-
-  // Lucro Total liquidado: abatido do lucro em espera (acumula à medida que os pedidos liquidam)
-  const allDataTotalProfit = useMemo(() => {
-    return round2(allDataTotalProfitGross - allDataWaitingProfit);
-  }, [allDataTotalProfitGross, allDataWaitingProfit]);
 
   // Custo total de TODOS os dados — usa recalculatedYearlyData para consistência
   const allDataTotalCost = useMemo(() => {
@@ -5408,15 +5403,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             </div>
             {/* Row 1 alongside Receita: Lucro Total, Lucro em espera, Lucro {mês} */}
             <div>
-              <div className="flex items-center gap-1.5">
-                <p className="text-xs text-gray-500 dark:text-gray-400">Lucro Total</p>
-                <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">
-                  Liquidado
-                </span>
-              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Lucro Total</p>
               <p 
                 className={`text-xl font-bold ${allDataTotalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                title={`Lucro já liquidado (Total bruto: ${formatCurrency(allDataTotalProfitGross)} - Em espera: ${formatCurrency(allDataWaitingProfit)})`}
+                title={`Lucro total consolidado de todos os pedidos (${formatCurrency(allDataTotalProfit)})`}
               >
                 {formatCurrency(allDataTotalProfit)}
               </p>
