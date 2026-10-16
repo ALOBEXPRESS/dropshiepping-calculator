@@ -2878,6 +2878,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     return round2(source.reduce((sum, item) => sum + Number(item.total_profit ?? 0), 0));
   }, [recalculatedYearlyData, recalculatedData]);
 
+  // Lucro total liquidado de TODOS os dados (pedidos já liquidados)
+  const allDataSettledProfit = useMemo(() => {
+    const source = recalculatedYearlyData.length > 0 ? recalculatedYearlyData : recalculatedData;
+    return round2(source.reduce((sum, item) => sum + Number(item.total_settled_profit ?? 0), 0));
+  }, [recalculatedYearlyData, recalculatedData]);
+
   // Lucro em espera de TODOS os dados (aguardando período de liquidação)
   const allDataWaitingProfit = useMemo(() => {
     const source = recalculatedYearlyData.length > 0 ? recalculatedYearlyData : recalculatedData;
@@ -5506,10 +5512,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Lucro Total</p>
               <p 
-                className={`text-xl font-bold ${allDataTotalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                title={`Lucro total consolidado de todos os pedidos (${formatCurrency(allDataTotalProfit)})`}
+                className={`text-xl font-bold ${allDataSettledProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                title={`Lucro líquido de pedidos já liquidados: ${formatCurrency(allDataSettledProfit)} • Total projetado com espera: ${formatCurrency(allDataTotalProfit)}`}
               >
-                {formatCurrency(allDataTotalProfit)}
+                {formatCurrency(allDataSettledProfit)}
               </p>
             </div>
             <div>

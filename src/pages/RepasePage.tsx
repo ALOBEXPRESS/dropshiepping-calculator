@@ -254,7 +254,7 @@ export default function RepasePage() {
             total_revenue: round2(totalRevenue),
             total_cost: round2(totalCost),
             total_profit: round2(totalProfit),
-            total_settled_profit: round2(totalProfit),
+            total_settled_profit: round2(totalSettledProfit),
             total_waiting_profit: round2(totalWaitingProfit),
             orders_count: orders.length || Number(row.orders_count ?? 0),
             orders_data: orders,
@@ -763,6 +763,10 @@ export default function RepasePage() {
                   <span>{fmt(totalWaitingProfit)}</span>
                 </div>
               )}
+              <div className="flex items-center justify-between text-zinc-400">
+                <span>Total c/ espera:</span>
+                <span className="text-zinc-200 font-medium">{fmt(totalGrossProfit)}</span>
+              </div>
             </div>
             <div className="flex items-center justify-between mt-2 pt-2 border-t border-zinc-800/80 text-[11px]">
               <span className="text-zinc-500">Pago: {fmt(totalPaid)}</span>
@@ -790,14 +794,16 @@ export default function RepasePage() {
                 {fmt(b.accumulatedShare)}
               </p>
               <div className="mt-1 space-y-0.5 text-[11px]">
-                {b.waitingShare > 0 ? (
+                {b.waitingShare > 0 && (
                   <p className="text-amber-400 font-medium flex items-center gap-1">
                     <Hourglass className="w-3 h-3" />
                     + {fmt(b.waitingShare)} em espera
                   </p>
-                ) : (
-                  <p className="text-zinc-500">{b.role}</p>
                 )}
+                <div className="flex items-center justify-between text-zinc-400">
+                  <span>Total c/ espera:</span>
+                  <span className="text-zinc-200 font-medium">{fmt(b.grossShare)}</span>
+                </div>
               </div>
             </div>
 

@@ -204,7 +204,7 @@ export function matchesOrderFilters(
  * - Final Result (Net):     -R$ 25,23
  */
 export const SETTLED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = Object.freeze({
-  // Shopee (5 orders)
+  // Shopee (5 orders: 180, 13, 225, 226, 233 + SONIA-001)
   'SONIA-001': -1.87,
   '225': -1.25,
   '226': -1.99,
@@ -212,7 +212,7 @@ export const SETTLED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = 
   '13': 10.23,
   '233': 10.23,
 
-  // TikTok Shop (17 orders)
+  // TikTok Shop — Pedidos Liquidados (26 pedidos)
   '223': -51.76,
   '210': -40.45,
   '224': -20.17,
@@ -221,15 +221,37 @@ export const SETTLED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = 
   '17': -5.70,
   '4': -2.05,
   '214': 32.94,
+  '235': 28.13,
   '187': 23.30,
+  '237': 15.16,
+  '238': 15.16,
+  '240': 15.16,
   '10': 12.98,
+  '231': 10.96,
+  '232': 10.96,
+  '234': 10.96,
   '15': 10.76,
   '14': 9.11,
+  '239': 7.30,
   '221': 6.53,
   '208': 5.47,
   '219': 4.55,
   '229': 2.10,
   '222': 1.65,
+
+  // TikTok Shop — Pedidos em Espera / Em Liquidação (12 pedidos)
+  '241': 15.16,
+  '243': 15.16,
+  '246': 7.29,
+  '247': 10.97,
+  '248': 7.29,
+  '251': 7.29,
+  '252': 7.29,
+  '253': 7.29,
+  '254': 7.29,
+  '255': 10.96,
+  '256': 10.96,
+  '257': 13.11,
 });
 
 /**
