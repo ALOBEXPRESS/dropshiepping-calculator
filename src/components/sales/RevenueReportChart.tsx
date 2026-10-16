@@ -2882,7 +2882,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     return acc;
   }, []);
 
-
+  // Custo acumulado até cada período (running total across ALL data, mesmo padrão de cumulativeProfits)
+  const cumulativeCosts = recalculatedData.reduce<number[]>((acc, item) => {
+    const prev = acc.length > 0 ? acc[acc.length - 1] : 0;
+    acc.push(Math.round((prev + Number(item.total_cost ?? 0)) * 100) / 100);
+    return acc;
+  }, []);
 
   const useAccumulated = period === 'monthly' || period === 'weekly' || period === 'daily';
 
@@ -2918,6 +2923,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     const source = recalculatedYearlyData.length > 0 ? recalculatedYearlyData : recalculatedData;
     return source.reduce((sum, item) => sum + Number(item.total_cost ?? 0), 0);
   }, [recalculatedYearlyData, recalculatedData]);
+
+  // Lucro bruto: diferença entre (Lucro Total + Lucro em espera) e Custo Total
+  const allDataGrossProfit = useMemo(() => {
+    return round2((allDataSettledProfit + allDataWaitingProfit) - allDataTotalCost);
+  }, [allDataSettledProfit, allDataWaitingProfit, allDataTotalCost]);
 
   const marketingCostSeriesData = visibleData.map((periodData) => {
     const periodMarketingCost = (periodData.orders_data ?? []).reduce((sum: number, order: unknown) => {
@@ -2995,9 +3005,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     dataLabels: { enabled: false },
     stroke: {
       curve: 'smooth',
-      width: [2, 2],
+      width: [2.5, 2.5, 2, 2],
     },
-    colors: ['#22c55e', '#f97316', '#10b981'],
+    colors: ['#22c55e', '#ef4444', '#f97316', '#10b981'],
     fill: {
       type: 'gradient',
       gradient: {
@@ -3006,13 +3016,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         opacityTo: 0.05,
         stops: [0, 90, 100],
       },
-      colors: ['#22c55e', '#ef4444', '#10b981'],
+      colors: ['#22c55e', '#ef4444', '#f97316', '#10b981'],
     },
     markers: {
       size: 4,
       strokeWidth: 2,
-      colors: ['#22c55e', '#f97316', '#10b981'],
-      strokeColors: ['#86efac', '#fca5a5', '#6ee7b7'],
+      colors: ['#22c55e', '#ef4444', '#f97316', '#10b981'],
+      strokeColors: ['#86efac', '#fca5a5', '#fdba74', '#6ee7b7'],
       hover: {
         size: 6,
       },
@@ -3046,8 +3056,16 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         return Number(periodData.total_profit ?? 0);
       });
 
+      const costValues = visibleData.map((periodData, index) => {
+        if (useAccumulated) {
+          return cumulativeCosts[windowOffset + index] ?? 0;
+        }
+
+        return Number(periodData.total_cost ?? 0);
+      });
+
       const marketingValues = marketingCostSeriesData;
-      const allValues = [0, ...profitValues, ...marketingValues];
+      const allValues = [0, ...profitValues, ...costValues, ...marketingValues];
 
       const rawMin = Math.min(...allValues);
       const rawMax = Math.max(...allValues);
@@ -3435,7 +3453,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         colors: '#6b7280',
       },
       markers: {
-        fillColors: ['#22c55e', '#f97316', '#10b981'],
+        fillColors: ['#22c55e', '#ef4444', '#f97316', '#10b981'],
       },
       onItemClick: {
         toggleDataSeries: true,
@@ -3452,6 +3470,16 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         }
 
         return Number(periodData.total_profit ?? 0);
+      }),
+    },
+    {
+      name: useAccumulated ? 'Custo Acumulado' : 'Custo',
+      data: visibleData.map((periodData, index) => {
+        if (useAccumulated) {
+          return cumulativeCosts[windowOffset + index] ?? 0;
+        }
+
+        return Number(periodData.total_cost ?? 0);
       }),
     },
     {
@@ -5614,8 +5642,17 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               <p className={`text-xl font-bold ${currentPeriodProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(currentPeriodProfit)}</p>
             </div>
           </div>
-          {/* Row 2: Custo Total, Custo {mês} */}
+          {/* Row 2: Lucro Bruto, Custo Total, Custo {mês} */}
           <div className="flex items-center gap-6 mt-2 flex-wrap">
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Lucro Bruto</p>
+              <p 
+                className={`text-xl font-bold ${allDataGrossProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                title={`Diferença entre (Lucro Total + Lucro em espera) e Custo Total: ${formatCurrency(allDataGrossProfit)}`}
+              >
+                {formatCurrency(allDataGrossProfit)}
+              </p>
+            </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Custo Total</p>
               <p className="text-xl font-bold text-red-600">{formatCurrency(allDataTotalCost)}</p>
@@ -5729,7 +5766,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             </button>
           )}
           <div ref={chartRef}>
-          <Chart key={`${JSON.stringify(visibleData.map(d => d.period_label + '_' + d.total_profit))}_${windowOffset}`} options={chartOptions} series={chartSeries} type="area" height={300} />
+          <Chart key={`${JSON.stringify(visibleData.map(d => `${d.period_label}_${d.total_profit}_${d.total_cost}`))}_${windowOffset}`} options={chartOptions} series={chartSeries} type="area" height={300} />
           </div>
         </div>
       ) : (
