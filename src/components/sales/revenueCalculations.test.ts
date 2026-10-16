@@ -303,6 +303,20 @@ describe('revenueCalculations', () => {
       expect(isOrderSettled('2026-10-10T15:30:00.000Z', 7, refDate)).toBe(false);
       expect(isOrderSettled('2026-09-20T10:00:00.000Z', 7, refDate)).toBe(true);
     });
+
+    it('suspends settlement indefinitely when in logistics delay without confirmed delivery date', () => {
+      // Placed 30 days ago, normally settled, but in logistics delay and not delivered -> pending
+      expect(isOrderSettled('2026-09-12', 7, refDate, null, true)).toBe(false);
+      expect(isOrderSettled('2026-09-12', 7, refDate, '', true)).toBe(false);
+      expect(isOrderSettled(null, 7, refDate, null, true)).toBe(false);
+    });
+
+    it('applies delivery_date + 7 days settlement when order in logistics delay gets delivered', () => {
+      // Delivered on 2026-10-03 + 7 days = 2026-10-10. refDate is 2026-10-12 -> settled!
+      expect(isOrderSettled('2026-09-12', 7, refDate, '2026-10-03', true)).toBe(true);
+      // Delivered on 2026-10-08 + 7 days = 2026-10-15. refDate is 2026-10-12 -> not yet settled!
+      expect(isOrderSettled('2026-09-12', 7, refDate, '2026-10-08', true)).toBe(false);
+    });
   });
 
   describe('delivery and settlement date helpers', () => {
@@ -317,6 +331,11 @@ describe('revenueCalculations', () => {
       expect(calculateSettlementDate('2026-10-10', '2026-10-12', 7)).toBe('2026-10-19');
       // Default order date: 2026-10-10 + 7 days settlement = 2026-10-17
       expect(calculateSettlementDate('2026-10-10', null, 7)).toBe('2026-10-17');
+    });
+
+    it('returns null settlement date when logistics delayed without delivery date', () => {
+      expect(calculateSettlementDate('2026-10-10', null, 7, true)).toBeNull();
+      expect(calculateSettlementDate('2026-10-10', '2026-10-12', 7, true)).toBe('2026-10-19');
     });
 
     it('formats dates in DD/MM/YYYY without timezone drift', () => {

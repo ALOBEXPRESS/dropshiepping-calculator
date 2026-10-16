@@ -12,6 +12,7 @@ export interface OrderData {
   order_number: string;
   order_date: string;
   delivery_date?: string | null;
+  is_logistics_delayed?: boolean;
   marketplace_name: string;
   marketplace?: string;
   total_amount: number;

@@ -348,14 +348,19 @@ export function calculateDefaultDeliveryDate(
 
 /**
  * Calculates the expected settlement date:
+ * If logistics delayed and no delivery date: returns null (aguardando entrega).
  * If deliveryDateStr is provided: deliveryDateStr + settlementDays.
  * If not provided: orderDateStr + settlementDays.
  */
 export function calculateSettlementDate(
   orderDateStr?: string | null,
   deliveryDateStr?: string | null,
-  settlementDays: number = 7
+  settlementDays: number = 7,
+  isLogisticsDelayed: boolean = false
 ): string | null {
+  if (isLogisticsDelayed && !deliveryDateStr) {
+    return null;
+  }
   const effectiveDeliv = deliveryDateStr || orderDateStr;
   if (!effectiveDeliv) return null;
   const parts = effectiveDeliv.split('T')[0].split('-').map(Number);
@@ -373,18 +378,28 @@ export function calculateSettlementDate(
  * Checks whether an order is settled based on its delivery date (or order date if delivery not yet set)
  * and the marketplace settlement period.
  * 
+ * If isLogisticsDelayed is true and no deliveryDateStr is set, the order NEVER settles automatically.
+ * It will only settle once deliveryDateStr is set AND referenceDate >= deliveryDateStr + settlementDays.
+ * 
  * @param orderDateStr Date string (YYYY-MM-DD or ISO) of the order
  * @param settlementDays Number of days for settlement (default 7)
  * @param referenceDate Current date for comparison (default new Date())
  * @param deliveryDateStr Optional custom delivery date (YYYY-MM-DD or ISO)
+ * @param isLogisticsDelayed Optional boolean indicating logistics delay
  * @returns true if settled (liquidação concluída), false if pending (em espera)
  */
 export function isOrderSettled(
   orderDateStr?: string | null,
   settlementDays: number = 7,
   referenceDate: Date = new Date(),
-  deliveryDateStr?: string | null
+  deliveryDateStr?: string | null,
+  isLogisticsDelayed: boolean = false
 ): boolean {
+  // Se estiver em atraso logístico e ainda não houver data de entrega confirmada, não liquida
+  if (isLogisticsDelayed && !deliveryDateStr) {
+    return false;
+  }
+
   if (!orderDateStr && !deliveryDateStr) return true;
 
   let baseDate: Date;

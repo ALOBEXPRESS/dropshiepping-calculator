@@ -221,13 +221,19 @@ export default function RepasePage() {
             orders.forEach((o) => {
               const settledOverride = getSettledOrderProfit(o.order_number);
               const mkt = mktById.get(o.marketplace_id);
+              const settlementDays = Number(mkt?.settlement_period_days ?? 7);
               const hasAffiliate = Boolean(o.affiliate_id);
               const profitResult = calcOrderProfit(o, mkt, hasAffiliate);
               const effectiveProfit = settledOverride !== null ? settledOverride : profitResult.realProfit;
               const rev = profitResult.precoVendaLiquidoFinal;
               const cost = profitResult.effectiveProductCost + profitResult.subtotalMarketplace;
-              const settlementDays = Number(mkt?.settlement_period_days ?? 7);
-              const settled = isOrderSettled(o.order_date, settlementDays, new Date(), (o as { delivery_date?: string | null }).delivery_date);
+              const settled = isOrderSettled(
+                o.order_date,
+                settlementDays,
+                new Date(),
+                (o as { delivery_date?: string | null }).delivery_date,
+                (o as { is_logistics_delayed?: boolean }).is_logistics_delayed === true
+              );
 
               if (settled) {
                 totalSettledProfit += effectiveProfit;

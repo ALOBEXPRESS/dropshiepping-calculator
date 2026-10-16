@@ -23,7 +23,7 @@ import Chart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
 import { useRevenueReport } from '@/hooks/sales/useRevenueReport';
 import { supabase } from '@/lib/supabase';
-import { Loader2, Trash2, Truck, CheckCircle2, Clock, ShoppingBag } from 'lucide-react';
+import { Loader2, Trash2, Truck, CheckCircle2, Clock, ShoppingBag, AlertTriangle } from 'lucide-react';
 import type { PeriodFilter, RevenueData } from '@/types/sales';
 import { toast } from 'sonner';
 import { ReferenceService, type Marketplace } from '@/services/referenceService';
@@ -65,6 +65,7 @@ interface OrderDetail {
   purchase_order_number?: string | null;
   order_date?: string | null;
   delivery_date?: string | null;
+  is_logistics_delayed?: boolean;
   marketplace: string;
   marketplace_fixed_fee?: number;
   is_free_sample?: boolean;
@@ -164,6 +165,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     manualShipping: string;
     manualRetornoLiquido: string;
     manualDeliveryDate?: string;
+    manualLogisticsDelayed?: boolean;
   };
   const orderModalStateRef = useRef<Record<string, OrderModalState>>({});
 
@@ -222,6 +224,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const manualShippingRef = useRef('');
   const manualRetornoLiquidoRef = useRef('');
   const manualDeliveryDateRef = useRef('');
+  const manualLogisticsDelayedRef = useRef(false);
 
   const saveCurrentOrderModalState = useCallback(() => {
     const cur = selectedOrderRef.current;
@@ -239,6 +242,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       manualShipping: manualShippingRef.current,
       manualRetornoLiquido: manualRetornoLiquidoRef.current,
       manualDeliveryDate: manualDeliveryDateRef.current,
+      manualLogisticsDelayed: manualLogisticsDelayedRef.current,
     };
   }, []);
 
@@ -277,6 +281,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             affiliate_id,
             order_date,
             delivery_date,
+            is_logistics_delayed,
             total_amount,
             total_cost,
             product_cost_price,
@@ -386,6 +391,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             purchase_order_number: (boFallback as { purchase_order_number?: string | null })?.purchase_order_number ?? null,
             order_date: dbOrder.order_date,
             delivery_date: (dbOrder as { delivery_date?: string | null }).delivery_date ?? null,
+            is_logistics_delayed: Boolean((dbOrder as { is_logistics_delayed?: boolean }).is_logistics_delayed),
             total_amount: Number(dbOrder.total_amount ?? 0),
             total_cost: Number(dbOrder.total_cost ?? 0),
             product_cost_price: Number(dbOrder.product_cost_price ?? 0),
@@ -457,6 +463,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         ?? null,
       order_date: (order as { order_date?: string | null }).order_date ?? null,
       delivery_date: (order as { delivery_date?: string | null }).delivery_date ?? null,
+      is_logistics_delayed: (order as { is_logistics_delayed?: boolean }).is_logistics_delayed === true,
       tiktok_reembolso_disabled: (order as { tiktok_reembolso_disabled?: boolean }).tiktok_reembolso_disabled === true,
       tiktok_retorno_liquido: (order as { tiktok_retorno_liquido?: number | null }).tiktok_retorno_liquido ?? null,
       order_number: orderNumber, marketplace: marketplaceName,
@@ -523,6 +530,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     );
     setManualOrderDate(detail.order_date ?? '');
     setManualDeliveryDate(saved?.manualDeliveryDate ?? (detail.delivery_date ?? ''));
+    setManualLogisticsDelayed(saved?.manualLogisticsDelayed ?? Boolean(detail.is_logistics_delayed));
     setManualMarketingCost('');
     setManualCostEnabled(false);
     setManualCoupon('');
@@ -590,7 +598,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
         const { data: orderRow } = await supabase
           .from('orders')
-          .select('coupon_value, coupon_type, manual_acrescimo, reembolso_value, reembolso_marketplace_value, reembolso_fornecedor_value, reembolso_marketplace_enabled, reembolso_fornecedor_enabled, reembolso_motivo, order_date, delivery_date')
+          .select('coupon_value, coupon_type, manual_acrescimo, reembolso_value, reembolso_marketplace_value, reembolso_fornecedor_value, reembolso_marketplace_enabled, reembolso_fornecedor_enabled, reembolso_motivo, order_date, delivery_date, is_logistics_delayed')
           .eq('id', orderId)
           .maybeSingle();
         if (orderRow) {
@@ -606,6 +614,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             reembolso_motivo?: string | null;
             order_date?: string | null;
             delivery_date?: string | null;
+            is_logistics_delayed?: boolean | null;
           };
           if (or.coupon_value != null) {
             setManualCoupon(
@@ -656,6 +665,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             setManualDeliveryDate(or.delivery_date);
           } else if (!saved?.manualDeliveryDate) {
             setManualDeliveryDate('');
+          }
+          if (or.is_logistics_delayed !== undefined && or.is_logistics_delayed !== null) {
+            setManualLogisticsDelayed(Boolean(or.is_logistics_delayed));
           }
         }
       } catch { /* graceful */ }
@@ -855,7 +867,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [savingReembolsoPedido, setSavingReembolsoPedido] = useState(false);
   const [savingOrderDate, setSavingOrderDate] = useState(false);
   const [savingDeliveryDate, setSavingDeliveryDate] = useState(false);
+  const [manualLogisticsDelayed, setManualLogisticsDelayed] = useState(false);
+  const [savingLogisticsDelayed, setSavingLogisticsDelayed] = useState(false);
   manualDeliveryDateRef.current = manualDeliveryDate;
+  manualLogisticsDelayedRef.current = manualLogisticsDelayed;
   const chartRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef(data);
   dataRef.current = data;
@@ -2232,7 +2247,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   (order as { order_date?: string }).order_date,
                   settlementDays1,
                   new Date(),
-                  (order as { delivery_date?: string | null }).delivery_date
+                  (order as { delivery_date?: string | null }).delivery_date,
+                  (order as { is_logistics_delayed?: boolean }).is_logistics_delayed === true
                 );
                 const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true
                   || String(orderNumber).trim() === '208';
@@ -2253,6 +2269,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   bling_order_id: (order as { bling_order_id?: string | null }).bling_order_id ?? null,
                   order_date: (order as { order_date?: string | null }).order_date ?? null,
                   delivery_date: (order as { delivery_date?: string | null }).delivery_date ?? null,
+                  is_logistics_delayed: (order as { is_logistics_delayed?: boolean }).is_logistics_delayed === true,
                   tiktok_reembolso_disabled: (order as { tiktok_reembolso_disabled?: boolean }).tiktok_reembolso_disabled === true,
                   tiktok_retorno_liquido: (order as { tiktok_retorno_liquido?: number | null }).tiktok_retorno_liquido ?? null,
                   order_number: orderNumber, marketplace: marketplaceName,
@@ -2806,7 +2823,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const realCost = effectiveProductCost + effectiveMarketplaceCost;
 
         const settlementDays = Number(cfg?.settlement_period_days ?? 7);
-        const settled = isOrderSettled(o.order_date, settlementDays, new Date(), (o as { delivery_date?: string | null }).delivery_date);
+        const settled = isOrderSettled(
+          o.order_date,
+          settlementDays,
+          new Date(),
+          (o as { delivery_date?: string | null }).delivery_date,
+          (o as { is_logistics_delayed?: boolean }).is_logistics_delayed === true
+        );
         if (settled) {
           totalSettledProfit += effectiveProfit;
         } else {
@@ -3217,7 +3240,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             (order as { order_date?: string }).order_date,
             settlementDays2,
             new Date(),
-            (order as { delivery_date?: string | null }).delivery_date
+            (order as { delivery_date?: string | null }).delivery_date,
+            (order as { is_logistics_delayed?: boolean }).is_logistics_delayed === true
           );
           const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true
             || String(orderNumber).trim() === '208';
@@ -3249,6 +3273,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             bling_order_id: (order as { bling_order_id?: string | null }).bling_order_id ?? (mergedOrder as { bling_order_id?: string | null }).bling_order_id ?? null,
             order_date: (order as { order_date?: string | null }).order_date ?? null,
             delivery_date: (order as { delivery_date?: string | null }).delivery_date ?? null,
+            is_logistics_delayed: (order as { is_logistics_delayed?: boolean }).is_logistics_delayed === true,
             tiktok_reembolso_disabled: (mergedOrder as { tiktok_reembolso_disabled?: boolean }).tiktok_reembolso_disabled === true,
             tiktok_retorno_liquido: (mergedOrder as { tiktok_retorno_liquido?: number | null }).tiktok_retorno_liquido ?? null,
             order_number: orderNumber,
@@ -3680,13 +3705,15 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const settlementDateModal = calculateSettlementDate(
               manualOrderDate || selectedOrder.order_date,
               manualDeliveryDate || null,
-              settlementDaysModal
+              settlementDaysModal,
+              manualLogisticsDelayed
             );
             const isSettledModal = isOrderSettled(
               manualOrderDate || selectedOrder.order_date,
               settlementDaysModal,
               new Date(),
-              manualDeliveryDate || null
+              manualDeliveryDate || null,
+              manualLogisticsDelayed
             );
 
             return (
@@ -3935,8 +3962,48 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         )}
                       </div>
 
+                      {/* Botão Atraso Logístico */}
+                      <button
+                        type="button"
+                        disabled={savingLogisticsDelayed}
+                        onClick={async () => {
+                          if (!selectedOrder?.order_id) return;
+                          const nextVal = !manualLogisticsDelayed;
+                          setSavingLogisticsDelayed(true);
+                          try {
+                            await supabase
+                              .from('orders')
+                              .update({ is_logistics_delayed: nextVal })
+                              .eq('id', selectedOrder.order_id);
+                            setManualLogisticsDelayed(nextVal);
+                            setSelectedOrder({ ...selectedOrder, is_logistics_delayed: nextVal });
+                            refetch();
+                            refetchYearly();
+                            onOrderUpdated?.();
+                            toast.success(nextVal ? 'Pedido marcado em atraso logístico' : 'Atraso logístico desmarcado');
+                          } catch {
+                            toast.error('Erro ao salvar status de atraso logístico');
+                          } finally {
+                            setSavingLogisticsDelayed(false);
+                          }
+                        }}
+                        className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium border transition-colors cursor-pointer ${
+                          manualLogisticsDelayed
+                            ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 hover:bg-amber-500/30'
+                            : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                        }`}
+                        title={
+                          manualLogisticsDelayed
+                            ? 'Atraso logístico ativo: liquidação suspensa até entrega + 7 dias. Clique para desmarcar.'
+                            : 'Marcar pedido com atraso de logística (suspende liquidação até entrega + 7 dias)'
+                        }
+                      >
+                        <AlertTriangle className={`w-3 h-3 ${manualLogisticsDelayed ? 'text-amber-400' : 'text-zinc-500'}`} />
+                        <span>{manualLogisticsDelayed ? 'Atraso Logístico' : 'Marcar Atraso'}</span>
+                      </button>
+
                       {/* Status de liquidação */}
-                      {settlementDateModal && (
+                      {settlementDateModal ? (
                         <div
                           className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium border ${
                             isSettledModal
@@ -3957,6 +4024,16 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             </>
                           )}
                         </div>
+                      ) : (
+                        manualLogisticsDelayed && !manualDeliveryDate && (
+                          <div
+                            className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium border bg-amber-500/10 border-amber-500/30 text-amber-400"
+                            title="Pedido com atraso logístico. Liquidação suspensa até a confirmação da entrega + 7 dias."
+                          >
+                            <AlertTriangle className="w-3 h-3 text-amber-400" />
+                            <span>Atraso — Aguarda entrega + 7d</span>
+                          </div>
+                        )
                       )}
                     </div>
                   </div>
