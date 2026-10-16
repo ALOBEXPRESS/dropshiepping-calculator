@@ -3698,6 +3698,20 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                   <div className={`flex justify-between items-center py-2 border-b ${
                       'border-border/60'
                   }`}>
+                    <span className={'text-muted-foreground'}>Preço de Custo do Produto</span>
+                    <span className={`font-semibold ${
+                        'text-red-400'
+                    }`}>
+                      {(Number(calculations.cost !== undefined ? calculations.cost : parseCurrency(costPrice)) || 0) > 0
+                        ? `- R$ ${formatMoney(Number(calculations.cost !== undefined ? calculations.cost : parseCurrency(costPrice)) || 0)}`
+                        : `R$ ${formatMoney(Number(calculations.cost !== undefined ? calculations.cost : parseCurrency(costPrice)) || 0)}`
+                      }
+                    </span>
+                  </div>
+
+                  <div className={`flex justify-between items-center py-2 border-b ${
+                      'border-border/60'
+                  }`}>
                     <span className={'text-muted-foreground'}>Custos Embalagem</span>
                     <span className={`font-semibold ${
                         'text-red-400'
@@ -3945,14 +3959,25 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                     </>
                   )}
 
-                  <div className={`flex justify-between items-center py-2 border-b ${
-                      'border-border/60'
-                  }`}>
-                    <span className={'text-muted-foreground'}>Total de Taxas e Custos</span>
-                    <span className={`font-semibold ${
-                        'text-red-400'
-                    }`}>- R$ {formatMoney(calculations.totalFees)}</span>
-                  </div>
+                  {(() => {
+                    const productCost = Number(calculations.cost !== undefined ? calculations.cost : parseCurrency(costPrice)) || 0;
+                    const totalFeesAndCost = (parseFloat(calculations.totalFees) || 0) + productCost;
+                    return (
+                      <div className={`flex justify-between items-center py-2 border-b ${
+                          'border-border/60'
+                      }`}>
+                        <span className={'text-muted-foreground'}>Total de Taxas e Custos</span>
+                        <span className={`font-semibold ${
+                            'text-red-400'
+                        }`}>
+                          {totalFeesAndCost > 0
+                            ? `- R$ ${formatMoney(totalFeesAndCost)}`
+                            : `R$ ${formatMoney(totalFeesAndCost)}`
+                          }
+                        </span>
+                      </div>
+                    );
+                  })()}
 
                   {(() => {
                     const isDanger = pricingColorTheme === 'danger';
