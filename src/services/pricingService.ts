@@ -472,15 +472,36 @@ export const calculateMetrics = (
 
       const actualMargin = (netRevenue / effectiveSellingPrice) * 100;
       
+      const totalSupplierFees = supplierFeeCost + supplierGatewayCost;
       const totalMktCosts = commissionVal + totalFixedFee;
+      const totalOperationalFees = totalSupplierFees + totalMktCosts;
+
+      let isLossCondition = false;
+      let lossAmount = 0;
+
+      if (netRevenue < 0) {
+        isLossCondition = true;
+        lossAmount = netRevenue;
+      } else if (totalOperationalFees > 0 && netRevenue < totalOperationalFees) {
+        isLossCondition = true;
+        lossAmount = netRevenue - totalOperationalFees;
+      } else if (baseCost > 0 && netRevenue < baseCost) {
+        isLossCondition = true;
+        lossAmount = netRevenue - baseCost;
+      }
+
       let marginStatus = 'good';
-      if (netRevenue < 0 || (baseCost > 0 && netRevenue < baseCost) || (totalMktCosts > 0 && netRevenue < totalMktCosts)) {
+      if (isLossCondition) {
         marginStatus = 'negative';
       } else if (actualMargin < (recommendedMargin - 0.5)) {
         marginStatus = 'low';
       } else if (actualMargin > (recommendedMargin + 0.5)) {
         marginStatus = 'excellent';
       }
+
+      const lossMargin = (isLossCondition && effectiveSellingPrice > 0)
+        ? ((lossAmount / effectiveSellingPrice) * 100).toFixed(1)
+        : actualMargin.toFixed(1);
 
       let taxDescription = `${marketplaceFeeRate}% Comissão + R$ ${finalFixedFee.toFixed(2)} Tarifa Fixa${inactivityFee > 0 ? ' + R$ ' + inactivityFee.toFixed(2) + ' (Inatividade)' : ''}`;
       
@@ -540,7 +561,11 @@ export const calculateMetrics = (
           affiliateCost: affiliateCost.toFixed(2),
           totalInfluencerPercent: totalInfluencerPercent,
           totalAffiliatePercent: totalAffiliatePercent,
-          tiktokSfpFee: '0.00'
+          tiktokSfpFee: '0.00',
+          lossAmount: lossAmount.toFixed(2),
+          lossMargin,
+          isLossCondition,
+          totalOperationalFees: totalOperationalFees.toFixed(2)
       };
   }
 
@@ -644,15 +669,37 @@ export const calculateMetrics = (
       const netRevenue = effectiveSellingPrice - result.commissionAmount - result.fixedFee - gatewayCost - totalCost - adsCostVal - paidTrafficCost - paidTrafficGatewayCost - shopeeCouponTotal - influencerCost - affiliateCost;
       const actualMargin = effectiveSellingPrice > 0 ? (netRevenue / effectiveSellingPrice) * 100 : 0;
       
+      const finalSupplierFeeCost = supplierFeeCost;
+      const totalSupplierFees = finalSupplierFeeCost + supplierGatewayCost;
       const totalMktCosts = result.commissionAmount + result.fixedFee;
+      const totalOperationalFees = totalSupplierFees + totalMktCosts;
+
+      let isLossCondition = false;
+      let lossAmount = 0;
+
+      if (netRevenue < 0) {
+        isLossCondition = true;
+        lossAmount = netRevenue;
+      } else if (totalOperationalFees > 0 && netRevenue < totalOperationalFees) {
+        isLossCondition = true;
+        lossAmount = netRevenue - totalOperationalFees;
+      } else if (baseCost > 0 && netRevenue < baseCost) {
+        isLossCondition = true;
+        lossAmount = netRevenue - baseCost;
+      }
+
       let marginStatus = 'good';
-      if (netRevenue < 0 || (baseCost > 0 && netRevenue < baseCost) || (totalMktCosts > 0 && netRevenue < totalMktCosts)) {
+      if (isLossCondition) {
           marginStatus = 'negative';
       } else if (actualMargin < (recommendedMargin - 0.5)) {
           marginStatus = 'low';
       } else if (actualMargin > (recommendedMargin + 0.5)) {
           marginStatus = 'excellent';
       }
+
+      const lossMargin = (isLossCondition && effectiveSellingPrice > 0)
+        ? ((lossAmount / effectiveSellingPrice) * 100).toFixed(1)
+        : actualMargin.toFixed(1);
       
       const breakevenCPA = netRevenue + totalCPA;
       
@@ -661,8 +708,6 @@ export const calculateMetrics = (
           const clicks = currentDailyBudget / currentCpc;
           reverseCR = (currentSales / clicks) * 100;
       }
-      
-      const finalSupplierFeeCost = supplierFeeCost;
 
       return {
           cost: baseCost,
@@ -709,7 +754,11 @@ export const calculateMetrics = (
           affiliateCost: affiliateCost.toFixed(2),
           totalInfluencerPercent: totalInfluencerPercent,
           totalAffiliatePercent: totalAffiliatePercent,
-          tiktokSfpFee: '0.00'
+          tiktokSfpFee: '0.00',
+          lossAmount: lossAmount.toFixed(2),
+          lossMargin,
+          isLossCondition,
+          totalOperationalFees: totalOperationalFees.toFixed(2)
       };
   }
 
@@ -1058,15 +1107,36 @@ export const calculateMetrics = (
       recommendedValue = competitorPriceVal / Math.abs(competitorMarkupVal);
   }
 
+  const totalSupplierFees = supplierFeeCost + supplierGatewayCost;
   const totalMarketplaceCosts = marketplaceCost + finalFixedFee + tiktokSfpFee;
+  const totalOperationalFees = totalSupplierFees + totalMarketplaceCosts;
+
+  let isLossCondition = false;
+  let lossAmount = 0;
+
+  if (netRevenue < 0) {
+    isLossCondition = true;
+    lossAmount = netRevenue;
+  } else if (totalOperationalFees > 0 && netRevenue < totalOperationalFees) {
+    isLossCondition = true;
+    lossAmount = netRevenue - totalOperationalFees;
+  } else if (baseCost > 0 && netRevenue < baseCost) {
+    isLossCondition = true;
+    lossAmount = netRevenue - baseCost;
+  }
+
   let marginStatus = 'good';
-  if (netRevenue < 0 || (baseCost > 0 && netRevenue < baseCost) || (totalMarketplaceCosts > 0 && netRevenue < totalMarketplaceCosts)) {
+  if (isLossCondition) {
       marginStatus = 'negative';
   } else if (actualMargin < (recommendedMargin - 0.5)) {
       marginStatus = 'low';
   } else if (actualMargin > (recommendedMargin + 0.5)) {
       marginStatus = 'excellent';
   }
+
+  const lossMargin = (isLossCondition && effectiveSellingPrice > 0)
+    ? ((lossAmount / effectiveSellingPrice) * 100).toFixed(1)
+    : actualMargin.toFixed(1);
 
   return {
     cost: baseCost,
@@ -1113,6 +1183,10 @@ export const calculateMetrics = (
           affiliateCost: affiliateCost.toFixed(2),
           totalInfluencerPercent: totalInfluencerPercent,
           totalAffiliatePercent: totalAffiliatePercent,
-          tiktokSfpFee: tiktokSfpFee.toFixed(2)
-      };
+          tiktokSfpFee: tiktokSfpFee.toFixed(2),
+          lossAmount: lossAmount.toFixed(2),
+          lossMargin,
+          isLossCondition,
+          totalOperationalFees: totalOperationalFees.toFixed(2)
+  };
 };

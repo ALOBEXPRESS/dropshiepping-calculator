@@ -262,6 +262,11 @@ export interface CalculationResult {
   totalInfluencerPercent: number;
   totalAffiliatePercent: number;
   tiktokSfpFee?: string;
+  // Campos para prejuízo quando lucro líquido for inferior a custos e taxas
+  lossAmount?: string;
+  lossMargin?: string;
+  isLossCondition?: boolean;
+  totalOperationalFees?: string;
   // Campos adicionados para suporte a frete (Task 3.2)
   mlFixedFee?: string; // Taxa fixa do Mercado Livre
   shippingCost?: string; // Custo de frete grátis

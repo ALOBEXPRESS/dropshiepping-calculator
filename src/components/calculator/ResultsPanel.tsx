@@ -169,15 +169,57 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
     : 0;
   const totalMarketplaceCosts = mktCost + fixedFee + sfpFee;
 
+  const supplierFee = calculations
+    ? (typeof calculations.supplierFeeCost === 'string'
+        ? parseFloat(calculations.supplierFeeCost.replace(',', '.'))
+        : Number(calculations.supplierFeeCost || 0))
+    : 0;
+  const supplierGateway = calculations
+    ? (typeof calculations.supplierGatewayCost === 'string'
+        ? parseFloat(calculations.supplierGatewayCost.replace(',', '.'))
+        : Number(calculations.supplierGatewayCost || 0))
+    : 0;
+  const totalSupplierFees = supplierFee + supplierGateway;
+  const totalFeesCombined = totalSupplierFees + totalMarketplaceCosts;
+
   const isBelowSupplierCost = supplierCost > 0 && netRevenue < supplierCost;
   const isBelowMarketplaceCosts = totalMarketplaceCosts > 0 && netRevenue < totalMarketplaceCosts;
-  const isLossCondition = calculations
-    ? (calculations.marginStatus === 'negative' ||
-       (typeof calculations.actualMargin === 'string' ? parseFloat(calculations.actualMargin.replace(',', '.')) : Number(calculations.actualMargin)) < 0 ||
-       netRevenue < 0 ||
-       isBelowSupplierCost ||
-       isBelowMarketplaceCosts)
-    : false;
+  const isBelowTotalFees = totalFeesCombined > 0 && netRevenue < totalFeesCombined;
+
+  // Prejuízo: se calculations.lossAmount estiver definido, usa ele; senão calcula:
+  // prejuizo = lucro liquido - (Taxas fornecedor + taxas de marketplace)
+  const lossAmountNum = calculations?.lossAmount !== undefined
+    ? Number(calculations.lossAmount)
+    : (netRevenue < 0
+        ? netRevenue
+        : isBelowTotalFees
+        ? netRevenue - totalFeesCombined
+        : isBelowSupplierCost
+        ? netRevenue - supplierCost
+        : 0);
+
+  const isLoss = Boolean(
+    calculations?.isLossCondition ?? (
+      calculations?.marginStatus === 'negative' ||
+      (typeof calculations?.actualMargin === 'string'
+        ? parseFloat(calculations.actualMargin.replace(',', '.'))
+        : Number(calculations?.actualMargin || 0)) < 0 ||
+      netRevenue < 0 ||
+      isBelowSupplierCost ||
+      isBelowMarketplaceCosts ||
+      isBelowTotalFees ||
+      lossAmountNum < 0
+    )
+  );
+
+  const effectivePrice = Number(calculations?.manualPrice || calculations?.suggestedPrice || 0);
+  const lossMarginNum = calculations?.lossMargin !== undefined
+    ? Number(calculations.lossMargin)
+    : (isLoss && effectivePrice > 0
+        ? (lossAmountNum / effectivePrice) * 100
+        : Number(calculations?.actualMargin || 0));
+
+  const isLossCondition = isLoss;
 
   // ── Margin theme: drives ALL color of the entire card ─────────────────────
   const getMarginTheme = () => {
@@ -397,11 +439,13 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
               )}
 
               {/* Alerta de lucro insuficiente em relação a custo do fornecedor ou taxas de marketplace */}
-              {(isBelowSupplierCost || isBelowMarketplaceCosts) && (
+              {(isLoss || isBelowSupplierCost || isBelowMarketplaceCosts || isBelowTotalFees) && (
                 <div className="mt-2.5 p-2.5 rounded-lg bg-rose-500/15 border border-rose-500/40 flex items-start sm:items-center gap-2 text-xs text-rose-200 font-medium">
                   <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                   <span>
-                    {isBelowSupplierCost && isBelowMarketplaceCosts
+                    {lossAmountNum < 0
+                      ? `Prejuízo de R$ ${formatMoney(Math.abs(lossAmountNum))}: o lucro líquido (R$ ${formatMoney(netRevenue)}) não cobriu as taxas (R$ ${formatMoney(totalFeesCombined)}) [Fornecedor: R$ ${formatMoney(totalSupplierFees)} + Marketplace: R$ ${formatMoney(totalMarketplaceCosts)}]. O lucro precisa ficar sempre acima dessas taxas.`
+                      : isBelowSupplierCost && isBelowMarketplaceCosts
                       ? `Lucro líquido (R$ ${formatMoney(netRevenue)}) abaixo do custo do fornecedor (R$ ${formatMoney(supplierCost)}) e das taxas (R$ ${formatMoney(totalMarketplaceCosts)}). Risco de prejuízo.`
                       : isBelowSupplierCost
                       ? `Lucro líquido (R$ ${formatMoney(netRevenue)}) abaixo do preço de custo do fornecedor (R$ ${formatMoney(supplierCost)}). O lucro deve superar o custo de compra.`
@@ -459,29 +503,48 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
       );
     })()}
 
-        {/* Hero KPIs: Lucro Líquido & Margem Real */}
+        {/* Hero KPIs: Lucro Líquido / Prejuízo & Margem Real */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <div className={`rounded-xl p-3.5 sm:p-4 border shadow-sm transition-colors duration-300 ${theme.kpiBg} ${theme.kpiBorder}`}>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-              Lucro Líquido
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1 flex items-center justify-between">
+              <span>{isLoss ? 'Prejuízo' : 'Lucro Líquido'}</span>
+              {isLoss && (
+                <span className="text-[10px] font-bold text-rose-300 bg-rose-500/20 px-1.5 py-0.5 rounded border border-rose-500/30">
+                  Prejuízo
+                </span>
+              )}
             </p>
             <div className="flex items-baseline gap-1">
-              <span className="text-xs sm:text-sm font-bold text-muted-foreground">R$</span>
+              <span className="text-xs sm:text-sm font-bold text-muted-foreground">
+                {isLoss && lossAmountNum < 0 ? '- R$' : 'R$'}
+              </span>
               <span className={`text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums transition-colors duration-300 ${theme.kpiColor}`}>
-                {formatMoney(calculations.netRevenue)}
+                {formatMoney(Math.abs(isLoss ? lossAmountNum : netRevenue))}
               </span>
             </div>
+            {isLoss && (
+              <p className="text-[11px] text-rose-300/80 mt-1 leading-tight">
+                {lossAmountNum < 0
+                  ? `Prejuízo após taxas (R$ ${formatMoney(totalFeesCombined)})`
+                  : 'Lucro insuficiente'}
+              </p>
+            )}
           </div>
 
           <div className={`rounded-xl p-3.5 sm:p-4 border shadow-sm text-right transition-colors duration-300 ${theme.kpiBg} ${theme.kpiBorder}`}>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-              Margem Real
+              {isLoss ? 'Margem (Prejuízo)' : 'Margem Real'}
             </p>
             <div className="flex items-baseline justify-end">
               <span className={`text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums transition-colors duration-300 ${theme.kpiColor}`}>
-                {formatPercent(calculations.actualMargin)}%
+                {formatPercent(isLoss ? lossMarginNum : calculations.actualMargin)}%
               </span>
             </div>
+            {isLoss && (
+              <p className="text-[11px] text-rose-300/80 mt-1 leading-tight">
+                Margem negativa
+              </p>
+            )}
           </div>
         </div>
 
