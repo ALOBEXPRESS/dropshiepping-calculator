@@ -146,6 +146,39 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
     return num.toLocaleString('pt-BR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
   };
 
+  const netRevenue = calculations
+    ? (typeof calculations.netRevenue === 'string'
+        ? parseFloat(calculations.netRevenue.replace(',', '.'))
+        : Number(calculations.netRevenue))
+    : 0;
+  const supplierCost = calculations ? (Number(calculations.cost) || 0) : 0;
+  const mktCost = calculations
+    ? (typeof calculations.marketplaceCost === 'string'
+        ? parseFloat(calculations.marketplaceCost.replace(',', '.'))
+        : Number(calculations.marketplaceCost || 0))
+    : 0;
+  const fixedFee = calculations
+    ? (typeof calculations.fixedFee === 'string'
+        ? parseFloat(calculations.fixedFee.replace(',', '.'))
+        : Number(calculations.fixedFee || 0))
+    : 0;
+  const sfpFee = calculations
+    ? (typeof calculations.tiktokSfpFee === 'string'
+        ? parseFloat(calculations.tiktokSfpFee.replace(',', '.'))
+        : Number(calculations.tiktokSfpFee || 0))
+    : 0;
+  const totalMarketplaceCosts = mktCost + fixedFee + sfpFee;
+
+  const isBelowSupplierCost = supplierCost > 0 && netRevenue < supplierCost;
+  const isBelowMarketplaceCosts = totalMarketplaceCosts > 0 && netRevenue < totalMarketplaceCosts;
+  const isLossCondition = calculations
+    ? (calculations.marginStatus === 'negative' ||
+       (typeof calculations.actualMargin === 'string' ? parseFloat(calculations.actualMargin.replace(',', '.')) : Number(calculations.actualMargin)) < 0 ||
+       netRevenue < 0 ||
+       isBelowSupplierCost ||
+       isBelowMarketplaceCosts)
+    : false;
+
   // ── Margin theme: drives ALL color of the entire card ─────────────────────
   const getMarginTheme = () => {
     if (!calculations) {
@@ -167,14 +200,14 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
       };
     }
 
-    const { marginStatus, actualMargin, recommendedMargin } = calculations;
+    const { actualMargin, recommendedMargin } = calculations;
     const currentMargin = typeof actualMargin === 'string'
       ? parseFloat(actualMargin.replace(',', '.'))
       : Number(actualMargin);
     const recommended = Number(recommendedMargin) || 25;
 
-    // 1. Vermelho — Prejuízo (margem negativa)
-    if (marginStatus === 'negative' || currentMargin < 0) {
+    // 1. Vermelho — Prejuízo (margem negativa OU lucro líquido menor que custo do fornecedor OU menor que taxas do marketplace)
+    if (isLossCondition) {
       return {
         key: 'danger',
         badge: 'Prejuízo',
@@ -193,7 +226,7 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
       };
     }
 
-    // 2. Azul — Alta Rentabilidade (margem >= recomendada + 5%)
+    // 2. Azul — Alta Rentabilidade (margem >= recomendada + 5%, com lucro acima de custo e taxas)
     if (currentMargin >= recommended + 5) {
       return {
         key: 'excellent',
@@ -213,7 +246,7 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
       };
     }
 
-    // 3. Verde — Margem Saudável (margem >= recomendada)
+    // 3. Verde — Margem Saudável (margem >= recomendada, com lucro acima de custo e taxas)
     if (currentMargin >= recommended) {
       return {
         key: 'healthy',
@@ -233,7 +266,7 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
       };
     }
 
-    // 4. Amarelo — Margem Baixa (positiva, porém abaixo da recomendada)
+    // 4. Amarelo — Margem Baixa (positiva e acima de custo/taxas, porém abaixo da recomendada)
     return {
       key: 'warning',
       badge: 'Margem Baixa',
@@ -360,6 +393,20 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
                 <div className="mt-2.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-start sm:items-center gap-2 text-xs text-amber-200/90 font-medium">
                   <span className="text-amber-400 font-bold text-sm shrink-0">💡</span>
                   <span>Preço calculado para sua margem ideal ({calculations.recommendedMargin}%). Para aplicar seu próprio valor, defina o <strong>Preço de venda</strong>.</span>
+                </div>
+              )}
+
+              {/* Alerta de lucro insuficiente em relação a custo do fornecedor ou taxas de marketplace */}
+              {(isBelowSupplierCost || isBelowMarketplaceCosts) && (
+                <div className="mt-2.5 p-2.5 rounded-lg bg-rose-500/15 border border-rose-500/40 flex items-start sm:items-center gap-2 text-xs text-rose-200 font-medium">
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                  <span>
+                    {isBelowSupplierCost && isBelowMarketplaceCosts
+                      ? `Lucro líquido (R$ ${formatMoney(netRevenue)}) abaixo do custo do fornecedor (R$ ${formatMoney(supplierCost)}) e das taxas (R$ ${formatMoney(totalMarketplaceCosts)}). Risco de prejuízo.`
+                      : isBelowSupplierCost
+                      ? `Lucro líquido (R$ ${formatMoney(netRevenue)}) abaixo do preço de custo do fornecedor (R$ ${formatMoney(supplierCost)}). O lucro deve superar o custo de compra.`
+                      : `Lucro líquido (R$ ${formatMoney(netRevenue)}) abaixo dos custos de marketplace (R$ ${formatMoney(totalMarketplaceCosts)}). As taxas superam o retorno.`}
+                  </span>
                 </div>
               )}
 

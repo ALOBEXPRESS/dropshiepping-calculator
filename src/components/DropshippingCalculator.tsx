@@ -346,7 +346,27 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       : Number(actualMargin);
     const recommended = Number(recommendedMargin) || 25;
 
-    if (marginStatus === 'negative' || currentMargin < 0) return 'danger';
+    const netRevenue = typeof calculations.netRevenue === 'string'
+      ? parseFloat(calculations.netRevenue.replace(',', '.'))
+      : Number(calculations.netRevenue);
+    const supplierCost = Number(calculations.cost) || 0;
+    const mktCost = typeof calculations.marketplaceCost === 'string'
+      ? parseFloat(calculations.marketplaceCost.replace(',', '.'))
+      : Number(calculations.marketplaceCost || 0);
+    const fixedFee = typeof calculations.fixedFee === 'string'
+      ? parseFloat(calculations.fixedFee.replace(',', '.'))
+      : Number(calculations.fixedFee || 0);
+    const sfpFee = typeof calculations.tiktokSfpFee === 'string'
+      ? parseFloat(calculations.tiktokSfpFee.replace(',', '.'))
+      : Number(calculations.tiktokSfpFee || 0);
+    const totalMarketplaceCosts = mktCost + fixedFee + sfpFee;
+
+    const isBelowSupplierCost = supplierCost > 0 && netRevenue < supplierCost;
+    const isBelowMarketplaceCosts = totalMarketplaceCosts > 0 && netRevenue < totalMarketplaceCosts;
+
+    if (marginStatus === 'negative' || currentMargin < 0 || netRevenue < 0 || isBelowSupplierCost || isBelowMarketplaceCosts) {
+      return 'danger';
+    }
     if (currentMargin >= recommended + 5) return 'excellent';
     if (currentMargin >= recommended) return 'healthy';
     return 'warning';
@@ -3911,45 +3931,43 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                   </div>
 
                   <div className={`flex justify-between items-center py-3.5 rounded-xl px-4 mt-3 border shadow-md ${
-                     calculations.marginStatus === 'negative' ? 'bg-red-950/60 border-red-500/40 text-red-400' :
-                     calculations.marginStatus === 'low' ? 'bg-amber-950/50 border-amber-500/40 text-amber-300' :
+                     pricingColorTheme === 'danger' ? 'bg-red-950/60 border-red-500/40 text-red-400' :
+                     pricingColorTheme === 'warning' ? 'bg-amber-950/50 border-amber-500/40 text-amber-300' :
                      'bg-emerald-950/50 border-emerald-500/40 text-emerald-300'
                    }`}>
                      <span className="font-bold font-iceland text-lg text-zinc-100">Lucro Líquido</span>
                      <span className="text-3xl font-black tabular-nums tracking-tight">R$ {formatMoney(calculations.netRevenue)}</span>
                    </div>
-                  <p className={`text-xs mt-1 font-semibold ${
-                     ['negative', 'low', 'excellent'].includes(calculations.marginStatus)
-                       ? 'text-white'
-                       : 'text-zinc-300'
-                   }`}>
-                     {calculations.marginStatus === 'negative'
-                        ? 'Resultado negativo. Ajuste preço ou custos.'
-                        : calculations.marginStatus === 'low'
+                  <p className="text-xs mt-1 font-semibold text-white">
+                     {pricingColorTheme === 'danger'
+                        ? (parseFloat(calculations.netRevenue) > 0
+                            ? (Number(calculations.cost) > parseFloat(calculations.netRevenue)
+                                ? 'Lucro menor que o preço de custo do fornecedor. Risco de prejuízo.'
+                                : 'Lucro menor que as taxas do marketplace. Risco de prejuízo.')
+                            : 'Resultado negativo. Ajuste preço ou custos.')
+                        : pricingColorTheme === 'warning'
                           ? 'Lucro abaixo do recomendado.'
-                          : calculations.marginStatus === 'excellent'
+                          : pricingColorTheme === 'excellent'
                             ? 'Lucro acima do recomendado.'
                             : 'Lucro dentro do recomendado.'}
                    </p>
 
                    <div className={`flex justify-between items-center py-3.5 rounded-xl px-4 border shadow-md ${
-                     calculations.marginStatus === 'negative' ? 'bg-red-950/60 border-red-500/40 text-red-400' :
-                     calculations.marginStatus === 'low' ? 'bg-amber-950/50 border-amber-500/40 text-amber-300' :
+                     pricingColorTheme === 'danger' ? 'bg-red-950/60 border-red-500/40 text-red-400' :
+                     pricingColorTheme === 'warning' ? 'bg-amber-950/50 border-amber-500/40 text-amber-300' :
                      'bg-emerald-950/50 border-emerald-500/40 text-emerald-300'
                    }`}>
                      <span className="font-bold font-iceland text-lg text-zinc-100">Margem de Lucro</span>
                      <span className="text-3xl font-black tabular-nums tracking-tight">{formatPercent(calculations.actualMargin, 1)}%</span>
                    </div>
-                  <p className={`text-xs mt-1 font-semibold ${
-                     ['negative', 'low', 'excellent'].includes(calculations.marginStatus)
-                       ? 'text-white'
-                       : 'text-zinc-300'
-                   }`}>
-                     {calculations.marginStatus === 'negative'
-                        ? 'Margem negativa. Reavalie a precificação.'
-                        : calculations.marginStatus === 'low'
+                  <p className="text-xs mt-1 font-semibold text-white">
+                     {pricingColorTheme === 'danger'
+                        ? (parseFloat(calculations.netRevenue) > 0
+                            ? 'Margem insuficiente para cobrir o custo do produto e taxas.'
+                            : 'Margem negativa. Reavalie a precificação.')
+                        : pricingColorTheme === 'warning'
                           ? 'Margem abaixo da recomendação.'
-                          : calculations.marginStatus === 'excellent'
+                          : pricingColorTheme === 'excellent'
                             ? 'Margem acima da recomendação.'
                             : 'Margem dentro da recomendação.'}
                    </p>

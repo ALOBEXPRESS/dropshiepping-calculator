@@ -449,5 +449,75 @@ describe('Pricing Service', () => {
       expect(Number(result6Percent.netRevenue) - Number(result16Percent.netRevenue)).toBeCloseTo(6.99, 2);
       expect(Number(result16Percent.actualMargin)).toBeLessThan(Number(result6Percent.actualMargin));
     });
+
+    it('should set marginStatus to negative when net revenue is below supplier cost or below marketplace costs', () => {
+      // Scenario from user: supplier cost = 10.61, price = 29.90, netRevenue = 8.51 (which is < 10.61)
+      const belowSupplierCostResult = calculateMetrics(
+        10.61, // baseCost
+        0,     // pkgCost
+        0,     // supplierFeePercent
+        0,     // markup
+        'tiktok',
+        'eletronicos',
+        'classico',
+        'without',
+        'cnpj',
+        0,
+        false, 0, 0, 0, 0,
+        29.90, // manualPriceVal
+        0, 0,
+        10,    // tiktokCommVal = 10%
+        0, 0, 0, 0, 0, 'percent', 0, 0, 0, 'classico', 0, '', '', '', '', false,
+        'percent',
+        0,
+        2.00,  // supplierGatewayCost = 2.00
+        'fixed',
+        'individual',
+        'eletronicos',
+        0, 0, 0, 0, 0, 'fixed', 'fixed', 'fixed', 'fixed', 0, [], []
+      );
+
+      // net revenue will be ~ R$ 10.30 or below supplier cost depending on other fees
+      // If baseCost > netRevenue, marginStatus must be negative
+      // Let's create an explicit scenario where netRevenue < baseCost:
+      // Base cost 20.00, price 30.00, fees ~ 11.00 -> netRevenue = 30 - 20 - 11 = -1 or +3 < 20
+      const belowSupplierCostCase = calculateMetrics(
+        20.00, // baseCost = 20
+        0, 0, 0,
+        'tiktok', 'eletronicos', 'classico', 'without', 'cnpj', 0, false, 0, 0, 0, 0,
+        35.00, // manualPriceVal = 35 -> 10% = 3.50 + 4.00 fixed = 7.50 -> net = 35 - 20 - 7.50 = 7.50 (< 20.00)
+        0, 0,
+        10, 0, 0, 0, 0, 0, 'percent', 0, 0, 0, 'classico', 0, '', '', '', '', false,
+        'percent', 0, 0, 'fixed', 'individual', 'eletronicos', 0, 0, 0, 0, 0, 'fixed', 'fixed', 'fixed', 'fixed', 0, [], []
+      );
+
+      expect(Number(belowSupplierCostCase.netRevenue)).toBeLessThan(20.00);
+      expect(Number(belowSupplierCostCase.netRevenue)).toBeGreaterThan(0); // net is positive, but less than cost
+      expect(belowSupplierCostCase.marginStatus).toBe('negative');
+
+      // Scenario where net revenue is above supplier cost but below marketplace costs:
+      // Base cost = 4.00, Price = 20.00, Marketplace fees = 10% (2.00) + 4.00 fixed = 6.00 total marketplace costs.
+      // With paid traffic = 5.00 fixed, Net = 20 - 4 - 6 - 5 = 5.00.
+      // 5.00 is > baseCost (4.00), but 5.00 is < totalMarketplaceCosts (6.00).
+      const belowMktCostsCase = calculateMetrics(
+        4.00,  // baseCost = 4.00
+        0, 0, 0,
+        'tiktok', 'eletronicos', 'classico', 'without', 'cnpj', 0, false, 0, 0, 0, 0,
+        20.00, // manualPriceVal = 20.00 -> mkt fees: 2.00 + 4.00 = 6.00
+        0, 0,
+        10,    // tiktokCommVal = 10%
+        0, 0, 0,
+        5.00,  // paidTrafficVal = 5.00
+        0,
+        'fixed' // paidTrafficType = fixed
+      );
+
+      expect(Number(belowMktCostsCase.netRevenue)).toBeGreaterThan(4.00); // netRevenue > baseCost
+      const totalMktCosts = Number(belowMktCostsCase.marketplaceCost) + Number(belowMktCostsCase.fixedFee);
+      expect(Number(belowMktCostsCase.netRevenue)).toBeLessThan(totalMktCosts); // netRevenue < marketplace costs
+      expect(belowMktCostsCase.marginStatus).toBe('negative');
+    });
   });
 });
+
+

@@ -472,10 +472,15 @@ export const calculateMetrics = (
 
       const actualMargin = (netRevenue / effectiveSellingPrice) * 100;
       
+      const totalMktCosts = commissionVal + totalFixedFee;
       let marginStatus = 'good';
-      if (netRevenue < 0) marginStatus = 'negative';
-      else if (actualMargin < (recommendedMargin - 0.5)) marginStatus = 'low';
-      else if (actualMargin > (recommendedMargin + 0.5)) marginStatus = 'excellent';
+      if (netRevenue < 0 || (baseCost > 0 && netRevenue < baseCost) || (totalMktCosts > 0 && netRevenue < totalMktCosts)) {
+        marginStatus = 'negative';
+      } else if (actualMargin < (recommendedMargin - 0.5)) {
+        marginStatus = 'low';
+      } else if (actualMargin > (recommendedMargin + 0.5)) {
+        marginStatus = 'excellent';
+      }
 
       let taxDescription = `${marketplaceFeeRate}% Comissão + R$ ${finalFixedFee.toFixed(2)} Tarifa Fixa${inactivityFee > 0 ? ' + R$ ' + inactivityFee.toFixed(2) + ' (Inatividade)' : ''}`;
       
@@ -639,8 +644,9 @@ export const calculateMetrics = (
       const netRevenue = effectiveSellingPrice - result.commissionAmount - result.fixedFee - gatewayCost - totalCost - adsCostVal - paidTrafficCost - paidTrafficGatewayCost - shopeeCouponTotal - influencerCost - affiliateCost;
       const actualMargin = effectiveSellingPrice > 0 ? (netRevenue / effectiveSellingPrice) * 100 : 0;
       
+      const totalMktCosts = result.commissionAmount + result.fixedFee;
       let marginStatus = 'good';
-      if (netRevenue < 0) {
+      if (netRevenue < 0 || (baseCost > 0 && netRevenue < baseCost) || (totalMktCosts > 0 && netRevenue < totalMktCosts)) {
           marginStatus = 'negative';
       } else if (actualMargin < (recommendedMargin - 0.5)) {
           marginStatus = 'low';
@@ -1052,8 +1058,9 @@ export const calculateMetrics = (
       recommendedValue = competitorPriceVal / Math.abs(competitorMarkupVal);
   }
 
+  const totalMarketplaceCosts = marketplaceCost + finalFixedFee + tiktokSfpFee;
   let marginStatus = 'good';
-  if (netRevenue < 0) {
+  if (netRevenue < 0 || (baseCost > 0 && netRevenue < baseCost) || (totalMarketplaceCosts > 0 && netRevenue < totalMarketplaceCosts)) {
       marginStatus = 'negative';
   } else if (actualMargin < (recommendedMargin - 0.5)) {
       marginStatus = 'low';
