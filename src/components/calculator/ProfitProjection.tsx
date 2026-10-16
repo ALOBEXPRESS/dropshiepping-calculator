@@ -214,10 +214,24 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
   const cost = parseCurrency(product.costPrice || 0);
 
   // Recalculate profit in real-time (same logic as ProductCard) to include affiliates/influencers
-  const { netRevenue, isLossCondition, totalOperationalFees, adjustedMargin } = (() => {
+  // Recalculate profit in real-time (same logic as ProductCard) to include affiliates/influencers
+  const { netRevenue, isLossCondition, totalOperationalFees, adjustedMargin, supplierUnitCostWithFees, marketplaceUnitFees } = (() => {
     const mp = product.marketplace || '';
     const sp = parseCurrency(product.sellingPrice ?? 0);
     const cp = parseCurrency(product.costPrice ?? 0);
+    const sFeeType = product.supplierFeeType || 'percent';
+    const sFeeVal = parseCurrency(product.supplierFeeValue ?? 0);
+    const sGtwType = product.supplierGatewayFeeType || 'fixed';
+    const sGtwVal = parseCurrency(product.supplierGatewayFeeValue ?? 0);
+    const sFeeCost = sFeeType === 'percent' ? cp * (sFeeVal / 100) : sFeeVal;
+    const sGtwCost = sGtwType === 'percent' ? cp * (sGtwVal / 100) : sGtwVal;
+    const fallbackSupplierCost = cp + sFeeCost + sGtwCost;
+    const fallbackMkFees = mp === 'tiktok'
+      ? (sp * 0.10) + 4.00
+      : mp === 'shopee'
+      ? (sp * 0.20) + 4.00
+      : (sp * 0.16) + 6.00;
+
     if (!mp || (sp <= 0 && cp <= 0)) {
       const stored = product.adjustedProfit !== undefined && product.adjustedProfit !== null && product.adjustedProfit !== ''
         ? parseCurrency(product.adjustedProfit)
@@ -229,7 +243,9 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
         netRevenue: stored,
         isLossCondition: isLoss,
         totalOperationalFees: parseCurrency(product.totalOperationalFees ?? cp),
-        adjustedMargin: parseCurrency(product.adjustedMargin ?? (sp > 0 ? (stored / sp) * 100 : 0))
+        adjustedMargin: parseCurrency(product.adjustedMargin ?? (sp > 0 ? (stored / sp) * 100 : 0)),
+        supplierUnitCostWithFees: fallbackSupplierCost,
+        marketplaceUnitFees: fallbackMkFees
       };
     }
     const supplierFeeType = product.supplierFeeType || 'percent';
@@ -282,11 +298,15 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
       const marginVal = metrics.adjustedMargin !== undefined && metrics.adjustedMargin !== null
         ? parseFloat(String(metrics.adjustedMargin))
         : (sp > 0 ? (profitNum / sp) * 100 : 0);
+      const supplierCostCalculated = (metrics.cost ?? cp) + parseFloat(String(metrics.supplierFeeCost ?? '0')) + parseFloat(String(metrics.supplierGatewayCost ?? '0'));
+      const marketplaceFeesCalculated = parseFloat(String(metrics.marketplaceCost ?? '0')) + parseFloat(String(metrics.fixedFee ?? '0')) + parseFloat(String(metrics.tiktokSfpFee ?? '0'));
       return {
         netRevenue: profitNum,
         isLossCondition: isLoss,
         totalOperationalFees: opFees,
-        adjustedMargin: marginVal
+        adjustedMargin: marginVal,
+        supplierUnitCostWithFees: supplierCostCalculated,
+        marketplaceUnitFees: marketplaceFeesCalculated
       };
     } catch {
       const stored = product.adjustedProfit !== undefined && product.adjustedProfit !== null && product.adjustedProfit !== ''
@@ -299,7 +319,9 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
         netRevenue: stored,
         isLossCondition: isLoss,
         totalOperationalFees: parseCurrency(product.totalOperationalFees ?? cp),
-        adjustedMargin: parseCurrency(product.adjustedMargin ?? (sp > 0 ? (stored / sp) * 100 : 0))
+        adjustedMargin: parseCurrency(product.adjustedMargin ?? (sp > 0 ? (stored / sp) * 100 : 0)),
+        supplierUnitCostWithFees: fallbackSupplierCost,
+        marketplaceUnitFees: fallbackMkFees
       };
     }
   })();
@@ -328,6 +350,24 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
     { units: 300, label: 'VENDER 300 UN' },
     { units: 400, label: 'VENDER 400 UN' },
     { units: 500, label: 'VENDER 500 UN' },
+  ];
+
+  const buyScenarios = [
+    { units: 50, label: 'COMPRAR 50 UN' },
+    { units: 100, label: 'COMPRAR 100 UN' },
+    { units: 200, label: 'COMPRAR 200 UN' },
+    { units: 300, label: 'COMPRAR 300 UN' },
+    { units: 400, label: 'COMPRAR 400 UN' },
+    { units: 500, label: 'COMPRAR 500 UN' },
+  ];
+
+  const marketplaceFeeScenarios = [
+    { units: 50, label: 'TAXA MK 50 UN' },
+    { units: 100, label: 'TAXA MK 100 UN' },
+    { units: 200, label: 'TAXA MK 200 UN' },
+    { units: 300, label: 'TAXA MK 300 UN' },
+    { units: 400, label: 'TAXA MK 400 UN' },
+    { units: 500, label: 'TAXA MK 500 UN' },
   ];
 
   const isOrganic = product.trafficMode === 'organic';
@@ -561,36 +601,127 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        {scenarios.map((scenario) => {
-          const scenarioAmount = estimatedProfitPerUnit * scenario.units;
-          const isScenarioLoss = scenarioAmount < 0;
-          return (
-            <div
-              key={scenario.units}
-              className={`rounded-xl p-3 text-center transition-colors cursor-default flex flex-col items-center justify-center border ${
-                isScenarioLoss
-                  ? 'bg-rose-950/20 border-rose-500/25 hover:border-rose-500/40'
-                  : 'bg-white/10 border-transparent hover:bg-muted'
-              }`}
-            >
-              <p className={`text-[10px] font-bold uppercase mb-2 whitespace-nowrap ${isScenarioLoss ? 'text-rose-400 font-black' : 'opacity-70'}`}>
-                {scenario.label}
-              </p>
-              <div className="flex flex-col items-center leading-none">
-                  <span className={`text-xs font-bold mb-1 ${isScenarioLoss ? 'text-rose-400' : 'opacity-80'}`}>
-                    {isScenarioLoss ? '- R$' : 'R$'}
-                  </span>
-                  <span className={`text-lg font-bold tabular-nums font-mono ${isScenarioLoss ? 'text-rose-400 font-black' : ''}`}>
-                    {formatCompactCurrency(Math.abs(scenarioAmount)).replace('R$ ', '')}
-                  </span>
-                  {isScenarioLoss && (
-                    <span className="text-[8px] font-bold uppercase tracking-wider text-rose-400/80 mt-1">Prejuízo</span>
-                  )}
-              </div>
-            </div>
-          );
-        })}
+      <div className="space-y-6">
+        {/* Guia de Vender X Unidades */}
+        <div>
+          <div className="flex items-center justify-between mb-2.5">
+            <p className="text-[11px] uppercase font-bold tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <span>Vender unidades</span>
+            </p>
+            <span className="text-[10px] text-muted-foreground font-mono">
+              Unitário: {isLoss ? `- R$ ${formatCompactCurrency(Math.abs(estimatedProfitPerUnit)).replace('R$ ', '')}` : `+ R$ ${formatCompactCurrency(estimatedProfitPerUnit).replace('R$ ', '')}`}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {scenarios.map((scenario) => {
+              const scenarioAmount = estimatedProfitPerUnit * scenario.units;
+              const isScenarioLoss = scenarioAmount < 0;
+              return (
+                <div
+                  key={scenario.units}
+                  className={`rounded-xl p-3 text-center transition-colors cursor-default flex flex-col items-center justify-center border ${
+                    isScenarioLoss
+                      ? 'bg-rose-950/20 border-rose-500/25 hover:border-rose-500/40'
+                      : 'bg-white/10 border-transparent hover:bg-muted'
+                  }`}
+                >
+                  <p className={`text-[10px] font-bold uppercase mb-2 whitespace-nowrap ${isScenarioLoss ? 'text-rose-400 font-black' : 'opacity-70'}`}>
+                    {scenario.label}
+                  </p>
+                  <div className="flex flex-col items-center leading-none">
+                      <span className={`text-xs font-bold mb-1 ${isScenarioLoss ? 'text-rose-400' : 'opacity-80'}`}>
+                        {isScenarioLoss ? '- R$' : 'R$'}
+                      </span>
+                      <span className={`text-lg font-bold tabular-nums font-mono ${isScenarioLoss ? 'text-rose-400 font-black' : ''}`}>
+                        {formatCompactCurrency(Math.abs(scenarioAmount)).replace('R$ ', '')}
+                      </span>
+                      {isScenarioLoss ? (
+                        <span className="text-[8px] font-bold uppercase tracking-wider text-rose-400/80 mt-1">Prejuízo</span>
+                      ) : (
+                        <span className="text-[8px] font-bold uppercase tracking-wider text-emerald-400/80 mt-1">Lucro</span>
+                      )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Guia de Comprar X Unidades (Preço de Custo Fornecedor + Taxas) */}
+        <div>
+          <div className="flex items-center justify-between mb-2.5">
+            <p className="text-[11px] uppercase font-bold tracking-wider text-rose-400 flex items-center gap-1.5">
+              <span>Comprar unidades (Fornecedor + Taxas)</span>
+            </p>
+            <span className="text-[10px] text-rose-300/80 font-mono">
+              Unitário: R$ {formatCurrency(supplierUnitCostWithFees)}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {buyScenarios.map((scenario) => {
+              const buyAmount = supplierUnitCostWithFees * scenario.units;
+              return (
+                <div
+                  key={scenario.units}
+                  className="rounded-xl p-3 text-center transition-colors cursor-default flex flex-col items-center justify-center border bg-rose-950/20 border-rose-500/25 hover:border-rose-500/40"
+                >
+                  <p className="text-[10px] font-black uppercase mb-2 whitespace-nowrap text-rose-400">
+                    {scenario.label}
+                  </p>
+                  <div className="flex flex-col items-center leading-none">
+                      <span className="text-xs font-bold mb-1 text-rose-400">
+                        - R$
+                      </span>
+                      <span className="text-lg font-black tabular-nums font-mono text-rose-400">
+                        {formatCompactCurrency(buyAmount).replace('R$ ', '')}
+                      </span>
+                      <span className="text-[8px] font-bold uppercase tracking-wider text-rose-400/80 mt-1">
+                        Custo
+                      </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Guia de Taxa MK X Unidades (Taxas Marketplace ao Vender) */}
+        <div>
+          <div className="flex items-center justify-between mb-2.5">
+            <p className="text-[11px] uppercase font-bold tracking-wider text-rose-400 flex items-center gap-1.5">
+              <span>Taxa MK unidades (Taxas Marketplace)</span>
+            </p>
+            <span className="text-[10px] text-rose-300/80 font-mono">
+              Unitário: R$ {formatCurrency(marketplaceUnitFees)}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {marketplaceFeeScenarios.map((scenario) => {
+              const mkAmount = marketplaceUnitFees * scenario.units;
+              return (
+                <div
+                  key={scenario.units}
+                  className="rounded-xl p-3 text-center transition-colors cursor-default flex flex-col items-center justify-center border bg-rose-950/20 border-rose-500/25 hover:border-rose-500/40"
+                >
+                  <p className="text-[10px] font-black uppercase mb-2 whitespace-nowrap text-rose-400">
+                    {scenario.label}
+                  </p>
+                  <div className="flex flex-col items-center leading-none">
+                      <span className="text-xs font-bold mb-1 text-rose-400">
+                        - R$
+                      </span>
+                      <span className="text-lg font-black tabular-nums font-mono text-rose-400">
+                        {formatCompactCurrency(mkAmount).replace('R$ ', '')}
+                      </span>
+                      <span className="text-[8px] font-bold uppercase tracking-wider text-rose-400/80 mt-1">
+                        Taxas MK
+                      </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       <div className="mt-8 rounded-xl border border-border bg-muted/20 p-4">

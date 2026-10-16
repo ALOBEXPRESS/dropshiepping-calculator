@@ -1473,7 +1473,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                 <p className="text-[10px] uppercase text-muted-foreground">Custo</p>
                 <p className="font-semibold text-foreground">{formatMoney(costPrice)}</p>
               </div>
-              <div className="rounded-xl p-2 border transition-all duration-200" style={{
+              <div className="rounded-xl p-2 border transition-all duration-200 h-full flex flex-col justify-between" style={{
                 background: isFinalLoss
                   ? 'linear-gradient(135deg, rgba(244,63,94,0.14) 0%, rgba(20,10,15,0.45) 100%)'
                   : 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(10,20,15,0.3) 100%)',
@@ -1502,15 +1502,31 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                     ? `- R$ ${formatCurrency(Math.abs(netRevenueAdjusted))}`
                     : `+ R$ ${formatCurrency(netRevenueAdjusted)}`}
                 </p>
-                {isFinalLoss && financialMetrics.totalOperationalFees > 0 && (
+                {isFinalLoss && financialMetrics.totalOperationalFees > 0 ? (
                   <p className="text-[8px] text-rose-300/80 font-medium leading-tight mt-0.5 truncate" title={`Prejuízo após taxas de (R$ ${formatCurrency(financialMetrics.totalOperationalFees)})`}>
                     Após taxas ({formatCurrency(financialMetrics.totalOperationalFees)})
                   </p>
+                ) : (
+                  <p className="text-[8px] text-muted-foreground/80 font-medium leading-tight mt-0.5 truncate">
+                    Margem real
+                  </p>
                 )}
               </div>
-              <div>
-                <p className="text-[10px] uppercase text-muted-foreground">Marketplace</p>
-                <p className="font-semibold text-foreground truncate">{getMarketplaceLabel(product.marketplace)}</p>
+              <div className="rounded-xl p-2 border border-border/40 bg-muted/20 flex flex-col justify-between transition-all duration-200 h-full">
+                <div className="flex items-center justify-between gap-1 mb-0.5">
+                  <p className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground">
+                    Marketplace
+                  </p>
+                  <span className="text-[8px] font-semibold uppercase px-1.5 py-0.2 rounded border border-border/60 bg-background/50 text-muted-foreground">
+                    Canal
+                  </span>
+                </div>
+                <p className="text-sm font-bold text-foreground truncate">
+                  {getMarketplaceLabel(product.marketplace)}
+                </p>
+                <p className="text-[8px] text-muted-foreground truncate mt-0.5">
+                  {product.marketplace === 'tiktok' ? 'TikTok Shop' : product.marketplace === 'mercadolivre' ? 'Mercado Livre' : product.marketplace === 'shopee' ? 'Shopee' : 'Canal de venda'}
+                </p>
               </div>
               <div>
                 <p className="text-[10px] uppercase text-muted-foreground">Forn.</p>

@@ -3114,7 +3114,35 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                     <Label htmlFor="cost" className="text-right dark:text-white">Custo</Label>
                     <Input id="cost" type="number" value={formData.costPrice} onChange={(e) => handleChange('costPrice', e.target.value)} className="col-span-3" />
                   </div>
-                  {/* Hero Card de Resultado Financeiro (Frontend Design de Alta Precisão) */}
+                  {formData.marketplace === 'mercadolivre' && (
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="mlShippingCost" className="text-right dark:text-white">Frete</Label>
+                      <Input
+                        id="mlShippingCost"
+                        type="text"
+                        inputMode="decimal"
+                        value={formData.mlShippingCost}
+                        onChange={(e) => handleCurrencyChange(e, (val) => handleChange('mlShippingCost', val))}
+                        className="col-span-3"
+                        placeholder="0,00"
+                      />
+                    </div>
+                  )}
+                  {['tiktok', 'wordpress', 'enjoei', 'amazon', 'shein'].includes(formData.marketplace) && (
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="marketplaceShippingCost" className="text-right dark:text-white">Frete</Label>
+                      <Input
+                        id="marketplaceShippingCost"
+                        type="text"
+                        inputMode="decimal"
+                        value={formData.marketplaceShippingCost}
+                        onChange={(e) => handleCurrencyChange(e, (val) => handleChange('marketplaceShippingCost', val))}
+                        className="col-span-3"
+                        placeholder="0,00"
+                      />
+                    </div>
+                  )}
+                  {/* Hero Card de Resultado Financeiro (Frontend Design de Alta Precisão) - Posicionado abaixo de Frete */}
                   <div className="col-span-4 my-2">
                     <div className={`relative overflow-hidden rounded-2xl border p-4 sm:p-5 transition-all duration-300 ${
                       isLossFinancialCondition
@@ -3235,34 +3263,6 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                       value={formatCurrency(organicNetRevenue)}
                     />
                   </div>
-                  {formData.marketplace === 'mercadolivre' && (
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="mlShippingCost" className="text-right dark:text-white">Frete</Label>
-                      <Input
-                        id="mlShippingCost"
-                        type="text"
-                        inputMode="decimal"
-                        value={formData.mlShippingCost}
-                        onChange={(e) => handleCurrencyChange(e, (val) => handleChange('mlShippingCost', val))}
-                        className="col-span-3"
-                        placeholder="0,00"
-                      />
-                    </div>
-                  )}
-                  {['tiktok', 'wordpress', 'enjoei', 'amazon', 'shein'].includes(formData.marketplace) && (
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="marketplaceShippingCost" className="text-right dark:text-white">Frete</Label>
-                      <Input
-                        id="marketplaceShippingCost"
-                        type="text"
-                        inputMode="decimal"
-                        value={formData.marketplaceShippingCost}
-                        onChange={(e) => handleCurrencyChange(e, (val) => handleChange('marketplaceShippingCost', val))}
-                        className="col-span-3"
-                        placeholder="0,00"
-                      />
-                    </div>
-                  )}
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label className="text-right dark:text-white">
                       Pagamento
