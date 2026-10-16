@@ -1512,21 +1512,9 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                   </p>
                 )}
               </div>
-              <div className="rounded-xl p-2 border border-border/40 bg-muted/20 flex flex-col justify-between transition-all duration-200 h-full">
-                <div className="flex items-center justify-between gap-1 mb-0.5">
-                  <p className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground">
-                    Marketplace
-                  </p>
-                  <span className="text-[8px] font-semibold uppercase px-1.5 py-0.2 rounded border border-border/60 bg-background/50 text-muted-foreground">
-                    Canal
-                  </span>
-                </div>
-                <p className="text-sm font-bold text-foreground truncate">
-                  {getMarketplaceLabel(product.marketplace)}
-                </p>
-                <p className="text-[8px] text-muted-foreground truncate mt-0.5">
-                  {product.marketplace === 'tiktok' ? 'TikTok Shop' : product.marketplace === 'mercadolivre' ? 'Mercado Livre' : product.marketplace === 'shopee' ? 'Shopee' : 'Canal de venda'}
-                </p>
+              <div className="pt-2">
+                <p className="text-[10px] uppercase text-muted-foreground">Marketplace</p>
+                <p className="font-semibold text-foreground truncate">{getMarketplaceLabel(product.marketplace)}</p>
               </div>
               <div>
                 <p className="text-[10px] uppercase text-muted-foreground">Forn.</p>

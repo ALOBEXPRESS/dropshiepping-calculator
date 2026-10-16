@@ -223,9 +223,10 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
     const sFeeVal = parseCurrency(product.supplierFeeValue ?? 0);
     const sGtwType = product.supplierGatewayFeeType || 'fixed';
     const sGtwVal = parseCurrency(product.supplierGatewayFeeValue ?? 0);
-    const sFeeCost = sFeeType === 'percent' ? cp * (sFeeVal / 100) : sFeeVal;
     const sGtwCost = sGtwType === 'percent' ? cp * (sGtwVal / 100) : sGtwVal;
-    const fallbackSupplierCost = cp + sFeeCost + sGtwCost;
+    const baseWithGateway = cp + sGtwCost;
+    const sFeeCost = sFeeType === 'percent' ? baseWithGateway * (sFeeVal / 100) : sFeeVal;
+    const fallbackSupplierCost = Math.round((baseWithGateway + sFeeCost) * 100) / 100;
     const fallbackMkFees = mp === 'tiktok'
       ? (sp * 0.10) + 4.00
       : mp === 'shopee'
@@ -298,8 +299,13 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
       const marginVal = metrics.adjustedMargin !== undefined && metrics.adjustedMargin !== null
         ? parseFloat(String(metrics.adjustedMargin))
         : (sp > 0 ? (profitNum / sp) * 100 : 0);
-      const supplierCostCalculated = (metrics.cost ?? cp) + parseFloat(String(metrics.supplierFeeCost ?? '0')) + parseFloat(String(metrics.supplierGatewayCost ?? '0'));
-      const marketplaceFeesCalculated = parseFloat(String(metrics.marketplaceCost ?? '0')) + parseFloat(String(metrics.fixedFee ?? '0')) + parseFloat(String(metrics.tiktokSfpFee ?? '0'));
+      const supFeeCostNum = parseFloat(String(metrics.supplierFeeCost ?? '0'));
+      const supGtwCostNum = parseFloat(String(metrics.supplierGatewayCost ?? '0'));
+      const supplierCostCalculated = Math.round(((metrics.cost ?? cp) + supFeeCostNum + supGtwCostNum) * 100) / 100;
+      const mkCostNum = parseFloat(String(metrics.marketplaceCost ?? '0'));
+      const fixedFeeNum = parseFloat(String(metrics.fixedFee ?? '0'));
+      const sfpFeeNum = parseFloat(String(metrics.tiktokSfpFee ?? '0'));
+      const marketplaceFeesCalculated = Math.round((mkCostNum + fixedFeeNum + sfpFeeNum) * 100) / 100;
       return {
         netRevenue: profitNum,
         isLossCondition: isLoss,
@@ -659,7 +665,7 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
           </div>
           <div className="grid grid-cols-3 gap-3">
             {buyScenarios.map((scenario) => {
-              const buyAmount = supplierUnitCostWithFees * scenario.units;
+              const buyAmount = Math.round(supplierUnitCostWithFees * scenario.units * 100) / 100;
               return (
                 <div
                   key={scenario.units}
@@ -697,7 +703,7 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
           </div>
           <div className="grid grid-cols-3 gap-3">
             {marketplaceFeeScenarios.map((scenario) => {
-              const mkAmount = marketplaceUnitFees * scenario.units;
+              const mkAmount = Math.round(marketplaceUnitFees * scenario.units * 100) / 100;
               return (
                 <div
                   key={scenario.units}

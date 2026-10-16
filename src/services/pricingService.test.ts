@@ -379,11 +379,11 @@ describe('Pricing Service', () => {
         'fixed' // supplierGatewayFeeType
       );
 
-      expect(result3Percent.supplierFeeCost).toBe('0.36');
-      expect(result6Percent.supplierFeeCost).toBe('0.72');
-      expect(Number(result3Percent.netRevenue)).toBeCloseTo(7.76, 2);
-      expect(Number(result6Percent.netRevenue)).toBeCloseTo(7.40, 2);
-      expect(Number(result3Percent.netRevenue) - Number(result6Percent.netRevenue)).toBeCloseTo(0.36, 2);
+      expect(result3Percent.supplierFeeCost).toBe('0.42');
+      expect(result6Percent.supplierFeeCost).toBe('0.84');
+      expect(Number(result3Percent.netRevenue)).toBeCloseTo(7.70, 2);
+      expect(Number(result6Percent.netRevenue)).toBeCloseTo(7.28, 2);
+      expect(Number(result3Percent.netRevenue) - Number(result6Percent.netRevenue)).toBeCloseTo(0.42, 2);
       expect(Number(result3Percent.actualMargin)).toBeGreaterThan(Number(result6Percent.actualMargin));
     });
 
@@ -444,8 +444,8 @@ describe('Pricing Service', () => {
       expect(result16Percent.marketplaceFee).toBe('16');
       expect(Number(result6Percent.marketplaceCost)).toBeCloseTo(4.19, 2);
       expect(Number(result16Percent.marketplaceCost)).toBeCloseTo(11.18, 2);
-      expect(Number(result6Percent.netRevenue)).toBeCloseTo(15.35, 2);
-      expect(Number(result16Percent.netRevenue)).toBeCloseTo(8.36, 2);
+      expect(Number(result6Percent.netRevenue)).toBeCloseTo(15.29, 2);
+      expect(Number(result16Percent.netRevenue)).toBeCloseTo(8.30, 2);
       expect(Number(result6Percent.netRevenue) - Number(result16Percent.netRevenue)).toBeCloseTo(6.99, 2);
       expect(Number(result16Percent.actualMargin)).toBeLessThan(Number(result6Percent.actualMargin));
     });
@@ -553,28 +553,64 @@ describe('Pricing Service', () => {
         0, 0, 0, 0, 0, 'fixed', 'fixed', 'fixed', 'fixed', 0, [], []
       );
 
-      // Verify net revenue is R$ 5.26
-      expect(Number(userCase.netRevenue)).toBeCloseTo(5.26, 2);
-      // Supplier fees = 0.38 + 2.00 = 2.38
+      // Verify net revenue is R$ 5.20
+      expect(Number(userCase.netRevenue)).toBeCloseTo(5.20, 2);
+      // Supplier fees = 0.44 + 2.00 = 2.44
       const supFees = Number(userCase.supplierFeeCost) + Number(userCase.supplierGatewayCost);
-      expect(supFees).toBeCloseTo(2.38, 2);
+      expect(supFees).toBeCloseTo(2.44, 2);
       // Marketplace fees = 4.64 + 4.00 = 8.64
       const mktFees = Number(userCase.marketplaceCost) + Number(userCase.fixedFee);
       expect(mktFees).toBeCloseTo(8.64, 2);
 
       // Total operational costs and fees:
-      // baseCost (12.72) + supFees (2.38) + mktFees (8.64) = 23.74!
-      expect(Number(userCase.totalOperationalFees)).toBeCloseTo(23.74, 2);
+      // baseCost (12.72) + supFees (2.44) + mktFees (8.64) = 23.80!
+      expect(Number(userCase.totalOperationalFees)).toBeCloseTo(23.80, 2);
 
       // prejuizo = lucro liquido - totalOperationalFees
-      // 5.26 - 23.74 = -18.48
+      // 5.20 - 23.80 = -18.60
       expect(userCase.isLossCondition).toBe(true);
       expect(userCase.marginStatus).toBe('negative');
-      expect(Number(userCase.lossAmount)).toBeCloseTo(-18.48, 2);
-      expect(Number(userCase.adjustedProfit)).toBeCloseTo(-18.48, 2);
-      // lossMargin = (-18.48 / 29.00) * 100 = -63.7%
-      expect(Number(userCase.lossMargin)).toBeCloseTo(-63.7, 1);
-      expect(Number(userCase.adjustedMargin)).toBeCloseTo(-63.7, 1);
+      expect(Number(userCase.lossAmount)).toBeCloseTo(-18.60, 2);
+      expect(Number(userCase.adjustedProfit)).toBeCloseTo(-18.60, 2);
+      // lossMargin = (-18.60 / 29.00) * 100 = -64.1%
+      expect(Number(userCase.lossMargin)).toBeCloseTo(-64.1, 1);
+      expect(Number(userCase.adjustedMargin)).toBeCloseTo(-64.1, 1);
+    });
+
+    it('should calculate supplier unit cost and fees correctly based on (baseCost + transaction fee): 13.99 + 2.00 = 15.99 + 3% = 16.47 and 50 units = 823.50', () => {
+      const result = calculateMetrics(
+        13.99, // baseCost
+        0,     // pkgCost
+        3,     // supplierFeeVal (3%)
+        0,     // markup
+        'tiktok',
+        'eletronicos',
+        'classico',
+        'without',
+        'cnpj',
+        0,
+        false, 0, 0, 0, 0,
+        59.90, // manualPriceVal
+        0, 0,
+        10,    // tiktokCommVal = 10%
+        0, 0, 0, 0, 0, 'percent', 0, 0, 0, 'classico', 0, '', '', '', '', false,
+        'percent',
+        0,
+        2.00,  // supplierGatewayCost = 2.00 fixed
+        'fixed',
+        'individual',
+        'eletronicos',
+        0, 0, 0, 0, 0, 'fixed', 'fixed', 'fixed', 'fixed', 0, [], []
+      );
+
+      // 13.99 + 2.00 = 15.99
+      // 15.99 * 3% = 0.4797 -> 0.48
+      expect(result.supplierGatewayCost).toBe('2.00');
+      expect(result.supplierFeeCost).toBe('0.48');
+      const supplierUnitCost = Number(result.cost) + Number(result.supplierFeeCost) + Number(result.supplierGatewayCost);
+      expect(Math.round(supplierUnitCost * 100) / 100).toBe(16.47);
+      // 50 units = 16.47 * 50 = 823.50
+      expect(Math.round(16.47 * 50 * 100) / 100).toBe(823.50);
     });
 
     it('should calculate adjustedProfit and adjustedMargin when NOT in loss (positive profit)', () => {

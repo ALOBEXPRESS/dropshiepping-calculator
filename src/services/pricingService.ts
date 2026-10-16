@@ -339,15 +339,16 @@ export const calculateMetrics = (
   const normalizedMarketplace = marketplaceMap[mpDeaccented] || marketplaceMap[mpCompact] || mpCompact || currentMarketplace;
   currentMarketplace = normalizedMarketplace;
 
-  // Calculate supplier fee (if fixed, it's supplierFeeVal; if percent, it's % of baseCost)
-  const supplierFeeCost = supplierFeeType === 'fixed'
-    ? supplierFeeVal
-    : baseCost * (supplierFeeVal / 100);
-  
-  // Calculate supplier gateway fee
+  // Calculate supplier gateway fee (taxa de transação/gateway do fornecedor)
   const supplierGatewayCost = supplierGatewayFeeType === 'fixed'
     ? supplierGatewayFixedFee
     : baseCost * (supplierGatewayFeePercent / 100);
+
+  // Calculate supplier fee (if fixed, it's supplierFeeVal; if percent, it's % of baseCost + supplierGatewayCost)
+  const costWithGateway = baseCost + supplierGatewayCost;
+  const supplierFeeCost = supplierFeeType === 'fixed'
+    ? supplierFeeVal
+    : costWithGateway * (supplierFeeVal / 100);
   
   const marketplaceShippingCost = currentMarketplace === 'mercadolivre'
     ? mlShippingVal
