@@ -214,13 +214,23 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
   const cost = parseCurrency(product.costPrice || 0);
 
   // Recalculate profit in real-time (same logic as ProductCard) to include affiliates/influencers
-  const netRevenue = (() => {
+  const { netRevenue, isLossCondition, totalOperationalFees, adjustedMargin } = (() => {
     const mp = product.marketplace || '';
     const sp = parseCurrency(product.sellingPrice ?? 0);
     const cp = parseCurrency(product.costPrice ?? 0);
     if (!mp || (sp <= 0 && cp <= 0)) {
-      const stored = product.netRevenue;
-      return stored !== undefined && stored !== null && stored !== '' ? parseCurrency(stored) : (price - cost);
+      const stored = product.adjustedProfit !== undefined && product.adjustedProfit !== null && product.adjustedProfit !== ''
+        ? parseCurrency(product.adjustedProfit)
+        : (product.netRevenue !== undefined && product.netRevenue !== null && product.netRevenue !== ''
+          ? parseCurrency(product.netRevenue)
+          : (price - cost));
+      const isLoss = Boolean(product.isLossCondition ?? stored < 0);
+      return {
+        netRevenue: stored,
+        isLossCondition: isLoss,
+        totalOperationalFees: parseCurrency(product.totalOperationalFees ?? cp),
+        adjustedMargin: parseCurrency(product.adjustedMargin ?? (sp > 0 ? (stored / sp) * 100 : 0))
+      };
     }
     const supplierFeeType = product.supplierFeeType || 'percent';
     const supplierFeeValue = parseCurrency(product.supplierFeeValue ?? 0);
@@ -262,18 +272,44 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
         parseCurrency(product.tiktokPromoProductValue ?? 0),
         product.tiktokPromoProductType || 'fixed'
       );
-      return parseFloat(String(metrics.netRevenue ?? '0'));
+      const profitNum = metrics.adjustedProfit !== undefined && metrics.adjustedProfit !== null
+        ? parseFloat(String(metrics.adjustedProfit))
+        : parseFloat(String(metrics.netRevenue ?? '0'));
+      const isLoss = Boolean(metrics.isLossCondition ?? profitNum < 0);
+      const opFees = metrics.totalOperationalFees !== undefined && metrics.totalOperationalFees !== null
+        ? parseFloat(String(metrics.totalOperationalFees))
+        : cp;
+      const marginVal = metrics.adjustedMargin !== undefined && metrics.adjustedMargin !== null
+        ? parseFloat(String(metrics.adjustedMargin))
+        : (sp > 0 ? (profitNum / sp) * 100 : 0);
+      return {
+        netRevenue: profitNum,
+        isLossCondition: isLoss,
+        totalOperationalFees: opFees,
+        adjustedMargin: marginVal
+      };
     } catch {
-      const stored = product.netRevenue;
-      return stored !== undefined && stored !== null && stored !== '' ? parseCurrency(stored) : (price - cost);
+      const stored = product.adjustedProfit !== undefined && product.adjustedProfit !== null && product.adjustedProfit !== ''
+        ? parseCurrency(product.adjustedProfit)
+        : (product.netRevenue !== undefined && product.netRevenue !== null && product.netRevenue !== ''
+          ? parseCurrency(product.netRevenue)
+          : (price - cost));
+      const isLoss = Boolean(product.isLossCondition ?? stored < 0);
+      return {
+        netRevenue: stored,
+        isLossCondition: isLoss,
+        totalOperationalFees: parseCurrency(product.totalOperationalFees ?? cp),
+        adjustedMargin: parseCurrency(product.adjustedMargin ?? (sp > 0 ? (stored / sp) * 100 : 0))
+      };
     }
   })();
   
   // Lucro unitário projetado a partir da precificação e taxas configuradas (netRevenue)
-  const unitProjectedProfit = netRevenue > 0 ? netRevenue : Math.max(0, price - cost);
+  const unitProjectedProfit = netRevenue;
 
   // Para projeções de cenários ("Vender 50 UN"): usar a margem unitária projetada do produto
   const estimatedProfitPerUnit = unitProjectedProfit;
+  const isLoss = isLossCondition || estimatedProfitPerUnit < 0;
 
   // Total de lucro acumulado real das vendas (ou estimado caso ainda não processado)
   const displayProfit = salesStats.totalProfit > 0 
@@ -461,9 +497,38 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
                     <p className="text-xl font-bold text-foreground tabular-nums">R$ {formatCompactCurrency(trafficCost)}</p>
                 </div>
 
-                <div className={`${estimatedProfitPerUnit < 3 ? "bg-red-500/15 text-red-500 border-red-500/30" : estimatedProfitPerUnit < 8 ? "bg-amber-500/15 text-amber-500 border-amber-500/30" : "bg-emerald-500/15 text-emerald-500 border-emerald-500/30"} rounded-xl p-2 border flex flex-col justify-center items-center text-center`}>
-                    <p className="text-[10px] uppercase font-bold opacity-70 mb-0.5">LUCRO ESTIMADO</p>
-                    <p className="text-lg font-bold tabular-nums">R$ {formatCompactCurrency(estimatedProfitPerUnit)}</p>
+                <div className={`${
+                  isLoss
+                    ? "bg-rose-500/15 text-rose-400 border-rose-500/40 shadow-[0_0_15px_-3px_rgba(244,63,94,0.3)]"
+                    : estimatedProfitPerUnit < 3
+                    ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                    : estimatedProfitPerUnit < 8
+                    ? "bg-yellow-500/15 text-yellow-400 border-yellow-500/30"
+                    : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 shadow-[0_0_15px_-3px_rgba(16,185,129,0.2)]"
+                } rounded-xl p-2 border flex flex-col justify-center items-center text-center`}>
+                    <div className="flex items-center gap-1 mb-0.5">
+                      {isLoss && <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />}
+                      <p className={`text-[10px] uppercase font-bold tracking-wider ${isLoss ? 'text-rose-300 font-black' : 'opacity-70'}`}>
+                        {isLoss ? 'PREJUÍZO ESTIMADO' : 'LUCRO ESTIMADO'}
+                      </p>
+                    </div>
+                    <p className={`text-lg font-black tabular-nums font-mono ${
+                      isLoss
+                        ? 'text-rose-400 drop-shadow-[0_0_8px_rgba(244,63,94,0.4)]'
+                        : 'text-emerald-400'
+                    }`}>
+                      {isLoss
+                        ? `- R$ ${formatCompactCurrency(Math.abs(estimatedProfitPerUnit)).replace('R$ ', '')}`
+                        : `+ R$ ${formatCompactCurrency(estimatedProfitPerUnit).replace('R$ ', '')}`}
+                    </p>
+                    <span className="text-[9px] font-bold opacity-80">
+                      ({adjustedMargin >= 0 && !isLoss ? '+' : ''}{adjustedMargin.toFixed(1)}% Margem)
+                    </span>
+                    {isLoss && totalOperationalFees > 0 && (
+                      <span className="text-[8px] text-rose-300/80 font-medium mt-0.5 truncate" title={`Prejuízo após taxas de (R$ ${formatCompactCurrency(totalOperationalFees)})`}>
+                        Após taxas ({formatCompactCurrency(totalOperationalFees)})
+                      </span>
+                    )}
                 </div>
                 
                 <div className="bg-muted/40 border border-border rounded-xl p-2 flex flex-col justify-center items-center text-center">
@@ -497,15 +562,35 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        {scenarios.map((scenario) => (
-          <div key={scenario.units} className="bg-white/10 rounded-xl p-3 text-center hover:bg-muted transition-colors cursor-default flex flex-col items-center justify-center">
-            <p className="text-[10px] font-bold uppercase opacity-70 mb-2 whitespace-nowrap">{scenario.label}</p>
-            <div className="flex flex-col items-center leading-none">
-                <span className="text-xs font-bold opacity-80 mb-1">R$</span>
-                <span className="text-lg font-bold">{formatCompactCurrency(estimatedProfitPerUnit * scenario.units).replace('R$ ', '')}</span>
+        {scenarios.map((scenario) => {
+          const scenarioAmount = estimatedProfitPerUnit * scenario.units;
+          const isScenarioLoss = scenarioAmount < 0;
+          return (
+            <div
+              key={scenario.units}
+              className={`rounded-xl p-3 text-center transition-colors cursor-default flex flex-col items-center justify-center border ${
+                isScenarioLoss
+                  ? 'bg-rose-950/20 border-rose-500/25 hover:border-rose-500/40'
+                  : 'bg-white/10 border-transparent hover:bg-muted'
+              }`}
+            >
+              <p className={`text-[10px] font-bold uppercase mb-2 whitespace-nowrap ${isScenarioLoss ? 'text-rose-400 font-black' : 'opacity-70'}`}>
+                {scenario.label}
+              </p>
+              <div className="flex flex-col items-center leading-none">
+                  <span className={`text-xs font-bold mb-1 ${isScenarioLoss ? 'text-rose-400' : 'opacity-80'}`}>
+                    {isScenarioLoss ? '- R$' : 'R$'}
+                  </span>
+                  <span className={`text-lg font-bold tabular-nums font-mono ${isScenarioLoss ? 'text-rose-400 font-black' : ''}`}>
+                    {formatCompactCurrency(Math.abs(scenarioAmount)).replace('R$ ', '')}
+                  </span>
+                  {isScenarioLoss && (
+                    <span className="text-[8px] font-bold uppercase tracking-wider text-rose-400/80 mt-1">Prejuízo</span>
+                  )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="mt-8 rounded-xl border border-border bg-muted/20 p-4">

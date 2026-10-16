@@ -60,7 +60,7 @@ import tiktokOff25 from '../../imgs/25OFF.png';
 import tiktokOff30 from '../../imgs/30OFF.png';
 import tiktokOff35 from '../../imgs/35OFF.png';
 import tiktokOff40 from '../../imgs/40OFF.png';
-import { parseCurrency } from '../../utils/currency';
+import { parseCurrency, formatCurrency } from '../../utils/currency';
 import { calculateMetrics } from '../../services/pricingService';
 import { useTiktokCommission } from '../../hooks/useTiktokCommission';
 import { AnimatedCard } from '../ui/AnimatedCard';
@@ -452,21 +452,40 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     ? currentData?.manualPrice ?? currentData?.suggestedPrice
     : product.sellingPrice;
   const costPrice = currentSlide.kind === 'variation' ? currentData?.cost : product.costPrice;
-  const netRevenue = currentSlide.kind === 'variation' ? currentData?.netRevenue : product.netRevenue;
   const stockQuantity = typeof product.stockQuantity === 'number' && Number.isFinite(product.stockQuantity)
     ? product.stockQuantity
     : 0;
 
   // Recalculate profit in real-time for the main product to avoid stale DB values
-  const calculatedNetRevenue = (() => {
+  const financialMetrics = (() => {
     if (currentSlide.kind === 'variation') {
-      return typeof netRevenue === 'number' ? netRevenue : parseFloat(netRevenue as string);
+      const storedProfit = currentData?.adjustedProfit ?? currentData?.netRevenue ?? product.adjustedProfit ?? product.netRevenue;
+      const profitNum = typeof storedProfit === 'number' ? storedProfit : parseFloat(String(storedProfit ?? '0'));
+      const isLoss = Boolean(currentData?.isLossCondition ?? product.isLossCondition ?? profitNum < 0);
+      const marginVal = currentData?.adjustedMargin ?? product.adjustedMargin ?? 0;
+      const opFees = currentData?.totalOperationalFees ?? product.totalOperationalFees ?? 0;
+      return {
+        profit: profitNum,
+        margin: typeof marginVal === 'number' ? marginVal : parseFloat(String(marginVal || 0)),
+        isLoss,
+        totalOperationalFees: typeof opFees === 'number' ? opFees : parseFloat(String(opFees || 0)),
+      };
     }
     const mp = product.marketplace || '';
     const sp = parseCurrency(product.sellingPrice ?? 0);
     const cp = parseCurrency(product.costPrice ?? 0);
     if (!mp || (sp <= 0 && cp <= 0)) {
-      return typeof netRevenue === 'number' ? netRevenue : parseFloat(netRevenue as string);
+      const storedProfit = product.adjustedProfit ?? product.netRevenue;
+      const profitNum = typeof storedProfit === 'number' ? storedProfit : parseFloat(String(storedProfit ?? '0'));
+      const isLoss = Boolean(product.isLossCondition ?? profitNum < 0);
+      const marginVal = product.adjustedMargin ?? 0;
+      const opFees = product.totalOperationalFees ?? cp;
+      return {
+        profit: profitNum,
+        margin: typeof marginVal === 'number' ? marginVal : parseFloat(String(marginVal || 0)),
+        isLoss,
+        totalOperationalFees: typeof opFees === 'number' ? opFees : parseFloat(String(opFees || 0)),
+      };
     }
     const supplierFeeType = product.supplierFeeType || 'percent';
     const supplierFeeValue = parseCurrency(product.supplierFeeValue ?? 0);
@@ -508,31 +527,49 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
         parseCurrency(product.tiktokPromoProductValue ?? 0),
         product.tiktokPromoProductType || 'fixed'
       );
-      return parseFloat(String(metrics.netRevenue ?? '0'));
+      const profitNum = metrics.adjustedProfit !== undefined && metrics.adjustedProfit !== null
+        ? parseFloat(String(metrics.adjustedProfit))
+        : parseFloat(String(metrics.netRevenue ?? '0'));
+      const marginVal = metrics.adjustedMargin !== undefined && metrics.adjustedMargin !== null
+        ? parseFloat(String(metrics.adjustedMargin))
+        : (sp > 0 ? (profitNum / sp) * 100 : 0);
+      const isLoss = Boolean(metrics.isLossCondition ?? profitNum < 0);
+      const opFees = metrics.totalOperationalFees !== undefined && metrics.totalOperationalFees !== null
+        ? parseFloat(String(metrics.totalOperationalFees))
+        : cp;
+      return {
+        profit: profitNum,
+        margin: marginVal,
+        isLoss,
+        totalOperationalFees: opFees,
+      };
     } catch {
-      return typeof netRevenue === 'number' ? netRevenue : parseFloat(netRevenue as string);
+      const storedProfit = product.adjustedProfit ?? product.netRevenue;
+      const profitNum = typeof storedProfit === 'number' ? storedProfit : parseFloat(String(storedProfit ?? '0'));
+      const isLoss = Boolean(product.isLossCondition ?? profitNum < 0);
+      const marginVal = product.adjustedMargin ?? 0;
+      const opFees = product.totalOperationalFees ?? cp;
+      return {
+        profit: profitNum,
+        margin: typeof marginVal === 'number' ? marginVal : parseFloat(String(marginVal || 0)),
+        isLoss,
+        totalOperationalFees: typeof opFees === 'number' ? opFees : parseFloat(String(opFees || 0)),
+      };
     }
   })();
 
+  const calculatedNetRevenue = financialMetrics.profit;
+
   const profitValue = Number.isFinite(calculatedNetRevenue) ? calculatedNetRevenue : 0;
-  const profitBadgeClass = Number.isFinite(profitValue)
-    ? profitValue < 3
-      ? 'bg-red-600'
+  const profitBadgeClass = financialMetrics.isLoss || profitValue < 0
+    ? 'bg-rose-600 animate-pulse'
+    : profitValue < 3
+      ? 'bg-amber-600'
       : profitValue < 8
         ? 'bg-yellow-500'
         : profitValue < 13
-          ? 'bg-green-600'
-          : 'bg-blue-600'
-    : 'bg-red-600';
-  const profitTextClass = Number.isFinite(profitValue)
-    ? profitValue < 3
-      ? 'text-red-600'
-      : profitValue < 8
-        ? 'text-yellow-500'
-        : profitValue < 13
-          ? 'text-green-600'
-          : 'text-blue-600'
-    : 'text-red-600';
+          ? 'bg-emerald-600'
+          : 'bg-cyan-600';
   
   const handlePrevVar = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -545,7 +582,10 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   };
 
   const formatMoney = (val: string | number | undefined) => {
-      const num = parseCurrency(val ?? 0);
+      const num = typeof val === 'number' ? val : parseCurrency(val ?? 0);
+      if (num < 0) {
+        return `- R$ ${Math.abs(num).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      }
       return `R$ ${num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
   const formatDateInputBr = (value: string) => {
@@ -642,6 +682,10 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     );
   const shopeeAdsBudget = hasShopeeAdsInvestment ? parseCurrency(product.shopeeTotalBudget ?? 0) : 0;
   const netRevenueAdjusted = calculatedNetRevenue - shopeeAdsBudget;
+  const isFinalLoss = financialMetrics.isLoss || netRevenueAdjusted < 0;
+  const realMargin = sellingPrice && parseCurrency(sellingPrice) > 0
+    ? (netRevenueAdjusted / parseCurrency(sellingPrice)) * 100
+    : financialMetrics.margin;
   const marketplaceIcons: Record<string, string> = {
     wordpress: wooCommerceLogo,
     shopee: shopeeLogo,
@@ -1429,11 +1473,40 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                 <p className="text-[10px] uppercase text-muted-foreground">Custo</p>
                 <p className="font-semibold text-foreground">{formatMoney(costPrice)}</p>
               </div>
-              <div>
-                <p className="text-[10px] uppercase text-muted-foreground">Lucro</p>
-                <p className={`font-semibold ${profitTextClass}`}>
-                  {formatMoney(netRevenueAdjusted)}
+              <div className="rounded-xl p-2 border transition-all duration-200" style={{
+                background: isFinalLoss
+                  ? 'linear-gradient(135deg, rgba(244,63,94,0.14) 0%, rgba(20,10,15,0.45) 100%)'
+                  : 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(10,20,15,0.3) 100%)',
+                borderColor: isFinalLoss
+                  ? 'rgba(244,63,94,0.4)'
+                  : 'rgba(16,185,129,0.25)'
+              }}>
+                <div className="flex items-center justify-between gap-1 mb-0.5">
+                  <p className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground">
+                    {isFinalLoss ? 'Prejuízo' : 'Lucro Líquido'}
+                  </p>
+                  <span className={`text-[8px] font-black uppercase px-1.5 py-0.2 rounded border shadow-sm ${
+                    isFinalLoss
+                      ? 'bg-rose-500/25 text-rose-300 border-rose-500/50'
+                      : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                  }`}>
+                    {isFinalLoss ? 'PREJUÍZO' : `${realMargin >= 0 ? '+' : ''}${realMargin.toFixed(1)}%`}
+                  </span>
+                </div>
+                <p className={`text-sm font-black tracking-tight tabular-nums font-mono ${
+                  isFinalLoss
+                    ? 'text-rose-400 drop-shadow-[0_0_8px_rgba(244,63,94,0.4)]'
+                    : 'text-emerald-400'
+                }`}>
+                  {isFinalLoss
+                    ? `- R$ ${formatCurrency(Math.abs(netRevenueAdjusted))}`
+                    : `+ R$ ${formatCurrency(netRevenueAdjusted)}`}
                 </p>
+                {isFinalLoss && financialMetrics.totalOperationalFees > 0 && (
+                  <p className="text-[8px] text-rose-300/80 font-medium leading-tight mt-0.5 truncate" title={`Prejuízo após taxas de (R$ ${formatCurrency(financialMetrics.totalOperationalFees)})`}>
+                    Após taxas ({formatCurrency(financialMetrics.totalOperationalFees)})
+                  </p>
+                )}
               </div>
               <div>
                 <p className="text-[10px] uppercase text-muted-foreground">Marketplace</p>

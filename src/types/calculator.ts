@@ -51,6 +51,10 @@ export interface ProductVariationRecord {
   manualPrice?: string | number;
   suggestedPrice?: string | number;
   netRevenue?: string | number;
+  adjustedProfit?: string | number;
+  adjustedMargin?: string | number;
+  isLossCondition?: boolean;
+  totalOperationalFees?: string | number;
   margin?: string | number;
   imageUrl?: string;
   imageUrls?: string[]; // Múltiplas imagens para variações
@@ -75,6 +79,12 @@ export interface ProductItem {
   marketplace?: string;
   marketplace_id?: string;
   netRevenue?: string | number;
+  adjustedProfit?: string | number;
+  adjustedMargin?: string | number;
+  isLossCondition?: boolean;
+  totalOperationalFees?: string | number;
+  lossAmount?: string | number;
+  lossMargin?: string | number;
   colorHex: string;
   marginStatus?: string;
   accountHolder?: string;

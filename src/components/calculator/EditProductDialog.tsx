@@ -804,12 +804,36 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
   // deducts cost, commissions and fees. Fall back to stored netRevenue only when
   // organicMetrics is unavailable (no marketplace/price set yet).
   const organicNetRevenueBase = organicMetrics
-    ? parseFloat(String(organicMetrics.netRevenue ?? '0'))
-    : parseFloat(String(product?.netRevenue ?? '0'));
+    ? (organicMetrics.adjustedProfit !== undefined
+        ? parseFloat(String(organicMetrics.adjustedProfit))
+        : parseFloat(String(organicMetrics.netRevenue ?? '0')))
+    : (product?.adjustedProfit !== undefined
+        ? parseFloat(String(product.adjustedProfit))
+        : parseFloat(String(product?.netRevenue ?? '0')));
 
   // organicMetrics already calculates correctly using shippingOption from formData.shopeeFreeShipping
   // so we just use organicNetRevenueBase directly — no manual override needed.
   const organicNetRevenue = organicNetRevenueBase;
+
+  const rawBaseNetRevenue = organicMetrics
+    ? parseFloat(String(organicMetrics.netRevenue ?? '0'))
+    : parseFloat(String(product?.netRevenue ?? '0'));
+
+  const organicAdjustedMargin = organicMetrics
+    ? (organicMetrics.adjustedMargin !== undefined
+        ? parseFloat(String(organicMetrics.adjustedMargin))
+        : parseFloat(String(organicMetrics.actualMargin ?? '0')))
+    : (product?.adjustedMargin !== undefined
+        ? parseFloat(String(product.adjustedMargin))
+        : 0);
+
+  const organicTotalOperationalFees = organicMetrics?.totalOperationalFees !== undefined
+    ? parseFloat(String(organicMetrics.totalOperationalFees))
+    : (product?.totalOperationalFees !== undefined ? parseFloat(String(product.totalOperationalFees)) : 0);
+
+  const isLossFinancialCondition = organicMetrics
+    ? Boolean(organicMetrics.isLossCondition ?? (organicNetRevenue < 0))
+    : (product?.isLossCondition ?? (organicNetRevenue < 0));
 
   const organicVideoCost = 0;
 
@@ -859,8 +883,10 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     const shouldPreserveMetrics = sameMarketplace && nextSelling === originalSelling && nextCost === originalCost && nextShipping === originalShipping && sameAdType && sameEnjoeiAdType && sameSupplierFees;
     const metrics = shouldPreserveMetrics ? null : getUpdatedMetrics();
     const savedNetRevenue = shouldPreserveMetrics
-      ? product.netRevenue
-      : (parseFloat(String(metrics?.netRevenue ?? product.netRevenue)));
+      ? (product.adjustedProfit !== undefined ? product.adjustedProfit : product.netRevenue)
+      : (metrics?.adjustedProfit !== undefined
+          ? parseFloat(String(metrics.adjustedProfit))
+          : parseFloat(String(metrics?.netRevenue ?? product.netRevenue)));
     const isShopee = nextMarketplace === 'shopee';
     const isMercadoLivre = nextMarketplace === 'mercadolivre';
     const shopeeStartDateIso = formatDateToIso(formData.shopeeStartDate);
@@ -897,6 +923,20 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       enjoeiAdType: nextMarketplace === 'enjoei' ? formData.enjoeiAdType : undefined,
       facebookDelivery: nextMarketplace === 'facebook' ? formData.facebookDelivery : undefined,
       netRevenue: savedNetRevenue,
+      adjustedProfit: metrics?.adjustedProfit !== undefined
+        ? parseFloat(String(metrics.adjustedProfit))
+        : (product.adjustedProfit !== undefined ? product.adjustedProfit : savedNetRevenue),
+      adjustedMargin: metrics?.adjustedMargin !== undefined
+        ? parseFloat(String(metrics.adjustedMargin))
+        : product.adjustedMargin,
+      isLossCondition: metrics?.isLossCondition !== undefined
+        ? metrics.isLossCondition
+        : (product.isLossCondition ?? (Number(savedNetRevenue) < 0)),
+      totalOperationalFees: metrics?.totalOperationalFees !== undefined
+        ? parseFloat(String(metrics.totalOperationalFees))
+        : product.totalOperationalFees,
+      lossAmount: metrics?.lossAmount !== undefined ? parseFloat(String(metrics.lossAmount)) : product.lossAmount,
+      lossMargin: metrics?.lossMargin !== undefined ? metrics.lossMargin : product.lossMargin,
       marginStatus: shouldPreserveMetrics ? product.marginStatus : (metrics?.marginStatus ?? product.marginStatus),
       adPlacement: formData.adPlacement || undefined,
       adFormat: formData.adFormat || undefined,
@@ -3074,33 +3114,126 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                     <Label htmlFor="cost" className="text-right dark:text-white">Custo</Label>
                     <Input id="cost" type="number" value={formData.costPrice} onChange={(e) => handleChange('costPrice', e.target.value)} className="col-span-3" />
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="profit" className="text-right dark:text-white">Lucro</Label>
-                    <div className="col-span-3 space-y-1">
-                      <Input
-                        id="profit"
-                        type="text"
-                        value={formatCurrency(Number.isFinite(organicNetRevenue) ? organicNetRevenue : 0)}
-                        className="col-span-3"
-                        disabled
-                      />
-                      {organicMetrics && (
-                        <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground">
+                  {/* Hero Card de Resultado Financeiro (Frontend Design de Alta Precisão) */}
+                  <div className="col-span-4 my-2">
+                    <div className={`relative overflow-hidden rounded-2xl border p-4 sm:p-5 transition-all duration-300 ${
+                      isLossFinancialCondition
+                        ? 'border-rose-500/50 bg-gradient-to-br from-rose-950/70 via-zinc-950/90 to-red-950/40 shadow-[0_0_30px_-5px_rgba(244,63,94,0.3)]'
+                        : organicAdjustedMargin >= 25
+                        ? 'border-emerald-500/40 bg-gradient-to-br from-emerald-950/60 via-zinc-950/90 to-teal-950/30 shadow-[0_0_25px_-5px_rgba(16,185,129,0.25)]'
+                        : 'border-amber-500/40 bg-gradient-to-br from-amber-950/60 via-zinc-950/90 to-yellow-950/30 shadow-[0_0_25px_-5px_rgba(245,158,11,0.25)]'
+                    }`}>
+                      {/* Top Accent Gradient Bar */}
+                      <div className={`absolute top-0 left-0 right-0 h-1 ${
+                        isLossFinancialCondition
+                          ? 'bg-gradient-to-r from-rose-600 via-red-500 to-rose-600'
+                          : organicAdjustedMargin >= 25
+                          ? 'bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500'
+                          : 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500'
+                      }`} />
+
+                      {/* Header da Métrica */}
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="text-xs uppercase font-extrabold tracking-wider flex items-center gap-2">
+                          {isLossFinancialCondition ? (
+                            <span className="flex items-center gap-1.5 text-rose-400">
+                              <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+                              Resultado Financeiro (Prejuízo)
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1.5 text-emerald-400">
+                              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                              Lucro Líquido Real
+                            </span>
+                          )}
+                        </span>
+
+                        <span className={`text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border shadow-sm ${
+                          isLossFinancialCondition
+                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/50'
+                            : organicAdjustedMargin >= 30
+                            ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50'
+                            : organicAdjustedMargin >= 20
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                            : 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                        }`}>
+                          {isLossFinancialCondition
+                            ? 'PREJUÍZO'
+                            : organicAdjustedMargin >= 30
+                            ? 'Alta Rentabilidade'
+                            : organicAdjustedMargin >= 20
+                            ? 'Margem Saudável'
+                            : 'Margem Baixa'}
+                        </span>
+                      </div>
+
+                      {/* Valor Principal + Margem Real */}
+                      <div className="flex items-baseline justify-between gap-4 flex-wrap my-1">
+                        <div className="flex items-baseline gap-1.5">
+                          <span className={`text-base font-bold ${isLossFinancialCondition ? 'text-rose-400/80' : 'text-muted-foreground'}`}>
+                            {organicNetRevenue < 0 ? '- R$' : 'R$'}
+                          </span>
+                          <span className={`text-3xl sm:text-4xl font-black tracking-tight tabular-nums font-mono ${
+                            isLossFinancialCondition
+                              ? 'text-rose-400 drop-shadow-[0_0_12px_rgba(244,63,94,0.4)]'
+                              : organicAdjustedMargin >= 25
+                              ? 'text-emerald-400 drop-shadow-[0_0_12px_rgba(16,185,129,0.3)]'
+                              : 'text-amber-400 drop-shadow-[0_0_12px_rgba(245,158,11,0.3)]'
+                          }`}>
+                            {formatCurrency(Math.abs(organicNetRevenue))}
+                          </span>
+                        </div>
+
+                        <div className="text-right">
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground block">Margem Real</span>
+                          <span className={`text-xl sm:text-2xl font-black tabular-nums font-mono ${
+                            isLossFinancialCondition ? 'text-rose-400' : organicAdjustedMargin >= 25 ? 'text-emerald-400' : 'text-amber-400'
+                          }`}>
+                            {organicAdjustedMargin.toFixed(1)}%
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Subtítulo dinâmico e Detalhamento */}
+                      <div className="mt-2.5 pt-2 border-t border-border/40 space-y-1.5">
+                        <p className={`text-xs font-semibold leading-tight ${isLossFinancialCondition ? 'text-rose-300/90' : 'text-muted-foreground'}`}>
+                          {isLossFinancialCondition
+                            ? `Prejuízo após taxas de (R$ ${formatCurrency(organicTotalOperationalFees)})`
+                            : `Lucro após cobrir taxas e custo de (R$ ${formatCurrency(organicTotalOperationalFees)})`}
+                        </p>
+                        
+                        {isLossFinancialCondition && (
+                          <div className="p-2.5 rounded-lg bg-rose-500/15 border border-rose-500/30 flex items-start gap-2 text-xs text-rose-200 font-medium">
+                            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                            <span>
+                              Prejuízo de R$ {formatCurrency(Math.abs(organicNetRevenue))}: o lucro líquido base (R$ {formatCurrency(rawBaseNetRevenue)}) não cobriu o custo do produto e taxas (R$ {formatCurrency(organicTotalOperationalFees)}). O lucro precisa ficar sempre acima dessas taxas.
+                            </span>
+                          </div>
+                        )}
+
+                        {organicMetrics?.taxDescription && (
+                          <p className="text-[11px] text-muted-foreground pt-0.5">
                             {organicMetrics.taxDescription}
                           </p>
-                          {formData.marketplace === 'mercadolivre' && formData.adType && formData.adType !== 'gratis' && (
-                            <p className="text-[11px] font-semibold text-yellow-600 dark:text-yellow-400">
-                              Comissão ML ({formData.adType === 'classico' ? 'Clássico' : 'Premium'}):&nbsp;
-                              {formData.adType === 'classico'
-                                ? (mercadoLivreTaxes.classico[formData.mlCategory || 'eletronicos']?.rate ?? mercadoLivreTaxes.classico['eletronicos'].rate)
-                                : (mercadoLivreTaxes.premium[formData.mlCategory || 'eletronicos']?.rate ?? mercadoLivreTaxes.premium['eletronicos'].rate)
-                              }% já descontado no lucro
-                            </p>
-                          )}
-                        </div>
-                      )}
+                        )}
+                        {formData.marketplace === 'mercadolivre' && formData.adType && formData.adType !== 'gratis' && (
+                          <p className="text-[11px] font-semibold text-yellow-600 dark:text-yellow-400">
+                            Comissão ML ({formData.adType === 'classico' ? 'Clássico' : 'Premium'}):&nbsp;
+                            {formData.adType === 'classico'
+                              ? (mercadoLivreTaxes.classico[formData.mlCategory || 'eletronicos']?.rate ?? mercadoLivreTaxes.classico['eletronicos'].rate)
+                              : (mercadoLivreTaxes.premium[formData.mlCategory || 'eletronicos']?.rate ?? mercadoLivreTaxes.premium['eletronicos'].rate)
+                            }% já descontado no lucro
+                          </p>
+                        )}
+                      </div>
                     </div>
+
+                    {/* Hidden input to ensure form and test accessibility */}
+                    <input
+                      id="profit"
+                      type="hidden"
+                      value={formatCurrency(organicNetRevenue)}
+                    />
                   </div>
                   {formData.marketplace === 'mercadolivre' && (
                     <div className="grid grid-cols-4 items-center gap-4">
