@@ -520,16 +520,16 @@ describe('Pricing Service', () => {
       expect(Number(belowMktCostsCase.lossAmount)).toBeLessThan(0);
     });
 
-    it('should calculate prejuizo = lucro liquido - (taxas fornecedor + taxas marketplace) for user TikTok Shop scenario', () => {
-      // User scenario:
-      // Selling price: 29.90
-      // Supplier cost: 10.61
-      // Supplier fee: 3% (0.32)
+    it('should calculate totalOperationalFees including supplier product cost (dogama) + supplier fees + marketplace fees', () => {
+      // User scenario from latest screenshot:
+      // Selling price: 29.00
+      // Supplier product cost (dogama): 12.72
+      // Supplier fee: 3% (0.38)
       // Supplier gateway: 2.00 fixed
-      // TikTok commission: 16% (4.78)
+      // TikTok commission: 16% (4.64)
       // Fixed fee: 4.00
       const userCase = calculateMetrics(
-        10.61, // baseCost
+        12.72, // baseCost (produto dogama)
         0,     // pkgCost
         3,     // supplierFeeVal (3%)
         0,     // markup
@@ -540,7 +540,7 @@ describe('Pricing Service', () => {
         'cnpj',
         0,
         false, 0, 0, 0, 0,
-        29.90, // manualPriceVal
+        29.00, // manualPriceVal
         0, 0,
         16,    // tiktokCommVal = 16%
         0, 0, 0, 0, 0, 'percent', 0, 0, 0, 'classico', 0, '', '', '', '', false,
@@ -553,29 +553,30 @@ describe('Pricing Service', () => {
         0, 0, 0, 0, 0, 'fixed', 'fixed', 'fixed', 'fixed', 0, [], []
       );
 
-      // Verify net revenue is ~ 8.19
-      expect(Number(userCase.netRevenue)).toBeCloseTo(8.19, 1);
-      // Supplier fees = 0.32 + 2.00 = 2.32
+      // Verify net revenue is R$ 5.26
+      expect(Number(userCase.netRevenue)).toBeCloseTo(5.26, 2);
+      // Supplier fees = 0.38 + 2.00 = 2.38
       const supFees = Number(userCase.supplierFeeCost) + Number(userCase.supplierGatewayCost);
-      expect(supFees).toBeCloseTo(2.32, 2);
-      // Marketplace fees = 4.78 + 4.00 = 8.78
+      expect(supFees).toBeCloseTo(2.38, 2);
+      // Marketplace fees = 4.64 + 4.00 = 8.64
       const mktFees = Number(userCase.marketplaceCost) + Number(userCase.fixedFee);
-      expect(mktFees).toBeCloseTo(8.78, 2);
-      // Total operational fees = 11.10
-      const totalOpFees = supFees + mktFees;
-      expect(totalOpFees).toBeCloseTo(11.10, 2);
-      expect(Number(userCase.totalOperationalFees)).toBeCloseTo(11.10, 2);
+      expect(mktFees).toBeCloseTo(8.64, 2);
 
-      // prejuizo = lucro liquido - (taxas fornecedor + taxas de marketplace)
-      // 8.19 - 11.10 = -2.91
+      // Total operational costs and fees:
+      // baseCost (12.72) + supFees (2.38) + mktFees (8.64) = 23.74!
+      expect(Number(userCase.totalOperationalFees)).toBeCloseTo(23.74, 2);
+
+      // prejuizo = lucro liquido - totalOperationalFees
+      // 5.26 - 23.74 = -18.48
       expect(userCase.isLossCondition).toBe(true);
       expect(userCase.marginStatus).toBe('negative');
-      expect(Number(userCase.lossAmount)).toBeCloseTo(-2.91, 1);
-      // lossMargin = (-2.91 / 29.90) * 100 = -9.7%
-      expect(Number(userCase.lossMargin)).toBeCloseTo(-9.7, 1);
+      expect(Number(userCase.lossAmount)).toBeCloseTo(-18.48, 2);
+      // lossMargin = (-18.48 / 29.00) * 100 = -63.7%
+      expect(Number(userCase.lossMargin)).toBeCloseTo(-63.7, 1);
     });
   });
 });
+
 
 
 

@@ -3951,7 +3951,8 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                     const sFee = Number(calculations.tiktokSfpFee || 0);
                     const supFee = Number(calculations.supplierFeeCost || 0);
                     const supGw = Number(calculations.supplierGatewayCost || 0);
-                    const opFees = supFee + supGw + mCost + fFee + sFee;
+                    // Inclui custo do produto (fornecedor/dogama) + taxas do fornecedor + taxas de marketplace
+                    const opFees = sCost + supFee + supGw + mCost + fFee + sFee;
 
                     const lossVal = calculations.lossAmount !== undefined
                       ? Number(calculations.lossAmount)
@@ -3989,7 +3990,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                         <p className="text-xs mt-1 font-semibold text-white">
                            {isDanger
                               ? (lossVal < 0
-                                  ? `Prejuízo de R$ ${formatMoney(Math.abs(lossVal))}: lucro líquido insuficiente após taxas (R$ ${formatMoney(opFees)}).`
+                                  ? `Prejuízo de R$ ${formatMoney(Math.abs(lossVal))}: lucro líquido insuficiente após taxas de (R$ ${formatMoney(opFees)}).`
                                   : netRev < sCost
                                   ? 'Lucro menor que o preço de custo do fornecedor. Risco de prejuízo.'
                                   : 'Resultado negativo. Ajuste preço ou custos.')

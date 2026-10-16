@@ -180,14 +180,15 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
         : Number(calculations.supplierGatewayCost || 0))
     : 0;
   const totalSupplierFees = supplierFee + supplierGateway;
-  const totalFeesCombined = totalSupplierFees + totalMarketplaceCosts;
+  // Inclui o custo do fornecedor (produto) + taxas do fornecedor + taxas de marketplace
+  const totalFeesCombined = supplierCost + totalSupplierFees + totalMarketplaceCosts;
 
   const isBelowSupplierCost = supplierCost > 0 && netRevenue < supplierCost;
   const isBelowMarketplaceCosts = totalMarketplaceCosts > 0 && netRevenue < totalMarketplaceCosts;
   const isBelowTotalFees = totalFeesCombined > 0 && netRevenue < totalFeesCombined;
 
   // Prejuízo: se calculations.lossAmount estiver definido, usa ele; senão calcula:
-  // prejuizo = lucro liquido - (Taxas fornecedor + taxas de marketplace)
+  // prejuizo = lucro liquido - (Custo do fornecedor + Taxas fornecedor + taxas de marketplace)
   const lossAmountNum = calculations?.lossAmount !== undefined
     ? Number(calculations.lossAmount)
     : (netRevenue < 0
@@ -444,7 +445,7 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
                   <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                   <span>
                     {lossAmountNum < 0
-                      ? `Prejuízo de R$ ${formatMoney(Math.abs(lossAmountNum))}: o lucro líquido (R$ ${formatMoney(netRevenue)}) não cobriu as taxas (R$ ${formatMoney(totalFeesCombined)}) [Fornecedor: R$ ${formatMoney(totalSupplierFees)} + Marketplace: R$ ${formatMoney(totalMarketplaceCosts)}]. O lucro precisa ficar sempre acima dessas taxas.`
+                      ? `Prejuízo de R$ ${formatMoney(Math.abs(lossAmountNum))}: o lucro líquido (R$ ${formatMoney(netRevenue)}) não cobriu o custo do produto e taxas (R$ ${formatMoney(totalFeesCombined)}) [Custo Produto: R$ ${formatMoney(supplierCost)} + Fornecedor: R$ ${formatMoney(totalSupplierFees)} + Marketplace: R$ ${formatMoney(totalMarketplaceCosts)}]. O lucro precisa ficar sempre acima dessas taxas.`
                       : isBelowSupplierCost && isBelowMarketplaceCosts
                       ? `Lucro líquido (R$ ${formatMoney(netRevenue)}) abaixo do custo do fornecedor (R$ ${formatMoney(supplierCost)}) e das taxas (R$ ${formatMoney(totalMarketplaceCosts)}). Risco de prejuízo.`
                       : isBelowSupplierCost
@@ -525,7 +526,7 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
             {isLoss && (
               <p className="text-[11px] text-rose-300/80 mt-1 leading-tight">
                 {lossAmountNum < 0
-                  ? `Prejuízo após taxas (R$ ${formatMoney(totalFeesCombined)})`
+                  ? `Prejuízo após taxas de (R$ ${formatMoney(totalFeesCombined)})`
                   : 'Lucro insuficiente'}
               </p>
             )}

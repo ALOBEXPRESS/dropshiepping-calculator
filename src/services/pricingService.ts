@@ -474,7 +474,8 @@ export const calculateMetrics = (
       
       const totalSupplierFees = supplierFeeCost + supplierGatewayCost;
       const totalMktCosts = commissionVal + totalFixedFee;
-      const totalOperationalFees = totalSupplierFees + totalMktCosts;
+      // Inclui o custo do produto (fornecedor/dogama) + taxas do fornecedor + taxas de marketplace
+      const totalOperationalFees = baseCost + totalSupplierFees + totalMktCosts;
 
       let isLossCondition = false;
       let lossAmount = 0;
@@ -672,7 +673,8 @@ export const calculateMetrics = (
       const finalSupplierFeeCost = supplierFeeCost;
       const totalSupplierFees = finalSupplierFeeCost + supplierGatewayCost;
       const totalMktCosts = result.commissionAmount + result.fixedFee;
-      const totalOperationalFees = totalSupplierFees + totalMktCosts;
+      // Inclui o custo do produto (fornecedor/dogama) + taxas do fornecedor + taxas de marketplace
+      const totalOperationalFees = baseCost + totalSupplierFees + totalMktCosts;
 
       let isLossCondition = false;
       let lossAmount = 0;
@@ -1109,7 +1111,8 @@ export const calculateMetrics = (
 
   const totalSupplierFees = supplierFeeCost + supplierGatewayCost;
   const totalMarketplaceCosts = marketplaceCost + finalFixedFee + tiktokSfpFee;
-  const totalOperationalFees = totalSupplierFees + totalMarketplaceCosts;
+  // Inclui o custo do produto (fornecedor/dogama) + taxas do fornecedor + taxas de marketplace
+  const totalOperationalFees = baseCost + totalSupplierFees + totalMarketplaceCosts;
 
   let isLossCondition = false;
   let lossAmount = 0;
