@@ -571,8 +571,55 @@ describe('Pricing Service', () => {
       expect(userCase.isLossCondition).toBe(true);
       expect(userCase.marginStatus).toBe('negative');
       expect(Number(userCase.lossAmount)).toBeCloseTo(-18.48, 2);
+      expect(Number(userCase.adjustedProfit)).toBeCloseTo(-18.48, 2);
       // lossMargin = (-18.48 / 29.00) * 100 = -63.7%
       expect(Number(userCase.lossMargin)).toBeCloseTo(-63.7, 1);
+      expect(Number(userCase.adjustedMargin)).toBeCloseTo(-63.7, 1);
+    });
+
+    it('should calculate adjustedProfit and adjustedMargin when NOT in loss (positive profit)', () => {
+      // Scenario from image 2:
+      // Selling price: 56.00
+      // Base cost: 12.72
+      // Supplier fee: 3% (0.38)
+      // Supplier gateway: 2.00 fixed
+      // TikTok commission: 6% (3.36)
+      // Fixed fee: 6.00
+      const positiveCase = calculateMetrics(
+        12.72,
+        0,
+        3,
+        0,
+        'tiktok',
+        'eletronicos',
+        'classico',
+        'without',
+        'cnpj',
+        0,
+        false, 0, 0, 0, 0,
+        56.00,
+        0, 0,
+        6,
+        0, 0, 0, 0, 0, 'percent', 0, 0, 0, 'classico', 0, '', '', '', '', false,
+        'percent',
+        0,
+        2.00,
+        'fixed',
+        'individual',
+        'eletronicos',
+        0, 0, 0, 0, 0, 'fixed', 'fixed', 'fixed', 'fixed', 0, [], []
+      );
+
+      const supFees = Number(positiveCase.supplierFeeCost) + Number(positiveCase.supplierGatewayCost);
+      const mktFees = Number(positiveCase.marketplaceCost) + Number(positiveCase.fixedFee);
+      const totalOpFees = Number(positiveCase.cost) + supFees + mktFees;
+      expect(Number(positiveCase.totalOperationalFees)).toBeCloseTo(totalOpFees, 2);
+
+      const netRev = Number(positiveCase.netRevenue);
+      const expectedAdjustedProfit = netRev - totalOpFees;
+      expect(Number(positiveCase.adjustedProfit)).toBeCloseTo(expectedAdjustedProfit, 2);
+      expect(Number(positiveCase.adjustedMargin)).toBeCloseTo((expectedAdjustedProfit / 56.00) * 100, 1);
+      expect(positiveCase.isLossCondition).toBe(expectedAdjustedProfit < 0 || netRev < 0);
     });
   });
 });

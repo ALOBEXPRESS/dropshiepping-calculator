@@ -265,6 +265,8 @@ export interface CalculationResult {
   // Campos para prejuízo quando lucro líquido for inferior a custos e taxas
   lossAmount?: string;
   lossMargin?: string;
+  adjustedProfit?: string;
+  adjustedMargin?: string;
   isLossCondition?: boolean;
   totalOperationalFees?: string;
   // Campos adicionados para suporte a frete (Task 3.2)

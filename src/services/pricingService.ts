@@ -477,32 +477,22 @@ export const calculateMetrics = (
       // Inclui o custo do produto (fornecedor/dogama) + taxas do fornecedor + taxas de marketplace
       const totalOperationalFees = baseCost + totalSupplierFees + totalMktCosts;
 
-      let isLossCondition = false;
-      let lossAmount = 0;
-
-      if (netRevenue < 0) {
-        isLossCondition = true;
-        lossAmount = netRevenue;
-      } else if (totalOperationalFees > 0 && netRevenue < totalOperationalFees) {
-        isLossCondition = true;
-        lossAmount = netRevenue - totalOperationalFees;
-      } else if (baseCost > 0 && netRevenue < baseCost) {
-        isLossCondition = true;
-        lossAmount = netRevenue - baseCost;
-      }
+      const adjustedProfit = netRevenue - totalOperationalFees;
+      const isLossCondition = adjustedProfit < 0 || netRevenue < 0;
+      const adjustedMargin = effectiveSellingPrice > 0
+        ? (adjustedProfit / effectiveSellingPrice) * 100
+        : 0;
 
       let marginStatus = 'good';
       if (isLossCondition) {
         marginStatus = 'negative';
-      } else if (actualMargin < (recommendedMargin - 0.5)) {
+      } else if (adjustedMargin < (recommendedMargin - 0.5)) {
         marginStatus = 'low';
-      } else if (actualMargin > (recommendedMargin + 0.5)) {
+      } else if (adjustedMargin > (recommendedMargin + 0.5)) {
         marginStatus = 'excellent';
       }
 
-      const lossMargin = (isLossCondition && effectiveSellingPrice > 0)
-        ? ((lossAmount / effectiveSellingPrice) * 100).toFixed(1)
-        : actualMargin.toFixed(1);
+      const lossMargin = adjustedMargin.toFixed(1);
 
       let taxDescription = `${marketplaceFeeRate}% Comissão + R$ ${finalFixedFee.toFixed(2)} Tarifa Fixa${inactivityFee > 0 ? ' + R$ ' + inactivityFee.toFixed(2) + ' (Inatividade)' : ''}`;
       
@@ -563,8 +553,10 @@ export const calculateMetrics = (
           totalInfluencerPercent: totalInfluencerPercent,
           totalAffiliatePercent: totalAffiliatePercent,
           tiktokSfpFee: '0.00',
-          lossAmount: lossAmount.toFixed(2),
+          lossAmount: adjustedProfit.toFixed(2),
           lossMargin,
+          adjustedProfit: adjustedProfit.toFixed(2),
+          adjustedMargin: adjustedMargin.toFixed(1),
           isLossCondition,
           totalOperationalFees: totalOperationalFees.toFixed(2)
       };
@@ -676,32 +668,22 @@ export const calculateMetrics = (
       // Inclui o custo do produto (fornecedor/dogama) + taxas do fornecedor + taxas de marketplace
       const totalOperationalFees = baseCost + totalSupplierFees + totalMktCosts;
 
-      let isLossCondition = false;
-      let lossAmount = 0;
-
-      if (netRevenue < 0) {
-        isLossCondition = true;
-        lossAmount = netRevenue;
-      } else if (totalOperationalFees > 0 && netRevenue < totalOperationalFees) {
-        isLossCondition = true;
-        lossAmount = netRevenue - totalOperationalFees;
-      } else if (baseCost > 0 && netRevenue < baseCost) {
-        isLossCondition = true;
-        lossAmount = netRevenue - baseCost;
-      }
+      const adjustedProfit = netRevenue - totalOperationalFees;
+      const isLossCondition = adjustedProfit < 0 || netRevenue < 0;
+      const adjustedMargin = effectiveSellingPrice > 0
+        ? (adjustedProfit / effectiveSellingPrice) * 100
+        : 0;
 
       let marginStatus = 'good';
       if (isLossCondition) {
           marginStatus = 'negative';
-      } else if (actualMargin < (recommendedMargin - 0.5)) {
+      } else if (adjustedMargin < (recommendedMargin - 0.5)) {
           marginStatus = 'low';
-      } else if (actualMargin > (recommendedMargin + 0.5)) {
+      } else if (adjustedMargin > (recommendedMargin + 0.5)) {
           marginStatus = 'excellent';
       }
 
-      const lossMargin = (isLossCondition && effectiveSellingPrice > 0)
-        ? ((lossAmount / effectiveSellingPrice) * 100).toFixed(1)
-        : actualMargin.toFixed(1);
+      const lossMargin = adjustedMargin.toFixed(1);
       
       const breakevenCPA = netRevenue + totalCPA;
       
@@ -757,8 +739,10 @@ export const calculateMetrics = (
           totalInfluencerPercent: totalInfluencerPercent,
           totalAffiliatePercent: totalAffiliatePercent,
           tiktokSfpFee: '0.00',
-          lossAmount: lossAmount.toFixed(2),
+          lossAmount: adjustedProfit.toFixed(2),
           lossMargin,
+          adjustedProfit: adjustedProfit.toFixed(2),
+          adjustedMargin: adjustedMargin.toFixed(1),
           isLossCondition,
           totalOperationalFees: totalOperationalFees.toFixed(2)
       };
@@ -1114,32 +1098,22 @@ export const calculateMetrics = (
   // Inclui o custo do produto (fornecedor/dogama) + taxas do fornecedor + taxas de marketplace
   const totalOperationalFees = baseCost + totalSupplierFees + totalMarketplaceCosts;
 
-  let isLossCondition = false;
-  let lossAmount = 0;
-
-  if (netRevenue < 0) {
-    isLossCondition = true;
-    lossAmount = netRevenue;
-  } else if (totalOperationalFees > 0 && netRevenue < totalOperationalFees) {
-    isLossCondition = true;
-    lossAmount = netRevenue - totalOperationalFees;
-  } else if (baseCost > 0 && netRevenue < baseCost) {
-    isLossCondition = true;
-    lossAmount = netRevenue - baseCost;
-  }
+  const adjustedProfit = netRevenue - totalOperationalFees;
+  const isLossCondition = adjustedProfit < 0 || netRevenue < 0;
+  const adjustedMargin = effectiveSellingPrice > 0
+    ? (adjustedProfit / effectiveSellingPrice) * 100
+    : 0;
 
   let marginStatus = 'good';
   if (isLossCondition) {
       marginStatus = 'negative';
-  } else if (actualMargin < (recommendedMargin - 0.5)) {
+  } else if (adjustedMargin < (recommendedMargin - 0.5)) {
       marginStatus = 'low';
-  } else if (actualMargin > (recommendedMargin + 0.5)) {
+  } else if (adjustedMargin > (recommendedMargin + 0.5)) {
       marginStatus = 'excellent';
   }
 
-  const lossMargin = (isLossCondition && effectiveSellingPrice > 0)
-    ? ((lossAmount / effectiveSellingPrice) * 100).toFixed(1)
-    : actualMargin.toFixed(1);
+  const lossMargin = adjustedMargin.toFixed(1);
 
   return {
     cost: baseCost,
@@ -1187,8 +1161,10 @@ export const calculateMetrics = (
           totalInfluencerPercent: totalInfluencerPercent,
           totalAffiliatePercent: totalAffiliatePercent,
           tiktokSfpFee: tiktokSfpFee.toFixed(2),
-          lossAmount: lossAmount.toFixed(2),
+          lossAmount: adjustedProfit.toFixed(2),
           lossMargin,
+          adjustedProfit: adjustedProfit.toFixed(2),
+          adjustedMargin: adjustedMargin.toFixed(1),
           isLossCondition,
           totalOperationalFees: totalOperationalFees.toFixed(2)
   };

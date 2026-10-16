@@ -340,10 +340,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
   // Determine pricing theme key ('healthy' | 'warning' | 'excellent' | 'danger') to match ResultsPanel
   const pricingColorTheme = useMemo<'healthy' | 'warning' | 'excellent' | 'danger'>(() => {
     if (!calculations) return 'healthy';
-    const { marginStatus, actualMargin, recommendedMargin } = calculations;
-    const currentMargin = typeof actualMargin === 'string'
-      ? parseFloat(actualMargin.replace(',', '.'))
-      : Number(actualMargin);
+    const { marginStatus, recommendedMargin } = calculations;
     const recommended = Number(recommendedMargin) || 25;
 
     const netRevenue = typeof calculations.netRevenue === 'string'
@@ -368,17 +365,34 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       ? parseFloat(calculations.supplierGatewayCost.replace(',', '.'))
       : Number(calculations.supplierGatewayCost || 0);
     const totalSupplierFees = supplierFee + supplierGateway;
-    const totalFeesCombined = totalSupplierFees + totalMarketplaceCosts;
+    const totalFeesCombined = calculations.totalOperationalFees !== undefined
+      ? Number(calculations.totalOperationalFees)
+      : (supplierCost + totalSupplierFees + totalMarketplaceCosts);
 
-    const isBelowSupplierCost = supplierCost > 0 && netRevenue < supplierCost;
-    const isBelowMarketplaceCosts = totalMarketplaceCosts > 0 && netRevenue < totalMarketplaceCosts;
-    const isBelowTotalFees = totalFeesCombined > 0 && netRevenue < totalFeesCombined;
+    const displayProfit = calculations.adjustedProfit !== undefined
+      ? Number(calculations.adjustedProfit)
+      : (netRevenue - totalFeesCombined);
 
-    if (calculations.isLossCondition || marginStatus === 'negative' || currentMargin < 0 || netRevenue < 0 || isBelowSupplierCost || isBelowMarketplaceCosts || isBelowTotalFees) {
+    const effectivePrice = Number(calculations.manualPrice || calculations.suggestedPrice || 0);
+    const displayMargin = calculations.adjustedMargin !== undefined
+      ? Number(calculations.adjustedMargin)
+      : (effectivePrice > 0 ? (displayProfit / effectivePrice) * 100 : 0);
+
+    const isLoss = Boolean(
+      calculations.isLossCondition ?? (
+        displayProfit < 0 ||
+        marginStatus === 'negative' ||
+        displayMargin < 0 ||
+        netRevenue < 0 ||
+        (totalFeesCombined > 0 && netRevenue < totalFeesCombined)
+      )
+    );
+
+    if (isLoss) {
       return 'danger';
     }
-    if (currentMargin >= recommended + 5) return 'excellent';
-    if (currentMargin >= recommended) return 'healthy';
+    if (displayMargin >= recommended + 5) return 'excellent';
+    if (displayMargin >= recommended) return 'healthy';
     return 'warning';
   }, [calculations]);
 
@@ -3951,66 +3965,53 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                     const sFee = Number(calculations.tiktokSfpFee || 0);
                     const supFee = Number(calculations.supplierFeeCost || 0);
                     const supGw = Number(calculations.supplierGatewayCost || 0);
-                    // Inclui custo do produto (fornecedor/dogama) + taxas do fornecedor + taxas de marketplace
-                    const opFees = sCost + supFee + supGw + mCost + fFee + sFee;
+                    const opFees = calculations.totalOperationalFees !== undefined
+                      ? Number(calculations.totalOperationalFees)
+                      : (sCost + supFee + supGw + mCost + fFee + sFee);
 
-                    const lossVal = calculations.lossAmount !== undefined
-                      ? Number(calculations.lossAmount)
-                      : (netRev < 0
-                          ? netRev
-                          : opFees > 0 && netRev < opFees
-                          ? netRev - opFees
-                          : sCost > 0 && netRev < sCost
-                          ? netRev - sCost
-                          : 0);
+                    const displayProfit = calculations.adjustedProfit !== undefined
+                      ? Number(calculations.adjustedProfit)
+                      : (netRev - opFees);
 
                     const effPrice = Number(calculations.manualPrice || calculations.suggestedPrice || 0);
-                    const lossMarg = calculations.lossMargin !== undefined
-                      ? Number(calculations.lossMargin)
-                      : (isDanger && effPrice > 0
-                          ? (lossVal / effPrice) * 100
-                          : Number(calculations.actualMargin || 0));
+                    const displayMargin = calculations.adjustedMargin !== undefined
+                      ? Number(calculations.adjustedMargin)
+                      : (effPrice > 0 ? (displayProfit / effPrice) * 100 : 0);
 
                     return (
                       <>
                         <div className={`flex justify-between items-center py-3.5 rounded-xl px-4 mt-3 border shadow-md ${
                            isDanger ? 'bg-red-950/60 border-red-500/40 text-red-400' :
                            pricingColorTheme === 'warning' ? 'bg-amber-950/50 border-amber-500/40 text-amber-300' :
-                           'bg-emerald-950/50 border-emerald-500/40 text-emerald-300'
+                            pricingColorTheme === 'excellent' ? 'bg-cyan-950/50 border-cyan-500/40 text-cyan-300' :
+                            'bg-emerald-950/50 border-emerald-500/40 text-emerald-300'
                          }`}>
                            <span className="font-bold font-iceland text-lg text-zinc-100">
                              {isDanger ? 'Prejuízo' : 'Lucro Líquido'}
                            </span>
                            <span className="text-3xl font-black tabular-nums tracking-tight">
-                             {isDanger && lossVal < 0
-                               ? `- R$ ${formatMoney(Math.abs(lossVal))}`
-                               : `R$ ${formatMoney(netRev)}`}
+                             {displayProfit < 0
+                                ? `- R$ ${formatMoney(Math.abs(displayProfit))}`
+                                : `R$ ${formatMoney(displayProfit)}`}
                            </span>
                          </div>
                         <p className="text-xs mt-1 font-semibold text-white">
                            {isDanger
-                              ? (lossVal < 0
-                                  ? `Prejuízo de R$ ${formatMoney(Math.abs(lossVal))}: lucro líquido insuficiente após taxas de (R$ ${formatMoney(opFees)}).`
-                                  : netRev < sCost
-                                  ? 'Lucro menor que o preço de custo do fornecedor. Risco de prejuízo.'
-                                  : 'Resultado negativo. Ajuste preço ou custos.')
-                              : pricingColorTheme === 'warning'
-                                ? 'Lucro abaixo do recomendado.'
-                                : pricingColorTheme === 'excellent'
-                                  ? 'Lucro acima do recomendado.'
-                                  : 'Lucro dentro do recomendado.'}
+                               ? `Prejuízo de R$ ${formatMoney(Math.abs(displayProfit))}: lucro líquido insuficiente após taxas de (R$ ${formatMoney(opFees)}).`
+                               : `Lucro após cobrir taxas e custo de (R$ ${formatMoney(opFees)}).`}
                          </p>
 
                          <div className={`flex justify-between items-center py-3.5 rounded-xl px-4 border shadow-md ${
                            isDanger ? 'bg-red-950/60 border-red-500/40 text-red-400' :
                            pricingColorTheme === 'warning' ? 'bg-amber-950/50 border-amber-500/40 text-amber-300' :
-                           'bg-emerald-950/50 border-emerald-500/40 text-emerald-300'
+                            pricingColorTheme === 'excellent' ? 'bg-cyan-950/50 border-cyan-500/40 text-cyan-300' :
+                            'bg-emerald-950/50 border-emerald-500/40 text-emerald-300'
                          }`}>
                            <span className="font-bold font-iceland text-lg text-zinc-100">
                              {isDanger ? 'Margem (Prejuízo)' : 'Margem de Lucro'}
                            </span>
                            <span className="text-3xl font-black tabular-nums tracking-tight">
-                             {formatPercent(isDanger ? lossMarg : calculations.actualMargin, 1)}%
+                             {formatPercent(displayMargin, 1)}%
                            </span>
                          </div>
                         <p className="text-xs mt-1 font-semibold text-white">
