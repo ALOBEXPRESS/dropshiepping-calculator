@@ -66,7 +66,7 @@ export const TikTokConfig: React.FC<TikTokConfigProps> = ({
   setTiktokCVR,
   tiktokCatalogId,
   setTiktokCatalogId,
-  tiktokSfpEnabled = false,
+  tiktokSfpEnabled = true,
   setTiktokSfpEnabled
 }) => {
   const [isOpenMetrics, setIsOpenMetrics] = React.useState(false);

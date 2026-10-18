@@ -173,7 +173,7 @@ export const ProductInfoModal: React.FC<ProductInfoModalProps> = ({ productId, o
                     </span>
                   </div>
                 )}
-                {product.tiktok_sfp_enabled && (
+                {(product.tiktok_sfp_enabled || (product.marketplace?.toLowerCase().includes('tiktok') && product.tiktok_sfp_enabled !== false)) && (
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-gray-400">TikTok SFP</span>
                     <span className="font-medium text-green-500">Ativo</span>

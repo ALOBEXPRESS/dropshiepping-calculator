@@ -254,7 +254,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     const resolvedName = mode === 'duplicate' && baseName ? `${baseName} (Cópia)` : baseName;
     const resolvedSku = mode === 'duplicate' && baseSku ? `${baseSku}-COPIA-${duplicateSuffix}` : baseSku;
     const isDogama = (source?.supplierName || '').trim().toLowerCase() === 'dogama';
-    const isTikTok = normalizeMarketplaceValue(source?.marketplace)?.includes('tiktok');
+    const isTikTok = normalizeMarketplaceValue(source?.marketplace)?.includes('tiktok') || (source?.marketplace || '').toLowerCase().includes('tiktok');
     return ({
       name: resolvedName,
       description: source?.description || '',
@@ -358,7 +358,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     tiktokCTR: source?.tiktokCTR !== undefined && source?.tiktokCTR !== null ? String(source.tiktokCTR) : '',
     tiktokCVR: source?.tiktokCVR !== undefined && source?.tiktokCVR !== null ? String(source.tiktokCVR) : '',
     tiktokCatalogId: source?.tiktokCatalogId || '',
-    tiktokSfpEnabled: isTikTok ? (source?.tiktokSfpEnabled ?? true) : (source?.tiktokSfpEnabled ?? false),
+    tiktokSfpEnabled: isTikTok ? true : Boolean(source?.tiktokSfpEnabled),
     campaignName: source?.campaignName || '',
     campaignObjective: source?.campaignObjective || '',
     budgetType: source?.budgetType || '',
@@ -406,6 +406,13 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
   // Enriched variations with images fetched from products_variations_bling
   const [enrichedVariations, setEnrichedVariations] = useState<import('@/types/calculator').ProductVariationRecord[]>([]);
   const dragIndexRef = useRef<number | null>(null);
+
+  // Synchronize form data when product changes or dialog opens
+  useEffect(() => {
+    if (isOpen && product) {
+      setFormData(buildFormData(product));
+    }
+  }, [product, isOpen]);
 
   // Fetch extra image URLs from products_bling when dialog opens
   useEffect(() => {
@@ -626,6 +633,9 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       }
       if (field === 'marketplace') {
         const isTikTok = (value as string)?.toLowerCase().includes('tiktok');
+        if (isTikTok) {
+          next.tiktokSfpEnabled = true;
+        }
         if ((next.supplierName || '').trim().toLowerCase() === 'dogama') {
           next.supplierFeeValue = isTikTok ? '3' : '6';
         }
@@ -983,7 +993,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       tiktokCTR: formData.tiktokCTR,
       tiktokCVR: formData.tiktokCVR,
       tiktokCatalogId: formData.tiktokCatalogId,
-      tiktokSfpEnabled: formData.marketplace === 'tiktok' ? formData.tiktokSfpEnabled : undefined,
+      tiktokSfpEnabled: (formData.marketplace === 'tiktok' || formData.marketplace?.toLowerCase().includes('tiktok')) ? (formData.tiktokSfpEnabled ?? true) : undefined,
       campaignName: formData.campaignName,
       campaignObjective: formData.campaignObjective,
       budgetType: formData.budgetType,
@@ -3259,7 +3269,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                   </div>
                   
                   {/* Taxa de serviço do SFP / Frete Grátis (TikTok) */}
-                  {formData.marketplace === 'tiktok' && (
+                  {(formData.marketplace === 'tiktok' || formData.marketplace?.toLowerCase().includes('tiktok')) && (
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label className="text-right dark:text-white">Frete Grátis (SFP)</Label>
                       <div className="col-span-3 flex items-center gap-3">
@@ -3274,7 +3284,10 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                             </svg>
                           )}
                         </button>
-                        <span className="text-sm text-muted-foreground flex items-center gap-2">
+                        <span 
+                          onClick={() => handleChange('tiktokSfpEnabled', !formData.tiktokSfpEnabled)}
+                          className="text-sm text-muted-foreground flex items-center gap-2 cursor-pointer select-none"
+                        >
                           Taxa de serviço do SFP (6% sobre o preço de venda)
                           <img 
                             src={freeShippingLogo} 

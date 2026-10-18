@@ -547,7 +547,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
         (product.shopeeSellerVoucherType || 'fixed') as 'fixed' | 'percent',
         0,
         product.influencers || [], product.affiliates || [],
-        (mp === 'tiktok' ? (product.tiktokSfpEnabled ?? true) : false),
+        (mp?.toLowerCase().includes('tiktok') ? (product.tiktokSfpEnabled ?? true) : false),
         parseCurrency(product.tiktokPromoProductValue ?? 0),
         product.tiktokPromoProductType || 'fixed'
       );
@@ -691,10 +691,11 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   }
   
   const marketplaceShippingValue = parseCurrency(product.marketplaceShippingCost ?? 0);
+  const isTikTok = product.marketplace?.toLowerCase().includes('tiktok');
   const showFreeShippingIcon = (product.marketplace === 'mercadolivre' && (product.meliPlus || parseCurrency(product.mlShippingCost ?? 0) > 0))
     || (product.marketplace === 'shopee' && product.shippingOption === 'with')
-    || (product.marketplace === 'tiktok' && product.tiktokSfpEnabled)
-    || (['tiktok', 'wordpress', 'enjoei', 'amazon', 'shein'].includes(product.marketplace ?? '') && marketplaceShippingValue > 0);
+    || (isTikTok && (product.tiktokSfpEnabled ?? true))
+    || (['tiktok', 'wordpress', 'enjoei', 'amazon', 'shein'].includes(product.marketplace?.toLowerCase() ?? '') && marketplaceShippingValue > 0);
   const hasShopeeAdsInvestment = product.marketplace === 'shopee'
     && product.shopeeUseAds
     && (

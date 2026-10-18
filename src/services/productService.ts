@@ -950,7 +950,9 @@ const mapProductRow = (item: ProductRow): ProductItem => ({
   tiktokCTR: item.tiktok_ctr != null ? String(item.tiktok_ctr) : '',
   tiktokCVR: item.tiktok_cvr != null ? String(item.tiktok_cvr) : '',
   tiktokCatalogId: item.tiktok_catalog_id ?? '',
-  tiktokSfpEnabled: item.tiktok_sfp_enabled ?? false,
+  tiktokSfpEnabled: item.marketplace?.toLowerCase().includes('tiktok')
+    ? true
+    : Boolean(item.tiktok_sfp_enabled),
   mercadoAdsEnabled: item.mercado_ads_enabled ?? false,
   mercadoAdsManagementMode: (item.mercado_ads_management_mode ?? undefined) as ProductItem['mercadoAdsManagementMode'] | undefined,
   mercadoAdsSolution: (item.mercado_ads_solution ?? undefined) as ProductItem['mercadoAdsSolution'] | undefined,
@@ -1659,7 +1661,7 @@ export const ProductService = {
         ? parseCurrency(product.tiktokCVR)
         : null,
       tiktok_catalog_id: product.tiktokCatalogId ?? null,
-      tiktok_sfp_enabled: product.tiktokSfpEnabled ?? null,
+      tiktok_sfp_enabled: product.marketplace?.toLowerCase().includes('tiktok') ? (product.tiktokSfpEnabled ?? true) : (product.tiktokSfpEnabled ?? null),
       mercado_ads_enabled: product.mercadoAdsEnabled ?? null,
       mercado_ads_management_mode: product.mercadoAdsManagementMode ?? null,
       mercado_ads_solution: product.mercadoAdsSolution ?? null,
@@ -1913,7 +1915,7 @@ export const ProductService = {
         ? parseCurrency(product.tiktokCVR)
         : null,
       tiktok_catalog_id: product.tiktokCatalogId ?? null,
-      tiktok_sfp_enabled: product.tiktokSfpEnabled ?? null,
+      tiktok_sfp_enabled: product.marketplace?.toLowerCase().includes('tiktok') ? (product.tiktokSfpEnabled ?? true) : (product.tiktokSfpEnabled ?? null),
       mercado_ads_enabled: product.mercadoAdsEnabled ?? null,
       mercado_ads_management_mode: product.mercadoAdsManagementMode ?? null,
       mercado_ads_solution: product.mercadoAdsSolution ?? null,

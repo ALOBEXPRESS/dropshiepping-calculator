@@ -308,7 +308,7 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
         (product.shopeeSellerVoucherType || 'fixed') as 'fixed' | 'percent',
         0,
         product.influencers || [], product.affiliates || [],
-        product.tiktokSfpEnabled ?? false,
+        (product.marketplace?.toLowerCase().includes('tiktok') ? (product.tiktokSfpEnabled ?? true) : false),
         parseCurrency(product.tiktokPromoProductValue ?? 0),
         product.tiktokPromoProductType || 'fixed'
       );
