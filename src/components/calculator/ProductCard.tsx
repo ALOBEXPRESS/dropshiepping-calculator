@@ -505,10 +505,11 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     const gatewayFeeRaw = parseCurrency(product.gatewayFeeValue ?? 0);
     const gatewayFeePercent = gatewayFeeType === 'percent' ? gatewayFeeRaw : 0;
     const gatewayFixedFee = gatewayFeeType === 'fixed' ? gatewayFeeRaw : 0;
+    const tiktokCommVal = sp >= 50 ? 6 : (tiktokCommission || 10);
     try {
       const metrics = calculateMetrics(
         cp, 0, supplierFeeValue, 0, mp, category, adType, shippingOption, accountType,
-        0, false, 0, 0, 0, gatewayFeePercent, sp, 0, 0, tiktokCommission, marketplaceShipping, 0, 0, 0, mlShipping,
+        0, false, 0, 0, 0, gatewayFeePercent, sp, 0, 0, tiktokCommVal, marketplaceShipping, 0, 0, 0, mlShipping,
         'percent', gatewayFixedFee, 0, 0, enjoeiAdType, 0,
         product.gatewayBank || '', product.gatewayMethod || '', '', '',
         product.meliPlus ?? false, supplierFeeType, supplierGatewayFeePercent, supplierGatewayFixedFee,

@@ -697,7 +697,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     const isMercadoLivre = formData.marketplace === 'mercadolivre';
     // TikTok commission from settings marketplaces, fallback to 6%
     const tiktokMarketplace = marketplaces.find(m => m.name?.toLowerCase() === 'tiktok');
-    const tiktokCommVal = tiktokMarketplace?.commission_rate ?? 6;
+    const tiktokCommVal = sellingPrice >= 50 ? 6 : (tiktokMarketplace?.commission_rate ?? 10);
     const isShopee = formData.marketplace === 'shopee';
     const adsEnabled = isMercadoLivre
       ? Boolean(formData.mercadoAdsEnabled || formData.mercadoAdsDailyBudget || formData.mercadoAdsSalesQuantity)
@@ -879,8 +879,8 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     const sameSupplierFees = nextSupplierFeeValue === originalSupplierFeeValue 
       && nextSupplierGatewayFeeValue === originalSupplierGatewayFeeValue
       && formData.supplierFeeType === (product.supplierFeeType || 'percent')
-      && formData.supplierGatewayFeeType === (product.supplierGatewayFeeType || 'fixed');
-    const shouldPreserveMetrics = sameMarketplace && nextSelling === originalSelling && nextCost === originalCost && nextShipping === originalShipping && sameAdType && sameEnjoeiAdType && sameSupplierFees;
+    const sameTiktokSfp = Boolean(formData.tiktokSfpEnabled) === Boolean(product.tiktokSfpEnabled);
+    const shouldPreserveMetrics = sameMarketplace && nextSelling === originalSelling && nextCost === originalCost && nextShipping === originalShipping && sameAdType && sameEnjoeiAdType && sameSupplierFees && sameTiktokSfp;
     const metrics = shouldPreserveMetrics ? null : getUpdatedMetrics();
     const savedNetRevenue = shouldPreserveMetrics
       ? (product.adjustedProfit !== undefined ? product.adjustedProfit : product.netRevenue)
@@ -982,6 +982,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
       tiktokCTR: formData.tiktokCTR,
       tiktokCVR: formData.tiktokCVR,
       tiktokCatalogId: formData.tiktokCatalogId,
+      tiktokSfpEnabled: formData.marketplace === 'tiktok' ? formData.tiktokSfpEnabled : undefined,
       campaignName: formData.campaignName,
       campaignObjective: formData.campaignObjective,
       budgetType: formData.budgetType,
@@ -3405,21 +3406,30 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                     </div>
                   </div>
                   
-                  {/* Taxa de serviço do SFP (TikTok) */}
-                  {formData.marketplace === 'tiktok' && formData.tiktokSfpEnabled && (
+                  {/* Taxa de serviço do SFP / Frete Grátis (TikTok) */}
+                  {formData.marketplace === 'tiktok' && (
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label className="text-right dark:text-white">
-                        Taxa de serviço do SFP
-                      </Label>
-                      <div className="col-span-3 flex items-center gap-2">
-                        <div className="flex-1 px-3 py-2 bg-muted rounded-md text-sm">
-                          6% sobre o preço de venda
-                        </div>
-                        <img 
-                          src="/src/imgs/fretegratis.svg" 
-                          alt="Frete Grátis" 
-                          className="h-6 w-auto"
-                        />
+                      <Label className="text-right dark:text-white">Frete Grátis (SFP)</Label>
+                      <div className="col-span-3 flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleChange('tiktokSfpEnabled', !formData.tiktokSfpEnabled)}
+                          className={`w-6 h-6 rounded flex items-center justify-center border-2 transition-colors ${formData.tiktokSfpEnabled ? 'bg-brand border-brand text-brand-foreground' : 'bg-transparent border-input'}`}
+                        >
+                          {formData.tiktokSfpEnabled && (
+                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </button>
+                        <span className="text-sm text-muted-foreground flex items-center gap-2">
+                          Taxa de serviço do SFP (6% sobre o preço de venda)
+                          <img 
+                            src="/src/imgs/fretegratis.svg" 
+                            alt="Frete Grátis" 
+                            className="h-5 w-auto"
+                          />
+                        </span>
                       </div>
                     </div>
                   )}

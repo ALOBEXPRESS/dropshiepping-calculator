@@ -1053,6 +1053,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
       tiktokPromoNewCustomerType: tiktokPromoNewCustomerType || 'fixed',
       tiktokPromoShippingValue: tiktokPromoShippingValue || undefined,
       tiktokPromoShippingType: tiktokPromoShippingType || 'fixed',
+      tiktokSfpEnabled: marketplace === 'tiktok' ? tiktokSfpEnabled : false,
       netRevenue: parseCurrency(calculations.netRevenue),
       colorHex: getColorHex(),
       marginStatus: calculations.marginStatus,
