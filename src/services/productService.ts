@@ -1045,6 +1045,7 @@ const legacyProductSelectColumns = [
   'supplier_gateway_fee_fixed',
   'affiliates',
   'influencers',
+  'tiktok_sfp_enabled',
 ].join(',');
 
 const dimensionColumnList = ['peso', 'largura', 'altura', 'profundidade', 'unidade_medida'];
@@ -1192,6 +1193,7 @@ const productSelectColumnList = [
   'tiktok_ctr',
   'tiktok_cvr',
   'tiktok_catalog_id',
+  'tiktok_sfp_enabled',
   'influencers',
   'affiliates',
 ];

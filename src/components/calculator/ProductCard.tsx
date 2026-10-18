@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Trash2, Edit2, ChevronLeft, ChevronRight, RefreshCw, Loader2, DollarSign } from 'lucide-react';
+import { Trash2, Edit2, ChevronLeft, ChevronRight, RefreshCw, Loader2, DollarSign, Package } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import ElectricBorder from '@/components/ui/ElectricBorder';
 import { Button } from "@/components/ui/button";
@@ -258,6 +258,7 @@ interface ProductCardProps {
 
 export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onDelete, onEdit, onBlingUpdate, isUpdatingBling, onInvestSave, organizationId }) => {
   const [currentVarIndex, setCurrentVarIndex] = useState(0);
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
   const [isInvestOpen, setIsInvestOpen] = useState(false);
   const [isInvestReadonly, setIsInvestReadonly] = useState(false);
   const [linkedAdMediaUrl, setLinkedAdMediaUrl] = useState<string>('');
@@ -434,9 +435,31 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   };
   
   // Variation data fallback to product main data if missing (e.g. image)
-  const displayImage = currentSlide.kind === 'variation' && currentData?.imageUrl 
+  const isBrokenUrl = (url?: string | null) => {
+    if (!url || !url.trim() || url === '[]') return true;
+    if (url.includes('alobexpress.com.br')) return true;
+    if (failedImages[url]) return true;
+    return false;
+  };
+
+  const rawImage = currentSlide.kind === 'variation' && currentData?.imageUrl 
     ? currentData.imageUrl 
     : product.imageUrl;
+
+  let displayImage = rawImage;
+  if (isBrokenUrl(displayImage)) {
+    if (product.imageUrl && !isBrokenUrl(product.imageUrl)) {
+      displayImage = product.imageUrl;
+    } else if (product.variations) {
+      const workingVar = product.variations.find((v) => v.imageUrl && !isBrokenUrl(v.imageUrl));
+      if (workingVar?.imageUrl) {
+        displayImage = workingVar.imageUrl;
+      }
+    }
+  }
+
+  const isCurrentImgBroken = !displayImage || isBrokenUrl(displayImage);
+
   const displayName = currentSlide.kind === 'variation'
     ? `${product.name} - ${currentData?.name ?? ''}`.trim()
     : product.name;
@@ -445,7 +468,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
     : product.sku;
   
   // Check if we should show variation image instead of color swatch
-  const shouldShowVariationImage = currentSlide.kind === 'variation' && currentData?.imageUrl;
+  const shouldShowVariationImage = currentSlide.kind === 'variation' && Boolean(displayImage) && !isCurrentImgBroken;
   
   // Metrics
   const sellingPrice = currentSlide.kind === 'variation'
@@ -1290,11 +1313,44 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                 <div className="relative">
                   <div className={`h-36 w-36 flex-shrink-0 overflow-hidden rounded-lg border ${showMoneyBorder ? 'border-green-500 bg-green-50' : 'border-border bg-muted'} relative group/image bg-white`}>
                     {shouldShowVariationImage ? (
-                      <img src={displayImage} alt={displayName} className="h-full w-full object-contain p-1" loading="lazy" />
+                      <img
+                        src={displayImage}
+                        alt={displayName}
+                        className="h-full w-full object-contain p-1"
+                        loading="lazy"
+                        onError={() => {
+                          if (displayImage) {
+                            setFailedImages((prev) => ({ ...prev, [displayImage]: true }));
+                          }
+                        }}
+                      />
                     ) : currentColorLabel ? (
                       <div className="h-full w-full" style={getColorSwatchStyle(currentColorLabel)} />
+                    ) : !isCurrentImgBroken ? (
+                      <img
+                        src={displayImage}
+                        alt={displayName}
+                        className="h-full w-full object-contain p-1"
+                        loading="lazy"
+                        onError={() => {
+                          if (displayImage) {
+                            setFailedImages((prev) => ({ ...prev, [displayImage]: true }));
+                          }
+                        }}
+                      />
                     ) : (
-                      <img src={displayImage} alt={displayName} className="h-full w-full object-contain p-1" loading="lazy" />
+                      <div className="flex h-full w-full flex-col items-center justify-center p-2 text-center bg-gray-50 dark:bg-zinc-800/80 select-none">
+                        <div className="w-12 h-12 rounded-xl bg-muted/80 flex items-center justify-center mb-1.5 shadow-sm border border-border/60">
+                          {marketplaceIcon ? (
+                            <img src={marketplaceIcon} alt={marketplaceIconAlt} className="h-7 w-7 object-contain opacity-80" />
+                          ) : (
+                            <Package className="h-6 w-6 text-muted-foreground opacity-70" />
+                          )}
+                        </div>
+                        <span className="text-[10px] font-semibold text-muted-foreground line-clamp-2 px-1 leading-snug">
+                          {displayName}
+                        </span>
+                      </div>
                     )}
                     {hasShopeeAdsInvestment && (
                       <img

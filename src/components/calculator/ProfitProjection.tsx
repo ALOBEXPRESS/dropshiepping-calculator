@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { formatCompactCurrency, formatCurrency, parseCurrency } from '@/utils/currency';
 import type { ProductItem } from '@/types/calculator';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Package } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import marketplaceWordpressLogo from '@/imgs/free-woocommerce-icon-svg-download-png-226060.webp';
 import marketplaceMercadoLivreLogo from '@/imgs/mercadolivre.svg';
@@ -91,9 +91,32 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
   const currentSlide = slides[activeVariationIndex] ?? slides[0];
   const currentVariation = currentSlide.kind === 'variation' ? currentSlide.variation : null;
   
-  const displayImage = currentSlide.kind === 'variation' && currentVariation?.imageUrl 
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
+
+  const isBrokenUrl = (url?: string | null) => {
+    if (!url || !url.trim() || url === '[]') return true;
+    if (url.includes('alobexpress.com.br')) return true;
+    if (failedImages[url]) return true;
+    return false;
+  };
+
+  const rawImage = currentSlide.kind === 'variation' && currentVariation?.imageUrl 
     ? currentVariation.imageUrl 
-    : product?.imageUrl || 'https://placehold.co/300x300';
+    : product?.imageUrl;
+
+  let displayImage = rawImage;
+  if (isBrokenUrl(displayImage)) {
+    if (product?.imageUrl && !isBrokenUrl(product.imageUrl)) {
+      displayImage = product.imageUrl;
+    } else if (product?.variations) {
+      const workingVar = product.variations.find((v) => v.imageUrl && !isBrokenUrl(v.imageUrl));
+      if (workingVar?.imageUrl) {
+        displayImage = workingVar.imageUrl;
+      }
+    }
+  }
+
+  const isCurrentImgBroken = !displayImage || isBrokenUrl(displayImage);
 
   const handleVariationPrev = () => {
     if (slides.length <= 1) return;
@@ -494,11 +517,31 @@ export function ProfitProjection({ product, onNext, onPrev }: ProfitProjectionPr
 
       <div className="flex flex-col md:flex-row gap-6 mb-8">
         <div className="relative w-full max-w-[250px] md:max-w-none mx-auto md:mx-0 md:w-1/3 aspect-square rounded-xl overflow-hidden bg-muted/40 border border-border flex-shrink-0 group">
-          <img 
-            src={displayImage} 
-            alt={product.name} 
-            className="w-full h-full object-contain p-2"
-          />
+          {!isCurrentImgBroken ? (
+            <img 
+              src={displayImage} 
+              alt={product.name} 
+              className="w-full h-full object-contain p-2"
+              onError={() => {
+                if (displayImage) {
+                  setFailedImages((prev) => ({ ...prev, [displayImage]: true }));
+                }
+              }}
+            />
+          ) : (
+            <div className="flex h-full w-full flex-col items-center justify-center p-4 text-center bg-muted/30 select-none">
+              <div className="w-16 h-16 rounded-2xl bg-background/80 flex items-center justify-center mb-2 shadow-sm border border-border/60">
+                {marketplaceLogo ? (
+                  <img src={marketplaceLogo} alt={`Logo ${product.marketplace || 'marketplace'}`} className="h-10 w-10 object-contain opacity-80" />
+                ) : (
+                  <Package className="h-8 w-8 text-muted-foreground opacity-70" />
+                )}
+              </div>
+              <span className="text-xs font-semibold text-muted-foreground line-clamp-2 px-2 leading-snug">
+                {product.name}
+              </span>
+            </div>
+          )}
           {slides.length > 1 && (
             <>
               <button
