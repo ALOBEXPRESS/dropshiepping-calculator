@@ -478,12 +478,9 @@ export const calculateMetrics = (
       // Inclui o custo do produto (fornecedor/dogama) + taxas do fornecedor + taxas de marketplace
       const totalOperationalFees = baseCost + totalSupplierFees + totalMktCosts;
 
-      const adjustedProfit = netRevenue - totalOperationalFees;
-      const isLossCondition = adjustedProfit < 0 || netRevenue < 0;
-      const adjustedMargin = effectiveSellingPrice > 0
-        ? (adjustedProfit / effectiveSellingPrice) * 100
-        : 0;
-
+      const adjustedProfit = netRevenue;
+      const isLossCondition = netRevenue < 0;
+      const adjustedMargin = actualMargin;
       let marginStatus = 'good';
       if (isLossCondition) {
         marginStatus = 'negative';
@@ -669,12 +666,9 @@ export const calculateMetrics = (
       // Inclui o custo do produto (fornecedor/dogama) + taxas do fornecedor + taxas de marketplace
       const totalOperationalFees = baseCost + totalSupplierFees + totalMktCosts;
 
-      const adjustedProfit = netRevenue - totalOperationalFees;
-      const isLossCondition = adjustedProfit < 0 || netRevenue < 0;
-      const adjustedMargin = effectiveSellingPrice > 0
-        ? (adjustedProfit / effectiveSellingPrice) * 100
-        : 0;
-
+      const adjustedProfit = netRevenue;
+      const isLossCondition = netRevenue < 0;
+      const adjustedMargin = actualMargin;
       let marginStatus = 'good';
       if (isLossCondition) {
           marginStatus = 'negative';
@@ -1099,12 +1093,9 @@ export const calculateMetrics = (
   // Inclui o custo do produto (fornecedor/dogama) + taxas do fornecedor + taxas de marketplace
   const totalOperationalFees = baseCost + totalSupplierFees + totalMarketplaceCosts;
 
-  const adjustedProfit = netRevenue - totalOperationalFees;
-  const isLossCondition = adjustedProfit < 0 || netRevenue < 0;
-  const adjustedMargin = effectiveSellingPrice > 0
-    ? (adjustedProfit / effectiveSellingPrice) * 100
-    : 0;
-
+  const adjustedProfit = netRevenue;
+  const isLossCondition = netRevenue < 0;
+  const adjustedMargin = actualMargin;
   let marginStatus = 'good';
   if (isLossCondition) {
       marginStatus = 'negative';

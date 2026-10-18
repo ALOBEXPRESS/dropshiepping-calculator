@@ -3994,14 +3994,11 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                       ? Number(calculations.totalOperationalFees)
                       : (sCost + supFee + supGw + mCost + fFee + sFee);
 
-                    const displayProfit = calculations.adjustedProfit !== undefined
-                      ? Number(calculations.adjustedProfit)
-                      : (netRev - opFees);
-
-                    const effPrice = Number(calculations.manualPrice || calculations.suggestedPrice || 0);
-                    const displayMargin = calculations.adjustedMargin !== undefined
-                      ? Number(calculations.adjustedMargin)
-                      : (effPrice > 0 ? (displayProfit / effPrice) * 100 : 0);
+                    const displayProfit = netRev;
+                    const currentMargin = typeof calculations.actualMargin === 'string'
+                      ? parseFloat(calculations.actualMargin.replace(',', '.'))
+                      : Number(calculations.actualMargin || 0);
+                    const displayMargin = currentMargin;
 
                     return (
                       <>
@@ -4022,7 +4019,7 @@ const DropshippingCalculator = ({ viewMode = 'full' }: { viewMode?: 'full' | 'pr
                          </div>
                         <p className="text-xs mt-1 font-semibold text-white">
                            {isDanger
-                               ? `Prejuízo de R$ ${formatMoney(Math.abs(displayProfit))}: lucro líquido insuficiente após taxas de (R$ ${formatMoney(opFees)}).`
+                               ? `Prejuízo de R$ ${formatMoney(Math.abs(displayProfit))}: venda abaixo dos custos e taxas de (R$ ${formatMoney(opFees)}).`
                                : `Lucro após cobrir taxas e custo de (R$ ${formatMoney(opFees)}).`}
                          </p>
 

@@ -185,24 +185,18 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
     ? Number(calculations.totalOperationalFees)
     : (supplierCost + totalSupplierFees + totalMarketplaceCosts);
 
-  const displayProfit = calculations?.adjustedProfit !== undefined
-    ? Number(calculations.adjustedProfit)
-    : (netRevenue - totalFeesCombined);
+  const displayProfit = netRevenue;
 
-  const effectivePrice = Number(calculations?.manualPrice || calculations?.suggestedPrice || 0);
-
-  const displayMargin = calculations?.adjustedMargin !== undefined
-    ? Number(calculations.adjustedMargin)
-    : (effectivePrice > 0 ? (displayProfit / effectivePrice) * 100 : 0);
+  const displayMargin = calculations
+    ? (typeof calculations.actualMargin === 'string'
+        ? parseFloat(calculations.actualMargin.replace(',', '.'))
+        : Number(calculations.actualMargin || 0))
+    : 0;
 
   const isLoss = Boolean(
-    calculations?.isLossCondition ?? (
-      displayProfit < 0 ||
-      calculations?.marginStatus === 'negative' ||
-      displayMargin < 0 ||
-      netRevenue < 0 ||
-      (totalFeesCombined > 0 && netRevenue < totalFeesCombined)
-    )
+    displayProfit < 0 ||
+    displayMargin < 0 ||
+    calculations?.marginStatus === 'negative'
   );
 
   const isLossCondition = isLoss;
@@ -422,12 +416,12 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
               )}
 
               {/* Alerta de lucro insuficiente em relação a custo do fornecedor ou taxas de marketplace */}
-              {/* Alerta de lucro insuficiente em relação a custo do fornecedor ou taxas de marketplace */}
+              {/* Alerta de prejuízo */}
               {isLoss && (
                 <div className="mt-2.5 p-2.5 rounded-lg bg-rose-500/15 border border-rose-500/40 flex items-start sm:items-center gap-2 text-xs text-rose-200 font-medium">
                   <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                   <span>
-                    Prejuízo de R$ {formatMoney(Math.abs(displayProfit))}: o lucro líquido (R$ {formatMoney(netRevenue)}) não cobriu o custo do produto e taxas (R$ {formatMoney(totalFeesCombined)}) [Custo Produto: R$ {formatMoney(supplierCost)} + Fornecedor: R$ {formatMoney(totalSupplierFees)} + Marketplace: R$ {formatMoney(totalMarketplaceCosts)}]. O lucro precisa ficar sempre acima dessas taxas.
+                    Prejuízo de R$ {formatMoney(Math.abs(displayProfit))}: as taxas e custos operacionais superam o valor da venda.
                   </span>
                 </div>
               )}
