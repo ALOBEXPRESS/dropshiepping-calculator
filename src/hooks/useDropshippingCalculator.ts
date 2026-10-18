@@ -390,7 +390,7 @@ export const useDropshippingCalculator = () => {
   const [tiktokCTR, setTiktokCTR] = useState(() => typeof draft.tiktokCTR === 'string' ? draft.tiktokCTR : '1,00');
   const [tiktokCVR, setTiktokCVR] = useState(() => typeof draft.tiktokCVR === 'string' ? draft.tiktokCVR : '1,50');
   const [tiktokCatalogId, setTiktokCatalogId] = useState(() => typeof draft.tiktokCatalogId === 'string' ? draft.tiktokCatalogId : '');
-  const [tiktokSfpEnabled, setTiktokSfpEnabled] = useState(() => typeof draft.tiktokSfpEnabled === 'boolean' ? draft.tiktokSfpEnabled : false);
+  const [tiktokSfpEnabled, setTiktokSfpEnabled] = useState(() => typeof draft.tiktokSfpEnabled === 'boolean' ? draft.tiktokSfpEnabled : true);
 
   // TikTok Promotions
   const [tiktokPromoProductValue, setTiktokPromoProductValue] = useState<string>('');
@@ -901,6 +901,9 @@ export const useDropshippingCalculator = () => {
     }
     if (mkt === 'shopee' && !extraCommission) {
       setExtraCommission('14');
+    }
+    if (mkt === 'tiktok') {
+      setTiktokSfpEnabled(true);
     }
   };
 

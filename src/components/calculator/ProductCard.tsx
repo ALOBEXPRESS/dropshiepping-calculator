@@ -524,7 +524,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
         (product.shopeeSellerVoucherType || 'fixed') as 'fixed' | 'percent',
         0,
         product.influencers || [], product.affiliates || [],
-        product.tiktokSfpEnabled ?? false,
+        (mp === 'tiktok' ? (product.tiktokSfpEnabled ?? true) : false),
         parseCurrency(product.tiktokPromoProductValue ?? 0),
         product.tiktokPromoProductType || 'fixed'
       );

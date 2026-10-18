@@ -21,6 +21,7 @@ import { calculateMetrics } from '@/services/pricingService';
 import { mercadoLivreTaxes } from '@/services/pricingService';
 import { formatCurrency, handleCurrencyChange, parseCurrency } from '@/utils/currency';
 import type { ProductItem } from '../../types/calculator';
+import freeShippingLogo from '@/imgs/fretegratis.svg';
 import { AlertCircle, TrendingUp, X, Instagram, Music, Twitter } from "lucide-react";
 import { useInfluencers } from '@/hooks/useInfluencers';
 import { useAffiliates } from '@/hooks/useAffiliates';
@@ -357,7 +358,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
     tiktokCTR: source?.tiktokCTR !== undefined && source?.tiktokCTR !== null ? String(source.tiktokCTR) : '',
     tiktokCVR: source?.tiktokCVR !== undefined && source?.tiktokCVR !== null ? String(source.tiktokCVR) : '',
     tiktokCatalogId: source?.tiktokCatalogId || '',
-    tiktokSfpEnabled: source?.tiktokSfpEnabled ?? false,
+    tiktokSfpEnabled: isTikTok ? (source?.tiktokSfpEnabled ?? true) : (source?.tiktokSfpEnabled ?? false),
     campaignName: source?.campaignName || '',
     campaignObjective: source?.campaignObjective || '',
     budgetType: source?.budgetType || '',
@@ -3115,155 +3116,6 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                     <Label htmlFor="cost" className="text-right dark:text-white">Custo</Label>
                     <Input id="cost" type="number" value={formData.costPrice} onChange={(e) => handleChange('costPrice', e.target.value)} className="col-span-3" />
                   </div>
-                  {formData.marketplace === 'mercadolivre' && (
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="mlShippingCost" className="text-right dark:text-white">Frete</Label>
-                      <Input
-                        id="mlShippingCost"
-                        type="text"
-                        inputMode="decimal"
-                        value={formData.mlShippingCost}
-                        onChange={(e) => handleCurrencyChange(e, (val) => handleChange('mlShippingCost', val))}
-                        className="col-span-3"
-                        placeholder="0,00"
-                      />
-                    </div>
-                  )}
-                  {['tiktok', 'wordpress', 'enjoei', 'amazon', 'shein'].includes(formData.marketplace) && (
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="marketplaceShippingCost" className="text-right dark:text-white">Frete</Label>
-                      <Input
-                        id="marketplaceShippingCost"
-                        type="text"
-                        inputMode="decimal"
-                        value={formData.marketplaceShippingCost}
-                        onChange={(e) => handleCurrencyChange(e, (val) => handleChange('marketplaceShippingCost', val))}
-                        className="col-span-3"
-                        placeholder="0,00"
-                      />
-                    </div>
-                  )}
-                  {/* Hero Card de Resultado Financeiro (Frontend Design de Alta Precisão) - Posicionado abaixo de Frete */}
-                  <div className="col-span-4 my-2">
-                    <div className={`relative overflow-hidden rounded-2xl border p-4 sm:p-5 transition-all duration-300 ${
-                      isLossFinancialCondition
-                        ? 'border-rose-500/50 bg-gradient-to-br from-rose-950/70 via-zinc-950/90 to-red-950/40 shadow-[0_0_30px_-5px_rgba(244,63,94,0.3)]'
-                        : organicAdjustedMargin >= 25
-                        ? 'border-emerald-500/40 bg-gradient-to-br from-emerald-950/60 via-zinc-950/90 to-teal-950/30 shadow-[0_0_25px_-5px_rgba(16,185,129,0.25)]'
-                        : 'border-amber-500/40 bg-gradient-to-br from-amber-950/60 via-zinc-950/90 to-yellow-950/30 shadow-[0_0_25px_-5px_rgba(245,158,11,0.25)]'
-                    }`}>
-                      {/* Top Accent Gradient Bar */}
-                      <div className={`absolute top-0 left-0 right-0 h-1 ${
-                        isLossFinancialCondition
-                          ? 'bg-gradient-to-r from-rose-600 via-red-500 to-rose-600'
-                          : organicAdjustedMargin >= 25
-                          ? 'bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500'
-                          : 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500'
-                      }`} />
-
-                      {/* Header da Métrica */}
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className="text-xs uppercase font-extrabold tracking-wider flex items-center gap-2">
-                          {isLossFinancialCondition ? (
-                            <span className="flex items-center gap-1.5 text-rose-400">
-                              <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
-                              Resultado Financeiro (Prejuízo)
-                            </span>
-                          ) : (
-                            <span className="flex items-center gap-1.5 text-emerald-400">
-                              <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                              Lucro Líquido Real
-                            </span>
-                          )}
-                        </span>
-
-                        <span className={`text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border shadow-sm ${
-                          isLossFinancialCondition
-                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/50'
-                            : organicAdjustedMargin >= 30
-                            ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50'
-                            : organicAdjustedMargin >= 20
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                            : 'bg-amber-500/20 text-amber-300 border-amber-500/50'
-                        }`}>
-                          {isLossFinancialCondition
-                            ? 'PREJUÍZO'
-                            : organicAdjustedMargin >= 30
-                            ? 'Alta Rentabilidade'
-                            : organicAdjustedMargin >= 20
-                            ? 'Margem Saudável'
-                            : 'Margem Baixa'}
-                        </span>
-                      </div>
-
-                      {/* Valor Principal + Margem Real */}
-                      <div className="flex items-baseline justify-between gap-4 flex-wrap my-1">
-                        <div className="flex items-baseline gap-1.5">
-                          <span className={`text-base font-bold ${isLossFinancialCondition ? 'text-rose-400/80' : 'text-muted-foreground'}`}>
-                            {organicNetRevenue < 0 ? '- R$' : 'R$'}
-                          </span>
-                          <span className={`text-3xl sm:text-4xl font-black tracking-tight tabular-nums font-mono ${
-                            isLossFinancialCondition
-                              ? 'text-rose-400 drop-shadow-[0_0_12px_rgba(244,63,94,0.4)]'
-                              : organicAdjustedMargin >= 25
-                              ? 'text-emerald-400 drop-shadow-[0_0_12px_rgba(16,185,129,0.3)]'
-                              : 'text-amber-400 drop-shadow-[0_0_12px_rgba(245,158,11,0.3)]'
-                          }`}>
-                            {formatCurrency(Math.abs(organicNetRevenue))}
-                          </span>
-                        </div>
-
-                        <div className="text-right">
-                          <span className="text-[10px] uppercase font-bold text-muted-foreground block">Margem Real</span>
-                          <span className={`text-xl sm:text-2xl font-black tabular-nums font-mono ${
-                            isLossFinancialCondition ? 'text-rose-400' : organicAdjustedMargin >= 25 ? 'text-emerald-400' : 'text-amber-400'
-                          }`}>
-                            {organicAdjustedMargin.toFixed(1)}%
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Subtítulo dinâmico e Detalhamento */}
-                      <div className="mt-2.5 pt-2 border-t border-border/40 space-y-1.5">
-                        <p className={`text-xs font-semibold leading-tight ${isLossFinancialCondition ? 'text-rose-300/90' : 'text-muted-foreground'}`}>
-                          {isLossFinancialCondition
-                            ? `Prejuízo após taxas de (R$ ${formatCurrency(organicTotalOperationalFees)})`
-                            : `Lucro após cobrir taxas e custo de (R$ ${formatCurrency(organicTotalOperationalFees)})`}
-                        </p>
-                        
-                        {isLossFinancialCondition && (
-                          <div className="p-2.5 rounded-lg bg-rose-500/15 border border-rose-500/30 flex items-start gap-2 text-xs text-rose-200 font-medium">
-                            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                            <span>
-                              Prejuízo de R$ {formatCurrency(Math.abs(organicNetRevenue))}: o lucro líquido base (R$ {formatCurrency(rawBaseNetRevenue)}) não cobriu o custo do produto e taxas (R$ {formatCurrency(organicTotalOperationalFees)}). O lucro precisa ficar sempre acima dessas taxas.
-                            </span>
-                          </div>
-                        )}
-
-                        {organicMetrics?.taxDescription && (
-                          <p className="text-[11px] text-muted-foreground pt-0.5">
-                            {organicMetrics.taxDescription}
-                          </p>
-                        )}
-                        {formData.marketplace === 'mercadolivre' && formData.adType && formData.adType !== 'gratis' && (
-                          <p className="text-[11px] font-semibold text-yellow-600 dark:text-yellow-400">
-                            Comissão ML ({formData.adType === 'classico' ? 'Clássico' : 'Premium'}):&nbsp;
-                            {formData.adType === 'classico'
-                              ? (mercadoLivreTaxes.classico[formData.mlCategory || 'eletronicos']?.rate ?? mercadoLivreTaxes.classico['eletronicos'].rate)
-                              : (mercadoLivreTaxes.premium[formData.mlCategory || 'eletronicos']?.rate ?? mercadoLivreTaxes.premium['eletronicos'].rate)
-                            }% já descontado no lucro
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Hidden input to ensure form and test accessibility */}
-                    <input
-                      id="profit"
-                      type="hidden"
-                      value={formatCurrency(organicNetRevenue)}
-                    />
-                  </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label className="text-right dark:text-white">
                       Pagamento
@@ -3425,7 +3277,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                         <span className="text-sm text-muted-foreground flex items-center gap-2">
                           Taxa de serviço do SFP (6% sobre o preço de venda)
                           <img 
-                            src="/src/imgs/fretegratis.svg" 
+                            src={freeShippingLogo} 
                             alt="Frete Grátis" 
                             className="h-5 w-auto"
                           />
@@ -3455,6 +3307,22 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                         </span>
                       </div>
                     </div>
+                  ) : formData.marketplace === 'mercadolivre' ? (
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="mlShippingCost" className="text-right dark:text-white">Frete</Label>
+                      <Input
+                        id="mlShippingCost"
+                        type="text"
+                        inputMode="decimal"
+                        value={formData.mlShippingCost}
+                        onChange={(e) => handleCurrencyChange(e, (val) => {
+                          handleChange('mlShippingCost', val);
+                          handleChange('shippingFee', val);
+                        })}
+                        className="col-span-3"
+                        placeholder="0,00"
+                      />
+                    </div>
                   ) : (
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="shippingFee" className="text-right dark:text-white">Frete</Label>
@@ -3463,12 +3331,137 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({ product, i
                         type="text"
                         inputMode="decimal"
                         value={formData.shippingFee}
-                        onChange={(e) => handleCurrencyChange(e, (val) => handleChange('shippingFee', val))}
+                        onChange={(e) => handleCurrencyChange(e, (val) => {
+                          handleChange('shippingFee', val);
+                          handleChange('marketplaceShippingCost', val);
+                        })}
                         className="col-span-3"
                         placeholder="0,00"
                       />
                     </div>
                   )}
+
+                  {/* Hero Card de Resultado Financeiro (Lucro Líquido Real) - Posicionado abaixo de Frete */}
+                  <div className="col-span-4 my-2">
+                    <div className={`relative overflow-hidden rounded-2xl border p-4 sm:p-5 transition-all duration-300 ${
+                      isLossFinancialCondition
+                        ? 'border-rose-500/50 bg-gradient-to-br from-rose-950/70 via-zinc-950/90 to-red-950/40 shadow-[0_0_30px_-5px_rgba(244,63,94,0.3)]'
+                        : organicAdjustedMargin >= 25
+                        ? 'border-emerald-500/40 bg-gradient-to-br from-emerald-950/60 via-zinc-950/90 to-teal-950/30 shadow-[0_0_25px_-5px_rgba(16,185,129,0.25)]'
+                        : 'border-amber-500/40 bg-gradient-to-br from-amber-950/60 via-zinc-950/90 to-yellow-950/30 shadow-[0_0_25px_-5px_rgba(245,158,11,0.25)]'
+                    }`}>
+                      {/* Top Accent Gradient Bar */}
+                      <div className={`absolute top-0 left-0 right-0 h-1 ${
+                        isLossFinancialCondition
+                          ? 'bg-gradient-to-r from-rose-600 via-red-500 to-rose-600'
+                          : organicAdjustedMargin >= 25
+                          ? 'bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500'
+                          : 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500'
+                      }`} />
+
+                      {/* Header da Métrica */}
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="text-xs uppercase font-extrabold tracking-wider flex items-center gap-2">
+                          {isLossFinancialCondition ? (
+                            <span className="flex items-center gap-1.5 text-rose-400">
+                              <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+                              Resultado Financeiro (Prejuízo)
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1.5 text-emerald-400">
+                              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                              Lucro Líquido Real
+                            </span>
+                          )}
+                        </span>
+
+                        <span className={`text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border shadow-sm ${
+                          isLossFinancialCondition
+                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/50'
+                            : organicAdjustedMargin >= 30
+                            ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50'
+                            : organicAdjustedMargin >= 20
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                            : 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                        }`}>
+                          {isLossFinancialCondition
+                            ? 'PREJUÍZO'
+                            : organicAdjustedMargin >= 30
+                            ? 'Alta Rentabilidade'
+                            : organicAdjustedMargin >= 20
+                            ? 'Margem Saudável'
+                            : 'Margem Baixa'}
+                        </span>
+                      </div>
+
+                      {/* Valor Principal + Margem Real */}
+                      <div className="flex items-baseline justify-between gap-4 flex-wrap my-1">
+                        <div className="flex items-baseline gap-1.5">
+                          <span className={`text-base font-bold ${isLossFinancialCondition ? 'text-rose-400/80' : 'text-muted-foreground'}`}>
+                            {organicNetRevenue < 0 ? '- R$' : 'R$'}
+                          </span>
+                          <span className={`text-3xl sm:text-4xl font-black tracking-tight tabular-nums font-mono ${
+                            isLossFinancialCondition
+                              ? 'text-rose-400 drop-shadow-[0_0_12px_rgba(244,63,94,0.4)]'
+                              : organicAdjustedMargin >= 25
+                              ? 'text-emerald-400 drop-shadow-[0_0_12px_rgba(16,185,129,0.3)]'
+                              : 'text-amber-400 drop-shadow-[0_0_12px_rgba(245,158,11,0.3)]'
+                          }`}>
+                            {formatCurrency(Math.abs(organicNetRevenue))}
+                          </span>
+                        </div>
+
+                        <div className="text-right">
+                          <span className="text-[10px] uppercase font-bold text-muted-foreground block">Margem Real</span>
+                          <span className={`text-xl sm:text-2xl font-black tabular-nums font-mono ${
+                            isLossFinancialCondition ? 'text-rose-400' : organicAdjustedMargin >= 25 ? 'text-emerald-400' : 'text-amber-400'
+                          }`}>
+                            {organicAdjustedMargin.toFixed(1)}%
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Subtítulo dinâmico e Detalhamento */}
+                      <div className="mt-2.5 pt-2 border-t border-border/40 space-y-1.5">
+                        <p className={`text-xs font-semibold leading-tight ${isLossFinancialCondition ? 'text-rose-300/90' : 'text-muted-foreground'}`}>
+                          {isLossFinancialCondition
+                            ? `Prejuízo após taxas de (R$ ${formatCurrency(organicTotalOperationalFees)})`
+                            : `Lucro após cobrir taxas e custo de (R$ ${formatCurrency(organicTotalOperationalFees)})`}
+                        </p>
+                        
+                        {isLossFinancialCondition && (
+                          <div className="p-2.5 rounded-lg bg-rose-500/15 border border-rose-500/30 flex items-start gap-2 text-xs text-rose-200 font-medium">
+                            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                            <span>
+                              Prejuízo de R$ {formatCurrency(Math.abs(organicNetRevenue))}: o lucro líquido base (R$ {formatCurrency(rawBaseNetRevenue)}) não cobriu o custo do produto e taxas (R$ {formatCurrency(organicTotalOperationalFees)}). O lucro precisa ficar sempre acima dessas taxas.
+                            </span>
+                          </div>
+                        )}
+
+                        {organicMetrics?.taxDescription && (
+                          <p className="text-[11px] text-muted-foreground pt-0.5">
+                            {organicMetrics.taxDescription}
+                          </p>
+                        )}
+                        {formData.marketplace === 'mercadolivre' && formData.adType && formData.adType !== 'gratis' && (
+                          <p className="text-[11px] font-semibold text-yellow-600 dark:text-yellow-400">
+                            Comissão ML ({formData.adType === 'classico' ? 'Clássico' : 'Premium'}):&nbsp;
+                            {formData.adType === 'classico'
+                              ? (mercadoLivreTaxes.classico[formData.mlCategory || 'eletronicos']?.rate ?? mercadoLivreTaxes.classico['eletronicos'].rate)
+                              : (mercadoLivreTaxes.premium[formData.mlCategory || 'eletronicos']?.rate ?? mercadoLivreTaxes.premium['eletronicos'].rate)
+                            }% já descontado no lucro
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Hidden input to ensure form and test accessibility */}
+                    <input
+                      id="profit"
+                      type="hidden"
+                      value={formatCurrency(organicNetRevenue)}
+                    />
+                  </div>
                 </>
               )}
             </div>
