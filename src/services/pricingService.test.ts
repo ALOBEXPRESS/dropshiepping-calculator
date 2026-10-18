@@ -618,6 +618,79 @@ describe('Pricing Service', () => {
       expect(Number(positiveCase.adjustedMargin)).toBeCloseTo((netRev / 56.00) * 100, 1);
       expect(positiveCase.isLossCondition).toBe(netRev < 0);
     });
+
+    it('should calculate suggested price for markup 1.0x with low positive margin in yellow (not loss)', () => {
+      // User scenario from screenshot:
+      // Product cost: R$ 14,00
+      // Supplier fee: 3%
+      // Supplier gateway: R$ 2,00
+      // Marketplace: TikTok Shop (10% commission, R$ 4,00 fixed fee for price < 50)
+      // Markup: 1.0x
+      const result = calculateMetrics(
+        14.00, // baseCost
+        0,     // pkgCost
+        3,     // supplierFeeVal (3%)
+        1,     // markup = 1.0x
+        'tiktok',
+        'eletronicos',
+        'classico',
+        'without',
+        'cnpj',
+        0,
+        false, 0, 0, 0, 0,
+        0,     // manualPriceVal = 0 (uses suggested price)
+        0, 0,
+        10,    // tiktokCommVal = 10%
+        0, 0, 0, 0, 0, 'percent', 0, 0, 0, 'classico', 0, '', '', '', '', false,
+        'percent',
+        0,
+        2.00,  // supplierGatewayCost = 2.00 fixed
+        'fixed',
+        'individual',
+        'eletronicos',
+        0, 0, 0, 0, 0, 'fixed', 'fixed', 'fixed', 'fixed', 0, [], []
+      );
+
+      // Must cover all costs and fees with positive profit
+      const price = Number(result.suggestedPrice);
+      expect(price).toBeGreaterThan(16.48); // total cost is 16.48
+      expect(Number(result.netRevenue)).toBeGreaterThan(0);
+      expect(Number(result.actualMargin)).toBeGreaterThan(0);
+      // Margin must be below recommended (30%) but >= 8%, classified as 'low' (yellow)
+      expect(result.marginStatus).toBe('low');
+      expect(result.isLossCondition).toBe(false);
+    });
+
+    it('should calculate suggested price for markup 1.0x on Mercado Livre with low positive margin', () => {
+      const result = calculateMetrics(
+        14.00,
+        0,
+        0,
+        1, // markup = 1.0x
+        'mercadolivre',
+        'eletronicos',
+        'classico',
+        'without',
+        'cnpj',
+        0,
+        false, 0, 0, 0, 0,
+        0,
+        0, 0, 0, 0, 0, 0, 0, 0, 'percent', 0, 0, 0, 'classico', 0, '', '', '', '', false,
+        'percent',
+        0,
+        0,
+        'fixed',
+        'individual',
+        'eletronicos',
+        0, 0, 0, 0, 0, 'fixed', 'fixed', 'fixed', 'fixed', 0, [], []
+      );
+
+      expect(Number(result.suggestedPrice)).toBeGreaterThan(14.00);
+      expect(Number(result.netRevenue)).toBeGreaterThan(0);
+      expect(Number(result.actualMargin)).toBeGreaterThan(0);
+      expect(result.marginStatus).toBe('low');
+      expect(result.isLossCondition).toBe(false);
+    });
   });
 });
 

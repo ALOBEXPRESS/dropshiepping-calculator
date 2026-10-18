@@ -418,13 +418,15 @@ export const calculateMetrics = (
       const calcPrice = (c: number, m: number, feeRate: number, fixed: number, gateway: number) => {
           // P = (Cost + Fixed) / (1 - (Fee% + Margin% + Gateway%)/100)
           // If markup is used as multiplier: P = Cost * Markup. But usually we want to preserve margin logic if markup is 0.
-          // The current system uses 'markup' as a multiplier if != 0, else calculates based on recommendedMargin.
-          // Let's follow the pattern.
-          if (m !== 0) {
+          // Markup 1.0x uses a viable minimum margin (yellow / Margem Baixa) to cover marketplace fees and costs without loss.
+          if (m !== 0 && Math.abs(m - 1) >= 0.001) {
               if (m > 0) return c * m;
               return c / Math.abs(m);
           }
-          const denom = 1 - (feeRate + recommendedMargin + gateway) / 100;
+          const marginToUse = Math.abs(m - 1) < 0.001
+              ? Math.max(8, Math.round(recommendedMargin * 0.35))
+              : recommendedMargin;
+          const denom = 1 - (feeRate + marginToUse + gateway) / 100;
           return denom > 0 ? (c + fixed) / denom : (c + fixed) * 2; 
       };
 
@@ -602,7 +604,8 @@ export const calculateMetrics = (
       let autoResult: MLCalculationResult;
       
       // 1. Calculate Suggested Price (Auto) based on Markup or Recommended Margin
-      if (markup !== 0) {
+      const isMarkupLow = Math.abs(markup - 1) < 0.001;
+      if (markup !== 0 && !isMarkupLow) {
            const costBaseForMarkup = totalCost;
            let markupPrice = 0;
            if (markup > 0) {
@@ -612,7 +615,10 @@ export const calculateMetrics = (
            }
            autoResult = calculateProfitFromPrice(markupPrice, params);
       } else {
-           autoResult = calculateSellingPrice(params);
+           const targetMargin = isMarkupLow
+               ? Math.max(8, Math.round(recommendedMargin * 0.35))
+               : recommendedMargin;
+           autoResult = calculateSellingPrice({ ...params, desiredMargin: targetMargin });
       }
 
       // 2. Determine Effective Result (Actual financials)
@@ -839,6 +845,10 @@ export const calculateMetrics = (
   }
 
   const recommendedMargin = getRecommendedMargin(totalCost);
+  const isMarkupLow = Math.abs(markup - 1) < 0.001;
+  const targetMargin = isMarkupLow
+    ? Math.max(8, Math.round(recommendedMargin * 0.35))
+    : recommendedMargin;
   
   let suggestedPrice = 0;
   
@@ -867,34 +877,34 @@ export const calculateMetrics = (
   if (currentMarketplace === 'mercadolivre') {
       let tempFixed = 0;
       if (currentAdType === 'gratis') {
-          suggestedPrice = calcPrice(totalCost, recommendedMargin, marketplaceFee, 0, gatewayFeeVal);
+          suggestedPrice = calcPrice(totalCost, targetMargin, marketplaceFee, 0, gatewayFeeVal);
           fixedFee = 0;
       } else {
-          let tempPrice = calcPrice(totalCost, recommendedMargin, marketplaceFee, tempFixed, gatewayFeeVal);
+          let tempPrice = calcPrice(totalCost, targetMargin, marketplaceFee, tempFixed, gatewayFeeVal);
           
           if (tempPrice >= 79) {
               fixedFee = 0;
               suggestedPrice = tempPrice;
           } else {
               tempFixed = 6.75;
-              tempPrice = calcPrice(totalCost, recommendedMargin, marketplaceFee, tempFixed, gatewayFeeVal);
+              tempPrice = calcPrice(totalCost, targetMargin, marketplaceFee, tempFixed, gatewayFeeVal);
               if (tempPrice >= 50 && tempPrice < 79) {
                   fixedFee = 6.75;
                   suggestedPrice = tempPrice;
               } else {
                   tempFixed = 6.50;
-                  tempPrice = calcPrice(totalCost, recommendedMargin, marketplaceFee, tempFixed, gatewayFeeVal);
+                  tempPrice = calcPrice(totalCost, targetMargin, marketplaceFee, tempFixed, gatewayFeeVal);
                   if (tempPrice >= 29 && tempPrice < 50) {
                       fixedFee = 6.50;
                       suggestedPrice = tempPrice;
                   } else {
                       tempFixed = 6.25;
-                      tempPrice = calcPrice(totalCost, recommendedMargin, marketplaceFee, tempFixed, gatewayFeeVal);
+                      tempPrice = calcPrice(totalCost, targetMargin, marketplaceFee, tempFixed, gatewayFeeVal);
                       if (tempPrice >= 12.50 && tempPrice < 29) {
                           fixedFee = 6.25;
                           suggestedPrice = tempPrice;
                       } else {
-                          const denominator = 0.5 - (marketplaceFee + recommendedMargin + gatewayFeeVal) / 100;
+                          const denominator = 0.5 - (marketplaceFee + targetMargin + gatewayFeeVal) / 100;
                           if (denominator > 0) {
                               suggestedPrice = totalCost / denominator;
                               fixedFee = suggestedPrice / 2;
@@ -917,13 +927,13 @@ export const calculateMetrics = (
       let iterPrice = totalCost * 2.5;
       for (let i = 0; i < 10; i++) {
         const rates = getShopeeRates(iterPrice);
-        const newPrice = calcPrice(totalCost, recommendedMargin, rates.commission, rates.fixed + gatewayFixedFeeVal, gatewayFeeVal);
+        const newPrice = calcPrice(totalCost, targetMargin, rates.commission, rates.fixed + gatewayFixedFeeVal, gatewayFeeVal);
         if (Math.abs(newPrice - iterPrice) < 0.01) { iterPrice = newPrice; break; }
         iterPrice = newPrice;
       }
       const finalRates = getShopeeRates(iterPrice);
       if (iterPrice < 8) {
-        const denominator = 0.5 - (finalRates.commission + recommendedMargin + gatewayFeeVal) / 100;
+        const denominator = 0.5 - (finalRates.commission + targetMargin + gatewayFeeVal) / 100;
         suggestedPrice = denominator > 0 ? totalCost / denominator : iterPrice;
         fixedFee = suggestedPrice * 0.5;
       } else {
@@ -936,22 +946,22 @@ export const calculateMetrics = (
       taxDescription = `Shopee: ${realRates.commission}% comissão + R$ ${realRates.fixed.toFixed(2)} (Taxa Fixa) — Frete Grátis incluso`;
   } else if (currentMarketplace === 'tiktok') {
       const commRate = (tiktokCommVal && tiktokCommVal > 0) ? tiktokCommVal : marketplaceFee;
-      const tempPriceWithFixed = calcPrice(totalCost, recommendedMargin, commRate, 6 + gatewayFixedFeeVal, gatewayFeeVal);
+      const tempPriceWithFixed = calcPrice(totalCost, targetMargin, commRate, 6 + gatewayFixedFeeVal, gatewayFeeVal);
       
       if (tempPriceWithFixed < 50) {
           const lowTierComm = (tiktokCommVal && tiktokCommVal > 0) ? tiktokCommVal : 10;
-          suggestedPrice = calcPrice(totalCost, recommendedMargin, lowTierComm, 4 + gatewayFixedFeeVal, gatewayFeeVal);
+          suggestedPrice = calcPrice(totalCost, targetMargin, lowTierComm, 4 + gatewayFixedFeeVal, gatewayFeeVal);
           fixedFee = 4;
       } else {
           suggestedPrice = tempPriceWithFixed;
           fixedFee = 6;
       }
   } else {
-      suggestedPrice = calcPrice(totalCost, recommendedMargin, marketplaceFee, gatewayFixedFeeVal, gatewayFeeVal);
+      suggestedPrice = calcPrice(totalCost, targetMargin, marketplaceFee, gatewayFixedFeeVal, gatewayFeeVal);
       fixedFee = 0;
   }
 
-  if (markup !== 0) {
+  if (markup !== 0 && !isMarkupLow) {
       if (markup > 0) {
           suggestedPrice = totalCost * markup;
       } else {

@@ -411,7 +411,11 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
               {!hasManualPrice && (
                 <div className="mt-2.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-start sm:items-center gap-2 text-xs text-amber-200/90 font-medium">
                   <span className="text-amber-400 font-bold text-sm shrink-0">💡</span>
-                  <span>Preço calculado para sua margem ideal ({calculations.recommendedMargin}%). Para aplicar seu próprio valor, defina o <strong>Preço de venda</strong>.</span>
+                  <span>
+                    {theme.key === 'warning'
+                      ? `Preço calculado para margem mínima viável (${formatPercent(calculations.actualMargin, 0)}%). Para aplicar seu próprio valor, defina o Preço de venda.`
+                      : `Preço calculado para sua margem ideal (${calculations.recommendedMargin}%). Para aplicar seu próprio valor, defina o Preço de venda.`}
+                  </span>
                 </div>
               )}
 
