@@ -393,8 +393,14 @@ export function isOrderSettled(
   settlementDays: number = 7,
   referenceDate: Date = new Date(),
   deliveryDateStr?: string | null,
-  isLogisticsDelayed: boolean = false
+  isLogisticsDelayed: boolean = false,
+  isManuallySettled: boolean = false
 ): boolean {
+  // Se foi liquidado manualmente, liquidação está concluída
+  if (isManuallySettled) {
+    return true;
+  }
+
   // Se estiver em atraso logístico e ainda não houver data de entrega confirmada, não liquida
   if (isLogisticsDelayed && !deliveryDateStr) {
     return false;

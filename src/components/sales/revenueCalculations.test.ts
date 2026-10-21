@@ -317,6 +317,11 @@ describe('revenueCalculations', () => {
       // Delivered on 2026-10-08 + 7 days = 2026-10-15. refDate is 2026-10-12 -> not yet settled!
       expect(isOrderSettled('2026-09-12', 7, refDate, '2026-10-08', true)).toBe(false);
     });
+
+    it('settles immediately when isManuallySettled is true regardless of dates or delay', () => {
+      expect(isOrderSettled('2026-10-11', 7, refDate, null, false, true)).toBe(true);
+      expect(isOrderSettled('2026-10-11', 7, refDate, null, true, true)).toBe(true);
+    });
   });
 
   describe('delivery and settlement date helpers', () => {

@@ -226,13 +226,14 @@ export default function RepasePage() {
               const profitResult = calcOrderProfit(o, mkt, hasAffiliate);
               const effectiveProfit = settledOverride !== null ? settledOverride : profitResult.realProfit;
               const rev = profitResult.precoVendaLiquidoFinal;
-              const cost = profitResult.effectiveProductCost + profitResult.subtotalMarketplace;
+              const cost = profitResult.subtotalMarketplace;
               const settled = isOrderSettled(
                 o.order_date,
                 settlementDays,
                 new Date(),
                 (o as { delivery_date?: string | null }).delivery_date,
-                (o as { is_logistics_delayed?: boolean }).is_logistics_delayed === true
+                (o as { is_logistics_delayed?: boolean }).is_logistics_delayed === true,
+                Boolean(o.is_manually_settled)
               );
 
               if (settled) {
@@ -748,9 +749,14 @@ export default function RepasePage() {
         {/* Total Settled Profit (Disponível) */}
         <div className="rounded-xl bg-zinc-900/90 border border-zinc-800 p-4 relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
-              Lucro Total Liquidado
-            </span>
+            <div>
+              <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider block">
+                Lucro Total Liquidado
+              </span>
+              <span className="text-[10px] text-zinc-500 font-normal">
+                Saldo geral acumulado
+              </span>
+            </div>
             <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
               Disponível
             </Badge>
@@ -789,9 +795,14 @@ export default function RepasePage() {
           >
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-semibold text-zinc-300 uppercase tracking-wider truncate">
-                  {b.shortName}
-                </span>
+                <div>
+                  <span className="text-[11px] font-semibold text-zinc-300 uppercase tracking-wider truncate block">
+                    {b.shortName}
+                  </span>
+                  <span className="text-[10px] text-zinc-500 font-normal">
+                    Saldo acumulado
+                  </span>
+                </div>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-bold border ${b.colorBg}`}>
                   {b.percentage.toFixed(0)}%
                 </span>
@@ -829,7 +840,7 @@ export default function RepasePage() {
             <div>
               <h2 className="text-base font-semibold text-white">Extrato Mensal de Repasses</h2>
               <p className="text-xs text-zinc-400">
-                Divisão do lucro liquidado a cada mês: 40% Alyson, 40% Jonatan e 20% Alob
+                Apuração e repasses mês a mês: 40% Alyson, 40% Jonatan e 20% Alob
               </p>
             </div>
           </div>

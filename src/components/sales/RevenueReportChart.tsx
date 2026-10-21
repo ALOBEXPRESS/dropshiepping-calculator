@@ -68,6 +68,7 @@ interface OrderDetail {
   order_date?: string | null;
   delivery_date?: string | null;
   is_logistics_delayed?: boolean;
+  is_manually_settled?: boolean;
   marketplace: string;
   marketplace_fixed_fee?: number;
   is_free_sample?: boolean;
@@ -199,6 +200,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     manualRetornoLiquido: string;
     manualDeliveryDate?: string;
     manualLogisticsDelayed?: boolean;
+    manualIsSettled?: boolean;
   };
   const orderModalStateRef = useRef<Record<string, OrderModalState>>({});
 
@@ -258,6 +260,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const manualRetornoLiquidoRef = useRef('');
   const manualDeliveryDateRef = useRef('');
   const manualLogisticsDelayedRef = useRef(false);
+  const manualIsSettledRef = useRef(false);
 
   const saveCurrentOrderModalState = useCallback(() => {
     const cur = selectedOrderRef.current;
@@ -276,6 +279,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       manualRetornoLiquido: manualRetornoLiquidoRef.current,
       manualDeliveryDate: manualDeliveryDateRef.current,
       manualLogisticsDelayed: manualLogisticsDelayedRef.current,
+      manualIsSettled: manualIsSettledRef.current,
     };
   }, []);
 
@@ -316,6 +320,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             order_date,
             delivery_date,
             is_logistics_delayed,
+            is_manually_settled,
             total_amount,
             total_cost,
             product_cost_price,
@@ -426,6 +431,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             order_date: dbOrder.order_date,
             delivery_date: (dbOrder as { delivery_date?: string | null }).delivery_date ?? null,
             is_logistics_delayed: Boolean((dbOrder as { is_logistics_delayed?: boolean }).is_logistics_delayed),
+            is_manually_settled: Boolean((dbOrder as { is_manually_settled?: boolean }).is_manually_settled),
             total_amount: Number(dbOrder.total_amount ?? 0),
             total_cost: Number(dbOrder.total_cost ?? 0),
             product_cost_price: Number(dbOrder.product_cost_price ?? 0),
@@ -565,6 +571,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     setManualOrderDate(detail.order_date ?? '');
     setManualDeliveryDate(saved?.manualDeliveryDate ?? (detail.delivery_date ?? ''));
     setManualLogisticsDelayed(saved?.manualLogisticsDelayed ?? Boolean(detail.is_logistics_delayed));
+    setManualIsSettled(saved?.manualIsSettled ?? Boolean(detail.is_manually_settled));
     setManualMarketingCost('');
     setManualCostEnabled(false);
     setManualCoupon('');
@@ -903,8 +910,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [savingDeliveryDate, setSavingDeliveryDate] = useState(false);
   const [manualLogisticsDelayed, setManualLogisticsDelayed] = useState(false);
   const [savingLogisticsDelayed, setSavingLogisticsDelayed] = useState(false);
+  const [manualIsSettled, setManualIsSettled] = useState(false);
+  const [savingManualSettled, setSavingManualSettled] = useState(false);
   manualDeliveryDateRef.current = manualDeliveryDate;
   manualLogisticsDelayedRef.current = manualLogisticsDelayed;
+  manualIsSettledRef.current = manualIsSettled;
   const chartRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef(data);
   dataRef.current = data;
@@ -2282,7 +2292,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   settlementDays1,
                   new Date(),
                   (order as { delivery_date?: string | null }).delivery_date,
-                  (order as { is_logistics_delayed?: boolean }).is_logistics_delayed === true
+                  (order as { is_logistics_delayed?: boolean }).is_logistics_delayed === true,
+                  (order as { is_manually_settled?: boolean }).is_manually_settled === true
                 );
                 const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true
                   || String(orderNumber).trim() === '208';
@@ -2858,7 +2869,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           settlementDays,
           new Date(),
           (o as { delivery_date?: string | null }).delivery_date,
-          (o as { is_logistics_delayed?: boolean }).is_logistics_delayed === true
+          (o as { is_logistics_delayed?: boolean }).is_logistics_delayed === true,
+          (o as { is_manually_settled?: boolean }).is_manually_settled === true
         );
         if (settled) {
           totalSettledProfit += effectiveProfit;
@@ -3289,7 +3301,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             settlementDays2,
             new Date(),
             (order as { delivery_date?: string | null }).delivery_date,
-            (order as { is_logistics_delayed?: boolean }).is_logistics_delayed === true
+            (order as { is_logistics_delayed?: boolean }).is_logistics_delayed === true,
+            (order as { is_manually_settled?: boolean }).is_manually_settled === true
           );
           const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true
             || String(orderNumber).trim() === '208';
@@ -3771,7 +3784,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               settlementDaysModal,
               new Date(),
               manualDeliveryDate || null,
-              manualLogisticsDelayed
+              manualLogisticsDelayed,
+              manualIsSettled
             );
 
             return (
@@ -4154,27 +4168,66 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         <span>{manualLogisticsDelayed ? 'Atraso Logístico' : 'Marcar Atraso'}</span>
                       </button>
 
+                      {/* Botão Liquidar Manualmente */}
+                      <button
+                        type="button"
+                        disabled={savingManualSettled}
+                        onClick={async () => {
+                          if (!selectedOrder?.order_id) return;
+                          const nextVal = !manualIsSettled;
+                          setSavingManualSettled(true);
+                          try {
+                            await supabase
+                              .from('orders')
+                              .update({ is_manually_settled: nextVal })
+                              .eq('id', selectedOrder.order_id);
+                            setManualIsSettled(nextVal);
+                            setSelectedOrder({ ...selectedOrder, is_manually_settled: nextVal });
+                            refetch();
+                            refetchYearly();
+                            onOrderUpdated?.();
+                            toast.success(nextVal ? 'Pedido marcado como liquidado' : 'Liquidação manual desmarcada');
+                          } catch {
+                            toast.error('Erro ao atualizar status de liquidação');
+                          } finally {
+                            setSavingManualSettled(false);
+                          }
+                        }}
+                        className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium border transition-colors cursor-pointer ${
+                          manualIsSettled
+                            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/30'
+                            : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:text-emerald-300 hover:border-emerald-500/40'
+                        }`}
+                        title={
+                          manualIsSettled
+                            ? 'Pedido liquidado manualmente. Clique para desmarcar e voltar ao cálculo automático.'
+                            : 'Liquidar pedido manualmente agora (libera o lucro imediatamente nos repasses e relatórios)'
+                        }
+                      >
+                        {savingManualSettled ? (
+                          <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                        ) : (
+                          <CheckCircle2 className={`w-3 h-3 ${manualIsSettled ? 'text-emerald-400' : 'text-zinc-500'}`} />
+                        )}
+                        <span>{manualIsSettled ? 'Liquidado' : 'Liquidar'}</span>
+                      </button>
+
                       {/* Status de liquidação */}
-                      {settlementDateModal ? (
+                      {isSettledModal ? (
                         <div
-                          className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium border ${
-                            isSettledModal
-                              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                              : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
-                          }`}
+                          className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium border bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                          title={manualIsSettled ? 'Liquidado manualmente pelo usuário' : settlementDateModal ? `Liquidação em ${settlementDaysModal} dias após entrega. Data prevista: ${formatDateBR(settlementDateModal)}` : 'Liquidado'}
+                        >
+                          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                          <span>Liquidado {manualIsSettled ? '(Manual)' : settlementDateModal ? `(${formatDateBR(settlementDateModal)})` : ''}</span>
+                        </div>
+                      ) : settlementDateModal ? (
+                        <div
+                          className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium border bg-amber-500/10 border-amber-500/30 text-amber-400"
                           title={`Liquidação em ${settlementDaysModal} dias após entrega (${formatDateBR(effectiveDeliveryDate ?? '')}). Data prevista: ${formatDateBR(settlementDateModal)}`}
                         >
-                          {isSettledModal ? (
-                            <>
-                              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                              <span>Liquidado ({formatDateBR(settlementDateModal)})</span>
-                            </>
-                          ) : (
-                            <>
-                              <Clock className="w-3 h-3 text-amber-400" />
-                              <span>Libera em {formatDateBR(settlementDateModal)}</span>
-                            </>
-                          )}
+                          <Clock className="w-3 h-3 text-amber-400" />
+                          <span>Libera em {formatDateBR(settlementDateModal)}</span>
                         </div>
                       ) : (
                         manualLogisticsDelayed && !manualDeliveryDate && (
