@@ -23,12 +23,13 @@ import Chart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
 import { useRevenueReport } from '@/hooks/sales/useRevenueReport';
 import { supabase } from '@/lib/supabase';
-import { Loader2, Trash2, Truck, CheckCircle2, Clock, ShoppingBag, AlertTriangle } from 'lucide-react';
+import { Loader2, Trash2, Truck, CheckCircle2, Clock, ShoppingBag, AlertTriangle, Link2 } from 'lucide-react';
 import type { PeriodFilter, RevenueData } from '@/types/sales';
 import { toast } from 'sonner';
 import { ReferenceService, type Marketplace } from '@/services/referenceService';
 import { AffiliateAccordion } from './AffiliateAccordion';
 import { AffiliateDetailModal } from './AffiliateDetailModal';
+import { OrderProductLinker } from './OrderProductLinker';
 import { calcOrderProfit } from '@/utils/calcOrderProfit';
 import {
   matchesOrderFilters,
@@ -143,6 +144,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [deleting, setDeleting] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
+  const [showLinkProduct, setShowLinkProduct] = useState(false);
   const [modalOrderList, setModalOrderList] = useState<string[]>([]); // ordered list of order_ids for arrow navigation
   const [modalOrderIdx, setModalOrderIdx] = useState<number>(-1);
   const [marketplaces, setMarketplaces] = useState<Marketplace[]>([]);
@@ -251,6 +253,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
     // 1. Save state of current order before switching
     saveCurrentOrderModalState();
+    setShowLinkProduct(false);
 
     const merge = mergeOrderForTooltipRef.current;
     const resolve = resolveMarketplaceConfigRef.current;
@@ -3869,11 +3872,30 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       })()}
                     </div>
 
-                    <h2 className="text-white font-semibold text-sm leading-snug mb-1.5">
-                      {hasMultipleProducts
-                        ? `${products.length} produtos — Pedido #${selectedOrder.order_number}`
-                        : (selectedOrder.product_name || 'Produto não identificado')}
-                    </h2>
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <h2 className="text-white font-semibold text-sm leading-snug">
+                        {hasMultipleProducts
+                          ? `${products.length} produtos — Pedido #${selectedOrder.order_number}`
+                          : (selectedOrder.product_name || 'Produto não identificado')}
+                      </h2>
+                      {!hasMultipleProducts && (
+                        <button
+                          type="button"
+                          onClick={() => setShowLinkProduct((prev) => !prev)}
+                          className={`text-[11px] font-semibold px-2 py-0.5 rounded flex items-center gap-1 shrink-0 transition-colors cursor-pointer border ${
+                            products.length === 0 || selectedOrder.product_name === 'Produto não vinculado'
+                              ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/40'
+                              : 'bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-300 hover:text-white border-zinc-700/60'
+                          }`}
+                          title="Vincular ou trocar o produto deste pedido"
+                        >
+                          <Link2 className="w-3 h-3 text-cyan-400" />
+                          {products.length === 0 || selectedOrder.product_name === 'Produto não vinculado'
+                            ? 'Vincular Produto'
+                            : 'Trocar Produto'}
+                        </button>
+                      )}
+                    </div>
                     <div className="flex items-center gap-2 flex-wrap">
                       {totalUnitsInOrder > 1 && (
                         <span className="text-[11px] font-bold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full">
@@ -3894,6 +3916,81 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         </span>
                       )}
                     </div>
+
+                    {/* Alerta de Produto não vinculado */}
+                    {!hasMultipleProducts && (products.length === 0 || selectedOrder.product_name === 'Produto não vinculado') && !showLinkProduct && (
+                      <div className="mt-2.5 p-2.5 bg-amber-950/30 border border-amber-600/30 rounded-lg flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                          <span className="text-xs text-amber-200 font-medium truncate">
+                            Este pedido ainda não possui um produto vinculado.
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowLinkProduct(true)}
+                          className="bg-amber-500 hover:bg-amber-400 text-black text-xs h-7 px-3 font-bold rounded flex items-center gap-1.5 shrink-0 shadow-sm cursor-pointer transition-colors"
+                        >
+                          <Link2 className="w-3.5 h-3.5" />
+                          Vincular Agora
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Painel de busca e vinculação de produto */}
+                    {!hasMultipleProducts && showLinkProduct && (
+                      <div className="mt-2.5">
+                        <OrderProductLinker
+                          orderId={selectedOrder.order_id}
+                          orderNumber={String(selectedOrder.order_number)}
+                          blingOrderId={selectedOrder.bling_order_id}
+                          totalAmount={selectedOrder.total_amount}
+                          marketplace={selectedOrder.marketplace}
+                          organizationId={organizationId}
+                          currentProductName={selectedOrder.product_name}
+                          onProductLinked={(result) => {
+                            setSelectedOrder((prev) => {
+                              if (!prev) return null;
+                              return {
+                                ...prev,
+                                product_name: result.productName,
+                                product_sku: result.productSku,
+                                product_image_url: result.productImageUrl || undefined,
+                                total_cost: result.totalCost,
+                                products: [
+                                  {
+                                    id: result.productId,
+                                    name: result.productName,
+                                    sku: result.productSku,
+                                    image_url: result.productImageUrl || undefined,
+                                    quantity: 1,
+                                    unit_price: prev.total_amount,
+                                    unit_cost: result.unitCost,
+                                    supplier_fee_value:
+                                      result.supplierFeeValue !== null && result.supplierFeeValue !== undefined
+                                        ? String(result.supplierFeeValue)
+                                        : undefined,
+                                    supplier_fee_type: result.supplierFeeType || undefined,
+                                    supplier_gateway_fee_value:
+                                      result.supplierGatewayFeeValue !== null && result.supplierGatewayFeeValue !== undefined
+                                        ? String(result.supplierGatewayFeeValue)
+                                        : undefined,
+                                    supplier_gateway_fee_type: result.supplierGatewayFeeType || undefined,
+                                  },
+                                ],
+                              };
+                            });
+                            setManualCostOverrides({});
+                            setManualTotalProductCost('');
+                            setShowLinkProduct(false);
+                            if (onOrderUpdated) {
+                              onOrderUpdated();
+                            }
+                          }}
+                          onCancel={() => setShowLinkProduct(false)}
+                        />
+                      </div>
+                    )}
                     {/* Linha de Datas: Pedido e Entrega / Liquidação */}
                     <div className="flex items-center gap-2 mt-2 flex-wrap text-[11px]">
                       {/* Data do pedido */}

@@ -26,3 +26,4 @@ export { GenderClassificationJobButton } from './GenderClassificationJobButton';
 export { GenderLeadsList } from './GenderLeadsList';
 export { GenderClassificationFunnel } from './GenderClassificationFunnel';
 export { AffiliateCommissionChart } from './AffiliateCommissionChart';
+export { OrderProductLinker } from './OrderProductLinker';
