@@ -161,10 +161,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             state: formData.state,
             zip: formData.zip,
             address: formData.address,
-            working_capital: parseFloat(formData.working_capital) || 0,
-            emergency_reserve: parseFloat(formData.emergency_reserve) || 0,
-            capital_marketing: parseFloat(formData.capital_marketing) || 0,
-            gross_investment: parseFloat(formData.gross_investment) || 0
+            working_capital: parseFloat(String(formData.working_capital || '0').replace(',', '.')) || 0,
+            emergency_reserve: parseFloat(String(formData.emergency_reserve || '0').replace(',', '.')) || 0,
+            capital_marketing: parseFloat(String(formData.capital_marketing || '0').replace(',', '.')) || 0,
+            gross_investment: parseFloat(String(formData.gross_investment || '0').replace(',', '.')) || 0
           })
           .eq('id', formData.id);
 
@@ -182,10 +182,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             state: formData.state,
             zip: formData.zip,
             address: formData.address,
-            working_capital: parseFloat(formData.working_capital) || 0,
-            emergency_reserve: parseFloat(formData.emergency_reserve) || 0,
-            capital_marketing: parseFloat(formData.capital_marketing) || 0,
-            gross_investment: parseFloat(formData.gross_investment) || 0
+            working_capital: parseFloat(String(formData.working_capital || '0').replace(',', '.')) || 0,
+            emergency_reserve: parseFloat(String(formData.emergency_reserve || '0').replace(',', '.')) || 0,
+            capital_marketing: parseFloat(String(formData.capital_marketing || '0').replace(',', '.')) || 0,
+            gross_investment: parseFloat(String(formData.gross_investment || '0').replace(',', '.')) || 0
           })
           .select()
           .single();
@@ -585,10 +585,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               <Label htmlFor="grossInvestment">Investimento Bruto (R$)</Label>
               <Input 
                 id="grossInvestment" 
-                type="number" 
+                type="text"
+                inputMode="decimal"
                 value={formData.gross_investment}
                 onChange={(e) => handleChange('gross_investment', e.target.value)}
-                placeholder="0.00" 
+                placeholder="0,00" 
                 className="bg-gray-50 dark:bg-zinc-800" 
               />
             </div>

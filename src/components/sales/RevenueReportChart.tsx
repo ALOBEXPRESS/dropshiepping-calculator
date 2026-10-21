@@ -22,6 +22,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import Chart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
 import { useRevenueReport } from '@/hooks/sales/useRevenueReport';
+import { useSettings } from '@/contexts/SettingsContext';
 import { supabase } from '@/lib/supabase';
 import { Loader2, Trash2, Truck, CheckCircle2, Clock, ShoppingBag, AlertTriangle, Link2 } from 'lucide-react';
 import type { PeriodFilter, RevenueData } from '@/types/sales';
@@ -152,6 +153,36 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [affiliateByOrderId, setAffiliateByOrderId] = useState<Record<string, boolean>>({});
   const affiliateByOrderIdRef = useRef<Record<string, boolean>>({});
   affiliateByOrderIdRef.current = affiliateByOrderId;
+
+  const { grossInvestment: contextGrossInvestment } = useSettings();
+  const [dbGrossInvestment, setDbGrossInvestment] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!organizationId) return;
+    let isMounted = true;
+    const fetchOrgGrossInvestment = async () => {
+      try {
+        const { data } = await supabase
+          .from('organizations')
+          .select('gross_investment')
+          .eq('id', organizationId)
+          .maybeSingle();
+        if (isMounted && data && data.gross_investment != null) {
+          setDbGrossInvestment(Number(data.gross_investment));
+        }
+      } catch (err) {
+        console.warn('Erro ao carregar gross_investment da organização:', err);
+      }
+    };
+    fetchOrgGrossInvestment();
+    return () => {
+      isMounted = false;
+    };
+  }, [organizationId, refreshTrigger]);
+
+  const effectiveGrossInvestment = dbGrossInvestment !== null
+    ? dbGrossInvestment
+    : (Number(String(contextGrossInvestment || '0').replace(',', '.')) || 0);
 
   // Persist modal state per order_id (discount, acrescimo, supplier fee, reembolso)
   type OrderModalState = {
@@ -2813,17 +2844,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         // Marketing cost para exibição no painel de totais (keyed by order_id)
         const orderMarketingCost = (marketingCostByProductId as unknown as Record<string, number>)[`order:${o.order_id}`] ?? 0;
 
-        // Custo total do pedido: Produto + Marketplace
-        // Compra pessoal: não considera custo do produto
+        // Custo do pedido para relatório: Custo total dos marketplaces para cada pedido
         // Reembolso: não considera taxa do marketplace (TikTok reembolsou)
-        const isPersonal = (o as { is_personal_purchase?: boolean }).is_personal_purchase === true
-          || String((o as { order_number?: string | number }).order_number ?? '').trim() === '208';
         const isRefunded = hasReembolsoOverride
           || hasRetornoLiquido
           || String((o as { order_number?: string | number }).order_number ?? '').trim() === '15';
-        const effectiveProductCost = isPersonal ? 0 : totalProductCost;
         const effectiveMarketplaceCost = isRefunded ? 0 : subtotalMarketplace;
-        const realCost = effectiveProductCost + effectiveMarketplaceCost;
+        const realCost = effectiveMarketplaceCost;
 
         const settlementDays = Number(cfg?.settlement_period_days ?? 7);
         const settled = isOrderSettled(
@@ -2927,10 +2954,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     return source.reduce((sum, item) => sum + Number(item.total_cost ?? 0), 0);
   }, [recalculatedYearlyData, recalculatedData]);
 
-  // Lucro bruto: diferença entre (Lucro Total + Lucro em espera) e Custo Total
+  // Lucro bruto: Lucro (Lucro Total + Lucro em espera) - Investimento Bruto
   const allDataGrossProfit = useMemo(() => {
-    return round2((allDataSettledProfit + allDataWaitingProfit) - allDataTotalCost);
-  }, [allDataSettledProfit, allDataWaitingProfit, allDataTotalCost]);
+    return round2((allDataSettledProfit + allDataWaitingProfit) - effectiveGrossInvestment);
+  }, [allDataSettledProfit, allDataWaitingProfit, effectiveGrossInvestment]);
 
   const marketingCostSeriesData = visibleData.map((periodData) => {
     const periodMarketingCost = (periodData.orders_data ?? []).reduce((sum: number, order: unknown) => {
@@ -5745,7 +5772,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               <p className="text-xs text-gray-500 dark:text-gray-400">Lucro Bruto</p>
               <p 
                 className={`text-xl font-bold ${allDataGrossProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                title={`Diferença entre (Lucro Total + Lucro em espera) e Custo Total: ${formatCurrency(allDataGrossProfit)}`}
+                title={`Lucro Total + Lucro em espera (${formatCurrency(allDataSettledProfit + allDataWaitingProfit)}) - Investimento Bruto (${formatCurrency(effectiveGrossInvestment)}): ${formatCurrency(allDataGrossProfit)}`}
               >
                 {formatCurrency(allDataGrossProfit)}
               </p>
