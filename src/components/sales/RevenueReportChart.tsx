@@ -2525,13 +2525,27 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   (order as { is_logistics_delayed?: boolean }).is_logistics_delayed === true,
                   (order as { is_manually_settled?: boolean }).is_manually_settled === true
                 );
+                const isTikTok1 = marketplaceName.toLowerCase().includes('tiktok') || rawMarketplace.toLowerCase().includes('tiktok');
+                const isReplicaUnblocked1 = Boolean((order as { is_replica_unblocked?: boolean }).is_replica_unblocked || replicaUnblockedOrderIds.has(orderId1));
+                const isOrderReplica1 = Boolean(
+                  (order as { is_replica?: boolean }).is_replica ||
+                  (mergedOrder.products && mergedOrder.products.some((p: { is_replica?: boolean; product_id?: string; name?: string }) =>
+                    p.is_replica || (p.product_id && replicaProductIds.has(p.product_id)) || (p.name && replicaProductNames.has(p.name.trim().toLowerCase()))
+                  )) ||
+                  ((order as { product_id?: string }).product_id && replicaProductIds.has((order as { product_id?: string }).product_id!)) ||
+                  ((order as { product_name?: string }).product_name && replicaProductNames.has((order as { product_name?: string }).product_name!.trim().toLowerCase()))
+                );
+                const hasAnyReplica1 = replicaProductIds.size > 0 || replicaProductNames.size > 0 || isOrderReplica1;
+                const isReplicaBlocked1 = hasAnyReplica1 && isTikTok1 && !isSettled1 && !isReplicaUnblocked1;
                 const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true
                   || String(orderNumber).trim() === '208';
-                const profitLabel = realProfit >= 0 ? 'Lucro:' : 'Prejuízo:';
-                const profitValue = realProfit >= 0
+                const profitLabel = isReplicaBlocked1 ? 'Pausado:' : realProfit >= 0 ? 'Lucro:' : 'Prejuízo:';
+                const profitValue = isReplicaBlocked1
+                  ? `<span style="text-decoration:line-through;opacity:0.65">${formatCurrency(realProfit)}</span>`
+                  : realProfit >= 0
                   ? formatCurrency(realProfit)
                   : `- ${formatCurrency(Math.abs(realProfit))}`;
-                const profitColor = isPersonalPurchase ? '#fed7aa' : isFreeSample ? '#e9d5ff' : (realProfit >= 0 ? '#16a34a' : '#dc2626');
+                const profitColor = isReplicaBlocked1 ? '#f87171' : isPersonalPurchase ? '#fed7aa' : isFreeSample ? '#e9d5ff' : (realProfit >= 0 ? '#16a34a' : '#dc2626');
 
                 const textPrimary = isPersonalPurchase ? '#fff7ed' : isFreeSample ? '#f3e8ff' : '#374151';
                 const textSecondary = isPersonalPurchase ? '#fdba74' : isFreeSample ? '#d8b4fe' : '#6b7280';
@@ -2617,7 +2631,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                     <div style="display:flex;align-items:center;gap:4px;">
                       <span style="color:${textSecondary};font-weight:600">${profitLabel}</span>
                       ${!isSettled1
-                        ? `<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:rgba(245,158,11,0.15);color:#f59e0b;font-weight:700;border:1px solid rgba(245,158,11,0.3);" title="Aguardando liquidação (${settlementDays1}d)">Em espera</span>`
+                        ? isReplicaBlocked1
+                          ? `<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:rgba(239,68,68,0.15);color:#ef4444;font-weight:700;border:1px solid rgba(239,68,68,0.3);" title="Repasse pausado: produto réplica ativo no TikTok">Repasse Pausado (Réplica)</span>`
+                          : `<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:rgba(245,158,11,0.15);color:#f59e0b;font-weight:700;border:1px solid rgba(245,158,11,0.3);" title="Aguardando liquidação (${settlementDays1}d)">Em espera</span>`
                         : `<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:rgba(34,197,94,0.15);color:#22c55e;font-weight:700;border:1px solid rgba(34,197,94,0.3);">Liquidado</span>`
                       }
                     </div>
@@ -3121,7 +3137,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           replicaUnblockedOrderIds.has(o.order_id)
         );
 
-        const isReplicaBlocked = isOrderReplica && isTikTok && !settled && !isReplicaUnblocked;
+        const hasActiveReplica = replicaProductIds.size > 0 || replicaProductNames.size > 0 || isOrderReplica;
+        const isReplicaBlocked = hasActiveReplica && isTikTok && !settled && !isReplicaUnblocked;
 
         if (settled) {
           totalSettledProfit += effectiveProfit;
@@ -3564,11 +3581,25 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             (order as { is_logistics_delayed?: boolean }).is_logistics_delayed === true,
             (order as { is_manually_settled?: boolean }).is_manually_settled === true
           );
+          const isTikTok2 = marketplaceName.toLowerCase().includes('tiktok') || rawMarketplace.toLowerCase().includes('tiktok');
+          const isReplicaUnblocked2 = Boolean((order as { is_replica_unblocked?: boolean }).is_replica_unblocked || replicaUnblockedOrderIds.has(order.order_id));
+          const isOrderReplica2 = Boolean(
+            (order as { is_replica?: boolean }).is_replica ||
+            (mergedOrder.products && mergedOrder.products.some((p: { is_replica?: boolean; product_id?: string; name?: string }) =>
+              p.is_replica || (p.product_id && replicaProductIds.has(p.product_id)) || (p.name && replicaProductNames.has(p.name.trim().toLowerCase()))
+            )) ||
+            ((order as { product_id?: string }).product_id && replicaProductIds.has((order as { product_id?: string }).product_id!)) ||
+            ((order as { product_name?: string }).product_name && replicaProductNames.has((order as { product_name?: string }).product_name!.trim().toLowerCase()))
+          );
+          const hasAnyReplica2 = replicaProductIds.size > 0 || replicaProductNames.size > 0 || isOrderReplica2;
+          const isReplicaBlocked2 = hasAnyReplica2 && isTikTok2 && !isSettled2 && !isReplicaUnblocked2;
           const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true
             || String(orderNumber).trim() === '208';
-          const profitColor = isPersonalPurchase ? '#fed7aa' : isFreeSample ? '#e9d5ff' : (realProfit >= 0 ? '#16a34a' : '#dc2626');
-          const profitLabel = realProfit >= 0 ? 'Lucro:' : 'Prejuízo:';
-          const profitValue = realProfit >= 0
+          const profitColor = isReplicaBlocked2 ? '#f87171' : isPersonalPurchase ? '#fed7aa' : isFreeSample ? '#e9d5ff' : (realProfit >= 0 ? '#16a34a' : '#dc2626');
+          const profitLabel = isReplicaBlocked2 ? 'Pausado:' : realProfit >= 0 ? 'Lucro:' : 'Prejuízo:';
+          const profitValue = isReplicaBlocked2
+            ? `<span style="text-decoration:line-through;opacity:0.65">${formatCurrency(realProfit)}</span>`
+            : realProfit >= 0
             ? formatCurrency(realProfit)
             : `- ${formatCurrency(Math.abs(realProfit))}`;
 
@@ -3697,7 +3728,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 <div style="display:flex;align-items:center;gap:4px;">
                   <span style="color:${textSecondary};font-weight:600">${profitLabel}</span>
                   ${!isSettled2
-                    ? `<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:rgba(245,158,11,0.15);color:#f59e0b;font-weight:700;border:1px solid rgba(245,158,11,0.3);" title="Aguardando liquidação (${settlementDays2}d)">Em espera</span>`
+                    ? isReplicaBlocked2
+                      ? `<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:rgba(239,68,68,0.15);color:#ef4444;font-weight:700;border:1px solid rgba(239,68,68,0.3);" title="Repasse pausado: produto réplica ativo no TikTok">Repasse Pausado (Réplica)</span>`
+                      : `<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:rgba(245,158,11,0.15);color:#f59e0b;font-weight:700;border:1px solid rgba(245,158,11,0.3);" title="Aguardando liquidação (${settlementDays2}d)">Em espera</span>`
                     : `<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:rgba(34,197,94,0.15);color:#22c55e;font-weight:700;border:1px solid rgba(34,197,94,0.3);">Liquidado</span>`
                   }
                 </div>
@@ -4164,7 +4197,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               manualIsSettled
             );
             const isTikTokModal = isTikTok || resolvedMarketplaceName.toLowerCase().includes('tiktok');
-            const isReplicaBlockedModal = isProductReplica && isTikTokModal && !isSettledModal && !manualIsReplicaUnblocked;
+            const hasActiveReplicaModal = isProductReplica || replicaProductIds.size > 0 || replicaProductNames.size > 0;
+            const isReplicaBlockedModal = hasActiveReplicaModal && isTikTokModal && !isSettledModal && !manualIsReplicaUnblocked;
 
             return (
               <div className="flex flex-col bg-zinc-950 rounded-2xl overflow-hidden max-h-[88vh]">
@@ -4363,16 +4397,20 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                     </div>
 
                     {/* Alerta de Produto réplica ativo */}
-                    {isProductReplica && (
+                    {hasActiveReplicaModal && (
                       <div className="mt-2 p-2 bg-red-950/30 border border-red-500/30 rounded-lg flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">
                           <ShieldAlert className="w-4 h-4 text-red-400 shrink-0" />
                           <span className="text-xs text-red-200 font-medium">
                             {isTikTokModal && !isSettledModal
                               ? manualIsReplicaUnblocked
-                                ? 'Produto réplica ativo. Este pedido foi desbloqueado manualmente para processar o lucro.'
-                                : 'Produto réplica ativo. Pedidos em espera deste produto no TikTok estão pausados sem processar lucro.'
-                              : 'Produto réplica ativo no catálogo.'}
+                                ? 'Repasse desbloqueado manualmente para processar o lucro deste pedido.'
+                                : isProductReplica
+                                  ? 'Produto réplica ativo. Pedidos em espera no TikTok estão pausados sem processar lucro.'
+                                  : 'Conta TikTok com repasses pausados por produto réplica ativo na loja. Você pode desbloquear este pedido manualmente no botão abaixo.'
+                              : isProductReplica
+                                ? 'Produto réplica ativo no catálogo.'
+                                : 'Produto réplica ativo na loja.'}
                           </span>
                         </div>
                       </div>
@@ -4632,8 +4670,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         <span>{manualIsSettled ? 'Liquidado' : 'Liquidar'}</span>
                       </button>
 
-                      {/* Botão Desbloquear Pedido Réplica (se for TikTok e produto réplica e ainda em espera) */}
-                      {isTikTokModal && isProductReplica && !isSettledModal && (
+                      {/* Botão Desbloquear Pedido Réplica (se for TikTok e houver réplica ativa na loja e ainda em espera) */}
+                      {isTikTokModal && hasActiveReplicaModal && !isSettledModal && (
                         <button
                           type="button"
                           disabled={savingReplicaUnblock}
@@ -4646,7 +4684,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           title={
                             manualIsReplicaUnblocked
                               ? 'Pedido desbloqueado manualmente: lucro está sendo processado. Clique para voltar a bloquear.'
-                              : 'Pedido com produto réplica pausado no TikTok. Clique para desbloquear este pedido específico.'
+                              : 'Pedido pausado no TikTok devido a produto réplica ativo na conta. Clique para desbloquear este pedido específico.'
                           }
                         >
                           {savingReplicaUnblock ? (
