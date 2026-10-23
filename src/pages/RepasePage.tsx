@@ -242,7 +242,8 @@ export default function RepasePage() {
               const hasAffiliate = Boolean(o.affiliate_id);
               const profitResult = calcOrderProfit(o, mkt, hasAffiliate);
               const isWaitingRefund = Boolean(o.aguardando_reembolso);
-              const effectiveProfit = isWaitingRefund ? 0 : (settledOverride !== null ? settledOverride : profitResult.realProfit);
+              const savedProfit = o.total_profit != null && !isNaN(Number(o.total_profit)) ? Number(o.total_profit) : null;
+              const effectiveProfit = isWaitingRefund ? 0 : (settledOverride !== null ? settledOverride : (savedProfit !== null ? savedProfit : profitResult.realProfit));
               const rev = profitResult.precoVendaLiquidoFinal;
               const cost = profitResult.subtotalMarketplace;
               const settled = isOrderSettled(

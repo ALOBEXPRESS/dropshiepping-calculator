@@ -1116,6 +1116,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       ...enrichment,
       products: mergedProducts,
       total_cost: mergedTotalCost,
+      manual_product_cost: mergedTotalCost > 0 ? mergedTotalCost : undefined,
       product_cost_price: mergedProductCostPrice,
       tiktok_retorno_liquido: (enrichment.tiktok_retorno_liquido != null && Number(enrichment.tiktok_retorno_liquido) > 0)
         ? Number(enrichment.tiktok_retorno_liquido)
@@ -2547,7 +2548,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 const hasReembolsoOv1 = orderId1 in reembolsoByOrderIdRef.current;
                 const rawReembolso1 = (order as { reembolso_value?: number | null }).reembolso_value;
                 const reembolsoOv1 = hasReembolsoOv1 ? reembolsoByOrderIdRef.current[orderId1] : (rawReembolso1 != null ? Number(rawReembolso1) : null);
-                const fallbackRealProfit1 = reembolsoOv1 !== null && !isNaN(reembolsoOv1)
+                const savedProfit1 = (mergedOrder as { total_profit?: number | null }).total_profit;
+                const fallbackRealProfit1 = (savedProfit1 != null && !isNaN(Number(savedProfit1)))
+                  ? (Number(savedProfit1) - manualMktDeduct1)
+                  : reembolsoOv1 !== null && !isNaN(reembolsoOv1)
                   ? (reembolsoOv1 - tpc1 - manualMktDeduct1)
                   : (rawRealProfit - manualMktDeduct1);
                 const settledTooltip1 = !hasReembolsoOv1 ? getSettledOrderProfit(orderNumber) : null;
@@ -3179,7 +3183,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const totalMktCost = manualMarketingCostByOrderId[o.order_id] ?? 0;
         const hasManualModalEdit = Boolean(o.order_id && o.order_id in reembolsoByOrderId);
         const settledProfit = !hasManualModalEdit ? getSettledOrderProfit(o.order_number) : null;
-        const fallbackEffectiveProfit = hasReembolsoOverride && reembolsoOverride !== null && !isNaN(reembolsoOverride)
+        const savedProfit0 = (mergedOrder as { total_profit?: number | null }).total_profit;
+        const fallbackEffectiveProfit = (savedProfit0 != null && !isNaN(Number(savedProfit0)))
+          ? (Number(savedProfit0) - totalMktCost)
+          : hasReembolsoOverride && reembolsoOverride !== null && !isNaN(reembolsoOverride)
           ? (reembolsoOverride - totalProductCost - totalMktCost)
           : (realProfit - totalMktCost);
         const isWaitingRefund = Boolean((mergedOrder as { aguardando_reembolso?: boolean }).aguardando_reembolso);
@@ -3671,7 +3678,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           const hasReembolsoOv2 = !hasRetornoLiquido2 && (order.order_id in reembolsoByOrderIdRef.current);
           const rawReembolso2 = (mergedOrder as { reembolso_value?: number | null }).reembolso_value ?? (order as { reembolso_value?: number | null }).reembolso_value;
           const reembolsoOv2 = hasReembolsoOv2 ? reembolsoByOrderIdRef.current[order.order_id] : (!hasRetornoLiquido2 && rawReembolso2 != null ? Number(rawReembolso2) : null);
-          const fallbackRealProfit2 = reembolsoOv2 !== null && !isNaN(reembolsoOv2)
+          const savedProfit2 = (mergedOrder as { total_profit?: number | null }).total_profit;
+          const fallbackRealProfit2 = (savedProfit2 != null && !isNaN(Number(savedProfit2)))
+            ? (Number(savedProfit2) - manualMktDeduct2)
+            : reembolsoOv2 !== null && !isNaN(reembolsoOv2)
             ? (reembolsoOv2 - tpc2 - manualMktDeduct2)
             : (rawRealProfit2 - manualMktDeduct2);
           const settledTooltip2 = !hasReembolsoOv2 ? getSettledOrderProfit(orderNumber) : null;

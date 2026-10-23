@@ -28,6 +28,8 @@ export interface OrderProfitInput {
   reembolso_marketplace_enabled?: boolean;
   reembolso_fornecedor_enabled?: boolean;
   manual_product_cost?: number | string | null;
+  total_cost?: number | string | null;
+  total_profit?: number | string | null;
   is_free_sample?: boolean | string;
   is_personal_purchase?: boolean | string;
   aguardando_reembolso?: boolean | string | null;
@@ -105,6 +107,8 @@ export function calcOrderProfit(
   
   const manualProductCost = order.manual_product_cost != null && !isNaN(Number(order.manual_product_cost))
     ? Number(order.manual_product_cost)
+    : order.total_cost != null && !isNaN(Number(order.total_cost)) && Number(order.total_cost) > 0
+    ? Number(order.total_cost)
     : null;
 
   const totalProductCost = manualProductCost !== null
