@@ -65,6 +65,7 @@ interface Transaction {
   total_profit: number;
   status: string;
   order_date: string;
+  is_repasse_bloqueado?: boolean;
 }
 
 interface AffEntry {
@@ -208,6 +209,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
                 reembolso_fornecedor_value,
                 is_free_sample,
                 is_personal_purchase,
+                is_repasse_bloqueado,
                 marketplace_id,
                 sales_channel_id,
                 affiliate_id,
@@ -329,6 +331,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             reembolso_fornecedor_value?: number | null;
             is_free_sample?: boolean | string;
             is_personal_purchase?: boolean | string;
+            is_repasse_bloqueado?: boolean | null;
             marketplace_id?: string;
             sales_channel_id?: string;
             affiliate_id?: string | null;
@@ -498,6 +501,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
               ...tx,
               marketplace_name: mpName || (tx as unknown as { marketplaces?: { name?: string } }).marketplaces?.name || null,
               total_profit: Math.round(computedProfit * 100) / 100,
+              is_repasse_bloqueado: Boolean(dbOrder.is_repasse_bloqueado),
             };
           });
         } catch (enrichErr) {
@@ -583,6 +587,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
                       : (PAYMENT_CONFIG[tx.payment_method] ?? PAYMENT_CONFIG.other);
                     const profit = Number(tx.total_profit ?? tx.total_amount ?? 0);
                     const positive = profit >= 0 && tx.status !== 'cancelled';
+                    const isRepasseBloqueado = Boolean(tx.is_repasse_bloqueado);
                     return (
                       <div
                         key={tx.id}
@@ -595,7 +600,16 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
                           <p className="text-[11px] text-muted-foreground truncate">{formatName(tx.customer_name)}</p>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <p className={`text-sm font-semibold ${positive ? 'text-green-500' : 'text-red-500'}`}>
+                          <p
+                            className={`text-sm font-semibold tabular-nums ${
+                              isRepasseBloqueado
+                                ? 'line-through text-red-500 decoration-red-500 decoration-2'
+                                : positive
+                                ? 'text-green-500'
+                                : 'text-red-500'
+                            }`}
+                            title={isRepasseBloqueado ? 'A plataforma não irá efetuar o repasse até que a conta seja reativada novamente' : undefined}
+                          >
                             {positive ? '+' : '-'}{formatCurrency(Math.abs(profit))}
                           </p>
                           <Badge variant="outline" className="text-[9px] px-1 py-0 mt-0.5">#{tx.order_number}</Badge>

@@ -43,6 +43,7 @@ interface Transaction {
   customer_name: string;
   status: string;
   product_names: string[];
+  is_repasse_bloqueado?: boolean;
 }
 
 const PAGE_SIZE = 6;
@@ -188,6 +189,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
             other_expenses,
             is_free_sample,
             is_personal_purchase,
+            is_repasse_bloqueado,
             affiliate_id,
             marketplace_id,
             sales_channel_id,
@@ -390,6 +392,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
             customer_name: customerName,
             status: order.status,
             product_names: productNamesList,
+            is_repasse_bloqueado: Boolean((order as { is_repasse_bloqueado?: boolean }).is_repasse_bloqueado),
           };
         });
 
@@ -674,7 +677,16 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
 
                 <div className="text-left sm:text-right flex-shrink-0 pl-14 sm:pl-0">
                   <div className="flex items-center sm:justify-end gap-2">
-                    <p className={`text-base font-bold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                    <p
+                      className={`text-base font-bold tabular-nums ${
+                        transaction.is_repasse_bloqueado
+                          ? 'line-through text-red-500 decoration-red-500 decoration-2'
+                          : isPositive
+                          ? 'text-green-500'
+                          : 'text-red-500'
+                      }`}
+                      title={transaction.is_repasse_bloqueado ? 'A plataforma não irá efetuar o repasse até que a conta seja reativada novamente' : undefined}
+                    >
                       {isPositive ? '+' : '-'}{formatCurrency(Math.abs(profit))}
                     </p>
                     <span className="text-[10px] text-muted-foreground bg-zinc-800/60 px-1.5 py-0.5 rounded border border-zinc-700/40">
