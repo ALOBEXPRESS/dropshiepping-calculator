@@ -2956,6 +2956,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               ...prod,
               quantity: qOv !== undefined ? qOv : prod.quantity,
               unit_cost: uCost,
+              ...(gatewayFee !== '' ? { supplier_gateway_fee_value: String(parseBRLFloat(gatewayFee)) } : {}),
+              ...(supplierFeePercent !== '' ? { supplier_fee_value: String(parseFloat(supplierFeePercent.replace(',', '.')) || 0) } : {}),
             };
           });
           return {
@@ -2983,6 +2985,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 ...prod,
                 quantity: qOv !== undefined ? qOv : prod.quantity,
                 unit_cost: uCost,
+                ...(gatewayFee !== '' ? { supplier_gateway_fee_value: String(parseBRLFloat(gatewayFee)) } : {}),
+                ...(supplierFeePercent !== '' ? { supplier_fee_value: String(parseFloat(supplierFeePercent.replace(',', '.')) || 0) } : {}),
               };
             }),
           };
@@ -5323,14 +5327,24 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             <div className="flex items-center justify-between gap-3">
                               <span className="text-xs text-zinc-400 shrink-0">Taxa de transação (Dogama)</span>
                               <div className="flex items-center gap-2">
+                                {manualGatewayFee !== '0' && orderGatewayFee > 0 && (
+                                  <button
+                                    type="button"
+                                    disabled={hasManualTotalCost}
+                                    onClick={() => setManualGatewayFee('0')}
+                                    className="text-[10px] text-zinc-400 hover:text-red-400 transition-colors px-1 py-0.5 rounded border border-zinc-700/60 bg-zinc-800/80 hover:border-red-500/50 disabled:opacity-50"
+                                    title="Zerar taxa de transação Dogama"
+                                  >
+                                    Zerar
+                                  </button>
+                                )}
                                 <input
                                   type="text"
                                   inputMode="decimal"
                                   disabled={hasManualTotalCost}
                                   placeholder={String(productGatewayFee)}
                                   value={manualGatewayFee}
-                                  onChange={(e) => setManualGatewayFee(formatCurrencyInputOnChange(e.target.value))}
-                                  onBlur={() => setManualGatewayFee(formatBRLInputOnBlur(manualGatewayFee))}
+                                  onChange={(e) => setManualGatewayFee(e.target.value.replace(/[^0-9,.]/g, ''))}
                                   className="w-14 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 tabular-nums text-right disabled:opacity-50"
                                 />
                                 <span className={`text-xs font-semibold tabular-nums ${hasManualTotalCost ? 'text-zinc-500 line-through' : 'text-red-400'}`}>
