@@ -2572,7 +2572,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   ((order as { product_id?: string }).product_id && replicaProductIds.has((order as { product_id?: string }).product_id!)) ||
                   ((order as { product_name?: string }).product_name && replicaProductNames.has((order as { product_name?: string }).product_name!.trim().toLowerCase()))
                 );
-                const hasAnyReplica1 = replicaProductIds.size > 0 || replicaProductNames.size > 0 || isOrderReplica1;
+                const hasAnyReplica1 = isOrderReplica1;
                 const isReplicaBlocked1 = hasAnyReplica1 && isTikTok1 && !isSettled1 && !isReplicaUnblocked1;
                 const isAnyBlocked1 = isRepasseBloqueado1 || isReplicaBlocked1;
                 const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true
@@ -3183,7 +3183,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           replicaUnblockedOrderIds.has(o.order_id)
         );
 
-        const hasActiveReplica = replicaProductIds.size > 0 || replicaProductNames.size > 0 || isOrderReplica;
+        const hasActiveReplica = isOrderReplica;
         const isReplicaWaitingBlocked = hasActiveReplica && isTikTok && !settled && !isReplicaUnblocked;
         const isAnyRepasseBlocked = isRepasseBloqueado || isReplicaWaitingBlocked;
 
@@ -3641,7 +3641,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             ((order as { product_id?: string }).product_id && replicaProductIds.has((order as { product_id?: string }).product_id!)) ||
             ((order as { product_name?: string }).product_name && replicaProductNames.has((order as { product_name?: string }).product_name!.trim().toLowerCase()))
           );
-          const hasAnyReplica2 = replicaProductIds.size > 0 || replicaProductNames.size > 0 || isOrderReplica2;
+          const hasAnyReplica2 = isOrderReplica2;
           const isReplicaBlocked2 = hasAnyReplica2 && isTikTok2 && !isSettled2 && !isReplicaUnblocked2;
           const isAnyBlocked2 = isRepasseBloqueado2 || isReplicaBlocked2;
           const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true
@@ -4288,7 +4288,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               manualIsSettled
             );
             const isTikTokModal = isTikTok || resolvedMarketplaceName.toLowerCase().includes('tiktok');
-            const hasActiveReplicaModal = isProductReplica || replicaProductIds.size > 0 || replicaProductNames.size > 0;
+            const hasActiveReplicaModal = isProductReplica;
             const isReplicaBlockedModal = hasActiveReplicaModal && isTikTokModal && !isSettledModal && !manualIsReplicaUnblocked;
 
             return (
@@ -4496,12 +4496,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             {isTikTokModal && !isSettledModal
                               ? manualIsReplicaUnblocked
                                 ? 'Repasse desbloqueado manualmente para processar o lucro deste pedido.'
-                                : isProductReplica
-                                  ? 'Produto réplica ativo. Pedidos em espera no TikTok estão pausados sem processar lucro.'
-                                  : 'Loja desativada por violar política do tiktok.'
-                              : isProductReplica
-                                ? 'Produto réplica ativo no catálogo.'
-                                : 'Loja desativada por violar política do tiktok.'}
+                                : 'Produto réplica ativo. Pedidos em espera deste produto estão pausados sem processar lucro.'
+                              : 'Produto réplica ativo no catálogo.'}
                           </span>
                         </div>
                       </div>

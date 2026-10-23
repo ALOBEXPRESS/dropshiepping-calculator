@@ -15,7 +15,7 @@ import { InfraMapLegend } from '@/components/infra-map/InfraMapLegend';
 import { NodeContextMenu } from '@/components/infra-map/NodeContextMenu';
 import { EdgeContextMenu, type CustomEdgeStyle } from '@/components/infra-map/EdgeContextMenu';
 import type { NodeSize } from '@/components/infra-map/nodes/BaseNode';
-import type { InfraNodeType } from '@/types/infraGraph';
+import type { InfraNodeType, InfraMapSavedView } from '@/types/infraGraph';
 import { useSettings } from '@/contexts/SettingsContext';
 import {
   transformToReactFlow,
@@ -40,7 +40,7 @@ const ALL_NODE_TYPES: InfraNodeType[] = [
 const InfraMapContent: React.FC = () => {
   const { organizationId } = useSettings();
   const { data, isLoading, error, refetch } = useInfraGraph(organizationId);
-  const { fitView, getViewport } = useReactFlow();
+  const { fitView, getViewport, setViewport } = useReactFlow();
 
   // 0. Saved Viewport (camera pan & zoom) with localStorage persistence
   const [savedViewport, setSavedViewport] = useState<Viewport | null>(() => {
@@ -52,6 +52,44 @@ const InfraMapContent: React.FC = () => {
           return parsed;
         }
       }
+    } catch {}
+    return null;
+  });
+
+  // Saved named views list with localStorage persistence
+  const [savedViews, setSavedViews] = useState<InfraMapSavedView[]>(() => {
+    try {
+      const raw = localStorage.getItem(`infra_map_saved_views_${organizationId || 'default'}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      const legacyVp = localStorage.getItem(`infra_map_viewport_${organizationId || 'default'}`);
+      if (legacyVp) {
+        const parsedVp = JSON.parse(legacyVp);
+        if (typeof parsedVp?.x === 'number') {
+          return [
+            {
+              id: 'default-view',
+              name: 'Visualização Salva',
+              createdAt: new Date().toISOString(),
+              viewport: parsedVp,
+              visibleTypes: ALL_NODE_TYPES,
+              groupBy: 'none',
+              nodeSize: 'medium',
+              hideUnused: true,
+              showDiagnostic: true,
+            },
+          ];
+        }
+      }
+    } catch {}
+    return [];
+  });
+
+  const [activeViewId, setActiveViewId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(`infra_map_active_view_id_${organizationId || 'default'}`);
     } catch {}
     return null;
   });
@@ -302,51 +340,165 @@ const InfraMapContent: React.FC = () => {
     toast.info(`Módulo "${NODE_TYPE_LABELS[moduleType] || moduleType}" ocultado. Reative-o a qualquer momento no botão "Módulos".`);
   }, [organizationId]);
 
-  // 10. Explicitly Save Current View as Permanent Default
+  // 10. Saved Views Handlers
+  const handleSaveNamedView = useCallback(
+    (name: string) => {
+      try {
+        const currentVp = getViewport();
+        setSavedViewport(currentVp);
+        const viewName = name.trim() || `Visualização ${savedViews.length + 1}`;
+        const newView: InfraMapSavedView = {
+          id: `view_${Date.now()}`,
+          name: viewName,
+          createdAt: new Date().toISOString(),
+          viewport: currentVp,
+          visibleTypes: Array.from(visibleNodeTypes),
+          groupBy,
+          nodeSize,
+          hideUnused,
+          showDiagnostic,
+          customColors,
+          customEdgeStyles,
+          customPositions,
+        };
+
+        const updatedViews = [newView, ...savedViews.filter((v) => v.name !== viewName)];
+        setSavedViews(updatedViews);
+        setActiveViewId(newView.id);
+
+        localStorage.setItem(`infra_map_saved_views_${organizationId || 'default'}`, JSON.stringify(updatedViews));
+        localStorage.setItem(`infra_map_active_view_id_${organizationId || 'default'}`, newView.id);
+        localStorage.setItem(`infra_map_viewport_${organizationId || 'default'}`, JSON.stringify(currentVp));
+
+        toast.success(`Visualização "${viewName}" salva com sucesso!`, {
+          description: 'Câmera, zoom e filtros foram gravados.',
+        });
+      } catch (e) {
+        console.warn('Failed to save named view:', e);
+        toast.error('Erro ao salvar visualização no armazenamento local.');
+      }
+    },
+    [
+      getViewport,
+      savedViews,
+      organizationId,
+      visibleNodeTypes,
+      groupBy,
+      nodeSize,
+      hideUnused,
+      showDiagnostic,
+      customColors,
+      customEdgeStyles,
+      customPositions,
+    ]
+  );
+
+  const handleLoadView = useCallback(
+    (view: InfraMapSavedView) => {
+      try {
+        // 1. Camera / Viewport
+        setSavedViewport(view.viewport);
+        setViewport(view.viewport, { duration: 400 });
+
+        // 2. Visible Types
+        if (view.visibleTypes && Array.isArray(view.visibleTypes) && view.visibleTypes.length > 0) {
+          setVisibleNodeTypesState(new Set(view.visibleTypes));
+          localStorage.setItem(
+            `infra_map_visible_types_${organizationId || 'default'}`,
+            JSON.stringify(view.visibleTypes)
+          );
+        }
+
+        // 3. Group By
+        if (view.groupBy) {
+          setGroupByState(view.groupBy);
+          localStorage.setItem(`infra_map_group_by_${organizationId || 'default'}`, view.groupBy);
+        }
+
+        // 4. Node Size
+        if (view.nodeSize) {
+          setNodeSizeState(view.nodeSize);
+          localStorage.setItem(`infra_map_node_size_${organizationId || 'default'}`, view.nodeSize);
+        }
+
+        // 5. Hide Unused
+        if (typeof view.hideUnused === 'boolean') {
+          setHideUnusedState(view.hideUnused);
+          localStorage.setItem(`infra_map_hide_unused_${organizationId || 'default'}`, String(view.hideUnused));
+        }
+
+        // 6. Show Diagnostic
+        if (typeof view.showDiagnostic === 'boolean') {
+          setShowDiagnosticState(view.showDiagnostic);
+          localStorage.setItem(
+            `infra_map_show_diagnostic_${organizationId || 'default'}`,
+            String(view.showDiagnostic)
+          );
+        }
+
+        // 7. Custom Colors
+        if (view.customColors) {
+          setCustomColors(view.customColors);
+          localStorage.setItem(
+            `infra_map_custom_colors_${organizationId || 'default'}`,
+            JSON.stringify(view.customColors)
+          );
+        }
+
+        // 8. Custom Edge Styles
+        if (view.customEdgeStyles) {
+          setCustomEdgeStyles(view.customEdgeStyles as Record<string, CustomEdgeStyle>);
+          localStorage.setItem(
+            `infra_map_custom_edge_styles_${organizationId || 'default'}`,
+            JSON.stringify(view.customEdgeStyles)
+          );
+        }
+
+        // 9. Custom Positions
+        if (view.customPositions) {
+          setCustomPositions(view.customPositions);
+          localStorage.setItem(
+            `infra_map_positions_${organizationId || 'default'}_${view.groupBy || groupBy}`,
+            JSON.stringify(view.customPositions)
+          );
+        }
+
+        setActiveViewId(view.id);
+        localStorage.setItem(`infra_map_active_view_id_${organizationId || 'default'}`, view.id);
+
+        toast.success(`Visualização "${view.name}" carregada com sucesso!`, {
+          description: 'Câmera, filtros, zoom e organização restaurados.',
+        });
+      } catch (e) {
+        console.warn('Failed to load view:', e);
+        toast.error('Erro ao carregar a visualização selecionada.');
+      }
+    },
+    [setViewport, organizationId, groupBy]
+  );
+
+  const handleDeleteView = useCallback(
+    (viewId: string) => {
+      try {
+        const updated = savedViews.filter((v) => v.id !== viewId);
+        setSavedViews(updated);
+        localStorage.setItem(`infra_map_saved_views_${organizationId || 'default'}`, JSON.stringify(updated));
+        if (activeViewId === viewId) {
+          setActiveViewId(null);
+          localStorage.removeItem(`infra_map_active_view_id_${organizationId || 'default'}`);
+        }
+        toast.info('Visualização excluída com sucesso.');
+      } catch (e) {
+        console.warn('Failed to delete view:', e);
+        toast.error('Erro ao excluir visualização.');
+      }
+    },
+    [savedViews, activeViewId, organizationId]
+  );
+
   const handleSaveView = useCallback(() => {
-    try {
-      const currentVp = getViewport();
-      setSavedViewport(currentVp);
-      localStorage.setItem(
-        `infra_map_viewport_${organizationId || 'default'}`,
-        JSON.stringify(currentVp)
-      );
-      localStorage.setItem(
-        `infra_map_visible_types_${organizationId || 'default'}`,
-        JSON.stringify(Array.from(visibleNodeTypes))
-      );
-      localStorage.setItem(
-        `infra_map_group_by_${organizationId || 'default'}`,
-        groupBy
-      );
-      localStorage.setItem(
-        `infra_map_node_size_${organizationId || 'default'}`,
-        nodeSize
-      );
-      localStorage.setItem(
-        `infra_map_hide_unused_${organizationId || 'default'}`,
-        String(hideUnused)
-      );
-      localStorage.setItem(
-        `infra_map_show_diagnostic_${organizationId || 'default'}`,
-        String(showDiagnostic)
-      );
-      localStorage.setItem(
-        `infra_map_custom_colors_${organizationId || 'default'}`,
-        JSON.stringify(customColors)
-      );
-      localStorage.setItem(
-        `infra_map_custom_edge_styles_${organizationId || 'default'}`,
-        JSON.stringify(customEdgeStyles)
-      );
-      toast.success('Visualização padrão salva com sucesso!', {
-        description: 'Zoom, câmera, módulos visíveis, cores de nós e linhas serão restaurados automaticamente.',
-      });
-    } catch (e) {
-      console.warn('Failed to save layout view:', e);
-      toast.error('Erro ao salvar visualização no armazenamento local.');
-    }
-  }, [getViewport, organizationId, visibleNodeTypes, groupBy, nodeSize, hideUnused, showDiagnostic, customColors, customEdgeStyles]);
+    handleSaveNamedView(`Visualização ${savedViews.length + 1}`);
+  }, [handleSaveNamedView, savedViews.length]);
 
   // 11. Context menu state
   const [contextMenu, setContextMenu] = useState<{
@@ -420,6 +572,14 @@ const InfraMapContent: React.FC = () => {
           setSavedViewport(parsed);
         }
       }
+
+      const rawViews = localStorage.getItem(`infra_map_saved_views_${organizationId || 'default'}`);
+      if (rawViews) {
+        const parsedViews = JSON.parse(rawViews);
+        if (Array.isArray(parsedViews)) setSavedViews(parsedViews);
+      }
+      const rawActiveView = localStorage.getItem(`infra_map_active_view_id_${organizationId || 'default'}`);
+      setActiveViewId(rawActiveView);
     } catch {
       setCustomPositions({});
     }
@@ -827,6 +987,11 @@ const InfraMapContent: React.FC = () => {
         onToggleDiagnostic={() => setShowDiagnostic((prev) => !prev)}
         hiddenNodeCount={hiddenNodeIds.size}
         onShowHiddenNodes={handleRestoreHiddenNodes}
+        savedViews={savedViews}
+        activeViewId={activeViewId}
+        onLoadView={handleLoadView}
+        onSaveNamedView={handleSaveNamedView}
+        onDeleteView={handleDeleteView}
         onSaveView={handleSaveView}
       />
 

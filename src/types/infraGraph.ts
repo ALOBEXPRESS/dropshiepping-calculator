@@ -123,3 +123,19 @@ export const InfraGraphResponseSchema = z.object({
   nodes: z.array(InfraGraphNodeSchema),
   edges: z.array(InfraGraphEdgeSchema),
 });
+
+export interface InfraMapSavedView {
+  id: string;
+  name: string;
+  createdAt: string;
+  viewport: { x: number; y: number; zoom: number };
+  visibleTypes: InfraNodeType[];
+  groupBy: 'none' | 'provider' | 'platform';
+  nodeSize: 'small' | 'medium' | 'large';
+  hideUnused: boolean;
+  showDiagnostic: boolean;
+  customColors?: Record<string, string>;
+  customEdgeStyles?: Record<string, { stroke?: string | null; strokeDasharray?: string | null; strokeWidth?: number | null }>;
+  customPositions?: Record<string, { x: number; y: number }>;
+}
+

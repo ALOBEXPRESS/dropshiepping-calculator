@@ -13,8 +13,17 @@ import {
   Activity,
   ZoomIn,
   BookmarkCheck,
+  ChevronDown,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   Command,
   CommandEmpty,
@@ -31,7 +40,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
-import type { InfraNodeType } from '@/types/infraGraph';
+import type { InfraNodeType, InfraMapSavedView } from '@/types/infraGraph';
 import type { NodeSize } from '@/components/infra-map/nodes/BaseNode';
 import type { Node } from '@xyflow/react';
 import { toPng } from 'html-to-image';
@@ -70,6 +79,16 @@ interface InfraMapToolbarProps {
   onShowHiddenNodes?: () => void;
   /** Save current view (viewport, positions, modules, filters) as permanent default */
   onSaveView?: () => void;
+  /** Saved views collection */
+  savedViews?: InfraMapSavedView[];
+  /** Currently active saved view ID */
+  activeViewId?: string | null;
+  /** Load / apply a saved view */
+  onLoadView?: (view: InfraMapSavedView) => void;
+  /** Save current view with a specific name */
+  onSaveNamedView?: (name: string) => void;
+  /** Delete a saved view */
+  onDeleteView?: (viewId: string) => void;
 }
 
 
@@ -129,10 +148,27 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
   hiddenNodeCount = 0,
   onShowHiddenNodes,
   onSaveView,
+  savedViews = [],
+  activeViewId = null,
+  onLoadView,
+  onSaveNamedView,
+  onDeleteView,
 }) => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [modulesOpen, setModulesOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [viewsPopoverOpen, setViewsPopoverOpen] = useState(false);
+  const [newViewName, setNewViewName] = useState('');
+
+  const handleCreateNamedView = () => {
+    const nameToSave = newViewName.trim() || `Visualização ${savedViews.length + 1}`;
+    if (onSaveNamedView) {
+      onSaveNamedView(nameToSave);
+      setNewViewName('');
+    } else if (onSaveView) {
+      onSaveView();
+    }
+  };
 
   // Global keyboard shortcut: Ctrl+K / Cmd+K to open search popover
   useEffect(() => {
@@ -612,21 +648,186 @@ export const InfraMapToolbar: React.FC<InfraMapToolbarProps> = ({
           </Button>
         )}
 
-        {/* Save Current View As Default */}
-        {onSaveView && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onSaveView}
-            className="h-8 text-xs gap-1.5 px-2.5 border-emerald-500/50 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 cursor-pointer shadow-[0_0_12px_rgba(16,185,129,0.2)] transition-all font-medium shrink-0"
-            title="Salvar esta visualização (câmera, zoom, nós e filtros) para abrir sempre assim"
-            aria-label="Salvar visualização atual como padrão"
-          >
-            <BookmarkCheck className="h-3.5 w-3.5 text-emerald-400" />
-            <span className="hidden sm:inline">Salvar Visualização</span>
-            <span className="sm:hidden">Salvar</span>
-          </Button>
+        {/* Save Current View & Manage Saved Views */}
+        {(onSaveView || onSaveNamedView) && (
+          <Popover open={viewsPopoverOpen} onOpenChange={setViewsPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className={cn(
+                  'h-8 text-xs gap-1.5 px-2.5 border-emerald-500/50 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 cursor-pointer shadow-[0_0_12px_rgba(16,185,129,0.2)] transition-all font-medium shrink-0',
+                  viewsPopoverOpen && 'ring-1 ring-emerald-400 bg-emerald-500/20'
+                )}
+                title="Salvar, selecionar e carregar visualizações do mapa"
+                aria-label="Gerenciar visualizações salvas"
+              >
+                <BookmarkCheck className="h-3.5 w-3.5 text-emerald-400" />
+                <span className="hidden sm:inline">Salvar Visualização</span>
+                <span className="sm:hidden">Salvar</span>
+                {savedViews && savedViews.length > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/30 text-emerald-200 font-mono font-bold">
+                    {savedViews.length}
+                  </span>
+                )}
+                <ChevronDown className="h-3 w-3 text-emerald-400/80" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="end"
+              className="w-80 p-3.5 bg-zinc-950/95 border-zinc-800 text-zinc-100 backdrop-blur-md shadow-2xl rounded-xl z-50 animate-in fade-in zoom-in-95"
+            >
+              <div className="flex flex-col gap-3">
+                {/* Popover Header */}
+                <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                      <BookmarkCheck className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-semibold text-zinc-100">Visualizações do Mapa</h4>
+                      <p className="text-[10px] text-zinc-400">Salve ou carregue posições, zoom e filtros</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Save new view input form */}
+                <div className="flex flex-col gap-1.5 bg-zinc-900/60 p-2.5 rounded-lg border border-zinc-800/80">
+                  <label className="text-[11px] font-medium text-zinc-300 flex items-center justify-between">
+                    <span>Salvar visualização atual</span>
+                    <span className="text-[10px] text-emerald-400/80 font-normal">Câmera + Zoom + Filtros</span>
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <Input
+                      type="text"
+                      placeholder="Nome (ex: Visão Geral)..."
+                      value={newViewName}
+                      onChange={(e) => setNewViewName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleCreateNamedView();
+                        }
+                      }}
+                      className="h-7 text-xs bg-zinc-950 border-zinc-700/70 focus-visible:ring-emerald-500"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleCreateNamedView}
+                      className="h-7 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white shrink-0 font-medium"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Salvar
+                    </Button>
+                  </div>
+                </div>
+
+                {/* List of saved views */}
+                <div className="flex flex-col gap-1">
+                  <span className="text-[11px] font-medium text-zinc-400 px-0.5">
+                    Visualizações disponíveis ({savedViews?.length || 0}):
+                  </span>
+
+                  {(!savedViews || savedViews.length === 0) ? (
+                    <div className="py-4 text-center text-xs text-zinc-500 bg-zinc-900/30 rounded-lg border border-dashed border-zinc-800">
+                      Nenhuma visualização salva ainda.
+                      <br />
+                      Posicione o mapa e salve acima.
+                    </div>
+                  ) : (
+                    <div className="max-h-56 overflow-y-auto space-y-1.5 pr-0.5 custom-scrollbar">
+                      {savedViews.map((view) => {
+                        const isActive = view.id === activeViewId;
+                        const dateFormatted = new Date(view.createdAt).toLocaleDateString('pt-BR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        });
+
+                        return (
+                          <div
+                            key={view.id}
+                            onClick={() => {
+                              onLoadView?.(view);
+                              setViewsPopoverOpen(false);
+                            }}
+                            className={cn(
+                              'group flex items-center justify-between p-2 rounded-lg border transition-all cursor-pointer',
+                              isActive
+                                ? 'bg-emerald-950/30 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.15)]'
+                                : 'bg-zinc-900/40 border-zinc-800/80 hover:bg-zinc-900 hover:border-zinc-700'
+                            )}
+                          >
+                            <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
+                              {isActive ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                              ) : (
+                                <Eye className="w-3.5 h-3.5 text-zinc-500 group-hover:text-zinc-300 shrink-0" />
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className={cn('text-xs font-medium truncate', isActive ? 'text-emerald-200' : 'text-zinc-200')}>
+                                    {view.name}
+                                  </span>
+                                  {isActive && (
+                                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-medium">
+                                      Ativa
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 mt-0.5">
+                                  <span>{dateFormatted}</span>
+                                  <span>•</span>
+                                  <span>Zoom {view.viewport?.zoom ? `${(view.viewport.zoom * 100).toFixed(0)}%` : '100%'}</span>
+                                  <span>•</span>
+                                  <span>{view.visibleTypes?.length ?? 9} mód.</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onLoadView?.(view);
+                                  setViewsPopoverOpen(false);
+                                }}
+                                className="h-6 px-2 text-[10px] text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/20"
+                              >
+                                Carregar
+                              </Button>
+
+                              {onDeleteView && (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDeleteView(view.id);
+                                  }}
+                                  className="h-6 w-6 p-0 text-zinc-500 hover:text-red-400 hover:bg-red-500/10"
+                                  title="Excluir visualização"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
         )}
 
         {/* Fit View Button */}
