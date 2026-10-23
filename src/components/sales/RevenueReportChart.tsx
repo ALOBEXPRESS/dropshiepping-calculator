@@ -3022,22 +3022,41 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     
     setDeleting(true);
     try {
+      const orderId = orderToDelete.id;
+
+      // Buscar bling_order_id antes de deletar o pedido
+      const { data: ord } = await supabase
+        .from('orders')
+        .select('bling_order_id')
+        .eq('id', orderId)
+        .maybeSingle();
+
+      // Deletar dependências de forma defensiva
+      await supabase.from('order_items').delete().eq('order_id', orderId);
+      await supabase.from('campaign_order_costs').delete().eq('order_id', orderId);
+      await supabase.from('influencer_free_samples').delete().eq('order_id', orderId);
+      await supabase.from('campaign_products').update({ linked_order_id: null }).eq('linked_order_id', orderId);
+
       // Deletar pedido da tabela orders
-      // O trigger delete_order_cascade irá automaticamente:
-      // 1. Excluir order_items (ON DELETE CASCADE)
-      // 2. Excluir bling_orders (via trigger)
-      // 3. Excluir bling_order_items (ON DELETE CASCADE de bling_orders)
       const { error: orderError } = await supabase
         .from('orders')
         .delete()
-        .eq('id', orderToDelete.id);
+        .eq('id', orderId);
       
       if (orderError) {
         throw new Error(`Erro ao excluir pedido: ${orderError.message}`);
       }
+
+      // Se tinha bling_order_id, limpar bling_order_items e bling_orders
+      if (ord?.bling_order_id) {
+        await supabase.from('bling_order_items').delete().eq('bling_order_id', ord.bling_order_id);
+        await supabase.from('bling_orders').delete().eq('id', ord.bling_order_id);
+      }
       
-      // Fechar modal e tooltip
+      // Fechar modal de detalhes, modal de exclusão e tooltip
       setDeleteDialogOpen(false);
+      setDetailDialogOpen(false);
+      setSelectedOrder(null);
       setOrderToDelete(null);
       
       // Resetar paginação do tooltip (dados mudaram)
@@ -4786,6 +4805,27 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           <Lock className="w-3 h-3 text-zinc-400" />
                         )}
                         <span>{manualIsRepasseBloqueado ? 'Repasse Bloqueado' : 'Bloquear Repasse'}</span>
+                      </button>
+
+                      {/* Botão Excluir Pedido (com confirmação via AlertDialog) */}
+                      <button
+                        type="button"
+                        disabled={deleting}
+                        onClick={() => {
+                          if (selectedOrder) {
+                            setOrderToDelete({
+                              id: selectedOrder.order_id,
+                              number: String(selectedOrder.order_number),
+                              store: resolvedMarketplaceName || selectedOrder.marketplace || 'Marketplace',
+                            });
+                            setDeleteDialogOpen(true);
+                          }
+                        }}
+                        className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium border transition-colors cursor-pointer bg-red-950/40 border-red-800/50 text-red-400 hover:bg-red-500/25 hover:border-red-500/70 hover:text-red-300"
+                        title="Excluir este pedido permanentemente do sistema"
+                      >
+                        <Trash2 className="w-3 h-3 text-red-400" />
+                        <span>Excluir</span>
                       </button>
 
                       {/* Botão Desbloquear Pedido Réplica (se for TikTok e houver réplica ativa na loja e ainda em espera) */}

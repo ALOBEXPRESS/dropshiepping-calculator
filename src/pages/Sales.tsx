@@ -364,6 +364,7 @@ const Sales: React.FC = () => {
           organizationId={organizationId} 
           refreshTrigger={refreshKey} 
           onOrderClick={(orderId) => openOrderByIdRef.current?.(orderId)}
+          onOrderDeleted={handleRefresh}
         />
       </div>
 

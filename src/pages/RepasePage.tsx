@@ -21,9 +21,12 @@ import {
   User,
   Building2,
   FileSpreadsheet,
-  Hourglass
+  Hourglass,
+  Lock,
+  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -66,6 +69,7 @@ interface MonthlyReportRow {
   total_profit: number;
   total_settled_profit: number;
   total_waiting_profit: number;
+  total_blocked_profit?: number;
   orders_count: number;
   orders_data?: Array<{
     order_id?: string;
@@ -216,6 +220,7 @@ export default function RepasePage() {
           let totalProfit = 0;
           let totalSettledProfit = 0;
           let totalWaitingProfit = 0;
+          let totalBlockedProfit = 0;
 
           if (orders.length > 0) {
             orders.forEach((o) => {
@@ -237,15 +242,34 @@ export default function RepasePage() {
                 Boolean(o.is_manually_settled)
               );
 
+              const rawMkt = String(o.marketplace || o.marketplace_name || '').toLowerCase();
+              const isTikTok = rawMkt.includes('tiktok') || Boolean(o.tiktok_sfp_enabled);
+              const isOrderReplica = Boolean(
+                o.is_replica ||
+                (o.products && o.products.some((p: any) => p.is_replica))
+              );
+              const isRepasseBloqueado = Boolean(o.is_repasse_bloqueado);
+              const isReplicaUnblocked = Boolean(o.is_replica_unblocked);
+              const isReplicaWaitingBlocked = isOrderReplica && isTikTok && !settled && !isReplicaUnblocked;
+              const isAnyRepasseBlocked = isRepasseBloqueado || isReplicaWaitingBlocked;
+
               if (settled) {
-                totalSettledProfit += effectiveProfit;
-              } else {
+                if (!isRepasseBloqueado) {
+                  totalSettledProfit += effectiveProfit;
+                }
+              } else if (!isReplicaWaitingBlocked && !isRepasseBloqueado) {
                 totalWaitingProfit += effectiveProfit;
               }
 
+              if (isAnyRepasseBlocked) {
+                totalBlockedProfit += effectiveProfit;
+              }
+
+              const reportProfit = isAnyRepasseBlocked ? 0 : effectiveProfit;
+
               totalRevenue += rev;
               totalCost += cost;
-              totalProfit += effectiveProfit;
+              totalProfit += reportProfit;
             });
           } else {
             totalRevenue = Number(row.total_revenue ?? 0);
@@ -253,6 +277,7 @@ export default function RepasePage() {
             totalProfit = Number(row.total_profit ?? 0);
             totalSettledProfit = totalProfit;
             totalWaitingProfit = 0;
+            totalBlockedProfit = 0;
           }
 
           return {
@@ -264,6 +289,7 @@ export default function RepasePage() {
             total_profit: round2(totalProfit),
             total_settled_profit: round2(totalSettledProfit),
             total_waiting_profit: round2(totalWaitingProfit),
+            total_blocked_profit: round2(totalBlockedProfit),
             orders_count: orders.length || Number(row.orders_count ?? 0),
             orders_data: orders,
           };
@@ -282,6 +308,61 @@ export default function RepasePage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Atualizar quando a janela ganha foco ou visibilidade muda
+  useEffect(() => {
+    const onFocus = () => {
+      loadData();
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadData();
+      }
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [loadData]);
+
+  // Realtime subscription no Supabase para orders e repasse
+  useEffect(() => {
+    if (!organizationId) return;
+
+    const channel = supabase
+      .channel(`repase-page-realtime-${organizationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `organization_id=eq.${organizationId}`,
+        },
+        () => {
+          loadData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'repasse_payments',
+          filter: `organization_id=eq.${organizationId}`,
+        },
+        () => {
+          loadData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [organizationId, loadData]);
 
   // Map beneficiaries combined with database configs
   const beneficiaries = useMemo(() => {
@@ -329,13 +410,17 @@ export default function RepasePage() {
     [beneficiaries, configs]
   );
 
-  // Financial totals: Settled (Disponível), Waiting (Em liquidação), Gross (Total)
+  // Financial totals: Settled (Disponível), Waiting (Em liquidação), Gross (Total), Blocked (Retido)
   const totalSettledProfit = useMemo(() => {
     return round2(monthlyReport.reduce((acc, r) => acc + Number(r.total_settled_profit ?? 0), 0));
   }, [monthlyReport]);
 
   const totalWaitingProfit = useMemo(() => {
     return round2(monthlyReport.reduce((acc, r) => acc + Number(r.total_waiting_profit ?? 0), 0));
+  }, [monthlyReport]);
+
+  const totalBlockedProfit = useMemo(() => {
+    return round2(monthlyReport.reduce((acc, r) => acc + Number(r.total_blocked_profit ?? 0), 0));
   }, [monthlyReport]);
 
   const totalGrossProfit = useMemo(() => {
@@ -411,6 +496,7 @@ export default function RepasePage() {
     return sorted.map((row) => {
       const settledProfit = Number(row.total_settled_profit ?? 0);
       const waitingProfit = Number(row.total_waiting_profit ?? 0);
+      const blockedProfit = Number(row.total_blocked_profit ?? 0);
       const grossProfit = Number(row.total_profit ?? 0);
       const revenue = Number(row.total_revenue ?? 0);
       const cost = Number(row.total_cost ?? 0);
@@ -471,6 +557,7 @@ export default function RepasePage() {
         formattedLabel,
         settledProfit,
         waitingProfit,
+        blockedProfit,
         grossProfit,
         revenue,
         cost,
@@ -737,6 +824,18 @@ export default function RepasePage() {
 
         <div className="flex items-center gap-3">
           <Button
+            variant="outline"
+            size="sm"
+            onClick={() => loadData()}
+            disabled={loading}
+            className="border-zinc-700 bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs h-9 gap-1.5 cursor-pointer"
+            title="Recarregar dados de repasse dinamicamente"
+          >
+            <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin")} />
+            <span>Atualizar</span>
+          </Button>
+
+          <Button
             onClick={() => openRegisterModalForMonth()}
             className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium gap-2 shadow-sm"
           >
@@ -774,6 +873,15 @@ export default function RepasePage() {
                     Em espera:
                   </span>
                   <span>{fmt(totalWaitingProfit)}</span>
+                </div>
+              )}
+              {totalBlockedProfit > 0 && (
+                <div className="flex items-center justify-between text-red-400 font-medium" title="Repasse bloqueado por política ou ação manual">
+                  <span className="flex items-center gap-1">
+                    <Lock className="w-3 h-3" />
+                    Bloqueado:
+                  </span>
+                  <span>{fmt(totalBlockedProfit)}</span>
                 </div>
               )}
               <div className="flex items-center justify-between text-zinc-400">
@@ -907,6 +1015,11 @@ export default function RepasePage() {
                         {month.waitingProfit > 0 && (
                           <span className="text-[11px] text-amber-400 font-medium block mt-0.5">
                             + {fmt(month.waitingProfit)} em espera
+                          </span>
+                        )}
+                        {month.blockedProfit > 0 && (
+                          <span className="text-[10px] text-red-400/90 font-medium block mt-0.5" title="Lucro de pedidos com repasse bloqueado ou réplica pausada">
+                            ({fmt(month.blockedProfit)} bloqueado)
                           </span>
                         )}
                       </div>

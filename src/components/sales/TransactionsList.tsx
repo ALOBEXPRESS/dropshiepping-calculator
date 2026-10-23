@@ -4,10 +4,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabase';
-import { Loader2, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight, Search, X, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Avatar from 'react-avatar';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { calcOrderProfit } from '@/utils/calcOrderProfit';
 import { getSettledOrderProfit } from './revenueCalculations';
 import { cn } from '@/lib/utils';
@@ -16,6 +27,7 @@ interface TransactionsListProps {
   organizationId: string;
   refreshTrigger?: number;
   onOrderClick?: (orderId: string) => void;
+  onOrderDeleted?: () => void;
 }
 
 interface Transaction {
@@ -39,6 +51,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
   organizationId,
   refreshTrigger,
   onOrderClick,
+  onOrderDeleted,
 }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,6 +60,52 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
   const [selectedMarketplace, setSelectedMarketplace] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<{ id: string; number: string; store?: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteOrder = async () => {
+    if (!orderToDelete) return;
+    setDeleting(true);
+    try {
+      const orderId = orderToDelete.id;
+      const { data: ord } = await supabase
+        .from('orders')
+        .select('bling_order_id')
+        .eq('id', orderId)
+        .maybeSingle();
+
+      await supabase.from('order_items').delete().eq('order_id', orderId);
+      await supabase.from('campaign_order_costs').delete().eq('order_id', orderId);
+      await supabase.from('influencer_free_samples').delete().eq('order_id', orderId);
+      await supabase.from('campaign_products').update({ linked_order_id: null }).eq('linked_order_id', orderId);
+
+      const { error: orderError } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId);
+
+      if (orderError) throw orderError;
+
+      if (ord?.bling_order_id) {
+        await supabase.from('bling_order_items').delete().eq('bling_order_id', ord.bling_order_id);
+        await supabase.from('bling_orders').delete().eq('id', ord.bling_order_id);
+      }
+
+      setTransactions((prev) => prev.filter((t) => t.id !== orderId));
+      setDeleteDialogOpen(false);
+      setOrderToDelete(null);
+      onOrderDeleted?.();
+      toast.success('Pedido excluído com sucesso!', {
+        description: `O pedido #${orderToDelete.number} foi removido do sistema.`,
+      });
+    } catch (err) {
+      console.error('Erro ao excluir pedido:', err);
+      toast.error('Erro ao excluir pedido');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   // Cores aleatórias para avatares
   const avatarColors = [
@@ -621,6 +680,22 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
                     <span className="text-[10px] text-muted-foreground bg-zinc-800/60 px-1.5 py-0.5 rounded border border-zinc-700/40">
                       {getStatusLabel(transaction.status)}
                     </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOrderToDelete({
+                          id: transaction.id,
+                          number: transaction.order_number || transaction.virtual_order_number || 'S/N',
+                          store: transaction.marketplace_name,
+                        });
+                        setDeleteDialogOpen(true);
+                      }}
+                      className="p-1 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors cursor-pointer"
+                      title="Excluir este pedido permanentemente"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
 
                   <div className="mt-1 space-y-0.5 text-xs">
@@ -721,6 +796,41 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
           </p>
         </div>
       )}
+
+      {/* Dialog de confirmação de exclusão */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Você tem certeza que quer excluir o pedido #{orderToDelete?.number}
+              {orderToDelete?.store ? ` do marketplace ${orderToDelete.store}` : ''}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Essa ação é irreversível. O pedido será permanentemente excluído do sistema, incluindo todos os itens relacionados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteOrder}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Excluindo...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Excluir
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };
