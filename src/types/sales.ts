@@ -22,6 +22,7 @@ export interface OrderData {
   is_manually_settled?: boolean;
   is_replica?: boolean;
   is_replica_unblocked?: boolean;
+  is_repasse_bloqueado?: boolean;
   aguardando_reembolso?: boolean;
   marketplace_name: string;
   marketplace?: string;
