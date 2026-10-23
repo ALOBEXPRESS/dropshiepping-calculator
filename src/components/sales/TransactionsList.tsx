@@ -30,6 +30,7 @@ interface Transaction {
   marketplace_name: string;
   customer_name: string;
   status: string;
+  product_names: string[];
 }
 
 const PAGE_SIZE = 6;
@@ -131,6 +132,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
             affiliate_id,
             marketplace_id,
             sales_channel_id,
+            bling_order_id,
             sales_channels!sales_channel_id (
               id,
               name,
@@ -148,6 +150,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
               name
             ),
             bling_orders!bling_order_id (
+              id,
               marketplace_order_number,
               purchase_order_number,
               contact_name,
@@ -157,10 +160,13 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
               tiktok_retorno_liquido
             ),
             order_items (
+              product_name,
               quantity,
               unit_cost,
               unit_price,
               products (
+                name,
+                sku,
                 cost_price,
                 supplier_fee_value,
                 supplier_fee_type,
@@ -179,6 +185,32 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
           .order('order_date', { ascending: false });
 
         if (fetchError) throw fetchError;
+
+        // 3. Buscar descrições dos produtos de bling_order_items para enriquecer busca
+        const blingIds = (ordersData || [])
+          .map((o: any) => {
+            const bo = Array.isArray(o.bling_orders) ? o.bling_orders[0] : o.bling_orders;
+            return bo?.id || o.bling_order_id;
+          })
+          .filter(Boolean);
+
+        let blingDescMap: Record<string, string[]> = {};
+        if (blingIds.length > 0) {
+          const { data: blingItems } = await supabase
+            .from('bling_order_items')
+            .select('order_id, description')
+            .in('order_id', blingIds);
+
+          if (blingItems) {
+            blingDescMap = blingItems.reduce((acc: Record<string, string[]>, item: { order_id?: string | null; description?: string | null }) => {
+              if (item.order_id && item.description) {
+                if (!acc[item.order_id]) acc[item.order_id] = [];
+                acc[item.order_id].push(item.description);
+              }
+              return acc;
+            }, {});
+          }
+        }
 
         const formattedTransactions: Transaction[] = (ordersData || []).map((order: any) => {
           const bo = Array.isArray(order.bling_orders) ? order.bling_orders[0] : order.bling_orders;
@@ -204,6 +236,29 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
             bo?.marketplace_order_number ||
             bo?.purchase_order_number ||
             (order.order_number ? String(order.order_number) : null);
+
+          // Coleta de nomes de produtos para pesquisa e exibição
+          const productNamesList: string[] = [];
+          (order.order_items ?? []).forEach((it: any) => {
+            if (it.products?.name && !productNamesList.includes(it.products.name)) {
+              productNamesList.push(it.products.name);
+            }
+            if (it.product_name && !productNamesList.includes(it.product_name)) {
+              productNamesList.push(it.product_name);
+            }
+            if (it.products?.sku && !productNamesList.includes(it.products.sku)) {
+              productNamesList.push(it.products.sku);
+            }
+          });
+
+          const blingKey = bo?.id || order.bling_order_id;
+          if (blingKey && blingDescMap[blingKey]) {
+            blingDescMap[blingKey].forEach((desc) => {
+              if (desc && !productNamesList.includes(desc)) {
+                productNamesList.push(desc);
+              }
+            });
+          }
 
           const prods = (order.order_items ?? []).map((it: any) => ({
             quantity: it.quantity,
@@ -275,6 +330,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
             marketplace_name: marketplaceName,
             customer_name: customerName,
             status: order.status,
+            product_names: productNamesList,
           };
         });
 
@@ -311,7 +367,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
       );
     }
 
-    // Busca por Número do Pedido, Pedido na Loja Virtual ou Nome do Cliente
+    // Busca por Número do Pedido, Pedido na Loja Virtual, Nome do Cliente ou Produto
     if (searchTerm.trim() !== '') {
       const term = searchTerm.trim().toLowerCase();
       result = result.filter((t) => {
@@ -319,12 +375,14 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
         const virtualNum = (t.virtual_order_number || '').toLowerCase();
         const customer = (t.customer_name || '').toLowerCase();
         const mktName = (t.marketplace_name || '').toLowerCase();
+        const productMatch = (t.product_names || []).some((p) => p.toLowerCase().includes(term));
 
         return (
           orderNum.includes(term) ||
           virtualNum.includes(term) ||
           customer.includes(term) ||
-          mktName.includes(term)
+          mktName.includes(term) ||
+          productMatch
         );
       });
     }
@@ -427,12 +485,12 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Campo de Pesquisa */}
-          <div className="relative w-full sm:w-64">
+          {/* Campo de Pesquisa por Pedido, Cliente ou Produto */}
+          <div className="relative w-full sm:w-72 md:w-80">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Buscar por nº do pedido ou cliente..."
+              placeholder="Buscar por nº do pedido, cliente ou produto..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -543,7 +601,13 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
                     <p className="text-xs text-muted-foreground truncate mt-0.5">
                       {transaction.customer_name}
                     </p>
-                    <p className="text-[11px] text-muted-foreground/80">
+                    {transaction.product_names && transaction.product_names.length > 0 && (
+                      <p className="text-xs text-zinc-300 truncate mt-0.5 font-medium max-w-[280px] sm:max-w-md" title={transaction.product_names.join(', ')}>
+                        📦 {transaction.product_names.slice(0, 2).join(', ')}
+                        {transaction.product_names.length > 2 && ` (+${transaction.product_names.length - 2})`}
+                      </p>
+                    )}
+                    <p className="text-[11px] text-muted-foreground/80 mt-0.5">
                       {formatDate(transaction.order_date)}
                     </p>
                   </div>
