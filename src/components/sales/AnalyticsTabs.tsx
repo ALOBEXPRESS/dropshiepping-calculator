@@ -16,11 +16,13 @@ import { TransactionsList } from './TransactionsList';
 interface AnalyticsTabsProps {
   organizationId: string;
   refreshTrigger?: number;
+  onOrderClick?: (orderId: string) => void;
 }
 
 export const AnalyticsTabs: React.FC<AnalyticsTabsProps> = ({ 
   organizationId, 
-  refreshTrigger 
+  refreshTrigger,
+  onOrderClick,
 }) => {
   return (
     <Tabs defaultValue="products" className="w-full">
@@ -80,6 +82,7 @@ export const AnalyticsTabs: React.FC<AnalyticsTabsProps> = ({
         <TransactionsList 
           organizationId={organizationId} 
           refreshTrigger={refreshTrigger} 
+          onOrderClick={onOrderClick}
         />
       </TabsContent>
     </Tabs>

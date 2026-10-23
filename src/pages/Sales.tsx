@@ -360,7 +360,11 @@ const Sales: React.FC = () => {
 
       {/* Análises Detalhadas (Tabs) - Largura total */}
       <div className="mb-6 animate-on-load">
-        <AnalyticsTabs organizationId={organizationId} refreshTrigger={refreshKey} />
+        <AnalyticsTabs 
+          organizationId={organizationId} 
+          refreshTrigger={refreshKey} 
+          onOrderClick={(orderId) => openOrderByIdRef.current?.(orderId)}
+        />
       </div>
 
       {/* Alertas de Margem Baixa + Relatório de Estoque */}

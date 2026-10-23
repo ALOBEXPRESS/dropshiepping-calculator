@@ -1,17 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Avatar from 'react-avatar';
 import { calcOrderProfit } from '@/utils/calcOrderProfit';
 import { getSettledOrderProfit } from './revenueCalculations';
+import { cn } from '@/lib/utils';
 
 interface TransactionsListProps {
   organizationId: string;
   refreshTrigger?: number;
+  onOrderClick?: (orderId: string) => void;
 }
 
 interface Transaction {
@@ -28,11 +31,19 @@ interface Transaction {
   status: string;
 }
 
-export const TransactionsList: React.FC<TransactionsListProps> = ({ organizationId, refreshTrigger }) => {
+const PAGE_SIZE = 6;
+
+export const TransactionsList: React.FC<TransactionsListProps> = ({
+  organizationId,
+  refreshTrigger,
+  onOrderClick,
+}) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState('this_month');
+  const [selectedMarketplace, setSelectedMarketplace] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Cores aleatórias para avatares
   const avatarColors = [
@@ -47,7 +58,6 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
   ];
 
   const getAvatarColor = (name: string) => {
-    // Gerar cor baseada no nome para consistência
     let hash = 0;
     for (let i = 0; i < name.length; i++) {
       hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -66,7 +76,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
         const now = new Date();
         let startDate = new Date();
         let filterDate = true;
-        
+
         switch (period) {
           case 'all':
             filterDate = false;
@@ -84,6 +94,21 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
             startDate = new Date(now.getFullYear(), now.getMonth(), 1);
         }
 
+        // 1. Carregar mapeamento de marketplaces da organização
+        const { data: mktsData } = await supabase
+          .from('marketplaces')
+          .select('id, name, commission_rate, fixed_fee, affiliate_commission_rate')
+          .eq('organization_id', organizationId);
+
+        const mktMap = new Map<
+          string,
+          { id: string; name: string; commission_rate?: number; fixed_fee?: number; affiliate_commission_rate?: number }
+        >();
+        (mktsData || []).forEach((m) => {
+          mktMap.set(m.id, m);
+        });
+
+        // 2. Buscar pedidos sem o limit restritivo de 20
         let query = supabase
           .from('orders')
           .select(`
@@ -95,6 +120,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
             total_cost,
             total_profit,
             status,
+            customer_name,
             marketplace_commission,
             discount_value,
             shipping_cost,
@@ -103,6 +129,13 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
             is_personal_purchase,
             affiliate_id,
             marketplace_id,
+            sales_channel_id,
+            sales_channels!sales_channel_id (
+              id,
+              name,
+              marketplace,
+              marketplace_id
+            ),
             marketplaces!marketplace_id (
               id,
               name,
@@ -142,19 +175,34 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
         }
 
         const { data: ordersData, error: fetchError } = await query
-          .order('order_date', { ascending: false })
-          .limit(20);
+          .order('order_date', { ascending: false });
 
         if (fetchError) throw fetchError;
 
         const formattedTransactions: Transaction[] = (ordersData || []).map((order: any) => {
           const bo = Array.isArray(order.bling_orders) ? order.bling_orders[0] : order.bling_orders;
           const mkt = Array.isArray(order.marketplaces) ? order.marketplaces[0] : order.marketplaces;
+          const sc = Array.isArray(order.sales_channels) ? order.sales_channels[0] : order.sales_channels;
           const lead = Array.isArray(order.leads) ? order.leads[0] : order.leads;
 
-          const customerName = lead?.name || bo?.contact_name || 'Cliente';
-          const marketplaceName = mkt?.name || 'N/A';
-          const rawVirtual = bo?.marketplace_order_number || bo?.purchase_order_number || (order.order_number ? String(order.order_number) : null);
+          const customerName = lead?.name || bo?.contact_name || order.customer_name || 'Cliente';
+
+          // Resolução robusta do Marketplace
+          const mappedFromId = order.marketplace_id ? mktMap.get(order.marketplace_id)?.name : null;
+          const scMktMapped = sc?.marketplace_id ? mktMap.get(sc.marketplace_id)?.name : null;
+          const marketplaceName =
+            mkt?.name ||
+            mappedFromId ||
+            scMktMapped ||
+            sc?.marketplace ||
+            sc?.name ||
+            order.marketplace_name ||
+            'N/A';
+
+          const rawVirtual =
+            bo?.marketplace_order_number ||
+            bo?.purchase_order_number ||
+            (order.order_number ? String(order.order_number) : null);
 
           const prods = (order.order_items ?? []).map((it: any) => ({
             quantity: it.quantity,
@@ -166,6 +214,11 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
             supplier_gateway_fee_type: it.products?.supplier_gateway_fee_type,
           }));
 
+          const resolvedMkt =
+            mkt ||
+            (order.marketplace_id ? mktMap.get(order.marketplace_id) : null) ||
+            (sc?.marketplace_id ? mktMap.get(sc.marketplace_id) : null);
+
           const profitInput = {
             order_id: order.id,
             total_amount: order.total_amount,
@@ -175,32 +228,39 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
             shipping_cost: order.shipping_cost,
             other_expenses: order.other_expenses,
             marketplace_commission: order.marketplace_commission,
-            commission_rate: mkt?.commission_rate,
-            marketplace_fixed_fee: mkt?.fixed_fee,
-            fixed_fee: mkt?.fixed_fee,
+            commission_rate: resolvedMkt?.commission_rate,
+            marketplace_fixed_fee: resolvedMkt?.fixed_fee,
+            fixed_fee: resolvedMkt?.fixed_fee,
             affiliate_id: order.affiliate_id,
-            affiliate_commission_rate: mkt?.affiliate_commission_rate,
-            tiktok_sfp_enabled: mkt?.name?.toLowerCase().includes('tiktok'),
+            affiliate_commission_rate: resolvedMkt?.affiliate_commission_rate,
+            tiktok_sfp_enabled: marketplaceName.toLowerCase().includes('tiktok'),
             tiktok_reembolso_disabled: bo?.tiktok_reembolso_disabled === true,
             tiktok_retorno_liquido: bo?.tiktok_retorno_liquido != null ? Number(bo.tiktok_retorno_liquido) : undefined,
             products: prods,
-            marketplace: mkt?.name,
+            marketplace: marketplaceName,
           };
 
           const hasAffiliate = Boolean(order.affiliate_id);
-          const profitRes = calcOrderProfit(profitInput, mkt, hasAffiliate);
+          const profitRes = calcOrderProfit(profitInput, resolvedMkt, hasAffiliate);
           const settledOv = getSettledOrderProfit(order.order_number);
-          const finalProfit = settledOv !== null 
-            ? settledOv 
-            : (order.total_profit != null ? Number(order.total_profit) : profitRes.realProfit);
+          const finalProfit =
+            settledOv !== null
+              ? settledOv
+              : order.total_profit != null
+              ? Number(order.total_profit)
+              : profitRes.realProfit;
 
-          const productCost = profitRes.effectiveProductCost > 0 
-            ? profitRes.effectiveProductCost 
-            : (order.total_cost != null && Number(order.total_cost) > 0 ? Number(order.total_cost) : profitRes.totalProductCost);
+          const productCost =
+            profitRes.effectiveProductCost > 0
+              ? profitRes.effectiveProductCost
+              : order.total_cost != null && Number(order.total_cost) > 0
+              ? Number(order.total_cost)
+              : profitRes.totalProductCost;
 
-          const marketplaceCost = profitRes.subtotalMarketplace > 0
-            ? profitRes.subtotalMarketplace
-            : Math.max(0, Math.round((Number(order.total_amount ?? 0) - productCost - finalProfit) * 100) / 100);
+          const marketplaceCost =
+            profitRes.subtotalMarketplace > 0
+              ? profitRes.subtotalMarketplace
+              : Math.max(0, Math.round((Number(order.total_amount ?? 0) - productCost - finalProfit) * 100) / 100);
 
           return {
             id: order.id,
@@ -218,6 +278,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
         });
 
         setTransactions(formattedTransactions);
+        setCurrentPage(1);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erro ao carregar transações');
         console.error('Error fetching transactions:', err);
@@ -226,14 +287,48 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
       }
     };
 
-    // Só refetch se refreshTrigger for > 0 (ou seja, após processar pedido)
-    if (!refreshTrigger || refreshTrigger === 0) {
-      fetchTransactions();
-    } else if (refreshTrigger > 0) {
-      console.log('🔄 TransactionsList: refreshTrigger mudou, refazendo query...', refreshTrigger);
-      fetchTransactions();
-    }
+    fetchTransactions();
   }, [organizationId, period, refreshTrigger]);
+
+  const availableMarketplaces = useMemo(() => {
+    const set = new Set<string>();
+    transactions.forEach((t) => {
+      if (t.marketplace_name && t.marketplace_name !== 'N/A') {
+        set.add(t.marketplace_name);
+      }
+    });
+    return Array.from(set).sort();
+  }, [transactions]);
+
+  const filteredTransactions = useMemo(() => {
+    if (selectedMarketplace === 'all') return transactions;
+    return transactions.filter(
+      (t) => t.marketplace_name?.toLowerCase().trim() === selectedMarketplace.toLowerCase().trim()
+    );
+  }, [transactions, selectedMarketplace]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+
+  const paginatedTransactions = useMemo(() => {
+    const startIndex = (safePage - 1) * PAGE_SIZE;
+    return filteredTransactions.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [filteredTransactions, safePage]);
+
+  const getPageNumbers = (current: number, total: number) => {
+    if (total <= 5) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    if (current <= 3) {
+      return [1, 2, 3, 4, '...', total];
+    }
+    if (current >= total - 2) {
+      return [1, '...', total - 3, total - 2, total - 1, total];
+    }
+    return [1, '...', current - 1, current, current + 1, '...', total];
+  };
+
+  const pageNumbers = getPageNumbers(safePage, totalPages);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -298,36 +393,79 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
 
   return (
     <Card className="p-6 border-border">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-foreground">Transações</h3>
-        <Select value={period} onValueChange={setPeriod}>
-          <SelectTrigger className="w-[140px] border-border">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="this_week">Esta Semana</SelectItem>
-            <SelectItem value="this_month">Este Mês</SelectItem>
-            <SelectItem value="this_quarter">Este Trimestre</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <div>
+          <h3 className="text-lg font-semibold text-foreground">Transações</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {filteredTransactions.length} {filteredTransactions.length === 1 ? 'pedido encontrado' : 'pedidos encontrados'}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Marketplace Filter */}
+          {availableMarketplaces.length > 1 && (
+            <Select
+              value={selectedMarketplace}
+              onValueChange={(val) => {
+                setSelectedMarketplace(val);
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[160px] h-9 text-xs border-border bg-background/60">
+                <SelectValue placeholder="Marketplace" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos Marketplaces</SelectItem>
+                {availableMarketplaces.map((mkt) => (
+                  <SelectItem key={mkt} value={mkt}>
+                    {mkt}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {/* Period Filter */}
+          <Select
+            value={period}
+            onValueChange={(val) => {
+              setPeriod(val);
+              setCurrentPage(1);
+            }}
+          >
+            <SelectTrigger className="w-[140px] h-9 text-xs border-border bg-background/60">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="this_week">Esta Semana</SelectItem>
+              <SelectItem value="this_month">Este Mês</SelectItem>
+              <SelectItem value="this_quarter">Este Trimestre</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {transactions.length > 0 ? (
-        <div className="space-y-4">
-          {transactions.map((transaction) => {
+      {paginatedTransactions.length > 0 ? (
+        <div className="space-y-3">
+          {paginatedTransactions.map((transaction) => {
             const profit = Number(transaction.total_profit ?? transaction.total_amount ?? 0);
             const isPositive = profit >= 0 && transaction.status !== 'cancelled';
 
             return (
               <div
                 key={transaction.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3.5 border-b border-border last:border-0"
+                onClick={() => onOrderClick?.(transaction.id)}
+                className={cn(
+                  'flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3 border-b border-border/80 last:border-0 transition-colors',
+                  onOrderClick && 'cursor-pointer hover:bg-accent/40 rounded-lg px-2.5 -mx-2.5'
+                )}
+                title={onOrderClick ? 'Clique para abrir os detalhes deste pedido' : undefined}
               >
                 <div className="flex items-center gap-3.5 min-w-0">
                   <Avatar
                     name={transaction.customer_name}
-                    size="48"
+                    size="44"
                     round={true}
                     color={getAvatarColor(transaction.customer_name)}
                     maxInitials={2}
@@ -386,15 +524,82 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({ organization
               </div>
             );
           })}
+
+          {/* Paginação de 6 pedidos por página */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-border mt-4">
+              <div className="text-xs text-muted-foreground">
+                Mostrando{' '}
+                <span className="font-semibold text-foreground">
+                  {(safePage - 1) * PAGE_SIZE + 1}
+                </span>{' '}
+                a{' '}
+                <span className="font-semibold text-foreground">
+                  {Math.min(safePage * PAGE_SIZE, filteredTransactions.length)}
+                </span>{' '}
+                de <span className="font-semibold text-foreground">{filteredTransactions.length}</span> pedidos
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={safePage === 1}
+                  className="h-8 px-2.5 text-xs border-border bg-background/50 hover:bg-accent disabled:opacity-40 cursor-pointer"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5 mr-1" />
+                  Anterior
+                </Button>
+
+                <div className="flex items-center gap-1">
+                  {pageNumbers.map((page, idx) =>
+                    page === '...' ? (
+                      <span key={`dots-${idx}`} className="px-1.5 text-xs text-muted-foreground">
+                        ...
+                      </span>
+                    ) : (
+                      <Button
+                        key={`page-${page}`}
+                        type="button"
+                        variant={safePage === page ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setCurrentPage(page as number)}
+                        className={cn(
+                          'h-8 w-8 p-0 text-xs cursor-pointer',
+                          safePage === page
+                            ? 'bg-primary text-primary-foreground font-bold shadow-sm'
+                            : 'border-border bg-background/50 hover:bg-accent text-foreground'
+                        )}
+                      >
+                        {page}
+                      </Button>
+                    )
+                  )}
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={safePage >= totalPages}
+                  className="h-8 px-2.5 text-xs border-border bg-background/50 hover:bg-accent disabled:opacity-40 cursor-pointer"
+                >
+                  Próxima
+                  <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-muted flex items-center justify-center mb-3">
             <span className="text-2xl text-gray-400">💳</span>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Nenhuma transação encontrada
-          </p>
+          <p className="text-sm text-muted-foreground">Nenhuma transação encontrada</p>
         </div>
       )}
     </Card>
