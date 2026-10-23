@@ -248,7 +248,7 @@ export const SETTLED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = 
   '251': 7.29,
   '252': 7.29,
   '253': 7.29,
-  '254': 7.29,
+  '254': 9.30,
   '255': 10.96,
   '256': 10.96,
   '257': 13.11,

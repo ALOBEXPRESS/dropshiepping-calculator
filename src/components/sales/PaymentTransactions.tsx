@@ -481,9 +481,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
               is_free_sample: dbOrder.is_free_sample,
               is_personal_purchase: dbOrder.is_personal_purchase,
               marketplace: mpName,
-              manual_product_cost: Number(dbOrder.total_cost ?? 0) > 0
-                ? Number(dbOrder.total_cost)
-                : undefined,
+              manual_product_cost: undefined,
               total_cost: dbOrder.total_cost,
               total_profit: dbOrder.total_profit,
               products: orderProducts,
@@ -502,9 +500,11 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
               : null;
             const computedProfit = settled !== null
               ? settled
+              : !isNaN(result.realProfit)
+              ? (result.realProfit - mktCost)
               : savedProfit !== null
               ? (savedProfit - mktCost)
-              : (result.realProfit - mktCost);
+              : 0;
 
             return {
               ...tx,
