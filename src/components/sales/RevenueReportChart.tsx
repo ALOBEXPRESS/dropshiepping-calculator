@@ -3039,6 +3039,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       refetch();
       refetchYearly();
       onOrderUpdated?.();
+      window.dispatchEvent(new CustomEvent('orders-updated'));
+      window.dispatchEvent(new CustomEvent('repasse-updated'));
     } catch (err) {
       console.error('Erro ao salvar custos:', err);
     } finally {
