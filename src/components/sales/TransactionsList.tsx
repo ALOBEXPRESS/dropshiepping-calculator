@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabase';
-import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Avatar from 'react-avatar';
@@ -43,6 +44,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState('this_month');
   const [selectedMarketplace, setSelectedMarketplace] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
   // Cores aleatórias para avatares
@@ -108,7 +110,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
           mktMap.set(m.id, m);
         });
 
-        // 2. Buscar pedidos sem o limit restritivo de 20
+        // 2. Buscar pedidos da organização sem limite fixo
         let query = supabase
           .from('orders')
           .select(`
@@ -120,7 +122,6 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
             total_cost,
             total_profit,
             status,
-            customer_name,
             marketplace_commission,
             discount_value,
             shipping_cost,
@@ -185,7 +186,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
           const sc = Array.isArray(order.sales_channels) ? order.sales_channels[0] : order.sales_channels;
           const lead = Array.isArray(order.leads) ? order.leads[0] : order.leads;
 
-          const customerName = lead?.name || bo?.contact_name || order.customer_name || 'Cliente';
+          const customerName = lead?.name || bo?.contact_name || 'Cliente';
 
           // Resolução robusta do Marketplace
           const mappedFromId = order.marketplace_id ? mktMap.get(order.marketplace_id)?.name : null;
@@ -301,11 +302,35 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
   }, [transactions]);
 
   const filteredTransactions = useMemo(() => {
-    if (selectedMarketplace === 'all') return transactions;
-    return transactions.filter(
-      (t) => t.marketplace_name?.toLowerCase().trim() === selectedMarketplace.toLowerCase().trim()
-    );
-  }, [transactions, selectedMarketplace]);
+    let result = transactions;
+
+    // Filtro por Marketplace
+    if (selectedMarketplace !== 'all') {
+      result = result.filter(
+        (t) => t.marketplace_name?.toLowerCase().trim() === selectedMarketplace.toLowerCase().trim()
+      );
+    }
+
+    // Busca por Número do Pedido, Pedido na Loja Virtual ou Nome do Cliente
+    if (searchTerm.trim() !== '') {
+      const term = searchTerm.trim().toLowerCase();
+      result = result.filter((t) => {
+        const orderNum = (t.order_number || '').toLowerCase();
+        const virtualNum = (t.virtual_order_number || '').toLowerCase();
+        const customer = (t.customer_name || '').toLowerCase();
+        const mktName = (t.marketplace_name || '').toLowerCase();
+
+        return (
+          orderNum.includes(term) ||
+          virtualNum.includes(term) ||
+          customer.includes(term) ||
+          mktName.includes(term)
+        );
+      });
+    }
+
+    return result;
+  }, [transactions, selectedMarketplace, searchTerm]);
 
   const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
@@ -393,7 +418,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
 
   return (
     <Card className="p-6 border-border">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-6">
         <div>
           <h3 className="text-lg font-semibold text-foreground">Transações</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
@@ -402,6 +427,34 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Campo de Pesquisa */}
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Buscar por nº do pedido ou cliente..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="h-9 pl-8 pr-7 text-xs bg-background/60 border-border"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchTerm('');
+                  setCurrentPage(1);
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                title="Limpar pesquisa"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
           {/* Marketplace Filter */}
           {availableMarketplaces.length > 1 && (
             <Select
@@ -599,7 +652,9 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
           <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-muted flex items-center justify-center mb-3">
             <span className="text-2xl text-gray-400">💳</span>
           </div>
-          <p className="text-sm text-muted-foreground">Nenhuma transação encontrada</p>
+          <p className="text-sm text-muted-foreground">
+            {searchTerm ? 'Nenhum pedido encontrado para esta busca' : 'Nenhuma transação encontrada'}
+          </p>
         </div>
       )}
     </Card>
