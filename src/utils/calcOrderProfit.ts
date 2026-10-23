@@ -20,6 +20,8 @@ export interface OrderProfitInput {
   tiktok_sfp_enabled?: boolean | string | null;
   tiktok_reembolso_disabled?: boolean;
   tiktok_retorno_liquido?: number | null;
+  manual_desconto?: number | string | null;
+  manual_acrescimo?: number | string | null;
   reembolso_value?: number | null;
   reembolso_marketplace_value?: number | null;
   reembolso_fornecedor_value?: number | null;
@@ -207,13 +209,20 @@ export function calcOrderProfit(
   const baseProductCost = isPersonalPurchase ? 0 : totalProductCost;
   const effectiveProductCost = baseProductCost - effectiveFornecedorVal;
 
+  const manualDescontoVal = order.manual_desconto != null && !isNaN(Number(order.manual_desconto))
+    ? Number(order.manual_desconto)
+    : 0;
+  const manualAcrescimoVal = order.manual_acrescimo != null && !isNaN(Number(order.manual_acrescimo))
+    ? Number(order.manual_acrescimo)
+    : 0;
+
   // ── Net price ─────────────────────────────────────────────────────────────
   const precoVendaLiquidoFinal = hasReembolsoMarketplace
     ? effectiveMktVal
     : hasFornecedorEnabled
     ? 0
     : hasRetornoLiquido
-    ? retornoLiquido
+    ? (retornoLiquido - manualDescontoVal)
     : isTikTok
     ? precoVendaPagoCliente + tiktokReembolso - subtotalMarketplace
     : precoVendaPagoCliente - subtotalMarketplace - activeDiscount;
@@ -229,7 +238,7 @@ export function calcOrderProfit(
     ? -effectiveProductCost
     : hasFornecedorEnabled && !hasReembolsoMarketplace
     ? effectiveFornecedorVal - baseProductCost
-    : precoVendaLiquidoFinal - effectiveProductCost;
+    : precoVendaLiquidoFinal - effectiveProductCost + manualAcrescimoVal;
 
   return {
     realProfit: Math.round(realProfitRaw * 100) / 100,

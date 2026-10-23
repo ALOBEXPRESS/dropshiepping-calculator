@@ -234,6 +234,17 @@ describe('calcOrderProfit — TikTok marketplace', () => {
     const r = calcOrderProfit(tiktokOrder({ tiktok_retorno_liquido: 75 }));
     expect(r.precoVendaLiquidoFinal).toBe(75);
   });
+
+  it('TikTok: tiktok_retorno_liquido deducts manual_desconto and adds manual_acrescimo', () => {
+    const r = calcOrderProfit(tiktokOrder({
+      tiktok_retorno_liquido: 6.56,
+      manual_desconto: 6.40,
+      manual_acrescimo: 1.00,
+      manual_product_cost: 9.11,
+    }));
+    expect(r.precoVendaLiquidoFinal).toBe(0.16);
+    expect(r.realProfit).toBe(-7.95); // 0.16 - 9.11 + 1.00 = -7.95
+  });
 });
 
 // ─── Multiple products ────────────────────────────────────────────────────────

@@ -899,6 +899,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [manualCoupon, setManualCoupon] = useState<string>('');
   const [manualCouponType, setManualCouponType] = useState<'percent' | 'fixed'>('fixed');
   const [savingCoupon, setSavingCoupon] = useState(false);
+  const [savingDesconto, setSavingDesconto] = useState(false);
   // acréscimo manual (valor em R$)
   const [manualAcrescimo, setManualAcrescimo] = useState<string>('');
   // reembolso TikTok = valor do desconto, somado ao lucro
@@ -4146,8 +4147,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             // ── Desconto ──────────────────────────────────────────────────────────
             const blingDiscountValue = Number(selectedOrder.discount_value ?? 0);
             const manualDiscountValue = parseBRLFloat(manualDesconto);
-            const activeDiscount = blingDiscountEnabled
-              ? (blingDiscountValue > 0 ? blingDiscountValue : 0)
+            const activeDiscount = blingDiscountValue > 0
+              ? (blingDiscountEnabled ? blingDiscountValue : manualDiscountValue)
               : manualDiscountValue;
 
             // ── Preços de venda ───────────────────────────────────────────────────
@@ -4160,6 +4161,15 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const precoVendaPagoCliente = isTikTok
               ? precoVendaBruto - activeDiscount
               : (baseValue > 0 ? baseValue : selectedOrder.total_amount);
+
+            // Cupom de desconto manual (% ou R$)
+            const manualCouponVal = (() => {
+              const v = parseBRLFloat(manualCoupon);
+              if (v <= 0) return 0;
+              return manualCouponType === 'percent'
+                ? (precoVendaPagoCliente * v) / 100  // % sobre preço pago pelo cliente
+                : v;
+            })();
 
             const fixedFee = Number(resolvedMarketplaceConfig?.fixed_fee ?? selectedOrder.marketplace_fixed_fee ?? 0);
             const commissionRate = Number(resolvedMarketplaceConfig?.commission_rate ?? selectedOrder.commission_rate ?? 0);
@@ -4191,16 +4201,21 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
             // ── Acréscimo ─────────────────────────────────────────────────────────
             const acrescimoManual = parseBRLFloat(manualAcrescimo);
-            // Reembolso TikTok = desconto ativo (só TikTok)
-            const tiktokReembolsoValue = isTikTok ? activeDiscount : 0;
-            const acrescimoValue = acrescimoManual + (tiktokReembolsoEnabled && isTikTok ? tiktokReembolsoValue : 0);
+            // Reembolso TikTok = desconto ativo (só TikTok, desativado se tem retorno líquido)
+            const tiktokReembolsoValue = (isTikTok && !hasRetornoLiquido) ? activeDiscount : 0;
+            const acrescimoValue = acrescimoManual + (tiktokReembolsoEnabled && isTikTok && !hasRetornoLiquido ? tiktokReembolsoValue : 0);
+
+            // Desconto aplicado sobre retorno líquido (deduz desconto manual ou cupom inserido pelo usuário)
+            const retornoDiscount = (blingDiscountValue > 0 && blingDiscountEnabled)
+              ? 0
+              : manualDiscountValue;
 
             // ── Preço de venda líquido ────────────────────────────────────────────
             // TikTok: pagoCliente + reembolso - taxas
-            // TikTok com retornoLiquido: retornoLiquidoValue (já é o líquido recebido)
+            // TikTok com retornoLiquido: retornoLiquidoValue - descontos manuais
             // Outros: pagoCliente - taxas - desconto
             const precoVendaLiquidoFinal = hasRetornoLiquido
-              ? retornoLiquidoValue
+              ? (retornoLiquidoValue - retornoDiscount - manualCouponVal)
               : (isTikTok
                 ? precoVendaPagoCliente + (tiktokReembolsoEnabled ? tiktokReembolsoValue : 0) - subtotalMarketplace
                 : precoVendaPagoCliente - subtotalMarketplace - activeDiscount);
@@ -4208,18 +4223,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             // ── Lucro = Preço Líquido - Custo Produto ────────────────────────────
             // taxas marketplace já descontadas no precoVendaLiquidoFinal
             const manualMarketingCostVal = manualCostEnabled ? parseBRLFloat(manualMarketingCost) : 0;
-            const manualCouponVal = (() => {
-              const v = parseBRLFloat(manualCoupon);
-              if (v <= 0) return 0;
-              return manualCouponType === 'percent'
-                ? (precoVendaPagoCliente * v) / 100  // % sobre preço pago pelo cliente
-                : v;
-            })();
             const realProfit = isFreeSample
               ? -totalProductCost
-              // When retorno liquido: already net received — don't add manual acréscimo/desconto
-              : hasRetornoLiquido
-              ? (precoVendaLiquidoFinal - totalProductCost - manualMarketingCostVal)
               : (precoVendaLiquidoFinal - totalProductCost + acrescimoManual - manualMarketingCostVal);
             // ── Reembolso Marketplace & Fornecedor ─────────────────────────────
             const hasReembolsoMktActive = Boolean(reembolsoMarketplaceEnabled);
@@ -4246,8 +4251,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               ? (reembolsoFornVal - (isPersonalPurchase ? 0 : totalProductCost) - manualMarketingCostVal)
               : isFreeSample
               ? -effectiveProductCostModal
-              : hasRetornoLiquido
-              ? (precoVendaLiquidoFinal - effectiveProductCostModal - manualMarketingCostVal)
               : (precoVendaLiquidoFinal - effectiveProductCostModal + acrescimoManual - manualMarketingCostVal);
 
             const hasReembolsoActive = aguardandoReembolso || hasReembolsoMktActive || hasReembolsoFornActive;
@@ -4255,6 +4258,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               ? (Math.abs(reembolsoMktVal) > 0 ? Math.abs(reembolsoMktVal) : (Math.abs(precoVendaLiquidoFinal) > 0 ? Math.abs(precoVendaLiquidoFinal) : selectedOrder.total_amount))
               : hasReembolsoFornActive
               ? (Math.abs(reembolsoFornVal) > 0 ? Math.abs(reembolsoFornVal) : (Math.abs(totalProductCost) > 0 ? Math.abs(totalProductCost) : selectedOrder.total_amount))
+              : hasRetornoLiquido
+              ? (retornoLiquidoValue > 0 ? retornoLiquidoValue : selectedOrder.total_amount)
               : (Math.abs(precoVendaLiquidoFinal) > 0 ? Math.abs(precoVendaLiquidoFinal) : selectedOrder.total_amount);
             const margin = aguardandoReembolso
               ? '0.0'
@@ -5058,15 +5063,20 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                               setSavingRetornoLiquido(true);
                               try {
                                 const saveVal = retornoLiquidoValue > 0 ? retornoLiquidoValue : null;
+                                const manualDiscVal = manualDiscountValue > 0 ? manualDiscountValue : null;
                                 await supabase
                                   .from('bling_orders')
-                                  .update({ tiktok_retorno_liquido: saveVal })
+                                  .update({
+                                    tiktok_retorno_liquido: saveVal,
+                                    ...(manualDiscVal !== null ? { discount_value: manualDiscVal } : {})
+                                  })
                                   .eq('id', selectedOrder.bling_order_id);
                                 if (selectedOrder.order_id) {
                                   await supabase
                                     .from('orders')
                                     .update({
                                       total_profit: finalRealProfit,
+                                      ...(manualDiscVal !== null ? { discount_value: manualDiscVal } : {}),
                                       ...(selectedOrder.affiliate_id !== undefined ? { affiliate_id: selectedOrder.affiliate_id } : {})
                                     })
                                     .eq('id', selectedOrder.order_id);
@@ -5075,12 +5085,18 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                     [selectedOrder.order_id]: {
                                       ...(prev[selectedOrder.order_id] ?? {}),
                                       tiktok_retorno_liquido: saveVal ?? undefined,
+                                      ...(manualDiscVal !== null ? { discount_value: manualDiscVal } : {}),
                                       total_profit: finalRealProfit,
                                       ...(selectedOrder.affiliate_id !== undefined ? { affiliate_id: selectedOrder.affiliate_id } : {}),
                                     }
                                   }));
                                 }
-                                setSelectedOrder({ ...selectedOrder, tiktok_retorno_liquido: saveVal, total_profit: finalRealProfit });
+                                setSelectedOrder({
+                                  ...selectedOrder,
+                                  tiktok_retorno_liquido: saveVal,
+                                  ...(manualDiscVal !== null ? { discount_value: manualDiscVal } : {}),
+                                  total_profit: finalRealProfit
+                                });
                                 await refetch();
                                 await refetchYearly();
                                 onOrderUpdated?.();
@@ -5100,7 +5116,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         )}
                         {hasRetornoLiquido && (
                           <p className="text-[11px] text-teal-400/70">
-                            Custo Marketplace e Afiliados desconsiderados. Lucro = {formatCurrency(retornoLiquidoValue)} − custo produto.
+                            Custo Marketplace e Afiliados desconsiderados. Lucro = {formatCurrency(retornoLiquidoValue)} − custo produto{retornoDiscount > 0 ? ` − desconto (${formatCurrency(retornoDiscount)})` : ''}{acrescimoManual > 0 ? ` + acréscimo (${formatCurrency(acrescimoManual)})` : ''}.
                           </p>
                         )}
                       </div>
@@ -5544,27 +5560,34 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                             </div>
                             {/* Campo manual quando checkbox desmarcado */}
                             {!blingDiscountEnabled && (
-                              <div className="flex items-center gap-3 pt-1">
-                                <label className="text-zinc-400 text-sm whitespace-nowrap">Desconto manual (R$)</label>
-                                <input
-                                  type="text"
-                                  inputMode="decimal"
-                                  placeholder="0,00"
-                                  value={manualDesconto}
-                                  onChange={(e) => setManualDesconto(formatCurrencyInputOnChange(e.target.value))}
-                                  onBlur={() => setManualDesconto(formatBRLInputOnBlur(manualDesconto))}
-                                  className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-yellow-500 tabular-nums"
-                                />
+                              <div className="space-y-2 pt-1">
+                                <div className="flex items-center gap-3">
+                                  <label className="text-zinc-400 text-sm whitespace-nowrap">Desconto manual (R$)</label>
+                                  <input
+                                    type="text"
+                                    inputMode="decimal"
+                                    placeholder="0,00"
+                                    value={manualDesconto}
+                                    onChange={(e) => setManualDesconto(formatCurrencyInputOnChange(e.target.value))}
+                                    onBlur={() => setManualDesconto(formatBRLInputOnBlur(manualDesconto))}
+                                    className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-yellow-500 tabular-nums"
+                                  />
+                                  {manualDiscountValue > 0 && (
+                                    <button
+                                      onClick={() => setManualDesconto('')}
+                                      className="text-zinc-500 hover:text-zinc-300 transition-colors"
+                                      title="Limpar"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                      </svg>
+                                    </button>
+                                  )}
+                                </div>
                                 {manualDiscountValue > 0 && (
-                                  <button
-                                    onClick={() => setManualDesconto('')}
-                                    className="text-zinc-500 hover:text-zinc-300 transition-colors"
-                                    title="Limpar"
-                                  >
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                  </button>
+                                  <p className="text-[11px] text-yellow-500/70">
+                                    -{formatCurrency(manualDiscountValue)} será deduzido do lucro
+                                  </p>
                                 )}
                               </div>
                             )}
@@ -5596,7 +5619,65 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                 </button>
                               )}
                             </div>
+                            {manualDiscountValue > 0 && (
+                              <p className="text-[11px] text-yellow-500/70">
+                                -{formatCurrency(manualDiscountValue)} será deduzido do lucro
+                              </p>
+                            )}
                           </div>
+                        )}
+                        {/* Botão Salvar Desconto quando inserido valor manual */}
+                        {selectedOrder?.order_id && manualDiscountValue > 0 && (
+                          <button
+                            disabled={savingDesconto}
+                            onClick={async () => {
+                              if (!selectedOrder?.order_id) return;
+                              setSavingDesconto(true);
+                              try {
+                                await supabase
+                                  .from('orders')
+                                  .update({
+                                    discount_value: manualDiscountValue,
+                                    total_profit: finalRealProfit,
+                                  })
+                                  .eq('id', selectedOrder.order_id);
+                                if (selectedOrder.bling_order_id) {
+                                  await supabase
+                                    .from('bling_orders')
+                                    .update({
+                                      discount_value: manualDiscountValue,
+                                    })
+                                    .eq('id', selectedOrder.bling_order_id);
+                                }
+                                setSelectedOrder({
+                                  ...selectedOrder,
+                                  discount_value: manualDiscountValue,
+                                  total_profit: finalRealProfit,
+                                });
+                                setOrderEnrichmentById(prev => ({
+                                  ...prev,
+                                  [selectedOrder.order_id]: {
+                                    ...(prev[selectedOrder.order_id] ?? {}),
+                                    discount_value: manualDiscountValue,
+                                    total_profit: finalRealProfit,
+                                  }
+                                }));
+                                await refetch();
+                                await refetchYearly();
+                                onOrderUpdated?.();
+                              } finally {
+                                setSavingDesconto(false);
+                              }
+                            }}
+                            className="w-full mt-2 py-1.5 rounded-lg bg-yellow-600/80 hover:bg-yellow-500 text-white text-xs font-semibold transition-colors flex items-center justify-center gap-2"
+                          >
+                            {savingDesconto ? (
+                              <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                            ) : (
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                            )}
+                            Salvar Desconto
+                          </button>
                         )}
                         {/* Cupom de desconto */}
                         <div className="pt-3 border-t border-yellow-950/30 space-y-2">
