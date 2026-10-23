@@ -199,11 +199,23 @@ export default function RepasePage() {
         .order('period_start', { ascending: false });
       setPayments((payRows ?? []) as RepassePayment[]);
 
-      // Fetch marketplaces for real commission and fee calculations
-      const { data: mkts } = await supabase
-        .from('marketplaces')
-        .select('*');
+      // Fetch marketplaces, blocked orders, and replica products for real commission and fee calculations
+      const [
+        { data: mkts },
+        { data: blockedOrders },
+        { data: replicaProducts },
+        { data: unblockedReplicaOrders },
+      ] = await Promise.all([
+        supabase.from('marketplaces').select('*'),
+        supabase.from('orders').select('id').eq('organization_id', organizationId).eq('is_repasse_bloqueado', true),
+        supabase.from('products').select('id, name').eq('organization_id', organizationId).eq('is_replica', true),
+        supabase.from('orders').select('id').eq('organization_id', organizationId).eq('is_replica_unblocked', true),
+      ]);
       const mktById = new Map((mkts ?? []).map((m: any) => [m.id, m]));
+      const repasseBloqueadoOrderIds = new Set((blockedOrders ?? []).map((o: any) => o.id));
+      const replicaProductIds = new Set((replicaProducts ?? []).map((p: any) => p.id));
+      const replicaProductNames = new Set((replicaProducts ?? []).map((p: any) => (p.name || '').trim().toLowerCase()));
+      const replicaUnblockedOrderIds = new Set((unblockedReplicaOrders ?? []).map((o: any) => o.id));
 
       // 3. Monthly revenue & profit report (recalculated with settled canonical rules)
       const { data: rpt } = await supabase.rpc('get_revenue_report', {
@@ -244,12 +256,19 @@ export default function RepasePage() {
 
               const rawMkt = String(o.marketplace || o.marketplace_name || '').toLowerCase();
               const isTikTok = rawMkt.includes('tiktok') || Boolean(o.tiktok_sfp_enabled);
+              const orderId = String(o.order_id || o.id || '');
               const isOrderReplica = Boolean(
                 o.is_replica ||
-                (o.products && o.products.some((p: any) => p.is_replica))
+                (o.products && o.products.some((p: any) =>
+                  p.is_replica ||
+                  (p.product_id && replicaProductIds.has(p.product_id)) ||
+                  (p.name && replicaProductNames.has(String(p.name).trim().toLowerCase()))
+                )) ||
+                (o.product_id && replicaProductIds.has(o.product_id)) ||
+                (o.product_name && replicaProductNames.has(String(o.product_name).trim().toLowerCase()))
               );
-              const isRepasseBloqueado = Boolean(o.is_repasse_bloqueado);
-              const isReplicaUnblocked = Boolean(o.is_replica_unblocked);
+              const isRepasseBloqueado = Boolean(o.is_repasse_bloqueado || (orderId && repasseBloqueadoOrderIds.has(orderId)));
+              const isReplicaUnblocked = Boolean(o.is_replica_unblocked || (orderId && replicaUnblockedOrderIds.has(orderId)));
               const isReplicaWaitingBlocked = isOrderReplica && isTikTok && !settled && !isReplicaUnblocked;
               const isAnyRepasseBlocked = isRepasseBloqueado || isReplicaWaitingBlocked;
 

@@ -56,6 +56,7 @@ export interface RevenueData {
   total_profit: number;
   total_waiting_profit?: number;
   total_settled_profit?: number;
+  total_blocked_profit?: number;
   orders_count: number;
   orders_data: OrderData[];
 }

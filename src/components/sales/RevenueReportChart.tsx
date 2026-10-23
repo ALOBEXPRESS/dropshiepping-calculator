@@ -2995,6 +2995,26 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
       setCostsSaved(true);
       setTimeout(() => setCostsSaved(false), 3000);
+
+      // Limpar overrides após salvar com sucesso para não exibir "Salvar custos" desnecessariamente
+      if (orderId && orderModalStateRef.current[orderId]) {
+        orderModalStateRef.current[orderId].manualCostOverrides = {};
+        orderModalStateRef.current[orderId].manualQuantityOverrides = {};
+        orderModalStateRef.current[orderId].manualSupplierFeePercent = '';
+        orderModalStateRef.current[orderId].manualGatewayFee = '';
+        orderModalStateRef.current[orderId].manualTotalProductCost = '';
+      }
+      setManualCostOverrides({});
+      setManualQuantityOverrides({});
+      setManualSupplierFeePercent('');
+      setManualGatewayFee('');
+      setManualTotalProductCost('');
+      manualCostOverridesRef.current = {};
+      manualQuantityOverridesRef.current = {};
+      manualSupplierFeePercentRef.current = '';
+      manualGatewayFeeRef.current = '';
+      manualTotalProductCostRef.current = '';
+
       // Refetch chart data so Lucro totals reflect new cost_price
       refetch();
       refetchYearly();
@@ -3124,6 +3144,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       let totalProfit = 0;
       let totalWaitingProfit = 0;
       let totalSettledProfit = 0;
+      let totalBlockedProfit = 0;
       let totalMarketingCost = 0;
 
       orders.forEach((order: unknown) => {
@@ -3219,6 +3240,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           totalWaitingProfit += effectiveProfit;
         }
 
+        if (isAnyRepasseBlocked) {
+          totalBlockedProfit += effectiveProfit;
+        }
+
         const reportProfit = isAnyRepasseBlocked ? 0 : effectiveProfit;
 
         totalRevenue += liquidoFinal;
@@ -3234,6 +3259,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         total_profit: totalProfit,
         total_waiting_profit: totalWaitingProfit,
         total_settled_profit: totalSettledProfit,
+        total_blocked_profit: totalBlockedProfit,
         total_marketing_cost: totalMarketingCost,
       };
     });
@@ -3299,6 +3325,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const allDataWaitingProfit = useMemo(() => {
     const source = recalculatedYearlyData.length > 0 ? recalculatedYearlyData : recalculatedData;
     return round2(source.reduce((sum, item) => sum + Number(item.total_waiting_profit ?? 0), 0));
+  }, [recalculatedYearlyData, recalculatedData]);
+
+  // Lucro bloqueado de TODOS os dados (repasse bloqueado ou réplica pausada pela plataforma)
+  const allDataBlockedProfit = useMemo(() => {
+    const source = recalculatedYearlyData.length > 0 ? recalculatedYearlyData : recalculatedData;
+    return round2(source.reduce((sum, item) => sum + Number((item as { total_blocked_profit?: number }).total_blocked_profit ?? 0), 0));
   }, [recalculatedYearlyData, recalculatedData]);
 
   // Custo total de TODOS os dados — usa recalculatedYearlyData para consistência
@@ -4161,6 +4193,40 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             const totalProductCost = manualTotalCostVal !== null
               ? manualTotalCostVal
               : (totalBaseCost + orderSupplierFee + orderGatewayFee);
+
+            // Verifica se o usuário realmente alterou algum custo em relação ao que já está salvo
+            const hasActualCostChanges = (() => {
+              if (manualTotalProductCost.trim() !== '') return true;
+
+              for (const [idxStr, qty] of Object.entries(manualQuantityOverrides)) {
+                const idx = Number(idxStr);
+                const originalQty = Number(products[idx]?.quantity ?? 1);
+                if (qty !== originalQty) return true;
+              }
+
+              for (const [idxStr, rawVal] of Object.entries(manualCostOverrides)) {
+                if (rawVal !== undefined && rawVal.trim() !== '') {
+                  const idx = Number(idxStr);
+                  const originalCost = Number(products[idx]?.unit_cost ?? (products[idx] as { cost_price?: number })?.cost_price ?? 0);
+                  const newCost = parseBRLFloat(rawVal);
+                  if (Math.abs(newCost - originalCost) > 0.001) return true;
+                }
+              }
+
+              if (manualSupplierFeePercent.trim() !== '') {
+                const baseSupFee = supFeeType === 'percent' && supFeeVal > 0 ? supFeeVal : DEFAULT_SUPPLIER_FEE_PERCENT;
+                const newSupFee = parseFloat(manualSupplierFeePercent.replace(',', '.')) || 0;
+                if (Math.abs(newSupFee - baseSupFee) > 0.001) return true;
+              }
+
+              if (manualGatewayFee.trim() !== '') {
+                const newGtwFee = parseBRLFloat(manualGatewayFee);
+                if (Math.abs(newGtwFee - productGatewayFee) > 0.001) return true;
+              }
+
+              return false;
+            })();
+
             const isFreeSample = selectedOrder.is_free_sample === true;
             const isPersonalPurchase = selectedOrder.is_personal_purchase === true || String(selectedOrder.order_number).trim() === '208';
 
@@ -5371,14 +5437,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                     )}
                   </div>
 
-                  {/* Salvar custos no banco */}
-                  {(
-                    Object.keys(manualCostOverrides).some(k => manualCostOverrides[Number(k)] !== '') ||
-                    Object.keys(manualQuantityOverrides).length > 0 ||
-                    manualSupplierFeePercent !== '' ||
-                    manualGatewayFee !== '' ||
-                    manualTotalProductCost !== ''
-                  ) && (
+                  {/* Salvar custos no banco — exibido apenas quando há alterações não salvas ou status salvo */}
+                  {(hasActualCostChanges || costsSaved) && (
                     <div className="flex items-center justify-end gap-3 px-1 py-1">
                       {costsSaved && (
                         <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
@@ -5388,38 +5448,40 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           Salvo!
                         </span>
                       )}
-                      <button
-                        onClick={() => handleSaveCosts(
-                          selectedOrder?.products ?? [],
-                          manualCostOverrides,
-                          manualSupplierFeePercent,
-                          manualGatewayFee,
-                          manualTotalProductCost,
-                          selectedOrder?.order_id,
-                          finalRealProfit,
-                          manualQuantityOverrides,
-                          totalProductCost,
-                        )}
-                        disabled={savingCosts}
-                        className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
-                      >
-                        {savingCosts ? (
-                          <>
-                            <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                            </svg>
-                            Salvando...
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                            </svg>
-                            Salvar custos
-                          </>
-                        )}
-                      </button>
+                      {hasActualCostChanges && (
+                        <button
+                          onClick={() => handleSaveCosts(
+                            selectedOrder?.products ?? [],
+                            manualCostOverrides,
+                            manualSupplierFeePercent,
+                            manualGatewayFee,
+                            manualTotalProductCost,
+                            selectedOrder?.order_id,
+                            finalRealProfit,
+                            manualQuantityOverrides,
+                            totalProductCost,
+                          )}
+                          disabled={savingCosts}
+                          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                        >
+                          {savingCosts ? (
+                            <>
+                              <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                              </svg>
+                              Salvando...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                              </svg>
+                              Salvar custos
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
                   )}
 
@@ -6621,6 +6683,22 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 {formatCurrency(allDataWaitingProfit)}
               </p>
             </div>
+            {allDataBlockedProfit > 0 && (
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Lucro bloqueado</p>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-red-500/10 text-red-500 dark:text-red-400 border border-red-500/20">
+                    Repasse retido
+                  </span>
+                </div>
+                <p 
+                  className="text-xl font-bold text-red-500 dark:text-red-400"
+                  title="Lucro de pedidos com repasse bloqueado ou réplicas retidas pela plataforma"
+                >
+                  {formatCurrency(allDataBlockedProfit)}
+                </p>
+              </div>
+            )}
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">{periodLabel}</p>
               <p className={`text-xl font-bold ${currentPeriodProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(currentPeriodProfit)}</p>
