@@ -1,7 +1,12 @@
 // Types para o sistema de vendas
 
 export interface OrderProduct {
+  id?: string;
+  product_id?: string;
+  is_replica?: boolean;
   name: string;
+  sku?: string;
+  image_url?: string;
   quantity: number;
   unit_price: number;
   unit_cost: number;
@@ -9,10 +14,15 @@ export interface OrderProduct {
 
 export interface OrderData {
   order_id: string;
+  bling_order_id?: string | null;
   order_number: string;
   order_date: string;
   delivery_date?: string | null;
   is_logistics_delayed?: boolean;
+  is_manually_settled?: boolean;
+  is_replica?: boolean;
+  is_replica_unblocked?: boolean;
+  aguardando_reembolso?: boolean;
   marketplace_name: string;
   marketplace?: string;
   total_amount: number;
@@ -23,7 +33,9 @@ export interface OrderData {
   other_expenses?: number;
   commission_rate?: number;
   // Campos do produto vinculado
+  product_id?: string;
   product_name?: string;
+  product_sku?: string;
   product_cost_price?: number;
   supplier_fee_type?: string;
   supplier_fee_value?: string;

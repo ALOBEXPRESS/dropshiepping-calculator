@@ -24,7 +24,7 @@ import type { ApexOptions } from 'apexcharts';
 import { useRevenueReport } from '@/hooks/sales/useRevenueReport';
 import { useSettings } from '@/contexts/SettingsContext';
 import { supabase } from '@/lib/supabase';
-import { Loader2, Trash2, Truck, CheckCircle2, Clock, ShoppingBag, AlertTriangle, Link2 } from 'lucide-react';
+import { Loader2, Trash2, Truck, CheckCircle2, Clock, ShoppingBag, AlertTriangle, Link2, ShieldAlert, Lock, Unlock, AlertOctagon } from 'lucide-react';
 import type { PeriodFilter, RevenueData } from '@/types/sales';
 import { toast } from 'sonner';
 import { ReferenceService, type Marketplace } from '@/services/referenceService';
@@ -69,6 +69,8 @@ interface OrderDetail {
   delivery_date?: string | null;
   is_logistics_delayed?: boolean;
   is_manually_settled?: boolean;
+  is_replica?: boolean;
+  is_replica_unblocked?: boolean;
   aguardando_reembolso?: boolean;
   marketplace: string;
   marketplace_fixed_fee?: number;
@@ -83,6 +85,7 @@ interface OrderDetail {
   tiktok_reembolso_disabled?: boolean;
   tiktok_retorno_liquido?: number | null;
   customer_name?: string;
+  product_id?: string;
   product_name?: string;
   product_sku?: string;
   product_image_url?: string;
@@ -91,6 +94,8 @@ interface OrderDetail {
   affiliate_percentage?: number | null;
   products?: {
     id?: string;
+    product_id?: string;
+    is_replica?: boolean;
     name: string;
     sku?: string;
     image_url?: string;
@@ -202,6 +207,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     manualDeliveryDate?: string;
     manualLogisticsDelayed?: boolean;
     manualIsSettled?: boolean;
+    manualIsReplicaUnblocked?: boolean;
+    isProductReplica?: boolean;
     aguardandoReembolso?: boolean;
   };
   const orderModalStateRef = useRef<Record<string, OrderModalState>>({});
@@ -263,6 +270,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const manualDeliveryDateRef = useRef('');
   const manualLogisticsDelayedRef = useRef(false);
   const manualIsSettledRef = useRef(false);
+  const manualIsReplicaUnblockedRef = useRef(false);
+  const isProductReplicaRef = useRef(false);
   const aguardandoReembolsoRef = useRef(false);
 
   const saveCurrentOrderModalState = useCallback(() => {
@@ -283,6 +292,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       manualDeliveryDate: manualDeliveryDateRef.current,
       manualLogisticsDelayed: manualLogisticsDelayedRef.current,
       manualIsSettled: manualIsSettledRef.current,
+      manualIsReplicaUnblocked: manualIsReplicaUnblockedRef.current,
+      isProductReplica: isProductReplicaRef.current,
       aguardandoReembolso: aguardandoReembolsoRef.current,
     };
   }, []);
@@ -531,6 +542,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       supplier_fee_type: (order as { supplier_fee_type?: string }).supplier_fee_type,
       supplier_gateway_fee_value: (order as { supplier_gateway_fee_value?: string }).supplier_gateway_fee_value,
       supplier_gateway_fee_type: (order as { supplier_gateway_fee_type?: string }).supplier_gateway_fee_type,
+      is_replica: (order as { is_replica?: boolean }).is_replica === true
+        || (enrichment as Partial<OrderDetail>)?.is_replica === true,
+      is_replica_unblocked: (order as { is_replica_unblocked?: boolean }).is_replica_unblocked === true
+        || (enrichment as Partial<OrderDetail>)?.is_replica_unblocked === true,
+      product_id: (order as { product_id?: string }).product_id
+        ?? (enrichment as Partial<OrderDetail>)?.product_id
+        ?? (mergedOrder.products?.[0] as { product_id?: string })?.product_id
+        ?? null,
       total_profit: effectiveProfit,
       tiktok_sfp_enabled: (order as { tiktok_sfp_enabled?: boolean | string }).tiktok_sfp_enabled === true
         || String((order as { tiktok_sfp_enabled?: unknown }).tiktok_sfp_enabled) === 'true',
@@ -578,6 +597,17 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     setManualDeliveryDate(saved?.manualDeliveryDate ?? (detail.delivery_date ?? ''));
     setManualLogisticsDelayed(saved?.manualLogisticsDelayed ?? Boolean(detail.is_logistics_delayed));
     setManualIsSettled(saved?.manualIsSettled ?? Boolean(detail.is_manually_settled));
+    const initialReplica = saved?.isProductReplica ?? Boolean(
+      detail.is_replica ||
+      (detail.products && detail.products.some(p => p.is_replica)) ||
+      (detail.product_name && replicaProductNames.has(detail.product_name.trim().toLowerCase())) ||
+      (detail.product_id && replicaProductIds.has(detail.product_id))
+    );
+    setIsProductReplica(initialReplica);
+    setManualIsReplicaUnblocked(
+      saved?.manualIsReplicaUnblocked ??
+      Boolean(detail.is_replica_unblocked || replicaUnblockedOrderIds.has(orderId))
+    );
     setAguardandoReembolso(saved?.aguardandoReembolso ?? Boolean(detail.aguardando_reembolso));
     setManualMarketingCost('');
     setManualCostEnabled(false);
@@ -924,12 +954,81 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [savingLogisticsDelayed, setSavingLogisticsDelayed] = useState(false);
   const [manualIsSettled, setManualIsSettled] = useState(false);
   const [savingManualSettled, setSavingManualSettled] = useState(false);
+  const [manualIsReplicaUnblocked, setManualIsReplicaUnblocked] = useState(false);
+  const [savingReplicaUnblock, setSavingReplicaUnblock] = useState(false);
+  const [isProductReplica, setIsProductReplica] = useState(false);
+  const [savingReplicaStatus, setSavingReplicaStatus] = useState(false);
+  const [replicaProductIds, setReplicaProductIds] = useState<Set<string>>(new Set());
+  const [replicaProductNames, setReplicaProductNames] = useState<Set<string>>(new Set());
+  const [replicaUnblockedOrderIds, setReplicaUnblockedOrderIds] = useState<Set<string>>(new Set());
   const [aguardandoReembolso, setAguardandoReembolso] = useState(false);
   manualDeliveryDateRef.current = manualDeliveryDate;
   manualLogisticsDelayedRef.current = manualLogisticsDelayed;
   manualIsSettledRef.current = manualIsSettled;
+  manualIsReplicaUnblockedRef.current = manualIsReplicaUnblocked;
+  isProductReplicaRef.current = isProductReplica;
   aguardandoReembolsoRef.current = aguardandoReembolso;
+
+  // Carregar produtos réplica e pedidos com desbloqueio manual da organização
+  useEffect(() => {
+    if (!organizationId) return;
+    let isMounted = true;
+    const fetchReplicaData = async () => {
+      try {
+        const { data: prods } = await supabase
+          .from('products')
+          .select('id, name, is_replica')
+          .eq('organization_id', organizationId)
+          .eq('is_replica', true);
+
+        if (isMounted && prods) {
+          const pIds = new Set<string>();
+          const pNames = new Set<string>();
+          prods.forEach((p) => {
+            if (p.id) pIds.add(p.id);
+            if (p.name) pNames.add(p.name.trim().toLowerCase());
+          });
+          setReplicaProductIds(pIds);
+          setReplicaProductNames(pNames);
+        }
+
+        const { data: unblocked } = await supabase
+          .from('orders')
+          .select('id')
+          .eq('organization_id', organizationId)
+          .eq('is_replica_unblocked', true);
+
+        if (isMounted && unblocked) {
+          const oIds = new Set<string>();
+          unblocked.forEach((o) => {
+            if (o.id) oIds.add(o.id);
+          });
+          setReplicaUnblockedOrderIds(oIds);
+        }
+      } catch (err) {
+        console.warn('Erro ao carregar dados de réplica da organização:', err);
+      }
+    };
+    fetchReplicaData();
+    return () => {
+      isMounted = false;
+    };
+  }, [organizationId, refreshTrigger]);
   const chartRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const hideApexTooltip = useCallback(() => {
+    const tt = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
+    if (tt) {
+      tt.classList.remove('apexcharts-tooltip-hover-lock');
+      tt.classList.remove('apexcharts-active');
+      tt.classList.add('apexcharts-tooltip-hidden');
+      tt.style.opacity = '0';
+      tt.style.display = 'none';
+      tt.style.visibility = 'hidden';
+      tt.style.pointerEvents = 'none';
+    }
+  }, []);
   const dataRef = useRef(data);
   dataRef.current = data;
   const periodRef = useRef(period);
@@ -2092,7 +2191,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     };
   }, [organizationId, refreshTrigger]);
 
-  // Adicionar CSS global para manter tooltip visível ao passar mouse sobre ele
+  // Adicionar CSS global para manter tooltip visível ao passar mouse sobre ele e fechar quando fora
   useEffect(() => {
     const style = document.createElement('style');
     style.textContent = `
@@ -2106,6 +2205,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         display: block !important;
         opacity: 1 !important;
         visibility: visible !important;
+        pointer-events: auto !important;
       }
       .apexcharts-tooltip.apexcharts-tooltip-hover-lock {
         display: block !important;
@@ -2113,16 +2213,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         visibility: visible !important;
         pointer-events: auto !important;
       }
-      /* Gap bridge: tooltip fixed topLeft, data points spread rightward.
-         Extend pointer-events right so mouse can travel from right-side data point to tooltip */
-      .apexcharts-tooltip.apexcharts-active::after {
-        content: '';
-        position: absolute;
-        top: -20px;
-        left: 100%;
-        width: 600px;
-        height: calc(100% + 40px);
-        pointer-events: auto;
+      .apexcharts-tooltip.apexcharts-tooltip-hidden {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
       }
     `;
     document.head.appendChild(style);
@@ -2140,34 +2235,139 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     document.addEventListener('mousedown', preventTooltipClose, true);
     document.addEventListener('touchstart', preventTooltipClose as EventListener, true);
 
+    let hideTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const cancelScheduledHide = () => {
+      if (hideTimeoutId) {
+        clearTimeout(hideTimeoutId);
+        hideTimeoutId = null;
+      }
+    };
+
+    const scheduleHide = (delay = 120) => {
+      cancelScheduledHide();
+      hideTimeoutId = setTimeout(() => {
+        const hoveredTooltip = document.querySelector('.apexcharts-tooltip:hover');
+        const isChartHovered = chartRef.current?.matches(':hover');
+        if (!hoveredTooltip && !isChartHovered) {
+          hideApexTooltip();
+        }
+      }, delay);
+    };
+
     // Lock tooltip visibility while mouse is over it — prevents ApexCharts from hiding it
     // when mouse moves from chart SVG onto the tooltip element
     const lockTooltip = () => {
+      cancelScheduledHide();
       const tt = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
       if (tt) {
+        tt.classList.remove('apexcharts-tooltip-hidden');
         tt.classList.add('apexcharts-tooltip-hover-lock');
         tt.style.opacity = '1';
         tt.style.display = 'block';
+        tt.style.visibility = 'visible';
+        tt.style.pointerEvents = 'auto';
       }
     };
+
     const unlockTooltip = () => {
       const tt = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
-      if (tt) tt.classList.remove('apexcharts-tooltip-hover-lock');
+      if (tt) {
+        tt.classList.remove('apexcharts-tooltip-hover-lock');
+        tt.style.opacity = '';
+        tt.style.display = '';
+        tt.style.visibility = '';
+        tt.style.pointerEvents = '';
+      }
     };
-    document.addEventListener('mouseover', (e) => {
-      if ((e.target as HTMLElement).closest('.apexcharts-tooltip')) lockTooltip();
-    }, true);
-    document.addEventListener('mouseout', (e) => {
+
+    const handleMouseOver = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('.apexcharts-tooltip')) {
+        lockTooltip();
+      }
+    };
+
+    const handleMouseOut = (e: MouseEvent) => {
       const related = (e as MouseEvent).relatedTarget as HTMLElement | null;
-      if (!(related?.closest?.('.apexcharts-tooltip'))) unlockTooltip();
-    }, true);
+      if (!related?.closest?.('.apexcharts-tooltip')) {
+        unlockTooltip();
+        if (!related || !chartRef.current?.contains(related)) {
+          scheduleHide(80);
+        }
+      }
+    };
+
+    // Detectar quando o mouse sai do SVG do gráfico
+    const handleChartMouseLeave = (e: MouseEvent) => {
+      const related = e.relatedTarget as HTMLElement | null;
+      if (related?.closest?.('.apexcharts-tooltip')) {
+        return; // Mouse está indo para dentro do tooltip
+      }
+      scheduleHide(100);
+    };
+
+    const handleChartMouseEnter = () => {
+      cancelScheduledHide();
+      const tt = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
+      if (tt?.classList.contains('apexcharts-tooltip-hidden')) {
+        tt.classList.remove('apexcharts-tooltip-hidden');
+        tt.style.opacity = '';
+        tt.style.display = '';
+        tt.style.visibility = '';
+        tt.style.pointerEvents = 'auto';
+      }
+    };
+
+    // Fechar imediatamente quando o mouse sai da região do Card do Relatório
+    const handleDocumentMouseMove = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      const isOverTooltip = Boolean(target.closest('.apexcharts-tooltip'));
+      const isOverCard = Boolean(cardRef.current && cardRef.current.contains(target));
+
+      if (!isOverTooltip && !isOverCard) {
+        const tt = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
+        if (tt && (tt.classList.contains('apexcharts-active') || tt.classList.contains('apexcharts-tooltip-hover-lock') || tt.style.opacity === '1')) {
+          hideApexTooltip();
+        }
+      }
+    };
+
+    const handleWindowScroll = () => {
+      const hoveredTooltip = document.querySelector('.apexcharts-tooltip:hover');
+      const isChartHovered = chartRef.current?.matches(':hover');
+      if (!hoveredTooltip && !isChartHovered) {
+        hideApexTooltip();
+      }
+    };
+
+    document.addEventListener('mouseover', handleMouseOver, true);
+    document.addEventListener('mouseout', handleMouseOut, true);
+    document.addEventListener('mousemove', handleDocumentMouseMove, { passive: true });
+    window.addEventListener('scroll', handleWindowScroll, { passive: true });
+
+    const chartEl = chartRef.current;
+    if (chartEl) {
+      chartEl.addEventListener('mouseleave', handleChartMouseLeave);
+      chartEl.addEventListener('mouseenter', handleChartMouseEnter);
+    }
 
     return () => {
+      cancelScheduledHide();
       document.head.removeChild(style);
       document.removeEventListener('mousedown', preventTooltipClose, true);
       document.removeEventListener('touchstart', preventTooltipClose as EventListener, true);
+      document.removeEventListener('mouseover', handleMouseOver, true);
+      document.removeEventListener('mouseout', handleMouseOut, true);
+      document.removeEventListener('mousemove', handleDocumentMouseMove);
+      window.removeEventListener('scroll', handleWindowScroll);
+      if (chartEl) {
+        chartEl.removeEventListener('mouseleave', handleChartMouseLeave);
+        chartEl.removeEventListener('mouseenter', handleChartMouseEnter);
+      }
     };
-  }, []);
+  }, [hideApexTooltip]);
 
   // Adicionar event listeners para os botões de excluir e detalhar no tooltip
   useEffect(() => {
@@ -2185,6 +2385,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const orderStore = deleteButton.getAttribute('data-order-store');
         
         if (orderId && orderNumber && orderStore) {
+          hideApexTooltip();
           setOrderToDelete({ id: orderId, number: orderNumber, store: orderStore });
           setDeleteDialogOpen(true);
         }
@@ -2197,7 +2398,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         e.preventDefault();
         e.stopPropagation();
         const affId = deleteAffButton.getAttribute('data-aff-id');
-        if (affId) { setAffToDelete(affId); setDeleteAffDialogOpen(true); }
+        if (affId) {
+          hideApexTooltip();
+          setAffToDelete(affId);
+          setDeleteAffDialogOpen(true);
+        }
         return;
       }
 
@@ -2206,6 +2411,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       if (detailAffButton) {
         e.preventDefault();
         e.stopPropagation();
+        hideApexTooltip();
         setAffDetailData({
           id: detailAffButton.getAttribute('data-aff-id') ?? '',
           name: detailAffButton.getAttribute('data-aff-name') ?? '',
@@ -2238,9 +2444,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           // Lock tooltip visible before DOM update
           const tooltipLock = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
           if (tooltipLock) {
+            tooltipLock.classList.remove('apexcharts-tooltip-hidden');
             tooltipLock.classList.add('apexcharts-tooltip-hover-lock');
             tooltipLock.style.opacity = '1';
             tooltipLock.style.display = 'block';
+            tooltipLock.style.visibility = 'visible';
+            tooltipLock.style.pointerEvents = 'auto';
           }
 
           // Atualizar ref imediatamente (antes do DOM update, não aguarda re-render)
@@ -2423,8 +2632,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   // Reading offsetHeight flushes layout and forces visual update
                   void (tooltipEl as HTMLElement).offsetHeight;
                   // Also ensure tooltip stays visible
+                  (tooltipEl as HTMLElement).classList.remove('apexcharts-tooltip-hidden');
                   (tooltipEl as HTMLElement).style.opacity = '1';
                   (tooltipEl as HTMLElement).style.display = 'block';
+                  (tooltipEl as HTMLElement).style.visibility = 'visible';
+                  (tooltipEl as HTMLElement).style.pointerEvents = 'auto';
                 }
 
               }
@@ -2445,6 +2657,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           try {
             const orderData = JSON.parse(orderDataStr) as OrderDetail;
             if (orderData?.order_id) {
+              hideApexTooltip();
               openOrderById(orderData.order_id);
             }
           } catch (err) {
@@ -2460,7 +2673,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     return () => {
       document.removeEventListener('click', handleTooltipClick, true);
     };
-  }, [computeOrderRealProfit, mergeOrderForTooltip, normalizeMarketplace, openOrderById, resolveMarketplaceConfig]);
+  }, [computeOrderRealProfit, hideApexTooltip, mergeOrderForTooltip, normalizeMarketplace, openOrderById, resolveMarketplaceConfig]);
 
   // Refetch quando refreshTrigger mudar (apenas se for > 0)
   React.useEffect(() => {
@@ -2798,11 +3011,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       setOpenReembolso(false);
       setLinkedCampaignId(null);
       setAvailableCampaigns([]);
-      const tooltipEl = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
-      if (tooltipEl) {
-        tooltipEl.style.opacity = '0';
-        tooltipEl.classList.remove('apexcharts-active');
-      }
+      hideApexTooltip();
       
       // Mostrar toast de sucesso
       toast.success('Métrica excluída com sucesso!', {
@@ -2894,15 +3103,37 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           (o as { is_logistics_delayed?: boolean }).is_logistics_delayed === true,
           (o as { is_manually_settled?: boolean }).is_manually_settled === true
         );
+
+        const rawMkt = String((o as { marketplace?: string }).marketplace ?? (o as { marketplace_name?: string }).marketplace_name ?? '').toLowerCase();
+        const isTikTok = rawMkt.includes('tiktok') || Boolean((o as { tiktok_sfp_enabled?: boolean }).tiktok_sfp_enabled);
+
+        const isOrderReplica = Boolean(
+          (o as { is_replica?: boolean }).is_replica ||
+          (o.products && o.products.some((p: { is_replica?: boolean; product_id?: string; name?: string }) =>
+            p.is_replica || (p.product_id && replicaProductIds.has(p.product_id)) || (p.name && replicaProductNames.has(p.name.trim().toLowerCase()))
+          )) ||
+          (o.product_id && replicaProductIds.has(o.product_id)) ||
+          (o.product_name && replicaProductNames.has(o.product_name.trim().toLowerCase()))
+        );
+
+        const isReplicaUnblocked = Boolean(
+          (o as { is_replica_unblocked?: boolean }).is_replica_unblocked ||
+          replicaUnblockedOrderIds.has(o.order_id)
+        );
+
+        const isReplicaBlocked = isOrderReplica && isTikTok && !settled && !isReplicaUnblocked;
+
         if (settled) {
           totalSettledProfit += effectiveProfit;
-        } else {
+        } else if (!isReplicaBlocked) {
           totalWaitingProfit += effectiveProfit;
         }
 
+        const reportProfit = isReplicaBlocked ? 0 : effectiveProfit;
+
         totalRevenue += liquidoFinal;
         totalCost += realCost;
-        totalProfit += effectiveProfit;
+        totalProfit += reportProfit;
         totalMarketingCost += orderMarketingCost;
       });
 
@@ -2916,7 +3147,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         total_marketing_cost: totalMarketingCost,
       };
     });
-  }, [affiliateByOrderId, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig, marketingCostByProductId, manualMarketingCostByOrderId, reembolsoByOrderId, filters]);
+  }, [affiliateByOrderId, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig, marketingCostByProductId, manualMarketingCostByOrderId, reembolsoByOrderId, filters, replicaProductIds, replicaProductNames, replicaUnblockedOrderIds]);
 
   const recalculatedData = useMemo(() => recalculateReportItems(data), [data, recalculateReportItems]);
   const recalculatedYearlyData = useMemo(() => recalculateReportItems(yearlyData), [yearlyData, recalculateReportItems]);
@@ -2952,6 +3183,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     acc.push(Math.round((prev + Number(item.total_cost ?? 0)) * 100) / 100);
     return acc;
   }, []);
+
+  // Lucro bruto acumulado até cada período (Lucro acumulado - Investimento Bruto)
+  const cumulativeGrossProfits = cumulativeProfits.map((profit) =>
+    round2(profit - effectiveGrossInvestment)
+  );
 
   const useAccumulated = period === 'monthly' || period === 'weekly' || period === 'daily';
 
@@ -3120,16 +3356,16 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         return Number(periodData.total_profit ?? 0);
       });
 
-      const costValues = visibleData.map((periodData, index) => {
+      const grossProfitValues = visibleData.map((periodData, index) => {
         if (useAccumulated) {
-          return cumulativeCosts[windowOffset + index] ?? 0;
+          return cumulativeGrossProfits[windowOffset + index] ?? 0;
         }
 
-        return Number(periodData.total_cost ?? 0);
+        return round2(Number(periodData.total_profit ?? 0) - effectiveGrossInvestment);
       });
 
       const marketingValues = marketingCostSeriesData;
-      const allValues = [0, ...profitValues, ...costValues, ...marketingValues];
+      const allValues = [0, ...profitValues, ...grossProfitValues, ...marketingValues];
 
       const rawMin = Math.min(...allValues);
       const rawMax = Math.max(...allValues);
@@ -3184,6 +3420,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         offsetY: 10,
       },
       custom: ({ dataPointIndex }: { dataPointIndex: number }) => {
+        const tt = document.querySelector('.apexcharts-tooltip') as HTMLElement | null;
+        if (tt && tt.classList.contains('apexcharts-tooltip-hidden')) {
+          tt.classList.remove('apexcharts-tooltip-hidden');
+          tt.style.opacity = '';
+          tt.style.display = '';
+          tt.style.visibility = '';
+          tt.style.pointerEvents = 'auto';
+        }
         // If nav arrow was just clicked, return empty to avoid overwriting the DOM update
         if (Date.now() < navClickBlockUntilRef.current) {
           return document.querySelector('.apexcharts-tooltip')?.innerHTML ?? '';
@@ -3539,13 +3783,13 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       }),
     },
     {
-      name: useAccumulated ? 'Custo Acumulado' : 'Custo',
+      name: useAccumulated ? 'Lucro Bruto Acumulado' : 'Lucro Bruto',
       data: visibleData.map((periodData, index) => {
         if (useAccumulated) {
-          return cumulativeCosts[windowOffset + index] ?? 0;
+          return cumulativeGrossProfits[windowOffset + index] ?? 0;
         }
 
-        return Number(periodData.total_cost ?? 0);
+        return round2(Number(periodData.total_profit ?? 0) - effectiveGrossInvestment);
       }),
     },
     {
@@ -3557,6 +3801,118 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       data: affiliateSeriesData,
     },
   ];
+
+  const handleToggleProductReplica = async () => {
+    if (!selectedOrder) return;
+    setSavingReplicaStatus(true);
+    const nextVal = !isProductReplica;
+    try {
+      let targetProductId = selectedOrder.product_id || selectedOrder.products?.[0]?.product_id;
+      if (!targetProductId && selectedOrder.order_id) {
+        const { data: items } = await supabase
+          .from('order_items')
+          .select('product_id')
+          .eq('order_id', selectedOrder.order_id)
+          .limit(1)
+          .maybeSingle();
+        if (items?.product_id) {
+          targetProductId = items.product_id;
+        }
+      }
+
+      if (targetProductId) {
+        await supabase
+          .from('products')
+          .update({ is_replica: nextVal })
+          .eq('id', targetProductId);
+      }
+
+      if (selectedOrder.product_name) {
+        await supabase
+          .from('products')
+          .update({ is_replica: nextVal })
+          .eq('organization_id', organizationId)
+          .ilike('name', selectedOrder.product_name.trim());
+      }
+
+      setIsProductReplica(nextVal);
+      isProductReplicaRef.current = nextVal;
+
+      setReplicaProductNames((prev) => {
+        const next = new Set(prev);
+        const nameKey = (selectedOrder.product_name || '').trim().toLowerCase();
+        if (nameKey) {
+          if (nextVal) next.add(nameKey);
+          else next.delete(nameKey);
+        }
+        return next;
+      });
+
+      if (targetProductId) {
+        setReplicaProductIds((prev) => {
+          const next = new Set(prev);
+          if (nextVal) next.add(targetProductId);
+          else next.delete(targetProductId);
+          return next;
+        });
+      }
+
+      setSelectedOrder((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          is_replica: nextVal,
+          products: prev.products?.map((p) => ({ ...p, is_replica: nextVal })),
+        };
+      });
+
+      refetch();
+      refetchYearly();
+      onOrderUpdated?.();
+      toast.success(
+        nextVal
+          ? 'Produto marcado como réplica. Pedidos pendentes do TikTok foram pausados.'
+          : 'Produto desmarcado como réplica. Repasses normalizados.'
+      );
+    } catch (err) {
+      console.error('Erro ao salvar status de réplica:', err);
+      toast.error('Erro ao atualizar status de produto réplica');
+    } finally {
+      setSavingReplicaStatus(false);
+    }
+  };
+
+  const handleToggleOrderReplicaUnblock = async () => {
+    if (!selectedOrder?.order_id) return;
+    setSavingReplicaUnblock(true);
+    const nextVal = !manualIsReplicaUnblocked;
+    try {
+      await supabase
+        .from('orders')
+        .update({ is_replica_unblocked: nextVal })
+        .eq('id', selectedOrder.order_id);
+
+      setManualIsReplicaUnblocked(nextVal);
+      manualIsReplicaUnblockedRef.current = nextVal;
+
+      setReplicaUnblockedOrderIds((prev) => {
+        const next = new Set(prev);
+        if (nextVal) next.add(selectedOrder.order_id);
+        else next.delete(selectedOrder.order_id);
+        return next;
+      });
+
+      setSelectedOrder((prev) => (prev ? { ...prev, is_replica_unblocked: nextVal } : null));
+      refetch();
+      refetchYearly();
+      onOrderUpdated?.();
+      toast.success(nextVal ? 'Pedido desbloqueado manualmente' : 'Pedido bloqueado novamente');
+    } catch {
+      toast.error('Erro ao atualizar status de desbloqueio do pedido');
+    } finally {
+      setSavingReplicaUnblock(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -3814,6 +4170,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               manualLogisticsDelayed,
               manualIsSettled
             );
+            const isTikTokModal = isTikTok || resolvedMarketplaceName.toLowerCase().includes('tiktok');
+            const isReplicaBlockedModal = isProductReplica && isTikTokModal && !isSettledModal && !manualIsReplicaUnblocked;
 
             return (
               <div className="flex flex-col bg-zinc-950 rounded-2xl overflow-hidden max-h-[88vh]">
@@ -3947,21 +4305,47 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           : (selectedOrder.product_name || 'Produto não identificado')}
                       </h2>
                       {!hasMultipleProducts && (
-                        <button
-                          type="button"
-                          onClick={() => setShowLinkProduct((prev) => !prev)}
-                          className={`text-[11px] font-semibold px-2 py-0.5 rounded flex items-center gap-1 shrink-0 transition-colors cursor-pointer border ${
-                            products.length === 0 || selectedOrder.product_name === 'Produto não vinculado'
-                              ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/40'
-                              : 'bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-300 hover:text-white border-zinc-700/60'
-                          }`}
-                          title="Vincular ou trocar o produto deste pedido"
-                        >
-                          <Link2 className="w-3 h-3 text-cyan-400" />
-                          {products.length === 0 || selectedOrder.product_name === 'Produto não vinculado'
-                            ? 'Vincular Produto'
-                            : 'Trocar Produto'}
-                        </button>
+                        <div className="flex flex-col items-end gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setShowLinkProduct((prev) => !prev)}
+                            className={`text-[11px] font-semibold px-2 py-0.5 rounded flex items-center gap-1 shrink-0 transition-colors cursor-pointer border ${
+                              products.length === 0 || selectedOrder.product_name === 'Produto não vinculado'
+                                ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/40'
+                                : 'bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-300 hover:text-white border-zinc-700/60'
+                            }`}
+                            title="Vincular ou trocar o produto deste pedido"
+                          >
+                            <Link2 className="w-3 h-3 text-cyan-400" />
+                            {products.length === 0 || selectedOrder.product_name === 'Produto não vinculado'
+                              ? 'Vincular Produto'
+                              : 'Trocar Produto'}
+                          </button>
+
+                          {/* Botão {Marcar} Produto réplica {danger} */}
+                          <button
+                            type="button"
+                            disabled={savingReplicaStatus}
+                            onClick={handleToggleProductReplica}
+                            className={`text-[11px] font-semibold px-2 py-0.5 rounded flex items-center gap-1 shrink-0 transition-all cursor-pointer border ${
+                              isProductReplica
+                                ? 'bg-red-500/25 hover:bg-red-500/35 text-red-300 border-red-500/60 shadow-sm shadow-red-950/50'
+                                : 'bg-zinc-900/90 hover:bg-red-950/30 text-red-400/90 hover:text-red-300 border-red-900/40 hover:border-red-500/50'
+                            }`}
+                            title={
+                              isProductReplica
+                                ? 'Produto classificado como réplica: pedidos em espera no TikTok estão pausados. Clique para desmarcar.'
+                                : 'Marcar este produto como réplica (pausa repasses de pedidos em espera no TikTok)'
+                            }
+                          >
+                            {savingReplicaStatus ? (
+                              <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                            ) : (
+                              <ShieldAlert className={`w-3 h-3 ${isProductReplica ? 'text-red-400' : 'text-red-500/80'}`} />
+                            )}
+                            <span>{isProductReplica ? 'Produto réplica' : 'Marcar Produto réplica'}</span>
+                          </button>
+                        </div>
                       )}
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
@@ -3984,6 +4368,22 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         </span>
                       )}
                     </div>
+
+                    {/* Alerta de Produto réplica ativo */}
+                    {isProductReplica && (
+                      <div className="mt-2 p-2 bg-red-950/30 border border-red-500/30 rounded-lg flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <ShieldAlert className="w-4 h-4 text-red-400 shrink-0" />
+                          <span className="text-xs text-red-200 font-medium">
+                            {isTikTokModal && !isSettledModal
+                              ? manualIsReplicaUnblocked
+                                ? 'Produto réplica ativo. Este pedido foi desbloqueado manualmente para processar o lucro.'
+                                : 'Produto réplica ativo. Pedidos em espera deste produto no TikTok estão pausados sem processar lucro.'
+                              : 'Produto réplica ativo no catálogo.'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Alerta de Produto não vinculado */}
                     {!hasMultipleProducts && (products.length === 0 || selectedOrder.product_name === 'Produto não vinculado') && !showLinkProduct && (
@@ -4239,8 +4639,44 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         <span>{manualIsSettled ? 'Liquidado' : 'Liquidar'}</span>
                       </button>
 
+                      {/* Botão Desbloquear Pedido Réplica (se for TikTok e produto réplica e ainda em espera) */}
+                      {isTikTokModal && isProductReplica && !isSettledModal && (
+                        <button
+                          type="button"
+                          disabled={savingReplicaUnblock}
+                          onClick={handleToggleOrderReplicaUnblock}
+                          className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium border transition-colors cursor-pointer ${
+                            manualIsReplicaUnblocked
+                              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/30'
+                              : 'bg-red-500/20 border-red-500/60 text-red-300 hover:bg-red-500/30'
+                          }`}
+                          title={
+                            manualIsReplicaUnblocked
+                              ? 'Pedido desbloqueado manualmente: lucro está sendo processado. Clique para voltar a bloquear.'
+                              : 'Pedido com produto réplica pausado no TikTok. Clique para desbloquear este pedido específico.'
+                          }
+                        >
+                          {savingReplicaUnblock ? (
+                            <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                          ) : manualIsReplicaUnblocked ? (
+                            <Unlock className="w-3 h-3 text-emerald-400" />
+                          ) : (
+                            <Lock className="w-3 h-3 text-red-400" />
+                          )}
+                          <span>{manualIsReplicaUnblocked ? 'Desbloqueado (Manual)' : 'Pausado (Réplica)'}</span>
+                        </button>
+                      )}
+
                       {/* Status de liquidação */}
-                      {isSettledModal ? (
+                      {isReplicaBlockedModal ? (
+                        <div
+                          className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium border bg-red-500/15 border-red-500/40 text-red-300"
+                          title="Repasse pausado/bloqueado: produto classificado como réplica no TikTok Shop. Lucro não processado."
+                        >
+                          <AlertOctagon className="w-3 h-3 text-red-400" />
+                          <span>Repasse Pausado (Réplica)</span>
+                        </div>
+                      ) : isSettledModal ? (
                         <div
                           className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium border bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
                           title={manualIsSettled ? 'Liquidado manualmente pelo usuário' : settlementDateModal ? `Liquidação em ${settlementDaysModal} dias após entrega. Data prevista: ${formatDateBR(settlementDateModal)}` : 'Liquidado'}
@@ -5863,7 +6299,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         }}
       />
 
-      <Card className="p-6 border-gray-100 dark:border-zinc-800">
+      <Card ref={cardRef} className="p-6 border-gray-100 dark:border-zinc-800">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
@@ -6027,7 +6463,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             </button>
           )}
           <div ref={chartRef}>
-          <Chart key={`${JSON.stringify(visibleData.map(d => `${d.period_label}_${d.total_profit}_${d.total_cost}`))}_${windowOffset}`} options={chartOptions} series={chartSeries} type="area" height={300} />
+          <Chart key={`${JSON.stringify(visibleData.map(d => `${d.period_label}_${d.total_profit}_${d.total_cost}`))}_${windowOffset}_${effectiveGrossInvestment}`} options={chartOptions} series={chartSeries} type="area" height={300} />
           </div>
         </div>
       ) : (
