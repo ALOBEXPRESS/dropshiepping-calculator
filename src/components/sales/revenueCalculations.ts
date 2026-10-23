@@ -198,13 +198,18 @@ export function matchesOrderFilters(
  * Subtotal TikTok Profits: +R$ 109,39
  * Subtotal TikTok Net: -R$ 40,11
  * 
- * Grand Total (22 orders):
- * - 12 orders with profit:  +R$ 129,38
- * - 10 orders with loss:    -R$ 154,61
- * - Final Result (Net):     -R$ 25,23
+ * Settled orders (33 orders):
+ * - 23 orders with profit:  +R$ 277,61
+ * - 10 orders with loss:    -R$ 156,46
+ * - Final Result (Net):     +R$ 121,15
+ * 
+ * Blocked orders / Repasse Retido (11 orders):
+ * - 9 orders with profit:   +R$ 98,43
+ * - 2 orders with loss:     -R$ 2,86
+ * - Final Blocked Result:   +R$ 95,57
  */
 export const SETTLED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = Object.freeze({
-  // Shopee (5 orders: 180, 13, 225, 226, 233 + SONIA-001)
+  // Shopee (6 orders: 180, 13, 225, 226, 233 + SONIA-001)
   'SONIA-001': -1.87,
   '225': -1.25,
   '226': -1.99,
@@ -212,47 +217,73 @@ export const SETTLED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = 
   '13': 10.23,
   '233': 10.23,
 
-  // TikTok Shop — Pedidos Liquidados (26 pedidos)
+  // TikTok Shop — Pedidos Liquidados (27 orders: 20 profit, 7 loss)
   '223': -51.76,
-  '210': -40.45,
+  '210': -40.26,
   '224': -20.17,
+  '218': -18.61,
   '204': -16.99,
-  '218': -12.38,
-  '17': -5.70,
-  '4': -2.05,
-  '214': 32.94,
-  '235': 28.13,
-  '187': 23.30,
-  '237': 15.16,
-  '238': 15.16,
-  '240': 15.16,
-  '10': 12.98,
-  '231': 10.96,
-  '232': 10.96,
-  '234': 10.96,
-  '15': 10.76,
-  '14': 9.11,
-  '239': 7.30,
-  '221': 6.53,
-  '208': 5.47,
-  '219': 4.55,
-  '229': 2.10,
-  '222': 1.65,
+  '17': -2.61,
+  '4': -0.95,
 
-  // TikTok Shop — Pedidos em Espera / Em Liquidação (12 pedidos)
-  '241': 15.16,
-  '243': 15.16,
+  '208': 57.52,
+  '214': 28.07,
+  '237': 15.10,
+  '238': 15.10,
+  '240': 15.10,
+  '10': 14.00,
+  '231': 10.96,
+  '232': 10.90,
+  '235': 10.00,
+  '15': 10.76,
+  '239': 9.30,
+  '243': 9.30,
+  '14': 8.56,
+  '222': 5.68,
+  '255': 5.68,
+  '219': 4.98,
+  '221': 4.98,
+  '234': 4.46,
+  '187': 4.25,
+  '229': 2.69,
+});
+
+/**
+ * TikTok Shop — Pedidos com Repasse Retido / Lucro Bloqueado (11 orders):
+ * Devido a restrições na conta TikTok, esses pedidos tiveram repasse bloqueado.
+ * 
+ * - 9 entradas positivas:   +R$ 98,43
+ * - 2 entradas negativas:   -R$ 2,86
+ * - Saldo do lote:          +R$ 95,57
+ */
+export const BLOCKED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = Object.freeze({
+  '241': 15.10,
   '246': 9.30,
-  '247': 10.97,
+  '247': 10.91,
   '248': 9.30,
   '251': 9.30,
   '252': 9.30,
-  '253': 9.30,
   '254': 9.30,
-  '255': 10.96,
-  '256': 10.96,
-  '257': 13.11,
+  '262': 12.96,
+  '263': 12.96,
+  '268': -0.37,
+  '266': -2.49,
 });
+
+export function isBlockedOrder(orderNumber?: string | number | null): boolean {
+  if (orderNumber == null) return false;
+  const num = String(orderNumber).trim();
+  return Boolean(num && Object.prototype.hasOwnProperty.call(BLOCKED_ORDER_PROFIT_OVERRIDES, num));
+}
+
+export function getBlockedOrderProfit(orderNumber?: string | number | null): number | null {
+  if (orderNumber == null) return null;
+  const num = String(orderNumber).trim();
+  if (num && Object.prototype.hasOwnProperty.call(BLOCKED_ORDER_PROFIT_OVERRIDES, num)) {
+    return BLOCKED_ORDER_PROFIT_OVERRIDES[num];
+  }
+  return null;
+}
 
 /**
  * Returns settled canonical profit for an order if registered in settled ledger.
@@ -260,6 +291,9 @@ export const SETTLED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = 
 export function getSettledOrderProfit(orderNumber?: string | number | null): number | null {
   if (orderNumber == null) return null;
   const num = String(orderNumber).trim();
+  if (num && isBlockedOrder(num)) {
+    return null;
+  }
   if (num && Object.prototype.hasOwnProperty.call(SETTLED_ORDER_PROFIT_OVERRIDES, num)) {
     return SETTLED_ORDER_PROFIT_OVERRIDES[num];
   }

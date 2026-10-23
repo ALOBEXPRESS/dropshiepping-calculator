@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { calcOrderProfit, type OrderProfitInput } from '@/utils/calcOrderProfit';
-import { getSafePeriodLabels, calculatePercentageChange, matchesOrderFilters, getSettledOrderProfit } from '@/components/sales/revenueCalculations';
+import { getSafePeriodLabels, calculatePercentageChange, matchesOrderFilters, getSettledOrderProfit, isBlockedOrder } from '@/components/sales/revenueCalculations';
 import type { SalesFilters } from '@/hooks/useFilterPersistence';
 
 interface HeroStats {
@@ -21,7 +21,11 @@ type RpcPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
 // Compute profit from an orders_data array (from RPC)
 function computeProfitFromOrders(orders: Record<string, unknown>[]): number {
   return orders.reduce((sum, o) => {
-    const settled = getSettledOrderProfit((o.order_number ?? '') as string | number);
+    const num = String(o.order_number ?? '').trim();
+    if (isBlockedOrder(num)) {
+      return sum;
+    }
+    const settled = getSettledOrderProfit(num);
     if (settled !== null) {
       return sum + settled;
     }

@@ -9,6 +9,8 @@ import {
   matchesOrderFilters,
   getSettledOrderProfit,
   SETTLED_ORDER_PROFIT_OVERRIDES,
+  getBlockedOrderProfit,
+  isBlockedOrder,
   calculatePlatformBreakdown,
   isOrderSettled,
   calculateDefaultDeliveryDate,
@@ -179,29 +181,13 @@ describe('revenueCalculations', () => {
   describe('SETTLED_ORDER_PROFIT_OVERRIDES and platform breakdown', () => {
     it('retrieves settled profit for known orders', () => {
       expect(getSettledOrderProfit('223')).toBe(-51.76);
-      expect(getSettledOrderProfit('210')).toBe(-40.45);
-      expect(getSettledOrderProfit('214')).toBe(32.94);
+      expect(getSettledOrderProfit('210')).toBe(-40.26);
+      expect(getSettledOrderProfit('214')).toBe(28.07);
       expect(getSettledOrderProfit('SONIA-001')).toBe(-1.87);
       expect(getSettledOrderProfit('180')).toBe(9.76);
       expect(getSettledOrderProfit('999999')).toBe(null);
       expect(getSettledOrderProfit(null)).toBe(null);
       expect(getSettledOrderProfit(undefined)).toBe(null);
-    });
-
-    it('matches exact TikTok Shop platform financial reconciliation', () => {
-      const tiktokNums = [
-        '223', '210', '224', '204', '218', '17', '4',
-        '214', '187', '10', '15', '14', '221', '208', '219', '229', '222'
-      ];
-      const orders = tiktokNums.map(num => ({ profit: getSettledOrderProfit(num)! }));
-      const breakdown = calculatePlatformBreakdown(orders);
-
-      expect(breakdown.ordersCount).toBe(17);
-      expect(breakdown.profitOrdersCount).toBe(10);
-      expect(breakdown.lossOrdersCount).toBe(7);
-      expect(breakdown.totalProfits).toBe(109.39);
-      expect(breakdown.totalLosses).toBe(-149.50);
-      expect(breakdown.netProfit).toBe(-40.11);
     });
 
     it('matches exact Shopee platform financial reconciliation (5 orders + SONIA-001)', () => {
@@ -215,51 +201,42 @@ describe('revenueCalculations', () => {
       expect(breakdown.netProfit).toBe(25.11);
     });
 
-    it('matches exact TikTok Shop 26 settled orders financial reconciliation (+R$ 73,68)', () => {
-      const tiktokSettledNums = [
-        '223', '210', '224', '204', '218', '17', '4',
-        '214', '235', '187', '237', '238', '240', '10',
-        '231', '232', '234', '15', '14', '239', '221',
-        '208', '219', '229', '222'
-      ];
-      const orders = tiktokSettledNums.map(num => ({ profit: getSettledOrderProfit(num)! }));
-      const breakdown = calculatePlatformBreakdown(orders);
-
-      expect(breakdown.ordersCount).toBe(25);
-      expect(breakdown.totalProfits).toBe(223.18);
-      expect(breakdown.totalLosses).toBe(-149.50);
-      expect(breakdown.netProfit).toBe(73.68);
-    });
-
-    it('matches exact 31 settled orders (+R$ 98,79 net) and 12 waiting orders (R$ 120,06)', () => {
+    it('matches exact 33 settled orders (+R$ 121,15 net) across store', () => {
       const settledNums = [
-        // Shopee
+        // Shopee (6 orders)
         'SONIA-001', '225', '226', '180', '13', '233',
-        // TikTok Settled
-        '223', '210', '224', '204', '218', '17', '4',
-        '214', '235', '187', '237', '238', '240', '10',
-        '231', '232', '234', '15', '14', '239', '221',
-        '208', '219', '229', '222'
+        // TikTok Settled (27 orders)
+        '223', '210', '224', '218', '204', '17', '4',
+        '208', '214', '237', '238', '240', '10',
+        '231', '232', '235', '15', '239', '243',
+        '14', '222', '255', '219', '221', '234',
+        '187', '229'
       ];
       const settledOrders = settledNums.map(num => ({ profit: getSettledOrderProfit(num)! }));
       const settledBreakdown = calculatePlatformBreakdown(settledOrders);
 
-      expect(settledBreakdown.totalProfits).toBe(253.40);
-      expect(settledBreakdown.totalLosses).toBe(-154.61);
-      expect(settledBreakdown.netProfit).toBe(98.79);
+      expect(settledBreakdown.ordersCount).toBe(33);
+      expect(settledBreakdown.profitOrdersCount).toBe(23);
+      expect(settledBreakdown.lossOrdersCount).toBe(10);
+      expect(settledBreakdown.totalProfits).toBe(277.61);
+      expect(settledBreakdown.totalLosses).toBe(-156.46);
+      expect(settledBreakdown.netProfit).toBe(121.15);
+    });
 
-      // 12 waiting orders
-      const waitingNums = ['241', '243', '246', '247', '248', '251', '252', '253', '254', '255', '256', '257'];
-      const waitingOrders = waitingNums.map(num => ({ profit: getSettledOrderProfit(num)! }));
-      const waitingBreakdown = calculatePlatformBreakdown(waitingOrders);
+    it('matches exact 11 blocked orders (+R$ 95,57 net) with repasse retido', () => {
+      const blockedNums = [
+        '241', '246', '247', '248', '251', '252', '254', '262', '263',
+        '268', '266'
+      ];
+      const blockedOrders = blockedNums.map(num => ({ profit: getBlockedOrderProfit(num)! }));
+      const blockedBreakdown = calculatePlatformBreakdown(blockedOrders);
 
-      expect(waitingBreakdown.ordersCount).toBe(12);
-      expect(waitingBreakdown.netProfit).toBe(132.12);
-
-      // Grand total across all 43 orders: 98.79 + 132.12 = 230.91
-      const allOrders = [...settledOrders, ...waitingOrders];
-      const allBreakdown = calculatePlatformBreakdown(allOrders);
-      expect(allBreakdown.netProfit).toBe(230.91);
+      expect(blockedBreakdown.ordersCount).toBe(11);
+      expect(blockedBreakdown.profitOrdersCount).toBe(9);
+      expect(blockedBreakdown.lossOrdersCount).toBe(2);
+      expect(blockedBreakdown.totalProfits).toBe(98.43);
+      expect(blockedBreakdown.totalLosses).toBe(-2.86);
+      expect(blockedBreakdown.netProfit).toBe(95.57);
     });
   });
 

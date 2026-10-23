@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/lib/supabase';
 import { Loader2, ChevronLeft, ChevronRight, Handshake } from 'lucide-react';
 import { calcOrderProfit, type OrderProfitInput } from '@/utils/calcOrderProfit';
-import { getSettledOrderProfit } from './revenueCalculations';
+import { getSettledOrderProfit, isBlockedOrder, getBlockedOrderProfit } from './revenueCalculations';
 
 import shopeeImg from '@/imgs/18790-256x256x32.png';
 import tiktokImg from '@/imgs/tiktok-shop-seller-cent-icon-filled-256.png';
@@ -493,13 +493,18 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
               affiliate_commission_rate: affiliateRate,
             }, hasAffiliate);
 
+            const num = String(dbOrder.order_number || tx.order_number || '').trim();
+            const isBlocked = isBlockedOrder(num) || Boolean(dbOrder.is_repasse_bloqueado);
+            const blockedProfit = getBlockedOrderProfit(num);
             const hasRetornoLiquido = bo?.tiktok_retorno_liquido != null && Number(bo.tiktok_retorno_liquido) > 0;
-            const settled = !hasRetornoLiquido ? getSettledOrderProfit(dbOrder.order_number || tx.order_number) : null;
+            const settled = (!hasRetornoLiquido && !isBlocked) ? getSettledOrderProfit(num) : null;
             const mktCost = mktCostMap.get(tx.id) ?? 0;
             const savedProfit = dbOrder.total_profit != null && !isNaN(Number(dbOrder.total_profit))
               ? Number(dbOrder.total_profit)
               : null;
-            const computedProfit = settled !== null
+            const computedProfit = isBlocked && blockedProfit !== null
+              ? blockedProfit
+              : settled !== null
               ? settled
               : !isNaN(result.realProfit)
               ? (result.realProfit - mktCost)
@@ -511,7 +516,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
               ...tx,
               marketplace_name: mpName || (tx as unknown as { marketplaces?: { name?: string } }).marketplaces?.name || null,
               total_profit: Math.round(computedProfit * 100) / 100,
-              is_repasse_bloqueado: Boolean(dbOrder.is_repasse_bloqueado),
+              is_repasse_bloqueado: isBlocked,
             };
           });
         } catch (enrichErr) {
