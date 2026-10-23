@@ -505,7 +505,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     const hasReembolsoOv = orderId in reembolsoByOrderIdRef.current;
     const rawReembolso = (order as { reembolso_value?: number | null }).reembolso_value;
     const reembolsoOv = hasReembolsoOv ? reembolsoByOrderIdRef.current[orderId] : (rawReembolso != null ? Number(rawReembolso) : null);
-    const settledDetailProfit = !hasReembolsoOv ? getSettledOrderProfit(orderNumber) : null;
+    const hasRetornoLiquido = Boolean((order as { tiktok_retorno_liquido?: number | null }).tiktok_retorno_liquido);
+    const settledDetailProfit = (!hasReembolsoOv && !hasRetornoLiquido) ? getSettledOrderProfit(orderNumber) : null;
     const effectiveProfit = settledDetailProfit !== null
       ? settledDetailProfit
       : (reembolsoOv !== null && !isNaN(reembolsoOv)
@@ -2566,7 +2567,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       ? (reembolsoOv1 - tpc1 - manualMktDeduct1)
                       : (rawRealProfit - manualMktDeduct1))
                   : (Number(savedProfit1) - manualMktDeduct1);
-                const settledTooltip1 = !hasReembolsoOv1 ? getSettledOrderProfit(orderNumber) : null;
+                const settledTooltip1 = (!hasReembolsoOv1 && !hasRetornoLiquido1) ? getSettledOrderProfit(orderNumber) : null;
                 const isWaitingRefund1 = Boolean((mergedOrder as { aguardando_reembolso?: boolean }).aguardando_reembolso);
                 const realProfit = isWaitingRefund1 ? 0 : (settledTooltip1 !== null ? settledTooltip1 : fallbackRealProfit1);
                 const settlementDays1 = Number(resolvedMarketplaceConfig?.settlement_period_days ?? 7);
@@ -3194,7 +3195,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         // manualMarketingCostByOrderId já contém campaign_order_costs + GVM Play (todos os custos salvos)
         const totalMktCost = manualMarketingCostByOrderId[o.order_id] ?? 0;
         const hasManualModalEdit = Boolean(o.order_id && o.order_id in reembolsoByOrderId);
-        const settledProfit = !hasManualModalEdit ? getSettledOrderProfit(o.order_number) : null;
+        const settledProfit = (!hasManualModalEdit && !hasRetornoLiquido) ? getSettledOrderProfit(o.order_number) : null;
         const savedProfit0 = (mergedOrder as { total_profit?: number | null }).total_profit;
         const fallbackEffectiveProfit = (hasRetornoLiquido || savedProfit0 == null || isNaN(Number(savedProfit0)))
           ? (hasReembolsoOverride && reembolsoOverride !== null && !isNaN(reembolsoOverride)
@@ -3696,7 +3697,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 ? (reembolsoOv2 - tpc2 - manualMktDeduct2)
                 : (rawRealProfit2 - manualMktDeduct2))
             : (Number(savedProfit2) - manualMktDeduct2);
-          const settledTooltip2 = !hasReembolsoOv2 ? getSettledOrderProfit(orderNumber) : null;
+          const settledTooltip2 = (!hasReembolsoOv2 && !hasRetornoLiquido2) ? getSettledOrderProfit(orderNumber) : null;
           const isWaitingRefund2 = Boolean((mergedOrder as { aguardando_reembolso?: boolean }).aguardando_reembolso);
           const realProfit = isWaitingRefund2 ? 0 : (settledTooltip2 !== null ? settledTooltip2 : fallbackRealProfit2);
           const settlementDays2 = Number(resolvedMarketplaceConfig?.settlement_period_days ?? 7);

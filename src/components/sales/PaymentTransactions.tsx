@@ -493,7 +493,8 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
               affiliate_commission_rate: affiliateRate,
             }, hasAffiliate);
 
-            const settled = getSettledOrderProfit(dbOrder.order_number || tx.order_number);
+            const hasRetornoLiquido = bo?.tiktok_retorno_liquido != null && Number(bo.tiktok_retorno_liquido) > 0;
+            const settled = !hasRetornoLiquido ? getSettledOrderProfit(dbOrder.order_number || tx.order_number) : null;
             const mktCost = mktCostMap.get(tx.id) ?? 0;
             const savedProfit = dbOrder.total_profit != null && !isNaN(Number(dbOrder.total_profit))
               ? Number(dbOrder.total_profit)

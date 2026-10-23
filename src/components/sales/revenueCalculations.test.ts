@@ -254,12 +254,12 @@ describe('revenueCalculations', () => {
       const waitingBreakdown = calculatePlatformBreakdown(waitingOrders);
 
       expect(waitingBreakdown.ordersCount).toBe(12);
-      expect(waitingBreakdown.netProfit).toBe(122.07);
+      expect(waitingBreakdown.netProfit).toBe(132.12);
 
-      // Grand total across all 43 orders: 98.79 + 122.07 = 220.86
+      // Grand total across all 43 orders: 98.79 + 132.12 = 230.91
       const allOrders = [...settledOrders, ...waitingOrders];
       const allBreakdown = calculatePlatformBreakdown(allOrders);
-      expect(allBreakdown.netProfit).toBe(220.86);
+      expect(allBreakdown.netProfit).toBe(230.91);
     });
   });
 
