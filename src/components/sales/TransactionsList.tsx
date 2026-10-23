@@ -355,7 +355,7 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
             tiktok_retorno_liquido: bo?.tiktok_retorno_liquido != null ? Number(bo.tiktok_retorno_liquido) : undefined,
             total_cost: order.total_cost,
             total_profit: order.total_profit,
-            manual_product_cost: order.total_cost != null && Number(order.total_cost) > 0 ? Number(order.total_cost) : undefined,
+            manual_product_cost: (prods.length === 0 && order.total_cost != null && Number(order.total_cost) > 0) ? Number(order.total_cost) : undefined,
             products: prods,
             marketplace: marketplaceName,
           };

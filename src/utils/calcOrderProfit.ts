@@ -102,8 +102,7 @@ export function calcOrderProfit(
       : DEFAULT_SUPPLIER_FEE_PERCENT
     : 0;
   const orderGatewayFee = isDogama ? productGatewayFee : 0;
-  const basePlusGateway = totalBaseCost + orderGatewayFee;
-  const orderSupplierFee = isDogama ? (basePlusGateway * effectiveSupFeePercent) / 100 : 0;
+  const orderSupplierFee = isDogama ? (totalBaseCost * effectiveSupFeePercent) / 100 : 0;
   
   const manualProductCost = order.manual_product_cost != null && !isNaN(Number(order.manual_product_cost))
     ? Number(order.manual_product_cost)

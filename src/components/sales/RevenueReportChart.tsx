@@ -1130,7 +1130,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       ...enrichment,
       products: mergedProducts,
       total_cost: mergedTotalCost,
-      manual_product_cost: mergedTotalCost > 0 ? mergedTotalCost : undefined,
+      manual_product_cost: ((!mergedProducts || mergedProducts.length === 0) && mergedTotalCost > 0) ? mergedTotalCost : undefined,
       product_cost_price: mergedProductCostPrice,
       tiktok_retorno_liquido: (enrichment.tiktok_retorno_liquido != null && Number(enrichment.tiktok_retorno_liquido) > 0)
         ? Number(enrichment.tiktok_retorno_liquido)

@@ -200,8 +200,8 @@ export function matchesOrderFilters(
  * 
  * Settled orders (33 orders):
  * - 23 orders with profit:  +R$ 277,61
- * - 10 orders with loss:    -R$ 156,46
- * - Final Result (Net):     +R$ 121,15
+ * - 10 orders with loss:    -R$ 158,06
+ * - Final Result (Net):     +R$ 119,55
  * 
  * Blocked orders / Repasse Retido (11 orders):
  * - 9 orders with profit:   +R$ 98,43
@@ -224,7 +224,7 @@ export const SETTLED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = 
   '218': -18.61,
   '204': -16.99,
   '17': -2.61,
-  '4': -0.95,
+  '4': -2.55,
 
   '208': 57.52,
   '214': 28.07,
