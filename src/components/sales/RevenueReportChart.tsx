@@ -549,7 +549,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       product_id: (order as { product_id?: string }).product_id
         ?? (enrichment as Partial<OrderDetail>)?.product_id
         ?? (mergedOrder.products?.[0] as { product_id?: string })?.product_id
-        ?? null,
+        ?? undefined,
       total_profit: effectiveProfit,
       tiktok_sfp_enabled: (order as { tiktok_sfp_enabled?: boolean | string }).tiktok_sfp_enabled === true
         || String((order as { tiktok_sfp_enabled?: unknown }).tiktok_sfp_enabled) === 'true',
@@ -3174,13 +3174,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const cumulativeProfits = recalculatedData.reduce<number[]>((acc, item) => {
     const prev = acc.length > 0 ? acc[acc.length - 1] : 0;
     acc.push(Math.round((prev + Number(item.total_profit ?? 0)) * 100) / 100);
-    return acc;
-  }, []);
-
-  // Custo acumulado até cada período (running total across ALL data, mesmo padrão de cumulativeProfits)
-  const cumulativeCosts = recalculatedData.reduce<number[]>((acc, item) => {
-    const prev = acc.length > 0 ? acc[acc.length - 1] : 0;
-    acc.push(Math.round((prev + Number(item.total_cost ?? 0)) * 100) / 100);
     return acc;
   }, []);
 
