@@ -224,7 +224,8 @@ export default function RepasePage() {
               const settlementDays = Number(mkt?.settlement_period_days ?? 7);
               const hasAffiliate = Boolean(o.affiliate_id);
               const profitResult = calcOrderProfit(o, mkt, hasAffiliate);
-              const effectiveProfit = settledOverride !== null ? settledOverride : profitResult.realProfit;
+              const isWaitingRefund = Boolean(o.aguardando_reembolso);
+              const effectiveProfit = isWaitingRefund ? 0 : (settledOverride !== null ? settledOverride : profitResult.realProfit);
               const rev = profitResult.precoVendaLiquidoFinal;
               const cost = profitResult.subtotalMarketplace;
               const settled = isOrderSettled(

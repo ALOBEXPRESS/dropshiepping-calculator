@@ -147,11 +147,14 @@ scripts/
 .claude/
 tools/
 
-# Documentation — ignore all except knowledge-graph (ui-audit is private/local only)
-docs/*
-!docs/knowledge-graph/
-!docs/knowledge-graph/**
-docs/knowledge-graph/ui-audit.md
+# Documentation — keep local only (never commit to public repo)
+docs/
+docs/**
+MAPA-CONEXOES-PROMPT.md
+relatorio-lucro-pedidos.md
+src/**/*.md
+public/**/*.md
+api/**/*.md
 ui-audit.md
 
 # Scripts (contain sensitive operations)

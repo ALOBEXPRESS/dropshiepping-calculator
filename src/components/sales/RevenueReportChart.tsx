@@ -69,6 +69,7 @@ interface OrderDetail {
   delivery_date?: string | null;
   is_logistics_delayed?: boolean;
   is_manually_settled?: boolean;
+  aguardando_reembolso?: boolean;
   marketplace: string;
   marketplace_fixed_fee?: number;
   is_free_sample?: boolean;
@@ -201,6 +202,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     manualDeliveryDate?: string;
     manualLogisticsDelayed?: boolean;
     manualIsSettled?: boolean;
+    aguardandoReembolso?: boolean;
   };
   const orderModalStateRef = useRef<Record<string, OrderModalState>>({});
 
@@ -261,6 +263,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const manualDeliveryDateRef = useRef('');
   const manualLogisticsDelayedRef = useRef(false);
   const manualIsSettledRef = useRef(false);
+  const aguardandoReembolsoRef = useRef(false);
 
   const saveCurrentOrderModalState = useCallback(() => {
     const cur = selectedOrderRef.current;
@@ -280,6 +283,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       manualDeliveryDate: manualDeliveryDateRef.current,
       manualLogisticsDelayed: manualLogisticsDelayedRef.current,
       manualIsSettled: manualIsSettledRef.current,
+      aguardandoReembolso: aguardandoReembolsoRef.current,
     };
   }, []);
 
@@ -321,6 +325,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             delivery_date,
             is_logistics_delayed,
             is_manually_settled,
+            aguardando_reembolso,
             total_amount,
             total_cost,
             product_cost_price,
@@ -432,6 +437,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             delivery_date: (dbOrder as { delivery_date?: string | null }).delivery_date ?? null,
             is_logistics_delayed: Boolean((dbOrder as { is_logistics_delayed?: boolean }).is_logistics_delayed),
             is_manually_settled: Boolean((dbOrder as { is_manually_settled?: boolean }).is_manually_settled),
+            aguardando_reembolso: Boolean((dbOrder as { aguardando_reembolso?: boolean }).aguardando_reembolso),
             total_amount: Number(dbOrder.total_amount ?? 0),
             total_cost: Number(dbOrder.total_cost ?? 0),
             product_cost_price: Number(dbOrder.product_cost_price ?? 0),
@@ -572,6 +578,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     setManualDeliveryDate(saved?.manualDeliveryDate ?? (detail.delivery_date ?? ''));
     setManualLogisticsDelayed(saved?.manualLogisticsDelayed ?? Boolean(detail.is_logistics_delayed));
     setManualIsSettled(saved?.manualIsSettled ?? Boolean(detail.is_manually_settled));
+    setAguardandoReembolso(saved?.aguardandoReembolso ?? Boolean(detail.aguardando_reembolso));
     setManualMarketingCost('');
     setManualCostEnabled(false);
     setManualCoupon('');
@@ -639,7 +646,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
         const { data: orderRow } = await supabase
           .from('orders')
-          .select('coupon_value, coupon_type, manual_acrescimo, reembolso_value, reembolso_marketplace_value, reembolso_fornecedor_value, reembolso_marketplace_enabled, reembolso_fornecedor_enabled, reembolso_motivo, order_date, delivery_date, is_logistics_delayed')
+          .select('coupon_value, coupon_type, manual_acrescimo, reembolso_value, reembolso_marketplace_value, reembolso_fornecedor_value, reembolso_marketplace_enabled, reembolso_fornecedor_enabled, reembolso_motivo, order_date, delivery_date, is_logistics_delayed, aguardando_reembolso')
           .eq('id', orderId)
           .maybeSingle();
         if (orderRow) {
@@ -656,6 +663,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             order_date?: string | null;
             delivery_date?: string | null;
             is_logistics_delayed?: boolean | null;
+            aguardando_reembolso?: boolean | null;
           };
           if (or.coupon_value != null) {
             setManualCoupon(
@@ -697,6 +705,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
           if (or.reembolso_motivo) {
             setReembolsoMotivo(or.reembolso_motivo);
+          }
+
+          if (or.aguardando_reembolso != null) {
+            setAguardandoReembolso(Boolean(or.aguardando_reembolso));
           }
 
           if (or.order_date) {
@@ -912,9 +924,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const [savingLogisticsDelayed, setSavingLogisticsDelayed] = useState(false);
   const [manualIsSettled, setManualIsSettled] = useState(false);
   const [savingManualSettled, setSavingManualSettled] = useState(false);
+  const [aguardandoReembolso, setAguardandoReembolso] = useState(false);
   manualDeliveryDateRef.current = manualDeliveryDate;
   manualLogisticsDelayedRef.current = manualLogisticsDelayed;
   manualIsSettledRef.current = manualIsSettled;
+  aguardandoReembolsoRef.current = aguardandoReembolso;
   const chartRef = useRef<HTMLDivElement>(null);
   const dataRef = useRef(data);
   dataRef.current = data;
@@ -985,6 +999,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       reembolso_fornecedor_value: enrichment.reembolso_fornecedor_value !== undefined
         ? enrichment.reembolso_fornecedor_value
         : (o as { reembolso_fornecedor_value?: number | null }).reembolso_fornecedor_value,
+      aguardando_reembolso: enrichment.aguardando_reembolso !== undefined
+        ? enrichment.aguardando_reembolso
+        : (o as { aguardando_reembolso?: boolean }).aguardando_reembolso,
     };
   }, []);
 
@@ -1139,6 +1156,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           reembolso_marketplace_value?: number | null;
           reembolso_fornecedor_enabled?: boolean | null;
           reembolso_fornecedor_value?: number | null;
+          aguardando_reembolso?: boolean | null;
           is_free_sample?: boolean | string | null;
           is_personal_purchase?: boolean | string | null;
           marketplace_id?: string | null;
@@ -1183,6 +1201,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           reembolso_marketplace_value,
           reembolso_fornecedor_enabled,
           reembolso_fornecedor_value,
+          aguardando_reembolso,
           is_free_sample,
           is_personal_purchase,
           marketplace_id,
@@ -1434,6 +1453,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             reembolso_marketplace_value: resolved.reembolso_marketplace_value != null ? Number(resolved.reembolso_marketplace_value) : existing?.reembolso_marketplace_value,
             reembolso_fornecedor_enabled: resolved.reembolso_fornecedor_enabled != null ? Boolean(resolved.reembolso_fornecedor_enabled) : existing?.reembolso_fornecedor_enabled,
             reembolso_fornecedor_value: resolved.reembolso_fornecedor_value != null ? Number(resolved.reembolso_fornecedor_value) : existing?.reembolso_fornecedor_value,
+            aguardando_reembolso: (resolved as { aguardando_reembolso?: boolean | null }).aguardando_reembolso != null ? Boolean((resolved as { aguardando_reembolso?: boolean | null }).aguardando_reembolso) : (existing as { aguardando_reembolso?: boolean })?.aguardando_reembolso,
             tiktok_retorno_liquido: bo?.tiktok_retorno_liquido != null ? Number(bo.tiktok_retorno_liquido) : (existing?.tiktok_retorno_liquido ?? null),
             tiktok_reembolso_disabled: bo?.tiktok_reembolso_disabled != null ? (bo.tiktok_reembolso_disabled === true) : existing?.tiktok_reembolso_disabled,
             is_free_sample: resolved.is_free_sample === true || existing?.is_free_sample,
@@ -2285,7 +2305,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   ? (reembolsoOv1 - tpc1 - manualMktDeduct1)
                   : (rawRealProfit - manualMktDeduct1);
                 const settledTooltip1 = !hasReembolsoOv1 ? getSettledOrderProfit(orderNumber) : null;
-                const realProfit = settledTooltip1 !== null ? settledTooltip1 : fallbackRealProfit1;
+                const isWaitingRefund1 = Boolean((mergedOrder as { aguardando_reembolso?: boolean }).aguardando_reembolso);
+                const realProfit = isWaitingRefund1 ? 0 : (settledTooltip1 !== null ? settledTooltip1 : fallbackRealProfit1);
                 const settlementDays1 = Number(resolvedMarketplaceConfig?.settlement_period_days ?? 7);
                 const isSettled1 = isOrderSettled(
                   (order as { order_date?: string }).order_date,
@@ -2850,7 +2871,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const fallbackEffectiveProfit = hasReembolsoOverride && reembolsoOverride !== null && !isNaN(reembolsoOverride)
           ? (reembolsoOverride - totalProductCost - totalMktCost)
           : (realProfit - totalMktCost);
-        const effectiveProfit = settledProfit !== null ? settledProfit : fallbackEffectiveProfit;
+        const isWaitingRefund = Boolean((mergedOrder as { aguardando_reembolso?: boolean }).aguardando_reembolso);
+        const effectiveProfit = isWaitingRefund ? 0 : (settledProfit !== null ? settledProfit : fallbackEffectiveProfit);
 
         // Marketing cost para exibição no painel de totais (keyed by order_id)
         const orderMarketingCost = (marketingCostByProductId as unknown as Record<string, number>)[`order:${o.order_id}`] ?? 0;
@@ -3294,7 +3316,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             ? (reembolsoOv2 - tpc2 - manualMktDeduct2)
             : (rawRealProfit2 - manualMktDeduct2);
           const settledTooltip2 = !hasReembolsoOv2 ? getSettledOrderProfit(orderNumber) : null;
-          const realProfit = settledTooltip2 !== null ? settledTooltip2 : fallbackRealProfit2;
+          const isWaitingRefund2 = Boolean((mergedOrder as { aguardando_reembolso?: boolean }).aguardando_reembolso);
+          const realProfit = isWaitingRefund2 ? 0 : (settledTooltip2 !== null ? settledTooltip2 : fallbackRealProfit2);
           const settlementDays2 = Number(resolvedMarketplaceConfig?.settlement_period_days ?? 7);
           const isSettled2 = isOrderSettled(
             (order as { order_date?: string }).order_date,
@@ -3742,7 +3765,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
             const effectiveProductCostModal = (isPersonalPurchase ? 0 : totalProductCost) - (hasReembolsoFornActive ? reembolsoFornVal : 0);
 
-            const finalRealProfit = hasReembolsoMktActive
+            const finalRealProfit = aguardandoReembolso
+              ? 0
+              : hasReembolsoMktActive
               ? (reembolsoMktVal - effectiveProductCostModal - manualMarketingCostVal)
               : hasReembolsoFornActive
               ? (reembolsoFornVal - (isPersonalPurchase ? 0 : totalProductCost) - manualMarketingCostVal)
@@ -3752,14 +3777,16 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               ? (precoVendaLiquidoFinal - effectiveProductCostModal - manualMarketingCostVal)
               : (precoVendaLiquidoFinal - effectiveProductCostModal + acrescimoManual - manualMarketingCostVal);
 
-            const hasReembolsoActive = hasReembolsoMktActive || hasReembolsoFornActive;
+            const hasReembolsoActive = aguardandoReembolso || hasReembolsoMktActive || hasReembolsoFornActive;
             const marginBase = hasReembolsoMktActive
               ? (Math.abs(reembolsoMktVal) > 0 ? Math.abs(reembolsoMktVal) : (Math.abs(precoVendaLiquidoFinal) > 0 ? Math.abs(precoVendaLiquidoFinal) : selectedOrder.total_amount))
               : hasReembolsoFornActive
               ? (Math.abs(reembolsoFornVal) > 0 ? Math.abs(reembolsoFornVal) : (Math.abs(totalProductCost) > 0 ? Math.abs(totalProductCost) : selectedOrder.total_amount))
               : (Math.abs(precoVendaLiquidoFinal) > 0 ? Math.abs(precoVendaLiquidoFinal) : selectedOrder.total_amount);
-            const margin = marginBase > 0
-              ? ((finalRealProfit / marginBase) * 100).toFixed(1) : '0.0';
+            const margin = aguardandoReembolso
+              ? '0.0'
+              : (marginBase > 0
+                ? ((finalRealProfit / marginBase) * 100).toFixed(1) : '0.0');
             const profitPositive = finalRealProfit >= 0;
 
             // Imagem: product_image_url do pedido → image_url do primeiro produto enriquecido
@@ -5255,16 +5282,51 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                           Marque as opções de reembolso desejadas para ajustar o lucro do pedido:
                         </p>
 
-                        {/* Reembolso Marketplace */}
-                        <div className="space-y-2 rounded-lg bg-zinc-900/80 border border-zinc-800/80 p-3">
+                        {/* Opção Aguardando Reembolso */}
+                        <div className={`space-y-2 rounded-lg p-3 border transition-colors ${
+                          aguardandoReembolso
+                            ? 'bg-amber-950/30 border-amber-500/40'
+                            : 'bg-zinc-900/80 border-zinc-800/80'
+                        }`}>
                           <label className="flex items-center gap-2.5 cursor-pointer select-none">
                             <input
                               type="checkbox"
+                              checked={aguardandoReembolso}
+                              onChange={(e) => setAguardandoReembolso(e.target.checked)}
+                              className="rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-amber-500/30 w-4 h-4 cursor-pointer"
+                            />
+                            <span className="text-xs font-semibold text-zinc-200 flex items-center gap-2">
+                              <span>Aguardando Reembolso</span>
+                              {aguardandoReembolso && (
+                                <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded font-medium">
+                                  Lucro zerado (R$ 0,00)
+                                </span>
+                              )}
+                            </span>
+                          </label>
+                          <p className="text-[10px] text-zinc-500 pl-6.5">
+                            Zera o lucro do pedido enquanto o processo de reembolso está em andamento e bloqueia as outras opções como somente leitura. Ao desmarcar, o lucro retorna ao valor normal.
+                          </p>
+                        </div>
+
+                        {/* Reembolso Marketplace */}
+                        <div className={`space-y-2 rounded-lg bg-zinc-900/80 border border-zinc-800/80 p-3 transition-opacity ${
+                          aguardandoReembolso ? 'opacity-50 pointer-events-none' : ''
+                        }`}>
+                          <label className={`flex items-center gap-2.5 select-none ${aguardandoReembolso ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                            <input
+                              type="checkbox"
+                              disabled={aguardandoReembolso}
                               checked={reembolsoMarketplaceEnabled}
                               onChange={(e) => setReembolsoMarketplaceEnabled(e.target.checked)}
-                              className="rounded border-zinc-700 bg-zinc-800 text-rose-500 focus:ring-rose-500/30 w-4 h-4 cursor-pointer"
+                              className="rounded border-zinc-700 bg-zinc-800 text-rose-500 focus:ring-rose-500/30 w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                             />
-                            <span className="text-xs font-semibold text-zinc-200">Reembolso marketplace</span>
+                            <span className="text-xs font-semibold text-zinc-200 flex items-center gap-2">
+                              <span>Reembolso marketplace</span>
+                              {aguardandoReembolso && (
+                                <span className="text-[10px] text-amber-400 font-normal">(Somente leitura)</span>
+                              )}
+                            </span>
                           </label>
                           <p className="text-[10px] text-zinc-500 pl-6.5">
                             Substitui a receita líquida do pedido pelo valor reembolsado pelo marketplace (ignora taxas normais de venda).
@@ -5275,8 +5337,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                               <div className="flex-1 flex items-center gap-1.5">
                                 <button
                                   type="button"
+                                  disabled={aguardandoReembolso}
                                   onClick={() => toggleSign(reembolsoMarketplaceValue, setReembolsoMarketplaceValue)}
-                                  className="h-8 px-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 text-xs font-mono font-bold transition-colors select-none flex items-center justify-center shrink-0 cursor-pointer"
+                                  className="h-8 px-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 text-xs font-mono font-bold transition-colors select-none flex items-center justify-center shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                   title="Inverter sinal (+/-)"
                                 >
                                   +/-
@@ -5284,16 +5347,18 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                 <div className="flex-1 relative flex items-center">
                                   <input
                                     type="text"
+                                    disabled={aguardandoReembolso}
+                                    readOnly={aguardandoReembolso}
                                     inputMode="text"
                                     placeholder="0,00"
                                     value={reembolsoMarketplaceValue}
                                     onChange={(e) => setReembolsoMarketplaceValue(formatCurrencyInputOnChange(e.target.value, true))}
                                     onBlur={() => setReembolsoMarketplaceValue(formatBRLInputOnBlur(reembolsoMarketplaceValue, true))}
-                                    className={`w-full bg-zinc-800 border rounded-lg px-3 py-1.5 text-sm placeholder-zinc-600 focus:outline-none focus:border-rose-500 tabular-nums ${
+                                    className={`w-full bg-zinc-800 border rounded-lg px-3 py-1.5 text-sm placeholder-zinc-600 focus:outline-none focus:border-rose-500 tabular-nums disabled:cursor-not-allowed ${
                                       reembolsoMarketplaceValue.startsWith('-') ? 'text-rose-400 border-rose-500/50' : 'text-white border-zinc-700'
                                     }`}
                                   />
-                                  {reembolsoMarketplaceValue && (
+                                  {reembolsoMarketplaceValue && !aguardandoReembolso && (
                                     <button onClick={() => setReembolsoMarketplaceValue('')} className="absolute right-2 text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer">
                                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -5307,15 +5372,23 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         </div>
 
                         {/* Reembolso Fornecedor */}
-                        <div className="space-y-2 rounded-lg bg-zinc-900/80 border border-zinc-800/80 p-3">
-                          <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                        <div className={`space-y-2 rounded-lg bg-zinc-900/80 border border-zinc-800/80 p-3 transition-opacity ${
+                          aguardandoReembolso ? 'opacity-50 pointer-events-none' : ''
+                        }`}>
+                          <label className={`flex items-center gap-2.5 select-none ${aguardandoReembolso ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                             <input
                               type="checkbox"
+                              disabled={aguardandoReembolso}
                               checked={reembolsoFornecedorEnabled}
                               onChange={(e) => setReembolsoFornecedorEnabled(e.target.checked)}
-                              className="rounded border-zinc-700 bg-zinc-800 text-emerald-500 focus:ring-emerald-500/30 w-4 h-4 cursor-pointer"
+                              className="rounded border-zinc-700 bg-zinc-800 text-emerald-500 focus:ring-emerald-500/30 w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                             />
-                            <span className="text-xs font-semibold text-zinc-200">Reembolso fornecedor</span>
+                            <span className="text-xs font-semibold text-zinc-200 flex items-center gap-2">
+                              <span>Reembolso fornecedor</span>
+                              {aguardandoReembolso && (
+                                <span className="text-[10px] text-amber-400 font-normal">(Somente leitura)</span>
+                              )}
+                            </span>
                           </label>
                           <p className="text-[10px] text-zinc-500 pl-6.5">
                             Reduz o custo do produto pelo valor devolvido/estornado pelo fornecedor.
@@ -5326,8 +5399,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                               <div className="flex-1 flex items-center gap-1.5">
                                 <button
                                   type="button"
+                                  disabled={aguardandoReembolso}
                                   onClick={() => toggleSign(reembolsoFornecedorValue, setReembolsoFornecedorValue)}
-                                  className="h-8 px-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 text-xs font-mono font-bold transition-colors select-none flex items-center justify-center shrink-0 cursor-pointer"
+                                  className="h-8 px-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 text-xs font-mono font-bold transition-colors select-none flex items-center justify-center shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                   title="Inverter sinal (+/-)"
                                 >
                                   +/-
@@ -5335,16 +5409,18 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                 <div className="flex-1 relative flex items-center">
                                   <input
                                     type="text"
+                                    disabled={aguardandoReembolso}
+                                    readOnly={aguardandoReembolso}
                                     inputMode="text"
                                     placeholder="0,00"
                                     value={reembolsoFornecedorValue}
                                     onChange={(e) => setReembolsoFornecedorValue(formatCurrencyInputOnChange(e.target.value, true))}
                                     onBlur={() => setReembolsoFornecedorValue(formatBRLInputOnBlur(reembolsoFornecedorValue, true))}
-                                    className={`w-full bg-zinc-800 border rounded-lg px-3 py-1.5 text-sm placeholder-zinc-600 focus:outline-none focus:border-emerald-500 tabular-nums ${
+                                    className={`w-full bg-zinc-800 border rounded-lg px-3 py-1.5 text-sm placeholder-zinc-600 focus:outline-none focus:border-emerald-500 tabular-nums disabled:cursor-not-allowed ${
                                       reembolsoFornecedorValue.startsWith('-') ? 'text-rose-400 border-rose-500/50' : 'text-white border-zinc-700'
                                     }`}
                                   />
-                                  {reembolsoFornecedorValue && (
+                                  {reembolsoFornecedorValue && !aguardandoReembolso && (
                                     <button onClick={() => setReembolsoFornecedorValue('')} className="absolute right-2 text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer">
                                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -5370,21 +5446,23 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                         </div>
 
                         {/* Resumo dinâmico de Lucro */}
-                        {(hasReembolsoMktActive || hasReembolsoFornActive) && (
+                        {(aguardandoReembolso || hasReembolsoMktActive || hasReembolsoFornActive) && (
                           <div className="p-2.5 rounded-lg bg-zinc-950/60 border border-zinc-800/80 text-[11px] text-zinc-400 space-y-1">
                             <div className="font-semibold text-zinc-300 flex items-center justify-between">
                               <span>Lucro Real Estimado:</span>
-                              <span className={finalRealProfit >= 0 ? 'text-emerald-400 font-mono font-bold' : 'text-rose-400 font-mono font-bold'}>
+                              <span className={aguardandoReembolso ? 'text-amber-400 font-mono font-bold' : finalRealProfit >= 0 ? 'text-emerald-400 font-mono font-bold' : 'text-rose-400 font-mono font-bold'}>
                                 {formatCurrency(finalRealProfit)}
                               </span>
                             </div>
                             <p className="text-[10px] text-zinc-500">
-                              {hasReembolsoMktActive && hasReembolsoFornActive
+                              {aguardandoReembolso
+                                ? 'Pedido marcado como aguardando reembolso. O lucro é considerado R$ 0,00 até a conclusão.'
+                                : hasReembolsoMktActive && hasReembolsoFornActive
                                 ? `Receita Mkt (${formatCurrency(reembolsoMktVal)}) + Reembolso Forn (${formatCurrency(reembolsoFornVal)}) - Custo Produto (${formatCurrency(totalProductCost)})`
                                 : hasReembolsoFornActive
                                 ? `Reembolso Fornecedor (${formatCurrency(reembolsoFornVal)}) - Custo Produto (${formatCurrency(totalProductCost)})`
                                 : `Receita Mkt (${formatCurrency(reembolsoMktVal)}) - Custo Produto (${formatCurrency(totalProductCost)})`}
-                              {manualMarketingCostVal > 0 && ` - Marketing (${formatCurrency(manualMarketingCostVal)})`}
+                              {!aguardandoReembolso && manualMarketingCostVal > 0 && ` - Marketing (${formatCurrency(manualMarketingCostVal)})`}
                             </p>
                           </div>
                         )}
@@ -5407,7 +5485,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                   : null;
 
                                 const effectiveCost = (isPersonalPurchase ? 0 : totalProductCost) - (valForn ?? 0);
-                                const calculatedProfit = valMkt !== null
+                                const calculatedProfit = aguardandoReembolso
+                                  ? 0
+                                  : valMkt !== null
                                   ? Math.round(((valMkt + (valForn ?? 0)) - (isPersonalPurchase ? 0 : totalProductCost) - manualMarketingCostVal) * 100) / 100
                                   : valForn !== null
                                   ? Math.round((valForn - (isPersonalPurchase ? 0 : totalProductCost) - manualMarketingCostVal) * 100) / 100
@@ -5420,6 +5500,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                 await supabase
                                   .from('orders')
                                   .update({
+                                    aguardando_reembolso: aguardandoReembolso,
                                     reembolso_marketplace_enabled: reembolsoMarketplaceEnabled,
                                     reembolso_marketplace_value: valMkt,
                                     reembolso_fornecedor_enabled: reembolsoFornecedorEnabled,
@@ -5441,6 +5522,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                   ...prev,
                                   [oid]: {
                                     ...(prev[oid] ?? {}),
+                                    aguardando_reembolso: aguardandoReembolso,
                                     reembolso_marketplace_enabled: reembolsoMarketplaceEnabled,
                                     reembolso_marketplace_value: valMkt,
                                     reembolso_fornecedor_enabled: reembolsoFornecedorEnabled,
@@ -5450,6 +5532,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                 }));
                                 setSelectedOrder(prev => prev ? {
                                   ...prev,
+                                  aguardando_reembolso: aguardandoReembolso,
                                   reembolso_marketplace_enabled: reembolsoMarketplaceEnabled,
                                   reembolso_marketplace_value: valMkt,
                                   reembolso_fornecedor_enabled: reembolsoFornecedorEnabled,
@@ -5460,6 +5543,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                                 await refetch();
                                 await refetchYearly();
                                 onOrderUpdated?.();
+                                toast.success(aguardandoReembolso ? 'Pedido marcado como aguardando reembolso (lucro zerado)' : 'Reembolso salvo com sucesso!');
                               } finally {
                                 setSavingReembolsoPedido(false);
                               }

@@ -28,6 +28,7 @@ export interface OrderProfitInput {
   manual_product_cost?: number | string | null;
   is_free_sample?: boolean | string;
   is_personal_purchase?: boolean | string;
+  aguardando_reembolso?: boolean | string | null;
   marketplace?: string;
   products?: {
     quantity?: number | string;
@@ -218,7 +219,13 @@ export function calcOrderProfit(
     : precoVendaPagoCliente - subtotalMarketplace - activeDiscount;
 
   // ── Profit ────────────────────────────────────────────────────────────────
-  const realProfitRaw = isFreeSample
+  const isWaitingRefund =
+    order.aguardando_reembolso === true ||
+    String(order.aguardando_reembolso ?? '') === 'true';
+
+  const realProfitRaw = isWaitingRefund
+    ? 0
+    : isFreeSample
     ? -effectiveProductCost
     : hasFornecedorEnabled && !hasReembolsoMarketplace
     ? effectiveFornecedorVal - baseProductCost
