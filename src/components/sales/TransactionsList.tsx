@@ -362,12 +362,16 @@ export const TransactionsList: React.FC<TransactionsListProps> = ({
 
           const hasAffiliate = Boolean(order.affiliate_id);
           const profitRes = calcOrderProfit(profitInput, resolvedMkt, hasAffiliate);
-          const settledOv = getSettledOrderProfit(order.order_number);
+          const hasRetornoLiquido = bo?.tiktok_retorno_liquido != null || (order as { tiktok_retorno_liquido?: number | null }).tiktok_retorno_liquido != null;
+          const canonicalSettled = getSettledOrderProfit(order.order_number);
+          const savedProfit = order.total_profit != null ? Number(order.total_profit) : null;
+          const isCustomized = hasRetornoLiquido || (savedProfit !== null && canonicalSettled !== null && Math.abs(savedProfit - canonicalSettled) > 0.01);
+          const settledOv = !isCustomized ? canonicalSettled : null;
           const finalProfit =
             settledOv !== null
               ? settledOv
-              : order.total_profit != null
-              ? Number(order.total_profit)
+              : savedProfit !== null
+              ? savedProfit
               : profitRes.realProfit;
 
           const productCost =

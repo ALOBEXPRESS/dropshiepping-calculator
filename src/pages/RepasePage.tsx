@@ -168,9 +168,11 @@ export default function RepasePage() {
   });
   const [registering, setRegistering] = useState(false);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (isSilent = false) => {
     if (!organizationId) return;
-    setLoading(true);
+    if (!isSilent) {
+      setLoading(true);
+    }
     try {
       // 1. Configs
       const { data: cfgRows } = await supabase
@@ -223,7 +225,7 @@ export default function RepasePage() {
       const replicaProductNames = new Set((replicaProducts ?? []).map((p: any) => (p.name || '').trim().toLowerCase()));
       const replicaUnblockedOrderIds = new Set((unblockedReplicaOrders ?? []).map((o: any) => o.id));
 
-      // 3. Monthly revenue & profit report (recalculated with settled canonical rules)
+      // 3. Monthly revenue & profit report (recalculated with dynamic settled rules)
       const { data: rpt } = await supabase.rpc('get_revenue_report', {
         p_organization_id: organizationId,
         p_period: 'monthly',
@@ -243,17 +245,21 @@ export default function RepasePage() {
           if (orders.length > 0) {
             orders.forEach((o) => {
               const num = String(o.order_number ?? '').trim();
-              const settledOverride = getSettledOrderProfit(num);
+              const hasRetornoLiquido = Boolean(o.tiktok_retorno_liquido != null);
+              const savedProfit = o.total_profit != null && !isNaN(Number(o.total_profit)) ? Number(o.total_profit) : null;
+              const canonicalSettled = getSettledOrderProfit(num);
               const blockedProfitOv = getBlockedOrderProfit(num);
               const isBlockedExplicit = isBlockedOrder(num);
+
+              // Only use static canonical override if the order is not dynamic (no retorno líquido and no custom saved profit)
+              const isDynamicOrder = hasRetornoLiquido || (savedProfit !== null && canonicalSettled !== null && Math.abs(savedProfit - canonicalSettled) > 0.01);
+              const settledOverride = (!isDynamicOrder && !isBlockedExplicit) ? canonicalSettled : null;
 
               const mkt = mktById.get(o.marketplace_id);
               const settlementDays = Number(mkt?.settlement_period_days ?? 7);
               const hasAffiliate = Boolean(o.affiliate_id);
               const profitResult = calcOrderProfit(o, mkt, hasAffiliate);
               const isWaitingRefund = Boolean(o.aguardando_reembolso);
-              const savedProfit = o.total_profit != null && !isNaN(Number(o.total_profit)) ? Number(o.total_profit) : null;
-              const hasRetornoLiquido = Boolean(o.tiktok_retorno_liquido != null);
               const fallbackEffectiveProfit = (hasRetornoLiquido || savedProfit === null)
                 ? profitResult.realProfit
                 : savedProfit;
@@ -285,26 +291,30 @@ export default function RepasePage() {
               const isRepasseBloqueado = isBlockedExplicit || Boolean(o.is_repasse_bloqueado || (orderId && repasseBloqueadoOrderIds.has(orderId)));
               const isReplicaUnblocked = Boolean(o.is_replica_unblocked || (orderId && replicaUnblockedOrderIds.has(orderId)));
               const isReplicaWaitingBlocked = isOrderReplica && isTikTok && !settled && !isReplicaUnblocked;
-              const isTikTokAccountRestrictedBlocked = isTikTok && !settled && settledOverride === null;
+              // Blocked orders from BLOCKED_ORDER_PROFIT_OVERRIDES always remain blocked, even if chronologically settled
+              const isTikTokAccountRestrictedBlocked = isTikTok && settledOverride === null && blockedProfitOv !== null;
               const isAnyRepasseBlocked = isRepasseBloqueado || isReplicaWaitingBlocked || isTikTokAccountRestrictedBlocked;
 
               const resolvedProfit = blockedProfitOv !== null
                 ? blockedProfitOv
                 : settledOverride !== null
                 ? settledOverride
-                : (isAnyRepasseBlocked || isTikTok ? 0 : effectiveProfit);
+                : (isAnyRepasseBlocked ? 0 : effectiveProfit);
 
-              if (settledOverride !== null) {
-                totalSettledProfit += settledOverride;
-              } else if (blockedProfitOv !== null || isAnyRepasseBlocked) {
+              // Bucket classification: blocked orders (explicit or TikTok restricted) ALWAYS go to totalBlockedProfit
+              if (isBlockedExplicit || isTikTokAccountRestrictedBlocked) {
                 totalBlockedProfit += resolvedProfit;
+              } else if (isRepasseBloqueado || isReplicaWaitingBlocked) {
+                totalBlockedProfit += resolvedProfit;
+              } else if (settledOverride !== null) {
+                totalSettledProfit += settledOverride;
               } else if (settled) {
                 totalSettledProfit += resolvedProfit;
               } else {
                 totalWaitingProfit += resolvedProfit;
               }
 
-              const reportProfit = (settledOverride === null && (blockedProfitOv !== null || isAnyRepasseBlocked)) ? 0 : resolvedProfit;
+              const reportProfit = (blockedProfitOv !== null || (isAnyRepasseBlocked && settledOverride === null)) ? 0 : resolvedProfit;
 
               totalRevenue += rev;
               totalCost += cost;
@@ -340,7 +350,9 @@ export default function RepasePage() {
       console.error('Erro ao carregar dados de repasse:', err);
       toast.error('Erro ao carregar repasses');
     } finally {
-      setLoading(false);
+      if (!isSilent) {
+        setLoading(false);
+      }
     }
   }, [organizationId]);
 
@@ -348,51 +360,33 @@ export default function RepasePage() {
     loadData();
   }, [loadData]);
 
-  // Atualizar quando a janela ganha foco ou visibilidade muda, e ouvir eventos customizados
+  // Atualizar suavemente (silencioso) em eventos sem recarregar tela inteira
   useEffect(() => {
-    const onFocus = () => {
-      loadData();
-    };
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        loadData();
-      }
-    };
-    const onCustomUpdate = () => {
-      loadData();
+    const onSilentUpdate = () => {
+      loadData(true);
     };
 
-    window.addEventListener('focus', onFocus);
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    window.addEventListener('orders-updated', onCustomUpdate);
-    window.addEventListener('order-updated', onCustomUpdate);
-    window.addEventListener('repasse-updated', onCustomUpdate);
-    window.addEventListener('storage', onCustomUpdate);
-
-    // Auto-polling regular a cada 15 segundos se a aba estiver ativa para sincronização contínua
-    const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        loadData();
-      }
-    }, 15_000);
+    window.addEventListener('focus', onSilentUpdate);
+    window.addEventListener('orders-updated', onSilentUpdate);
+    window.addEventListener('order-updated', onSilentUpdate);
+    window.addEventListener('repasse-updated', onSilentUpdate);
+    window.addEventListener('storage', onSilentUpdate);
 
     return () => {
-      window.removeEventListener('focus', onFocus);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-      window.removeEventListener('orders-updated', onCustomUpdate);
-      window.removeEventListener('order-updated', onCustomUpdate);
-      window.removeEventListener('repasse-updated', onCustomUpdate);
-      window.removeEventListener('storage', onCustomUpdate);
-      clearInterval(interval);
+      window.removeEventListener('focus', onSilentUpdate);
+      window.removeEventListener('orders-updated', onSilentUpdate);
+      window.removeEventListener('order-updated', onSilentUpdate);
+      window.removeEventListener('repasse-updated', onSilentUpdate);
+      window.removeEventListener('storage', onSilentUpdate);
     };
   }, [loadData]);
 
-  // Realtime subscription no Supabase para orders e repasse
+  // Realtime subscription no Supabase para orders e repasse com canal estável
   useEffect(() => {
     if (!organizationId) return;
 
     const channel = supabase
-      .channel(`repase-page-realtime-${organizationId}-${Date.now()}`)
+      .channel(`repase-page-realtime-${organizationId}`)
       .on(
         'postgres_changes',
         {
@@ -401,7 +395,7 @@ export default function RepasePage() {
           table: 'orders',
         },
         () => {
-          loadData();
+          loadData(true);
         }
       )
       .on(
@@ -412,7 +406,7 @@ export default function RepasePage() {
           table: 'repasse_payments',
         },
         () => {
-          loadData();
+          loadData(true);
         }
       )
       .on(
@@ -423,7 +417,7 @@ export default function RepasePage() {
           table: 'repasse_config',
         },
         () => {
-          loadData();
+          loadData(true);
         }
       )
       .subscribe();

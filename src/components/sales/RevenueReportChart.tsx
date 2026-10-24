@@ -2570,7 +2570,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       : (rawRealProfit - manualMktDeduct1))
                   : (Number(savedProfit1) - manualMktDeduct1);
                 const blockedTooltip1 = getBlockedOrderProfit(orderNumber);
-                const settledTooltip1 = (!hasReembolsoOv1 && !hasRetornoLiquido1) ? getSettledOrderProfit(orderNumber) : null;
+                const canonical1 = getSettledOrderProfit(orderNumber);
+                const isCustomized1 = Boolean(
+                  (order.order_id && order.order_id in orderEnrichmentById) ||
+                  (savedProfit1 != null && canonical1 !== null && Math.abs(Number(savedProfit1) - canonical1) > 0.01)
+                );
+                const settledTooltip1 = (!hasReembolsoOv1 && !hasRetornoLiquido1 && !isCustomized1) ? canonical1 : null;
                 const isWaitingRefund1 = Boolean((mergedOrder as { aguardando_reembolso?: boolean }).aguardando_reembolso);
                 const realProfit = isWaitingRefund1 ? 0 : (blockedTooltip1 !== null ? blockedTooltip1 : settledTooltip1 !== null ? settledTooltip1 : fallbackRealProfit1);
                 const settlementDays1 = Number(resolvedMarketplaceConfig?.settlement_period_days ?? 7);
@@ -3201,8 +3206,18 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const totalMktCost = manualMarketingCostByOrderId[o.order_id] ?? 0;
         const num = String(o.order_number ?? '').trim();
         const hasManualModalEdit = Boolean(o.order_id && o.order_id in reembolsoByOrderId);
-        const settledProfit = !hasManualModalEdit ? getSettledOrderProfit(num) : null;
         const savedProfit0 = (mergedOrder as { total_profit?: number | null }).total_profit;
+        const hasSavedProfit = savedProfit0 != null && !isNaN(Number(savedProfit0));
+        const canonicalSettled = getSettledOrderProfit(num);
+
+        // Only use static canonical override if the order is NOT dynamic (no retorno líquido, no enrichment edit, and no saved profit difference)
+        const isCustomized = Boolean(
+          (o.order_id && o.order_id in orderEnrichmentById) ||
+          (hasSavedProfit && canonicalSettled !== null && Math.abs(Number(savedProfit0) - canonicalSettled) > 0.01)
+        );
+        const isDynamicOrder = hasRetornoLiquido || isCustomized;
+
+        const settledProfit = (!isDynamicOrder && !hasManualModalEdit && !hasReembolsoOverride) ? canonicalSettled : null;
         const fallbackEffectiveProfit = (hasRetornoLiquido || savedProfit0 == null || isNaN(Number(savedProfit0)))
           ? (hasReembolsoOverride && reembolsoOverride !== null && !isNaN(reembolsoOverride)
               ? (reembolsoOverride - totalProductCost - totalMktCost)
@@ -3246,7 +3261,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
         const isBlockedExplicit = isBlockedOrder(num);
         const blockedProfitOv = getBlockedOrderProfit(num);
-        const settledProfitOv = getSettledOrderProfit(num);
+        const settledProfitOv = (!isDynamicOrder && !isBlockedExplicit) ? canonicalSettled : null;
 
         const isRepasseBloqueado = isBlockedExplicit || Boolean(
           (o as { is_repasse_bloqueado?: boolean }).is_repasse_bloqueado ||
@@ -3260,14 +3275,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
         const hasActiveReplica = isOrderReplica;
         const isReplicaWaitingBlocked = hasActiveReplica && isTikTok && !settled && !isReplicaUnblocked;
-        const isTikTokAccountRestrictedBlocked = isTikTok && !settled && settledProfitOv === null;
+        const isTikTokAccountRestrictedBlocked = isTikTok && !settled && settledProfitOv === null && blockedProfitOv !== null;
         const isAnyRepasseBlocked = isRepasseBloqueado || isReplicaWaitingBlocked || isTikTokAccountRestrictedBlocked;
 
         const resolvedProfit = blockedProfitOv !== null
           ? blockedProfitOv
           : settledProfitOv !== null
           ? settledProfitOv
-          : (isAnyRepasseBlocked || isTikTok ? 0 : effectiveProfit);
+          : (isAnyRepasseBlocked ? 0 : effectiveProfit);
 
         if (settledProfitOv !== null) {
           totalSettledProfit += settledProfitOv;
@@ -3713,7 +3728,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 : (rawRealProfit2 - manualMktDeduct2))
             : (Number(savedProfit2) - manualMktDeduct2);
           const blockedTooltip2 = getBlockedOrderProfit(orderNumber);
-          const settledTooltip2 = (!hasReembolsoOv2 && !hasRetornoLiquido2) ? getSettledOrderProfit(orderNumber) : null;
+          const canonical2 = getSettledOrderProfit(orderNumber);
+          const isCustomized2 = Boolean(
+            (order.order_id && order.order_id in orderEnrichmentById) ||
+            (savedProfit2 != null && canonical2 !== null && Math.abs(Number(savedProfit2) - canonical2) > 0.01)
+          );
+          const settledTooltip2 = (!hasReembolsoOv2 && !hasRetornoLiquido2 && !isCustomized2) ? canonical2 : null;
           const isWaitingRefund2 = Boolean((mergedOrder as { aguardando_reembolso?: boolean }).aguardando_reembolso);
           const realProfit = isWaitingRefund2 ? 0 : (blockedTooltip2 !== null ? blockedTooltip2 : settledTooltip2 !== null ? settledTooltip2 : fallbackRealProfit2);
           const settlementDays2 = Number(resolvedMarketplaceConfig?.settlement_period_days ?? 7);

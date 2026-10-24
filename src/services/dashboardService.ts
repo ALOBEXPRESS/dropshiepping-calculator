@@ -13,7 +13,7 @@ import { supabase } from '../lib/supabase';
 import { calculatePeriodRanges as calculatePeriodRangesUtil } from '../utils/dateRangeCalculator';
 import { calculateGrowth as calculateGrowthUtil } from '../utils/growthCalculator';
 import { calcOrderProfit, type OrderProfitInput } from '../utils/calcOrderProfit';
-import { getSettledOrderProfit } from '../components/sales/revenueCalculations';
+import { getSettledOrderProfit, isBlockedOrder } from '../components/sales/revenueCalculations';
 import type {
   TimePeriod,
   DateRange,
@@ -278,9 +278,16 @@ export class DashboardService {
         fixed_fee: fixedFee,
       });
 
-      const settled = getSettledOrderProfit(order.order_number);
+      const hasRetornoLiquido = Boolean((order as any).tiktok_retorno_liquido != null || bo?.tiktok_retorno_liquido != null);
+      const canonicalSettled = getSettledOrderProfit(order.order_number);
+      const savedProfit = (order as any).total_profit != null ? Number((order as any).total_profit) : null;
+      const isCustomized = hasRetornoLiquido || (savedProfit !== null && canonicalSettled !== null && Math.abs(savedProfit - canonicalSettled) > 0.01);
+      const settled = !isCustomized ? canonicalSettled : null;
       const mktCost = mktCostMap.get(order.id) ?? 0;
-      const effectiveProfit = settled !== null ? settled : (result.realProfit - mktCost);
+      // Blocked orders (repasse retido) must never contribute to total profit
+      const isBlocked = isBlockedOrder(String(order.order_number ?? '').trim());
+      const effectiveProfit = isBlocked ? 0 : (settled !== null ? settled : (result.realProfit - mktCost));
+
 
       return {
         id: order.id,

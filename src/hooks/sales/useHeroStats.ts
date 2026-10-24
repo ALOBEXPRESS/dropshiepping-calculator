@@ -25,7 +25,11 @@ function computeProfitFromOrders(orders: Record<string, unknown>[]): number {
     if (isBlockedOrder(num)) {
       return sum;
     }
-    const settled = getSettledOrderProfit(num);
+    const hasRetornoLiquido = o.tiktok_retorno_liquido != null;
+    const canonicalSettled = getSettledOrderProfit(num);
+    const savedProfit = o.total_profit != null ? Number(o.total_profit) : null;
+    const isCustomized = hasRetornoLiquido || (savedProfit !== null && canonicalSettled !== null && Math.abs(savedProfit - canonicalSettled) > 0.01);
+    const settled = !isCustomized ? canonicalSettled : null;
     if (settled !== null) {
       return sum + settled;
     }
@@ -315,7 +319,20 @@ export const useHeroStats = (
           const orderId = String(rawOrder.order_id ?? '');
           const dbOrder = dbOrderMap.get(orderId);
           const orderNumber = (dbOrder?.order_number || rawOrder?.order_number) as string | number | undefined;
-          const settled = getSettledOrderProfit(orderNumber);
+          const num = String(orderNumber ?? '').trim();
+
+          // Blocked orders (repasse retido) must NEVER contribute to the monthly profit total
+          if (isBlockedOrder(num)) {
+            return 0;
+          }
+
+          const bo = Array.isArray(dbOrder?.bling_orders) ? dbOrder.bling_orders[0] : dbOrder?.bling_orders;
+          const hasRetornoLiquido = (bo?.tiktok_retorno_liquido != null && Number(bo.tiktok_retorno_liquido) > 0)
+            || (rawOrder?.tiktok_retorno_liquido != null && Number(rawOrder.tiktok_retorno_liquido) > 0);
+          const canonicalSettled = getSettledOrderProfit(orderNumber);
+          const savedProfit = dbOrder?.total_profit != null ? Number(dbOrder.total_profit) : (rawOrder?.total_profit != null ? Number(rawOrder.total_profit) : null);
+          const isCustomized = hasRetornoLiquido || (savedProfit !== null && canonicalSettled !== null && Math.abs(savedProfit - canonicalSettled) > 0.01);
+          const settled = !isCustomized ? canonicalSettled : null;
           if (settled !== null) {
             return settled;
           }
@@ -323,13 +340,12 @@ export const useHeroStats = (
             return computeProfitFromOrders([rawOrder]);
           }
 
+
           const joinedMp = dbOrder.marketplaces;
           const mappedMp = dbOrder.marketplace_id ? mktMap.get(dbOrder.marketplace_id) : undefined;
           const rawMpName = joinedMp?.name || mappedMp?.name || String(rawOrder.marketplace ?? rawOrder.marketplace_name ?? '');
           const normalizedMp = rawMpName.toLowerCase().replace(/\s+/g, '');
           const namedMp = mktByName.get(normalizedMp);
-
-          const bo = Array.isArray(dbOrder.bling_orders) ? dbOrder.bling_orders[0] : dbOrder.bling_orders;
 
           const isShopee = rawMpName.toLowerCase().includes('shopee');
           const isTikTok = !isShopee && (

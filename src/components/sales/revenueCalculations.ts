@@ -234,7 +234,7 @@ export const SETTLED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = 
   '10': 14.00,
   '231': 10.96,
   '232': 10.90,
-  '235': 10.00,
+  '235': 10.90, // Corrected from 10.00 — verified 2026-10-24
   '15': 10.76,
   '239': 9.30,
   '243': 9.30,
