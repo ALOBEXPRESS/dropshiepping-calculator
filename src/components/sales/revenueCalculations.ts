@@ -244,7 +244,7 @@ export const SETTLED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = 
   '219': 4.98,
   '221': 4.98,
   '234': 4.46,
-  '187': 4.25,
+  '187': 8.03,
   '229': 2.69,
 });
 

@@ -218,9 +218,9 @@ describe('revenueCalculations', () => {
       expect(settledBreakdown.ordersCount).toBe(33);
       expect(settledBreakdown.profitOrdersCount).toBe(23);
       expect(settledBreakdown.lossOrdersCount).toBe(10);
-      expect(settledBreakdown.totalProfits).toBe(277.61);
+      expect(settledBreakdown.totalProfits).toBe(281.39);
       expect(settledBreakdown.totalLosses).toBe(-158.06);
-      expect(settledBreakdown.netProfit).toBe(119.55);
+      expect(settledBreakdown.netProfit).toBe(123.33);
     });
 
     it('matches exact 11 blocked orders (+R$ 95,57 net) with repasse retido', () => {
