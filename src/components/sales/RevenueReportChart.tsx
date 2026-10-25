@@ -3261,7 +3261,6 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const totalMktCost = manualMarketingCostByOrderId[o.order_id] ?? 0;
         const num = String(o.order_number ?? '').trim();
         const hasManualModalEdit = Boolean(o.order_id && o.order_id in reembolsoByOrderId);
-        const savedProfit0 = (mergedOrder as { total_profit?: number | null }).total_profit;
         const enrichmentProfit0 = (o.order_id && o.order_id in orderEnrichmentById) ? orderEnrichmentById[o.order_id]?.total_profit : null;
         const currentRealProfit = hasReembolsoOverride && reembolsoOverride !== null && !isNaN(reembolsoOverride)
           ? (reembolsoOverride - totalProductCost - totalMktCost)
