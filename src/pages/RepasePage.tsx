@@ -24,6 +24,8 @@ import {
   Hourglass,
   Lock,
   RefreshCw,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -35,14 +37,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
-import {
-  getSettledOrderProfit,
-  getBlockedOrderProfit,
-  isBlockedOrder,
-  isOrderSettled,
-  round2,
-} from '@/components/sales/revenueCalculations';
-import { calcOrderProfit } from '@/utils/calcOrderProfit';
+import { round2, getSettledOrderProfit, getBlockedOrderProfit } from '@/components/sales/revenueCalculations';
 
 export interface RepasseConfig {
   id?: string;
@@ -84,6 +79,9 @@ interface MonthlyReportRow {
     total_amount?: number;
     total_cost?: number;
     total_profit?: number;
+    is_repasse_bloqueado?: boolean;
+    marketplace?: string;
+    status?: string;
   }>;
 }
 
@@ -104,6 +102,9 @@ const MONTH_NAMES_PT: Record<string, string> = {
   Nov: 'Novembro',
   Dec: 'Dezembro',
 };
+
+// Marco inicial definido para geração e apuração de repasses (Outubro de 2026 em diante)
+const REPASSE_START_PERIOD = '2026-10-01';
 
 // Beneficiários padrão da Empresa Alob
 const DEFAULT_BENEFICIARIES = [
@@ -154,6 +155,15 @@ export default function RepasePage() {
   // Quick action state
   const [processingMonth, setProcessingMonth] = useState<string | null>(null);
 
+  // Toggle for viewing monthly orders detail
+  const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
+  const toggleMonthOrders = useCallback((monthKey: string) => {
+    setExpandedMonths((prev) => ({
+      ...prev,
+      [monthKey]: !prev[monthKey],
+    }));
+  }, []);
+
   // Register modal form
   const [registerOpen, setRegisterOpen] = useState(false);
   const [regForm, setRegForm] = useState({
@@ -167,6 +177,15 @@ export default function RepasePage() {
     notes: '',
   });
   const [registering, setRegistering] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(true);
+  const [expandedPaymentPeriods, setExpandedPaymentPeriods] = useState<Record<string, boolean>>({});
+
+  const togglePaymentPeriod = useCallback((periodKey: string) => {
+    setExpandedPaymentPeriods((prev) => ({
+      ...prev,
+      [periodKey]: prev[periodKey] === undefined ? false : !prev[periodKey],
+    }));
+  }, []);
 
   const loadData = useCallback(async (isSilent = false) => {
     if (!organizationId) return;
@@ -207,144 +226,128 @@ export default function RepasePage() {
         .order('period_start', { ascending: false });
       setPayments((payRows ?? []) as RepassePayment[]);
 
-      // Fetch marketplaces, blocked orders, and replica products for real commission and fee calculations
-      const [
-        { data: mkts },
-        { data: blockedOrders },
-        { data: replicaProducts },
-        { data: unblockedReplicaOrders },
-      ] = await Promise.all([
-        supabase.from('marketplaces').select('*'),
-        supabase.from('orders').select('id').eq('organization_id', organizationId).eq('is_repasse_bloqueado', true),
-        supabase.from('products').select('id, name').eq('organization_id', organizationId).eq('is_replica', true),
-        supabase.from('orders').select('id').eq('organization_id', organizationId).eq('is_replica_unblocked', true),
-      ]);
+      // 3. Marketplaces map for order details
+      const { data: mkts } = await supabase.from('marketplaces').select('*');
       const mktById = new Map((mkts ?? []).map((m: any) => [m.id, m]));
-      const repasseBloqueadoOrderIds = new Set((blockedOrders ?? []).map((o: any) => o.id));
-      const replicaProductIds = new Set((replicaProducts ?? []).map((p: any) => p.id));
-      const replicaProductNames = new Set((replicaProducts ?? []).map((p: any) => (p.name || '').trim().toLowerCase()));
-      const replicaUnblockedOrderIds = new Set((unblockedReplicaOrders ?? []).map((o: any) => o.id));
 
-      // 3. Monthly revenue & profit report (recalculated with dynamic settled rules)
-      const { data: rpt } = await supabase.rpc('get_revenue_report', {
-        p_organization_id: organizationId,
-        p_period: 'monthly',
-      });
+      // 4. Load exact ground-truth orders directly from orders table in Supabase
+      const { data: dbOrders, error: ordersErr } = await supabase
+        .from('orders')
+        .select('id, order_number, order_date, total_amount, total_cost, total_profit, is_repasse_bloqueado, marketplace_id, status')
+        .eq('organization_id', organizationId)
+        .order('order_date', { ascending: true });
 
-      if (rpt) {
-        const processedRows: MonthlyReportRow[] = (rpt as Array<Record<string, unknown>>).map((row) => {
-          const orders = ((row.orders_data as unknown[]) || []) as Array<any>;
+      if (ordersErr) {
+        console.error('Erro ao buscar pedidos no Supabase:', ordersErr);
+      }
+
+      if (dbOrders && dbOrders.length > 0) {
+        const ordersByMonth = new Map<string, Array<any>>();
+        dbOrders.forEach((o: any) => {
+          if (!o.order_date) return;
+          const monthKey = String(o.order_date).substring(0, 7);
+          if (!ordersByMonth.has(monthKey)) {
+            ordersByMonth.set(monthKey, []);
+          }
+          ordersByMonth.get(monthKey)!.push(o);
+        });
+
+        const sortedMonthKeys = Array.from(ordersByMonth.keys()).sort();
+        const EN_MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        const processedRows: MonthlyReportRow[] = sortedMonthKeys.map((mKey) => {
+          const list = ordersByMonth.get(mKey)!;
+          const [yStr, mStr] = mKey.split('-');
+          const y = parseInt(yStr, 10);
+          const m = parseInt(mStr, 10);
+          const period_start = `${mKey}-01`;
+          const lastDay = new Date(y, m, 0).getDate();
+          const period_end = `${mKey}-${String(lastDay).padStart(2, '0')}`;
+          const period_label = EN_MONTHS_SHORT[m - 1] || 'Jan';
 
           let totalRevenue = 0;
           let totalCost = 0;
           let totalProfit = 0;
           let totalSettledProfit = 0;
-          let totalWaitingProfit = 0;
           let totalBlockedProfit = 0;
 
-          if (orders.length > 0) {
-            orders.forEach((o) => {
-              const num = String(o.order_number ?? '').trim();
-              const hasRetornoLiquido = Boolean(o.tiktok_retorno_liquido != null);
-              const savedProfit = o.total_profit != null && !isNaN(Number(o.total_profit)) ? Number(o.total_profit) : null;
-              const canonicalSettled = getSettledOrderProfit(num);
-              const blockedProfitOv = getBlockedOrderProfit(num);
-              const isBlockedExplicit = isBlockedOrder(num);
+          const ordersData = list.map((o: any) => {
+            const amount = Number(o.total_amount ?? 0);
+            const cost = Number(o.total_cost ?? 0);
+            const dbProfit = Number(o.total_profit ?? 0);
+            const isBlocked = Boolean(o.is_repasse_bloqueado);
+            const orderNum = String(o.order_number ?? '').trim();
 
-              // Only use static canonical override if the order is not dynamic (no retorno líquido and no custom saved profit)
-              const isDynamicOrder = hasRetornoLiquido || (savedProfit !== null && canonicalSettled !== null && Math.abs(savedProfit - canonicalSettled) > 0.01);
-              const settledOverride = (!isDynamicOrder && !isBlockedExplicit) ? canonicalSettled : null;
+            // Resolve profit: canonical baseline applies unless customized in DB
+            const canonicalProfit = isBlocked
+              ? getBlockedOrderProfit(orderNum)
+              : getSettledOrderProfit(orderNum);
+            const isCustomized = canonicalProfit !== null && Math.abs(dbProfit - canonicalProfit) > 0.005;
+            const profit = isCustomized ? dbProfit : (canonicalProfit !== null ? canonicalProfit : dbProfit);
 
-              const mkt = mktById.get(o.marketplace_id);
-              const settlementDays = Number(mkt?.settlement_period_days ?? 7);
-              const hasAffiliate = Boolean(o.affiliate_id);
-              const profitResult = calcOrderProfit(o, mkt, hasAffiliate);
-              const isWaitingRefund = Boolean(o.aguardando_reembolso);
-              const fallbackEffectiveProfit = (hasRetornoLiquido || savedProfit === null)
-                ? profitResult.realProfit
-                : savedProfit;
-              const effectiveProfit = isWaitingRefund ? 0 : (settledOverride !== null ? settledOverride : fallbackEffectiveProfit);
-              const rev = profitResult.precoVendaLiquidoFinal;
-              const cost = profitResult.subtotalMarketplace;
-              const settled = isOrderSettled(
-                o.order_date,
-                settlementDays,
-                new Date(),
-                (o as { delivery_date?: string | null }).delivery_date,
-                (o as { is_logistics_delayed?: boolean }).is_logistics_delayed === true,
-                Boolean(o.is_manually_settled)
-              );
+            totalRevenue += amount;
+            totalCost += cost;
+            totalProfit += profit;
+            if (isBlocked) {
+              totalBlockedProfit += profit;
+            } else {
+              totalSettledProfit += profit;
+            }
 
-              const rawMkt = String(o.marketplace || o.marketplace_name || '').toLowerCase();
-              const isTikTok = rawMkt.includes('tiktok') || Boolean(o.tiktok_sfp_enabled);
-              const orderId = String(o.order_id || o.id || '');
-              const isOrderReplica = Boolean(
-                o.is_replica ||
-                (o.products && o.products.some((p: any) =>
-                  p.is_replica ||
-                  (p.product_id && replicaProductIds.has(p.product_id)) ||
-                  (p.name && replicaProductNames.has(String(p.name).trim().toLowerCase()))
-                )) ||
-                (o.product_id && replicaProductIds.has(o.product_id)) ||
-                (o.product_name && replicaProductNames.has(String(o.product_name).trim().toLowerCase()))
-              );
-              const isRepasseBloqueado = isBlockedExplicit || Boolean(o.is_repasse_bloqueado || (orderId && repasseBloqueadoOrderIds.has(orderId)));
-              const isReplicaUnblocked = Boolean(o.is_replica_unblocked || (orderId && replicaUnblockedOrderIds.has(orderId)));
-              const isReplicaWaitingBlocked = isOrderReplica && isTikTok && !settled && !isReplicaUnblocked;
-              // Blocked orders from BLOCKED_ORDER_PROFIT_OVERRIDES always remain blocked, even if chronologically settled
-              const isTikTokAccountRestrictedBlocked = isTikTok && settledOverride === null && blockedProfitOv !== null;
-              const isAnyRepasseBlocked = isRepasseBloqueado || isReplicaWaitingBlocked || isTikTokAccountRestrictedBlocked;
+            const mktObj = mktById.get(o.marketplace_id);
+            const mktName = mktObj?.name || (o.marketplace_id ? 'Marketplace' : '');
 
-              const resolvedProfit = blockedProfitOv !== null
-                ? blockedProfitOv
-                : settledOverride !== null
-                ? settledOverride
-                : (isAnyRepasseBlocked ? 0 : effectiveProfit);
-
-              // Bucket classification: blocked orders (explicit or TikTok restricted) ALWAYS go to totalBlockedProfit
-              if (isBlockedExplicit || isTikTokAccountRestrictedBlocked) {
-                totalBlockedProfit += resolvedProfit;
-              } else if (isRepasseBloqueado || isReplicaWaitingBlocked) {
-                totalBlockedProfit += resolvedProfit;
-              } else if (settledOverride !== null) {
-                totalSettledProfit += settledOverride;
-              } else if (settled) {
-                totalSettledProfit += resolvedProfit;
-              } else {
-                totalWaitingProfit += resolvedProfit;
-              }
-
-              const reportProfit = (blockedProfitOv !== null || (isAnyRepasseBlocked && settledOverride === null)) ? 0 : resolvedProfit;
-
-              totalRevenue += rev;
-              totalCost += cost;
-              totalProfit += reportProfit;
-            });
-          } else {
-            totalRevenue = Number(row.total_revenue ?? 0);
-            totalCost = Number(row.total_cost ?? 0);
-            totalProfit = Number(row.total_profit ?? 0);
-            totalSettledProfit = totalProfit;
-            totalWaitingProfit = 0;
-            totalBlockedProfit = 0;
-          }
+            return {
+              order_id: String(o.id),
+              order_number: orderNum,
+              order_date: String(o.order_date ?? ''),
+              total_amount: round2(amount),
+              total_cost: round2(cost),
+              total_profit: round2(profit),
+              is_repasse_bloqueado: isBlocked,
+              marketplace: mktName,
+              status: String(o.status ?? ''),
+            };
+          });
 
           return {
-            period_label: String(row.period_label ?? ''),
-            period_start: String(row.period_start ?? ''),
-            period_end: String(row.period_end ?? ''),
+            period_label,
+            period_start,
+            period_end,
             total_revenue: round2(totalRevenue),
             total_cost: round2(totalCost),
             total_profit: round2(totalProfit),
             total_settled_profit: round2(totalSettledProfit),
-            total_waiting_profit: round2(totalWaitingProfit),
+            total_waiting_profit: 0,
             total_blocked_profit: round2(totalBlockedProfit),
-            orders_count: orders.length || Number(row.orders_count ?? 0),
-            orders_data: orders,
+            orders_count: list.length,
+            orders_data: ordersData,
           };
         });
 
         setMonthlyReport(processedRows);
+      } else {
+        // Fallback to get_revenue_report RPC if orders table is empty
+        const { data: rpt } = await supabase.rpc('get_revenue_report', {
+          p_organization_id: organizationId,
+          p_period: 'monthly',
+        });
+        if (rpt) {
+          const fallbackRows: MonthlyReportRow[] = (rpt as Array<Record<string, unknown>>).map((row) => ({
+            period_label: String(row.period_label ?? ''),
+            period_start: String(row.period_start ?? ''),
+            period_end: String(row.period_end ?? ''),
+            total_revenue: round2(Number(row.total_revenue ?? 0)),
+            total_cost: round2(Number(row.total_cost ?? 0)),
+            total_profit: round2(Number(row.total_profit ?? 0)),
+            total_settled_profit: round2(Number(row.total_profit ?? 0)),
+            total_waiting_profit: 0,
+            total_blocked_profit: 0,
+            orders_count: Number(row.orders_count ?? 0),
+            orders_data: [],
+          }));
+          setMonthlyReport(fallbackRows);
+        }
       }
     } catch (err) {
       console.error('Erro ao carregar dados de repasse:', err);
@@ -550,20 +553,42 @@ export default function RepasePage() {
     });
   }, [beneficiaries, payments, totalSettledProfit, totalWaitingProfit, totalGrossProfit]);
 
-  // Monthly Statement (Extrato Mensal)
+  // Monthly Statement (Extrato Mensal) com apuração acumulada retroativa e compensação de prejuízos
   const monthlyStatement = useMemo(() => {
-    const sorted = [...monthlyReport].sort(
-      (a, b) => new Date(b.period_start).getTime() - new Date(a.period_start).getTime()
+    // 1. Ordena cronologicamente (do mês mais antigo ao mais recente) para apurar saldos acumulados e compensações
+    const sortedChronological = [...monthlyReport].sort(
+      (a, b) => new Date(a.period_start).getTime() - new Date(b.period_start).getTime()
     );
 
-    return sorted.map((row) => {
-      const settledProfit = Number(row.total_settled_profit ?? 0);
-      const waitingProfit = Number(row.total_waiting_profit ?? 0);
-      const blockedProfit = Number(row.total_blocked_profit ?? 0);
-      const grossProfit = Number(row.total_profit ?? 0);
-      const revenue = Number(row.total_revenue ?? 0);
-      const cost = Number(row.total_cost ?? 0);
+    let runningAccumulatedSettled = 0;
+
+    const processed = sortedChronological.map((row) => {
+      const settledProfit = round2(Number(row.total_settled_profit ?? 0));
+      const waitingProfit = round2(Number(row.total_waiting_profit ?? 0));
+      const blockedProfit = round2(Number(row.total_blocked_profit ?? 0));
+      const grossProfit = round2(Number(row.total_profit ?? 0));
+      const revenue = round2(Number(row.total_revenue ?? 0));
+      const cost = round2(Number(row.total_cost ?? 0));
       const orders = Number(row.orders_count ?? 0);
+
+      const prevAccumulated = runningAccumulatedSettled;
+      runningAccumulatedSettled = round2(runningAccumulatedSettled + settledProfit);
+
+      let distributableProfit = 0;
+      let lossDeducted = 0;
+
+      if (settledProfit > 0) {
+        if (prevAccumulated < 0) {
+          lossDeducted = round2(Math.min(settledProfit, Math.abs(prevAccumulated)));
+          distributableProfit = round2(Math.max(0, settledProfit - lossDeducted));
+        } else {
+          distributableProfit = settledProfit;
+          lossDeducted = 0;
+        }
+      } else {
+        distributableProfit = 0;
+        lossDeducted = 0;
+      }
 
       const [year, monthNum] = row.period_start.split('-');
       const ptMonth =
@@ -576,16 +601,18 @@ export default function RepasePage() {
         return p.period_start === row.period_start || p.period_end === row.period_end;
       });
 
-      // Distribute settled profit across beneficiaries with remainder safety
-      let remainingMonthSettled = settledProfit;
+      // Distribute distributable profit across beneficiaries with remainder safety
+      let remainingMonthDistributable = distributableProfit;
       let remainingMonthWaiting = waitingProfit;
 
       const shares = beneficiaries.map((b, idx) => {
         const isLast = idx === beneficiaries.length - 1;
-        const shareAmount = settledProfit < 0
-          ? round2((settledProfit * b.percentage) / 100)
-          : (isLast ? round2(remainingMonthSettled) : round2((settledProfit * b.percentage) / 100));
-        remainingMonthSettled = round2(remainingMonthSettled - shareAmount);
+        const shareAmount = distributableProfit <= 0
+          ? (settledProfit < 0 ? round2((settledProfit * b.percentage) / 100) : 0)
+          : (isLast ? round2(remainingMonthDistributable) : round2((distributableProfit * b.percentage) / 100));
+        if (distributableProfit > 0) {
+          remainingMonthDistributable = round2(remainingMonthDistributable - shareAmount);
+        }
 
         const waitingAmount = waitingProfit <= 0
           ? 0
@@ -604,14 +631,31 @@ export default function RepasePage() {
         };
       });
 
-      const allPaid = shares.every((s) => s.status === 'paid');
-      const allRegistered = shares.every((s) => s.status !== 'unregistered');
+      const allPaid = shares.length > 0 && shares.every((s) => s.status === 'paid');
+      const allRegistered = shares.length > 0 && shares.every((s) => s.status !== 'unregistered');
       const hasPending = shares.some((s) => s.status === 'pending');
+
+      const isPriorToRepasseStart = row.period_start < REPASSE_START_PERIOD;
+
+      const isCoveredByLaterPeriod = payments.some(
+        (p) => new Date(p.period_start).getTime() > new Date(row.period_start).getTime()
+      );
+
+      // Botão de repasse habilitado apenas a partir do marco inicial (Outubro de 2026 e próximos meses)
+      const canGenerateRepasses =
+        !isPriorToRepasseStart &&
+        !isCoveredByLaterPeriod &&
+        distributableProfit > 0 &&
+        !allRegistered;
 
       const monthStatus = allPaid
         ? 'paid'
         : hasPending || allRegistered
         ? 'pending'
+        : isPriorToRepasseStart
+        ? 'historical'
+        : isCoveredByLaterPeriod
+        ? 'covered'
         : 'unregistered';
 
       return {
@@ -619,6 +663,10 @@ export default function RepasePage() {
         monthKey: `${year}-${monthNum}`,
         formattedLabel,
         settledProfit,
+        distributableProfit,
+        accumulatedSettledProfit: runningAccumulatedSettled,
+        lossDeducted,
+        previousLossRemaining: prevAccumulated < 0 ? Math.abs(prevAccumulated) : 0,
         waitingProfit,
         blockedProfit,
         grossProfit,
@@ -627,9 +675,73 @@ export default function RepasePage() {
         orders,
         shares,
         monthStatus,
+        isCoveredByLaterPeriod,
+        isPriorToRepasseStart,
+        canGenerateRepasses,
       };
     });
+
+    // 2. Ordena de forma decrescente (mês mais recente primeiro) para exibição visual
+    return [...processed].sort(
+      (a, b) => new Date(b.period_start).getTime() - new Date(a.period_start).getTime()
+    );
   }, [monthlyReport, payments, beneficiaries]);
+
+  // Agrupar lançamentos de repasse por período/mês para exibição em accordion
+  const groupedPayments = useMemo(() => {
+    const groups: Array<{
+      key: string;
+      label: string;
+      period_start: string;
+      period_end: string;
+      totalAmount: number;
+      grossProfit: number;
+      allPaid: boolean;
+      hasPending: boolean;
+      items: RepassePayment[];
+    }> = [];
+
+    const map = new Map<string, RepassePayment[]>();
+    for (const p of payments) {
+      const key = `${p.period_start}__${p.period_end}`;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(p);
+    }
+
+    const monthNames = [
+      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+
+    for (const [key, items] of map.entries()) {
+      const [pStart, pEnd] = key.split('__');
+      const startParts = pStart ? pStart.split('-') : [];
+      const year = startParts[0] || '';
+      const monthIdx = startParts[1] ? parseInt(startParts[1], 10) - 1 : 0;
+      const label = year && monthIdx >= 0 && monthIdx < 12
+        ? `${monthNames[monthIdx]} de ${year}`
+        : `${pStart} → ${pEnd}`;
+
+      const totalAmount = round2(items.reduce((s, it) => s + Number(it.amount ?? 0), 0));
+      const grossProfit = Number(items[0]?.gross_profit ?? 0);
+      const allPaid = items.every((it) => it.status === 'paid');
+      const hasPending = items.some((it) => it.status === 'pending');
+
+      groups.push({
+        key,
+        label,
+        period_start: pStart,
+        period_end: pEnd,
+        totalAmount,
+        grossProfit,
+        allPaid,
+        hasPending,
+        items,
+      });
+    }
+
+    return groups.sort((a, b) => new Date(b.period_start).getTime() - new Date(a.period_start).getTime());
+  }, [payments]);
 
   // Save percentage edit
   const savePct = async (userId: string) => {
@@ -688,6 +800,9 @@ export default function RepasePage() {
         prev.map((p) => (p.id === id ? { ...p, status: 'paid', paid_at: now } : p))
       );
       toast.success('Repasse marcado como pago!');
+      window.dispatchEvent(new CustomEvent('repasse-updated'));
+      window.dispatchEvent(new CustomEvent('orders-updated'));
+      loadData(true);
     } catch (err) {
       console.error('Erro ao marcar como pago:', err);
       toast.error('Erro ao atualizar status.');
@@ -700,36 +815,41 @@ export default function RepasePage() {
       await supabase.from('repasse_payments').delete().eq('id', id);
       setPayments((prev) => prev.filter((p) => p.id !== id));
       toast.success('Lançamento de repasse excluído.');
+      window.dispatchEvent(new CustomEvent('repasse-updated'));
+      window.dispatchEvent(new CustomEvent('orders-updated'));
+      loadData(true);
     } catch (err) {
       console.error('Erro ao excluir repasse:', err);
       toast.error('Erro ao excluir lançamento.');
     }
   };
 
-  // Quick-generate all repasse payments for a specific month based on settled profit
+  // Quick-generate all repasse payments for a specific month based on settled distributable profit
   const handleGenerateMonthRepasses = async (statementItem: (typeof monthlyStatement)[0]) => {
     if (!organizationId) return;
     setProcessingMonth(statementItem.monthKey);
     try {
       const { data: me } = await supabase.auth.getUser();
       const newPaymentsToInsert = statementItem.shares
-        .filter((s) => s.status === 'unregistered')
+        .filter((s) => s.status === 'unregistered' && s.amount > 0)
         .map((s) => ({
           organization_id: organizationId,
           recipient_user_id: s.beneficiary.user_id,
           recipient_name: s.beneficiary.name,
           period_start: statementItem.period_start,
           period_end: statementItem.period_end,
-          gross_profit: statementItem.settledProfit,
+          gross_profit: statementItem.distributableProfit,
           percentage: s.percentage,
-          amount: Math.max(0, s.amount),
-          notes: `Repasse referente a ${statementItem.formattedLabel}`,
+          amount: s.amount,
+          notes: statementItem.lossDeducted > 0
+            ? `Repasse referente a ${statementItem.formattedLabel} (Lucro acumulado líquido apurado: ${fmt(statementItem.distributableProfit)}, compensando ${fmt(statementItem.lossDeducted)} de prejuízos)`
+            : `Repasse referente a ${statementItem.formattedLabel}`,
           status: 'pending' as const,
           created_by: me?.user?.id ?? null,
         }));
 
       if (newPaymentsToInsert.length === 0) {
-        toast.info('Todos os repasses deste mês já foram gerados.');
+        toast.info('Nenhum valor positivo a ser repassado neste mês.');
         return;
       }
 
@@ -742,6 +862,9 @@ export default function RepasePage() {
 
       setPayments((prev) => [...(inserted as RepassePayment[]), ...prev]);
       toast.success(`Repasses de ${statementItem.formattedLabel} gerados com sucesso!`);
+      window.dispatchEvent(new CustomEvent('repasse-updated'));
+      window.dispatchEvent(new CustomEvent('orders-updated'));
+      await loadData(true);
     } catch (err) {
       console.error('Erro ao gerar repasses do mês:', err);
       toast.error('Erro ao gerar repasses do mês.');
@@ -774,6 +897,9 @@ export default function RepasePage() {
         prev.map((p) => (ids.includes(p.id) ? { ...p, status: 'paid', paid_at: now } : p))
       );
       toast.success(`Repasses de ${statementItem.formattedLabel} marcados como pagos!`);
+      window.dispatchEvent(new CustomEvent('repasse-updated'));
+      window.dispatchEvent(new CustomEvent('orders-updated'));
+      await loadData(true);
     } catch (err) {
       console.error('Erro ao pagar mês:', err);
       toast.error('Erro ao atualizar repasses.');
@@ -796,7 +922,7 @@ export default function RepasePage() {
         recipient_name: b?.name || '',
         period_start: statementItem.period_start,
         period_end: statementItem.period_end,
-        gross_profit: String(statementItem.settledProfit),
+        gross_profit: String(statementItem.distributableProfit > 0 ? statementItem.distributableProfit : statementItem.settledProfit),
         notes: `Repasse referente a ${statementItem.formattedLabel}`,
       });
     } else {
@@ -850,6 +976,9 @@ export default function RepasePage() {
       }
       toast.success('Repasse registrado com sucesso!');
       setRegisterOpen(false);
+      window.dispatchEvent(new CustomEvent('repasse-updated'));
+      window.dispatchEvent(new CustomEvent('orders-updated'));
+      await loadData(true);
     } catch (err) {
       console.error('Erro ao registrar repasse:', err);
       toast.error('Erro ao registrar repasse.');
@@ -920,8 +1049,17 @@ export default function RepasePage() {
                 Saldo geral acumulado
               </span>
             </div>
-            <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
-              Disponível
+            <Badge
+              variant="outline"
+              className={`text-[10px] ${
+                totalPending + totalPaid >= totalSettledProfit && totalSettledProfit > 0
+                  ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                  : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+              }`}
+            >
+              {totalPending + totalPaid >= totalSettledProfit && totalSettledProfit > 0
+                ? (totalPending > 0 ? 'Lançado (Pendente)' : 'Repassado')
+                : 'Disponível'}
             </Badge>
           </div>
           <div>
@@ -1049,6 +1187,10 @@ export default function RepasePage() {
                                 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]'
                                 : month.monthStatus === 'pending'
                                 ? 'bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px]'
+                                : month.monthStatus === 'historical'
+                                ? 'bg-zinc-800 text-zinc-400 border-zinc-700 text-[10px]'
+                                : month.monthStatus === 'covered'
+                                ? 'bg-blue-500/10 text-blue-400 border-blue-500/20 text-[10px]'
                                 : 'bg-zinc-800 text-zinc-400 border-zinc-700 text-[10px]'
                             }
                           >
@@ -1056,12 +1198,37 @@ export default function RepasePage() {
                               ? 'Liquidado / Pago'
                               : month.monthStatus === 'pending'
                               ? 'Pendente'
+                              : month.monthStatus === 'historical'
+                              ? 'Período Histórico'
+                              : month.monthStatus === 'covered'
+                              ? 'Apurado no Acumulado'
                               : 'Não Lançado'}
                           </Badge>
                         </div>
-                        <p className="text-xs text-zinc-400 mt-0.5">
-                          {month.orders} {month.orders === 1 ? 'pedido' : 'pedidos'} • Receita: {fmt(month.revenue)} • Custos: {fmt(month.cost)}
-                        </p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <p className="text-xs text-zinc-400">
+                            {month.orders} {month.orders === 1 ? 'pedido' : 'pedidos'} • Receita: {fmt(month.revenue)} • Custos: {fmt(month.cost)}
+                          </p>
+                          {month.orders_data && month.orders_data.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => toggleMonthOrders(month.monthKey)}
+                              className="text-[11px] text-emerald-400 hover:text-emerald-300 font-medium inline-flex items-center gap-1 hover:underline cursor-pointer"
+                            >
+                              {expandedMonths[month.monthKey] ? (
+                                <>
+                                  <ChevronUp className="w-3 h-3" />
+                                  Ocultar pedidos ({month.orders_data.length})
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown className="w-3 h-3" />
+                                  Ver pedidos ({month.orders_data.length})
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -1069,12 +1236,25 @@ export default function RepasePage() {
                       <div className="text-right">
                         <div>
                           <span className="text-[10px] text-zinc-500 uppercase tracking-wider block">
-                            Lucro Liquidado
+                            Saldo Acumulado
                           </span>
-                          <span className={`text-base font-bold ${isNegative ? 'text-red-400' : 'text-emerald-400'}`}>
-                            {fmt(month.settledProfit)}
+                          <span className={`text-base font-bold ${month.accumulatedSettledProfit < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                            {fmt(month.accumulatedSettledProfit)}
                           </span>
                         </div>
+                        <div className="text-[11px] text-zinc-400 font-medium mt-0.5">
+                          Resultado do mês: <span className={month.settledProfit < 0 ? 'text-red-400 font-medium' : 'text-emerald-400 font-medium'}>{month.settledProfit >= 0 ? `+${fmt(month.settledProfit)}` : fmt(month.settledProfit)}</span>
+                        </div>
+                        {month.canGenerateRepasses && month.distributableProfit > 0 && (
+                          <div className="text-[11px] text-emerald-400 font-semibold block mt-0.5">
+                            A Repassar: {fmt(month.distributableProfit)}
+                            {month.lossDeducted > 0 && (
+                              <span className="text-[10px] text-amber-400/90 block font-normal">
+                                (Compensado -{fmt(month.lossDeducted)} de prejuízos)
+                              </span>
+                            )}
+                          </div>
+                        )}
                         {month.waitingProfit > 0 && (
                           <span className="text-[11px] text-amber-400 font-medium block mt-0.5">
                             + {fmt(month.waitingProfit)} em espera
@@ -1089,12 +1269,12 @@ export default function RepasePage() {
 
                       {/* Month actions */}
                       <div className="flex items-center gap-2">
-                        {month.monthStatus === 'unregistered' && !isNegative && (
+                        {month.canGenerateRepasses && (
                           <Button
                             size="sm"
                             disabled={isProcessing}
                             onClick={() => handleGenerateMonthRepasses(month)}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8 gap-1.5 shadow-sm"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8 gap-1.5 shadow-sm font-semibold cursor-pointer"
                           >
                             {isProcessing ? (
                               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1110,7 +1290,7 @@ export default function RepasePage() {
                             size="sm"
                             disabled={isProcessing}
                             onClick={() => handlePayMonthAll(month)}
-                            className="bg-teal-600 hover:bg-teal-700 text-white text-xs h-8 gap-1.5 shadow-sm"
+                            className="bg-teal-600 hover:bg-teal-700 text-white text-xs h-8 gap-1.5 shadow-sm font-semibold"
                           >
                             {isProcessing ? (
                               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1123,6 +1303,64 @@ export default function RepasePage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Expandable detailed orders list */}
+                  {expandedMonths[month.monthKey] && month.orders_data && month.orders_data.length > 0 && (
+                    <div className="mb-4 rounded-lg border border-zinc-800 bg-zinc-950/70 p-3 overflow-x-auto">
+                      <div className="text-[11px] font-semibold text-zinc-300 mb-2 flex items-center justify-between">
+                        <span>Detalhamento dos Pedidos — {month.formattedLabel}</span>
+                        <span className="text-[10px] text-zinc-500 font-normal">Valores conforme base de dados oficial</span>
+                      </div>
+                      <table className="w-full text-left text-xs">
+                        <thead>
+                          <tr className="border-b border-zinc-800 text-[10px] text-zinc-400 uppercase tracking-wider">
+                            <th className="pb-1.5 font-medium">Pedido</th>
+                            <th className="pb-1.5 font-medium">Data</th>
+                            <th className="pb-1.5 font-medium text-right">Receita</th>
+                            <th className="pb-1.5 font-medium text-right">Custos</th>
+                            <th className="pb-1.5 font-medium text-right">Lucro / Prejuízo</th>
+                            <th className="pb-1.5 font-medium text-center">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-800/40">
+                          {month.orders_data.map((ord: any) => {
+                            const isOrdBlocked = ord.is_repasse_bloqueado;
+                            const isOrdNegative = ord.total_profit < 0;
+                            return (
+                              <tr key={ord.order_id || ord.order_number} className="hover:bg-zinc-800/30 transition-colors">
+                                <td className="py-2 font-bold text-zinc-100">
+                                  #{ord.order_number}
+                                </td>
+                                <td className="py-2 text-zinc-400 text-[11px]">
+                                  {ord.order_date ? ord.order_date.split('-').reverse().join('/') : '-'}
+                                </td>
+                                <td className="py-2 text-right text-zinc-300">
+                                  {fmt(ord.total_amount)}
+                                </td>
+                                <td className="py-2 text-right text-zinc-400">
+                                  {fmt(ord.total_cost)}
+                                </td>
+                                <td className={`py-2 text-right font-bold ${isOrdNegative ? 'text-red-400' : 'text-emerald-400'}`}>
+                                  {fmt(ord.total_profit)}
+                                </td>
+                                <td className="py-2 text-center">
+                                  {isOrdBlocked ? (
+                                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-red-500/10 text-red-400 border-red-500/30">
+                                      Bloqueado
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
+                                      Liquidado
+                                    </Badge>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
 
                   {/* Shares breakdown cards for the month */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
@@ -1146,8 +1384,12 @@ export default function RepasePage() {
                           </div>
 
                           <div className="my-1">
-                            <span className={`text-base font-bold ${isNegative ? 'text-zinc-500' : b.colorText}`}>
-                              {isNegative ? `Prejuízo (${fmt(Math.abs(share.amount))})` : fmt(share.amount)}
+                            <span className={`text-base font-bold ${isNegative ? 'text-zinc-500' : (month.distributableProfit <= 0 && month.settledProfit > 0) ? 'text-zinc-400' : b.colorText}`}>
+                              {isNegative
+                                ? `Prejuízo (${fmt(Math.abs(share.amount))})`
+                                : month.distributableProfit <= 0 && month.settledProfit > 0
+                                ? 'Compensando prejuízo'
+                                : fmt(share.amount)}
                             </span>
                             {share.waitingAmount > 0 && (
                               <span className="text-[11px] text-amber-400 font-medium block mt-0.5">
@@ -1172,7 +1414,7 @@ export default function RepasePage() {
                                   <Button
                                     size="sm"
                                     variant="ghost"
-                                    className="h-6 px-2 text-[10px] text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
+                                    className="h-6 px-2 text-[10px] text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 cursor-pointer"
                                     onClick={() => markPaid(share.payment!.id)}
                                   >
                                     Marcar pago
@@ -1181,7 +1423,15 @@ export default function RepasePage() {
                               </div>
                             ) : (
                               <span className="text-[11px] text-zinc-500">
-                                {isNegative ? 'Sem repasse no prejuízo' : 'Aguardando lançamento'}
+                                {isNegative
+                                  ? 'Sem repasse no prejuízo'
+                                  : month.isPriorToRepasseStart
+                                  ? 'Integrado ao saldo acumulado'
+                                  : month.isCoveredByLaterPeriod
+                                  ? 'Apurado no saldo acumulado posterior'
+                                  : month.distributableProfit <= 0
+                                  ? 'Saldo absorvido por prejuízos anteriores'
+                                  : 'Aguardando lançamento'}
                               </span>
                             )}
                           </div>
@@ -1284,84 +1534,150 @@ export default function RepasePage() {
         </div>
       </div>
 
-      {/* ── Histórico de Lançamentos de Pagamento ────────────────────────────── */}
+      {/* ── Histórico de Lançamentos de Pagamento (Accordion) ──────────────────── */}
       <div className="rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden shadow-sm">
-        <div className="px-5 py-3 border-b border-zinc-800 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setHistoryOpen((prev) => !prev)}
+          className="w-full px-5 py-3.5 border-b border-zinc-800 flex items-center justify-between hover:bg-zinc-800/40 transition-colors cursor-pointer text-left"
+        >
+          <div className="flex items-center gap-2 flex-wrap">
             <Wallet className="w-4 h-4 text-emerald-400" />
             <h2 className="text-sm font-semibold text-white">Histórico de Lançamentos de Repasse</h2>
+            <Badge variant="outline" className="text-[10px] bg-zinc-800 text-zinc-300 border-zinc-700 ml-1">
+              {payments.length} {payments.length === 1 ? 'registro' : 'registros'}
+              {groupedPayments.length > 0 && ` em ${groupedPayments.length} ${groupedPayments.length === 1 ? 'período' : 'períodos'}`}
+            </Badge>
           </div>
-          <span className="text-xs text-zinc-400">
-            {payments.length} {payments.length === 1 ? 'registro' : 'registros'}
-          </span>
-        </div>
-
-        {payments.length === 0 ? (
-          <div className="px-5 py-10 text-center text-zinc-500 text-sm">
-            Nenhum repasse registrado ainda. Utilize o botão acima ou gere a partir do extrato mensal.
+          <div className="flex items-center gap-2 text-xs text-zinc-400">
+            <span>{historyOpen ? 'Recolher' : 'Expandir'}</span>
+            {historyOpen ? <ChevronUp className="w-4 h-4 text-zinc-400" /> : <ChevronDown className="w-4 h-4 text-zinc-400" />}
           </div>
-        ) : (
-          <div className="divide-y divide-zinc-800">
-            {payments.map((p) => {
-              const b = beneficiaries.find((item) => item.user_id === p.recipient_user_id);
-              const displayName = p.recipient_name || b?.name || getName(p.recipient_user_id);
+        </button>
 
-              return (
-                <div key={p.id} className="flex items-center gap-4 px-5 py-3.5 flex-wrap justify-between hover:bg-zinc-800/30 transition-colors">
-                  <div className="flex-1 min-w-[220px]">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-white">{displayName}</p>
-                      <Badge variant="outline" className="text-[10px] bg-zinc-800 text-zinc-300 border-zinc-700">
-                        {p.percentage}%
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-zinc-400 mt-0.5">
-                      Período: {p.period_start} → {p.period_end}
-                      {p.notes && <span className="ml-2 text-zinc-500">· {p.notes}</span>}
-                    </p>
-                  </div>
+        {historyOpen && (
+          <div>
+            {payments.length === 0 ? (
+              <div className="px-5 py-10 text-center text-zinc-500 text-sm">
+                Nenhum repasse registrado ainda. Utilize o botão acima ou gere a partir do extrato mensal.
+              </div>
+            ) : (
+              <div className="divide-y divide-zinc-800">
+                {groupedPayments.map((group) => {
+                  const isPeriodExpanded = expandedPaymentPeriods[group.key] !== false;
 
-                  <div className="text-right">
-                    <p className="text-base font-bold text-emerald-400">{fmt(Number(p.amount))}</p>
-                    <p className="text-[11px] text-zinc-500">
-                      de {fmt(Number(p.gross_profit))} apurado
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      className={
-                        p.status === 'paid'
-                          ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                          : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-                      }
-                    >
-                      {p.status === 'paid' ? 'Pago' : 'Pendente'}
-                    </Badge>
-
-                    {p.status === 'pending' && (
-                      <Button
-                        size="sm"
-                        className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
-                        onClick={() => markPaid(p.id)}
+                  return (
+                    <div key={group.key} className="bg-zinc-900/50">
+                      {/* Accordion Header for this Month/Period Group */}
+                      <button
+                        type="button"
+                        onClick={() => togglePaymentPeriod(group.key)}
+                        className="w-full px-5 py-3 flex items-center justify-between gap-4 hover:bg-zinc-800/50 transition-colors text-left cursor-pointer"
                       >
-                        Marcar pago
-                      </Button>
-                    )}
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <Calendar className="w-4 h-4 text-emerald-400" />
+                          <span className="text-sm font-bold text-white">{group.label}</span>
+                          <span className="text-xs text-zinc-400">
+                            ({group.items.length} {group.items.length === 1 ? 'lançamento' : 'lançamentos'})
+                          </span>
+                          <Badge
+                            className={
+                              group.allPaid
+                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]'
+                                : 'bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px]'
+                            }
+                          >
+                            {group.allPaid ? 'Liquidado / Pago' : 'Pendente'}
+                          </Badge>
+                        </div>
 
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0 text-zinc-500 hover:text-red-400 hover:bg-red-500/10"
-                      title="Excluir lançamento"
-                      onClick={() => deletePayment(p.id)}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <span className="text-sm font-bold text-emerald-400">{fmt(group.totalAmount)}</span>
+                            {group.grossProfit > 0 && (
+                              <span className="text-[10px] text-zinc-500 block">
+                                de {fmt(group.grossProfit)} apurado
+                              </span>
+                            )}
+                          </div>
+                          {isPeriodExpanded ? (
+                            <ChevronUp className="w-4 h-4 text-zinc-400" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-zinc-400" />
+                          )}
+                        </div>
+                      </button>
+
+                      {/* Accordion Content: Beneficiaries rows for this period */}
+                      {isPeriodExpanded && (
+                        <div className="divide-y divide-zinc-800/60 bg-zinc-950/40 border-t border-zinc-800/80 pl-4 pr-5 py-1">
+                          {group.items.map((p) => {
+                            const b = beneficiaries.find((item) => item.user_id === p.recipient_user_id);
+                            const displayName = p.recipient_name || b?.name || getName(p.recipient_user_id);
+
+                            return (
+                              <div
+                                key={p.id}
+                                className="flex items-center gap-4 py-3 flex-wrap justify-between hover:bg-zinc-800/20 transition-colors rounded-lg px-2"
+                              >
+                                <div className="flex-1 min-w-[200px]">
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-sm font-medium text-white">{displayName}</p>
+                                    <Badge variant="outline" className="text-[10px] bg-zinc-800 text-zinc-300 border-zinc-700">
+                                      {p.percentage}%
+                                    </Badge>
+                                  </div>
+                                  <p className="text-xs text-zinc-400 mt-0.5">
+                                    Período: {p.period_start} → {p.period_end}
+                                    {p.notes && <span className="ml-2 text-zinc-500">· {p.notes}</span>}
+                                  </p>
+                                </div>
+
+                                <div className="text-right">
+                                  <p className="text-sm font-bold text-emerald-400">{fmt(Number(p.amount))}</p>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <Badge
+                                    className={
+                                      p.status === 'paid'
+                                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]'
+                                        : 'bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px]'
+                                    }
+                                  >
+                                    {p.status === 'paid' ? 'Pago' : 'Pendente'}
+                                  </Badge>
+
+                                  {p.status === 'pending' && (
+                                    <Button
+                                      size="sm"
+                                      className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                                      onClick={() => markPaid(p.id)}
+                                    >
+                                      Marcar pago
+                                    </Button>
+                                  )}
+
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 cursor-pointer"
+                                    title="Excluir lançamento"
+                                    onClick={() => deletePayment(p.id)}
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>

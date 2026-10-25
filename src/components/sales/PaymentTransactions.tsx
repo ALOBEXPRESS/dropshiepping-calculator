@@ -497,11 +497,13 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             const isBlocked = isBlockedOrder(num) || Boolean(dbOrder.is_repasse_bloqueado);
             const blockedProfit = getBlockedOrderProfit(num);
             const hasRetornoLiquido = bo?.tiktok_retorno_liquido != null && Number(bo.tiktok_retorno_liquido) > 0;
-            const settled = (!hasRetornoLiquido && !isBlocked) ? getSettledOrderProfit(num) : null;
-            const mktCost = mktCostMap.get(tx.id) ?? 0;
+            const canonicalSettled = getSettledOrderProfit(num);
             const savedProfit = dbOrder.total_profit != null && !isNaN(Number(dbOrder.total_profit))
               ? Number(dbOrder.total_profit)
               : null;
+            const isCustomized = hasRetornoLiquido || (savedProfit !== null && canonicalSettled !== null && Math.abs(savedProfit - canonicalSettled) > 0.005);
+            const settled = (!hasRetornoLiquido && !isBlocked && !isCustomized) ? canonicalSettled : null;
+            const mktCost = mktCostMap.get(tx.id) ?? 0;
             const computedProfit = isBlocked && blockedProfit !== null
               ? blockedProfit
               : settled !== null

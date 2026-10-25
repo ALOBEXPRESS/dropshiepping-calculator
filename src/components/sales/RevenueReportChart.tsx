@@ -35,6 +35,7 @@ import { calcOrderProfit } from '@/utils/calcOrderProfit';
 import {
   matchesOrderFilters,
   getSettledOrderProfit,
+  getUnblockedOrderProfit,
   isBlockedOrder,
   getBlockedOrderProfit,
   isOrderSettled,
@@ -42,6 +43,8 @@ import {
   calculateDefaultDeliveryDate,
   calculateSettlementDate,
   formatDateBR,
+  resolveOrderReportProfit,
+  SETTLED_ORDER_PROFIT_OVERRIDES,
 } from './revenueCalculations';
 import type { SalesFilters } from '@/hooks/useFilterPersistence';
 
@@ -193,6 +196,58 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
   const effectiveGrossInvestment = dbGrossInvestment !== null
     ? dbGrossInvestment
     : (Number(String(contextGrossInvestment || '0').replace(',', '.')) || 0);
+
+  // Repasses gerados aos sócios que deduzem do Lucro Total disponível a repassar
+  const [totalRepassesGerados, setTotalRepassesGerados] = useState<number>(0);
+
+  const fetchRepassePayments = useCallback(async () => {
+    if (!organizationId) return;
+    try {
+      const { data: payRows, error } = await supabase
+        .from('repasse_payments')
+        .select('amount, status')
+        .eq('organization_id', organizationId);
+      if (error) throw error;
+      const sum = (payRows ?? []).reduce((acc, p) => acc + Number(p.amount ?? 0), 0);
+      setTotalRepassesGerados(round2(sum));
+    } catch (err) {
+      console.warn('Erro ao carregar repasses gerados:', err);
+    }
+  }, [organizationId]);
+
+  useEffect(() => {
+    fetchRepassePayments();
+  }, [fetchRepassePayments, refreshTrigger]);
+
+  useEffect(() => {
+    const handleRepasseUpdated = () => {
+      fetchRepassePayments();
+    };
+    window.addEventListener('repasse-updated', handleRepasseUpdated);
+    window.addEventListener('storage', handleRepasseUpdated);
+    return () => {
+      window.removeEventListener('repasse-updated', handleRepasseUpdated);
+      window.removeEventListener('storage', handleRepasseUpdated);
+    };
+  }, [fetchRepassePayments]);
+
+  useEffect(() => {
+    if (!organizationId) return;
+    const channel = supabase
+      .channel(`revenue-chart-repasse-${organizationId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'repasse_payments' },
+        () => {
+          fetchRepassePayments();
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [organizationId, fetchRepassePayments]);
+
 
   // Persist modal state per order_id (discount, acrescimo, supplier fee, reembolso)
   type OrderModalState = {
@@ -508,14 +563,19 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     const rawReembolso = (order as { reembolso_value?: number | null }).reembolso_value;
     const reembolsoOv = hasReembolsoOv ? reembolsoByOrderIdRef.current[orderId] : (rawReembolso != null ? Number(rawReembolso) : null);
     const hasRetornoLiquido = Boolean((order as { tiktok_retorno_liquido?: number | null }).tiktok_retorno_liquido);
-    const settledDetailProfit = (!hasReembolsoOv && !hasRetornoLiquido) ? getSettledOrderProfit(orderNumber) : null;
+    const canonicalSettled = getSettledOrderProfit(orderNumber);
+    const savedProfit = (order as { total_profit?: number | null }).total_profit != null
+      ? Number((order as { total_profit?: number | null }).total_profit)
+      : null;
+    const isCustomized = hasReembolsoOv || hasRetornoLiquido || (savedProfit !== null && canonicalSettled !== null && Math.abs(savedProfit - canonicalSettled) > 0.005);
+    const settledDetailProfit = !isCustomized ? canonicalSettled : null;
     const effectiveProfit = settledDetailProfit !== null
       ? settledDetailProfit
       : (reembolsoOv !== null && !isNaN(reembolsoOv)
           ? (reembolsoOv - totalProductCost - manualMktDeduct)
-          : (realProfit - manualMktDeduct));
+          : (savedProfit !== null ? savedProfit : (realProfit - manualMktDeduct)));
 
-    if (orderId && effectiveProfit != null && !isNaN(effectiveProfit)) {
+    if (orderId && effectiveProfit != null && !isNaN(effectiveProfit) && !isCustomized) {
       const currentDbProfit = Number((order as { total_profit?: number | null }).total_profit ?? 0);
       if (Math.abs(currentDbProfit - effectiveProfit) > 0.01) {
         supabase
@@ -2570,14 +2630,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                       : (rawRealProfit - manualMktDeduct1))
                   : (Number(savedProfit1) - manualMktDeduct1);
                 const blockedTooltip1 = getBlockedOrderProfit(orderNumber);
-                const canonical1 = getSettledOrderProfit(orderNumber);
-                const isCustomized1 = Boolean(
-                  (order.order_id && order.order_id in orderEnrichmentById) ||
-                  (savedProfit1 != null && canonical1 !== null && Math.abs(Number(savedProfit1) - canonical1) > 0.01)
-                );
-                const settledTooltip1 = (!hasReembolsoOv1 && !hasRetornoLiquido1 && !isCustomized1) ? canonical1 : null;
+                const unblockedTooltip1 = getUnblockedOrderProfit(orderNumber);
                 const isWaitingRefund1 = Boolean((mergedOrder as { aguardando_reembolso?: boolean }).aguardando_reembolso);
-                const realProfit = isWaitingRefund1 ? 0 : (blockedTooltip1 !== null ? blockedTooltip1 : settledTooltip1 !== null ? settledTooltip1 : fallbackRealProfit1);
+                const realProfit = isWaitingRefund1 ? 0 : (blockedTooltip1 !== null ? blockedTooltip1 : (unblockedTooltip1 !== null ? unblockedTooltip1 : fallbackRealProfit1));
                 const settlementDays1 = Number(resolvedMarketplaceConfig?.settlement_period_days ?? 7);
                 const isSettled1 = isOrderSettled(
                   (order as { order_date?: string }).order_date,
@@ -3207,24 +3262,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const num = String(o.order_number ?? '').trim();
         const hasManualModalEdit = Boolean(o.order_id && o.order_id in reembolsoByOrderId);
         const savedProfit0 = (mergedOrder as { total_profit?: number | null }).total_profit;
-        const hasSavedProfit = savedProfit0 != null && !isNaN(Number(savedProfit0));
-        const canonicalSettled = getSettledOrderProfit(num);
+        const enrichmentProfit0 = (o.order_id && o.order_id in orderEnrichmentById) ? orderEnrichmentById[o.order_id]?.total_profit : null;
+        const currentRealProfit = hasReembolsoOverride && reembolsoOverride !== null && !isNaN(reembolsoOverride)
+          ? (reembolsoOverride - totalProductCost - totalMktCost)
+          : (realProfit - totalMktCost);
 
-        // Only use static canonical override if the order is NOT dynamic (no retorno líquido, no enrichment edit, and no saved profit difference)
-        const isCustomized = Boolean(
-          (o.order_id && o.order_id in orderEnrichmentById) ||
-          (hasSavedProfit && canonicalSettled !== null && Math.abs(Number(savedProfit0) - canonicalSettled) > 0.01)
-        );
-        const isDynamicOrder = hasRetornoLiquido || isCustomized;
-
-        const settledProfit = (!isDynamicOrder && !hasManualModalEdit && !hasReembolsoOverride) ? canonicalSettled : null;
-        const fallbackEffectiveProfit = (hasRetornoLiquido || savedProfit0 == null || isNaN(Number(savedProfit0)))
-          ? (hasReembolsoOverride && reembolsoOverride !== null && !isNaN(reembolsoOverride)
-              ? (reembolsoOverride - totalProductCost - totalMktCost)
-              : (realProfit - totalMktCost))
-          : (Number(savedProfit0) - totalMktCost);
         const isWaitingRefund = Boolean((mergedOrder as { aguardando_reembolso?: boolean }).aguardando_reembolso);
-        const effectiveProfit = isWaitingRefund ? 0 : (settledProfit !== null ? settledProfit : fallbackEffectiveProfit);
 
         // Marketing cost para exibição no painel de totais (keyed by order_id)
         const orderMarketingCost = (marketingCostByProductId as unknown as Record<string, number>)[`order:${o.order_id}`] ?? 0;
@@ -3260,13 +3303,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         );
 
         const isBlockedExplicit = isBlockedOrder(num);
-        const blockedProfitOv = getBlockedOrderProfit(num);
-        const settledProfitOv = (!isDynamicOrder && !isBlockedExplicit) ? canonicalSettled : null;
 
-        const isRepasseBloqueado = isBlockedExplicit || Boolean(
-          (o as { is_repasse_bloqueado?: boolean }).is_repasse_bloqueado ||
-          repasseBloqueadoOrderIds.has(o.order_id)
-        );
+        const isDbRepasseBloqueado = (o as { is_repasse_bloqueado?: boolean }).is_repasse_bloqueado;
+        const isRepasseBloqueado = repasseBloqueadoOrderIds.has(o.order_id)
+          ? true
+          : (isDbRepasseBloqueado !== undefined ? Boolean(isDbRepasseBloqueado) : isBlockedExplicit);
 
         const isReplicaUnblocked = Boolean(
           (o as { is_replica_unblocked?: boolean }).is_replica_unblocked ||
@@ -3275,26 +3316,35 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
         const hasActiveReplica = isOrderReplica;
         const isReplicaWaitingBlocked = hasActiveReplica && isTikTok && !settled && !isReplicaUnblocked;
-        const isTikTokAccountRestrictedBlocked = isTikTok && !settled && settledProfitOv === null && blockedProfitOv !== null;
+        const isTikTokAccountRestrictedBlocked = isTikTok && !settled && isBlockedExplicit;
         const isAnyRepasseBlocked = isRepasseBloqueado || isReplicaWaitingBlocked || isTikTokAccountRestrictedBlocked;
 
-        const resolvedProfit = blockedProfitOv !== null
-          ? blockedProfitOv
-          : settledProfitOv !== null
-          ? settledProfitOv
-          : (isAnyRepasseBlocked ? 0 : effectiveProfit);
+        const savedOrderProfit = (o as { total_profit?: number | null }).total_profit != null
+          ? Number((o as { total_profit?: number | null }).total_profit)
+          : null;
 
-        if (settledProfitOv !== null) {
-          totalSettledProfit += settledProfitOv;
-        } else if (blockedProfitOv !== null || isAnyRepasseBlocked) {
+        const { resolvedProfit } = resolveOrderReportProfit({
+          orderNumber: num,
+          orderId: o.order_id,
+          isRepasseBlocked: isAnyRepasseBlocked,
+          isWaitingRefund,
+          currentRealProfit,
+          enrichmentProfit: enrichmentProfit0,
+          savedProfit: savedOrderProfit,
+          hasSessionEdit: hasManualModalEdit,
+        });
+
+        if (isAnyRepasseBlocked) {
           totalBlockedProfit += resolvedProfit;
-        } else if (settled) {
+        } else if (settled || Object.prototype.hasOwnProperty.call(SETTLED_ORDER_PROFIT_OVERRIDES, num)) {
+          // Orders registered in the settled ledger are definitively settled
+          // regardless of the date-based settlement check
           totalSettledProfit += resolvedProfit;
         } else {
           totalWaitingProfit += resolvedProfit;
         }
 
-        const reportProfit = (settledProfitOv === null && (blockedProfitOv !== null || isAnyRepasseBlocked)) ? 0 : resolvedProfit;
+        const reportProfit = isAnyRepasseBlocked ? 0 : resolvedProfit;
 
         totalRevenue += liquidoFinal;
         totalCost += realCost;
@@ -3313,7 +3363,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         total_marketing_cost: totalMarketingCost,
       };
     });
-  }, [affiliateByOrderId, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig, marketingCostByProductId, manualMarketingCostByOrderId, reembolsoByOrderId, filters, replicaProductIds, replicaProductNames, replicaUnblockedOrderIds, repasseBloqueadoOrderIds]);
+  }, [affiliateByOrderId, computeOrderRealProfit, mergeOrderForTooltip, resolveMarketplaceConfig, marketingCostByProductId, manualMarketingCostByOrderId, reembolsoByOrderId, orderEnrichmentById, filters, replicaProductIds, replicaProductNames, replicaUnblockedOrderIds, repasseBloqueadoOrderIds]);
 
   const recalculatedData = useMemo(() => recalculateReportItems(data), [data, recalculateReportItems]);
   const recalculatedYearlyData = useMemo(() => recalculateReportItems(yearlyData), [yearlyData, recalculateReportItems]);
@@ -3370,6 +3420,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     const source = recalculatedYearlyData.length > 0 ? recalculatedYearlyData : recalculatedData;
     return round2(source.reduce((sum, item) => sum + Number(item.total_settled_profit ?? 0), 0));
   }, [recalculatedYearlyData, recalculatedData]);
+
+  // Lucro total a repassar (lucro liquidado deduzindo os repasses já gerados — zera quando repasses são criados)
+  const availableSettledProfit = useMemo(() => {
+    return round2(Math.max(0, allDataSettledProfit - totalRepassesGerados));
+  }, [allDataSettledProfit, totalRepassesGerados]);
 
   // Lucro em espera de TODOS os dados (aguardando período de liquidação)
   const allDataWaitingProfit = useMemo(() => {
@@ -3728,14 +3783,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 : (rawRealProfit2 - manualMktDeduct2))
             : (Number(savedProfit2) - manualMktDeduct2);
           const blockedTooltip2 = getBlockedOrderProfit(orderNumber);
-          const canonical2 = getSettledOrderProfit(orderNumber);
-          const isCustomized2 = Boolean(
-            (order.order_id && order.order_id in orderEnrichmentById) ||
-            (savedProfit2 != null && canonical2 !== null && Math.abs(Number(savedProfit2) - canonical2) > 0.01)
-          );
-          const settledTooltip2 = (!hasReembolsoOv2 && !hasRetornoLiquido2 && !isCustomized2) ? canonical2 : null;
+          const unblockedTooltip2 = getUnblockedOrderProfit(orderNumber);
           const isWaitingRefund2 = Boolean((mergedOrder as { aguardando_reembolso?: boolean }).aguardando_reembolso);
-          const realProfit = isWaitingRefund2 ? 0 : (blockedTooltip2 !== null ? blockedTooltip2 : settledTooltip2 !== null ? settledTooltip2 : fallbackRealProfit2);
+          const realProfit = isWaitingRefund2 ? 0 : (blockedTooltip2 !== null ? blockedTooltip2 : (unblockedTooltip2 !== null ? unblockedTooltip2 : fallbackRealProfit2));
           const settlementDays2 = Number(resolvedMarketplaceConfig?.settlement_period_days ?? 7);
           const isSettled2 = isOrderSettled(
             (order as { order_date?: string }).order_date,
@@ -6722,10 +6772,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Lucro Total</p>
               <p 
-                className={`text-xl font-bold ${allDataSettledProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                title={`Lucro líquido de pedidos já liquidados: ${formatCurrency(allDataSettledProfit)} • Total projetado com espera: ${formatCurrency(allDataTotalProfit)}`}
+                className={`text-xl font-bold ${availableSettledProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                title={`Lucro líquido disponível: ${formatCurrency(availableSettledProfit)}${totalRepassesGerados > 0 ? ` • Total liquidado: ${formatCurrency(allDataSettledProfit)} (Repasses gerados: ${formatCurrency(totalRepassesGerados)})` : ''} • Total projetado com espera: ${formatCurrency(allDataTotalProfit)}`}
               >
-                {formatCurrency(allDataSettledProfit)}
+                {formatCurrency(availableSettledProfit)}
               </p>
             </div>
             <div>

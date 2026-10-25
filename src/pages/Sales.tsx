@@ -195,6 +195,16 @@ const Sales: React.FC = () => {
     setRefreshKey(Date.now());
   }, []);
 
+  useEffect(() => {
+    const handleOrdersUpdated = () => handleRefresh();
+    window.addEventListener('orders-updated', handleOrdersUpdated);
+    window.addEventListener('order-updated', handleOrdersUpdated);
+    return () => {
+      window.removeEventListener('orders-updated', handleOrdersUpdated);
+      window.removeEventListener('order-updated', handleOrdersUpdated);
+    };
+  }, [handleRefresh]);
+
   const { isConnected, lastUpdate } = useRealtimeSync({ onUpdate: handleRefresh });
 
   if (loading) {

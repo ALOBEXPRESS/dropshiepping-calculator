@@ -336,6 +336,10 @@ export const useHeroStats = (
           if (settled !== null) {
             return settled;
           }
+          if (isCustomized && savedProfit !== null) {
+            const mktCost = mktCostMap.get(orderId) ?? 0;
+            return Math.round((savedProfit - mktCost) * 100) / 100;
+          }
           if (!dbOrder) {
             return computeProfitFromOrders([rawOrder]);
           }

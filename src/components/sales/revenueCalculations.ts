@@ -217,49 +217,50 @@ export const SETTLED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = 
   '13': 10.23,
   '233': 10.23,
 
-  // TikTok Shop — Pedidos Liquidados (27 orders: 20 profit, 7 loss)
+  // TikTok Shop — Pedidos Liquidados (28 orders: 20 profit, 7 loss, 1 zero refund)
   '223': -51.76,
-  '210': -40.26,
+  '210': -40.20,
   '224': -20.17,
-  '218': -18.61,
-  '204': -16.99,
-  '17': -2.61,
+  '218': -18.55,
+  '204': -15.38,
   '4': -2.55,
+  '221': -0.89,
 
   '208': 57.52,
-  '214': 28.07,
-  '237': 15.10,
-  '238': 15.10,
-  '240': 15.10,
-  '10': 14.00,
+  '235': 28.13,
+  '237': 15.16,
+  '238': 15.16,
+  '240': 15.16,
+  '243': 14.06,
   '231': 10.96,
-  '232': 10.90,
-  '235': 10.90, // Corrected from 10.00 — verified 2026-10-24
+  '232': 10.96,
+  '234': 10.96,
   '15': 10.76,
   '239': 9.30,
-  '243': 9.30,
-  '14': 8.56,
-  '222': 5.68,
-  '255': 5.68,
-  '219': 4.98,
-  '221': 4.98,
-  '234': 4.46,
+  '255': 9.30,
   '187': 8.03,
+  '214': 5.74,
+  '17': 5.04,
+  '222': 5.04,
+  '219': 4.96,
+  '14': 4.31,
+  '10': 3.99,
   '229': 2.69,
+  '265': 0.00,
 });
 
 /**
  * TikTok Shop — Pedidos com Repasse Retido / Lucro Bloqueado (11 orders):
  * Devido a restrições na conta TikTok, esses pedidos tiveram repasse bloqueado.
  * 
- * - 9 entradas positivas:   +R$ 98,43
- * - 2 entradas negativas:   -R$ 2,86
- * - Saldo do lote:          +R$ 95,57
+ * - 9 entradas positivas:   +R$ 98,55
+ * - 2 entradas negativas:   -R$ 2,80
+ * - Saldo do lote:          +R$ 95,75
  */
 export const BLOCKED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = Object.freeze({
-  '241': 15.10,
+  '241': 15.16,
   '246': 9.30,
-  '247': 10.91,
+  '247': 10.97,
   '248': 9.30,
   '251': 9.30,
   '252': 9.30,
@@ -267,7 +268,7 @@ export const BLOCKED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = 
   '262': 12.96,
   '263': 12.96,
   '268': -0.37,
-  '266': -2.49,
+  '266': -2.43,
 });
 
 export function isBlockedOrder(orderNumber?: string | number | null): boolean {
@@ -298,6 +299,185 @@ export function getSettledOrderProfit(orderNumber?: string | number | null): num
     return SETTLED_ORDER_PROFIT_OVERRIDES[num];
   }
   return null;
+}
+
+/**
+ * Relatório de Receita — Ledger Baseline de Pedidos com Repasse Liberado (34 pedidos):
+ * Lucro consolidado dos pedidos não bloqueados: R$ 122,84 total (R$ 72,50 de Ago a Out, R$ 50,34 de Mar a Jul).
+ * Pedido #265 com reembolso do fornecedor: Lucro R$ 0,00 (aguardando/espera R$ 0,00).
+ */
+export const UNBLOCKED_ORDER_PROFIT_BASELINE: Readonly<Record<string, number>> = SETTLED_ORDER_PROFIT_OVERRIDES;
+
+export function getUnblockedOrderProfit(orderNumber?: string | number | null): number | null {
+  if (orderNumber == null) return null;
+  const num = String(orderNumber).trim();
+  if (num && isBlockedOrder(num)) {
+    return null;
+  }
+  if (num && Object.prototype.hasOwnProperty.call(UNBLOCKED_ORDER_PROFIT_BASELINE, num)) {
+    return UNBLOCKED_ORDER_PROFIT_BASELINE[num];
+  }
+  return null;
+}
+
+/**
+ * Initial database total_profit values for all 45 store orders before user adjustments.
+ * Used to calculate exact delta when an order is adjusted in UI or database.
+ */
+export const INITIAL_DB_ORDER_PROFIT: Readonly<Record<string, number>> = Object.freeze({
+  '4': -2.55,
+  '10': 3.99,
+  '13': 14.02,
+  '14': 9.11,
+  '15': 10.76,
+  '17': 7.55,
+  '180': 9.76,
+  '187': 8.03,
+  '204': -15.38,
+  '208': 57.52,
+  '210': 9.56,
+  '214': 5.74,
+  '218': -16.04,
+  '219': 4.96,
+  '221': -0.89,
+  '222': 7.55,
+  '223': -51.76,
+  '224': -20.17,
+  '225': -1.25,
+  '226': -1.99,
+  '229': 2.69,
+  '231': 10.96,
+  '232': 13.32,
+  '233': 10.23,
+  '234': 13.32,
+  '235': 30.85,
+  '237': 17.52,
+  '238': 17.52,
+  '239': 9.66,
+  '240': 17.52,
+  '241': 15.16,
+  '243': 16.42,
+  '246': 9.30,
+  '247': 10.97,
+  '248': 9.30,
+  '251': 9.30,
+  '252': 9.30,
+  '254': 9.30,
+  '255': 9.30,
+  '262': 12.96,
+  '263': 12.96,
+  '265': 0.00,
+  '266': -2.43,
+  '268': -0.37,
+  'SONIA-001': -1.87,
+});
+
+export interface ResolveOrderReportProfitParams {
+  orderNumber?: string | number | null;
+  orderId?: string;
+  isRepasseBlocked: boolean;
+  isWaitingRefund: boolean;
+  currentRealProfit: number;
+  enrichmentProfit?: number | null;
+  savedProfit?: number | null;
+  hasSessionEdit: boolean;
+}
+
+export interface ResolveOrderReportProfitResult {
+  resolvedProfit: number;
+  baselineProfit: number;
+  delta: number;
+  isAdjusted: boolean;
+}
+
+/**
+ * Resolves the order profit for reporting taking into account baseline and user adjustments.
+ * If the order has been adjusted in the current session or changed in the DB from its initial state,
+ * the delta is applied so Lucro Total and the period profit update dynamically.
+ */
+export function resolveOrderReportProfit(
+  params: ResolveOrderReportProfitParams
+): ResolveOrderReportProfitResult {
+  const num = String(params.orderNumber ?? '').trim();
+  const blockedBaseline = getBlockedOrderProfit(num);
+  const unblockedBaseline = getUnblockedOrderProfit(num);
+  const initialDb = num && Object.prototype.hasOwnProperty.call(INITIAL_DB_ORDER_PROFIT, num)
+    ? INITIAL_DB_ORDER_PROFIT[num]
+    : undefined;
+
+  const baselineProfit = params.isRepasseBlocked
+    ? (blockedBaseline !== null ? blockedBaseline : (initialDb ?? 0))
+    : (unblockedBaseline !== null ? unblockedBaseline : (initialDb ?? params.currentRealProfit));
+
+  if (params.isWaitingRefund) {
+    const isBaselineWaiting = unblockedBaseline === 0;
+    return {
+      resolvedProfit: 0,
+      baselineProfit,
+      delta: isBaselineWaiting ? 0 : round2(0 - baselineProfit),
+      isAdjusted: !isBaselineWaiting,
+    };
+  }
+
+  // Blocked orders: the override ledger (blockedBaseline) is always the canonical source.
+  // Never apply DB deltas for blocked orders — the DB value is irrelevant once a manual
+  // override is registered, as the TikTok account restriction settlement is final.
+  if (params.isRepasseBlocked && blockedBaseline !== null) {
+    return {
+      resolvedProfit: blockedBaseline,
+      baselineProfit: blockedBaseline,
+      delta: 0,
+      isAdjusted: false,
+    };
+  }
+
+  // Calculate current effective profit for the order
+  let currentProfit: number;
+  if (params.enrichmentProfit != null && !isNaN(Number(params.enrichmentProfit))) {
+    currentProfit = Number(params.enrichmentProfit);
+  } else if (params.savedProfit != null && !isNaN(Number(params.savedProfit))) {
+    currentProfit = Number(params.savedProfit);
+  } else {
+    currentProfit = params.currentRealProfit;
+  }
+
+  // Unblocked orders: the canonical settled ledger (unblockedBaseline) is the default baseline,
+  // but if the order's profit in DB was customized/adjusted, we allow dynamic delta updates!
+  if (!params.isRepasseBlocked && unblockedBaseline !== null && !params.hasSessionEdit) {
+    const isCustomized = Math.abs(currentProfit - unblockedBaseline) > 0.005;
+    if (!isCustomized) {
+      return {
+        resolvedProfit: unblockedBaseline,
+        baselineProfit: unblockedBaseline,
+        delta: 0,
+        isAdjusted: false,
+      };
+    }
+  }
+
+  const isBaselineDiff = unblockedBaseline !== null && Math.abs(currentProfit - unblockedBaseline) > 0.005;
+  const isDbChanged = initialDb !== undefined && Math.abs(currentProfit - initialDb) > 0.005;
+  const isAdjusted = params.hasSessionEdit || isDbChanged || isBaselineDiff;
+
+  if (!isAdjusted) {
+    return {
+      resolvedProfit: baselineProfit,
+      baselineProfit,
+      delta: 0,
+      isAdjusted: false,
+    };
+  }
+
+  const baseForDelta = unblockedBaseline ?? initialDb ?? baselineProfit;
+  const delta = currentProfit - baseForDelta;
+  const resolvedProfit = round2(baselineProfit + delta);
+
+  return {
+    resolvedProfit,
+    baselineProfit,
+    delta: round2(delta),
+    isAdjusted: true,
+  };
 }
 
 export interface PlatformBreakdown {
