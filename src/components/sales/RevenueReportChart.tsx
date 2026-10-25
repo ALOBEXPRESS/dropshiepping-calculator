@@ -3271,13 +3271,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         // Marketing cost para exibição no painel de totais (keyed by order_id)
         const orderMarketingCost = (marketingCostByProductId as unknown as Record<string, number>)[`order:${o.order_id}`] ?? 0;
 
-        // Custo do pedido para relatório: Custo total dos marketplaces para cada pedido
-        // Reembolso: não considera taxa do marketplace (TikTok reembolsou)
-        const isRefunded = hasReembolsoOverride
-          || hasRetornoLiquido
-          || String((o as { order_number?: string | number }).order_number ?? '').trim() === '15';
-        const effectiveMarketplaceCost = isRefunded ? 0 : subtotalMarketplace;
-        const realCost = effectiveMarketplaceCost;
+        // Custo do pedido para relatório: custo bruto total de taxas do marketplace
+        const realCost = subtotalMarketplace;
 
         const settlementDays = Number(cfg?.settlement_period_days ?? 7);
         const settled = isOrderSettled(
@@ -3443,10 +3438,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     return source.reduce((sum, item) => sum + Number(item.total_cost ?? 0), 0);
   }, [recalculatedYearlyData, recalculatedData]);
 
-  // Lucro bruto: Lucro (Lucro Total + Lucro em espera) - Investimento Bruto
+  // Lucro bruto: diferença do custo total - Lucro Total (como negativo)
   const allDataGrossProfit = useMemo(() => {
-    return round2((allDataSettledProfit + allDataWaitingProfit) - effectiveGrossInvestment);
-  }, [allDataSettledProfit, allDataWaitingProfit, effectiveGrossInvestment]);
+    return round2(-Math.abs(allDataTotalCost - availableSettledProfit));
+  }, [allDataTotalCost, availableSettledProfit]);
 
   const marketingCostSeriesData = visibleData.map((periodData) => {
     const periodMarketingCost = (periodData.orders_data ?? []).reduce((sum: number, order: unknown) => {
@@ -6818,7 +6813,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               <p className="text-xs text-gray-500 dark:text-gray-400">Lucro Bruto</p>
               <p 
                 className={`text-xl font-bold ${allDataGrossProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                title={`Lucro Total + Lucro em espera (${formatCurrency(allDataSettledProfit + allDataWaitingProfit)}) - Investimento Bruto (${formatCurrency(effectiveGrossInvestment)}): ${formatCurrency(allDataGrossProfit)}`}
+                title={`Custo Total (${formatCurrency(allDataTotalCost)}) - Lucro Total (${formatCurrency(availableSettledProfit)}): ${formatCurrency(allDataGrossProfit)}`}
               >
                 {formatCurrency(allDataGrossProfit)}
               </p>
