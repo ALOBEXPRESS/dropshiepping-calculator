@@ -271,6 +271,20 @@ export const BLOCKED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = 
   '266': -2.43,
 });
 
+/**
+ * The 36 reconciled historical orders (11 blocked + 22 historical + 3 initial October orders).
+ * Used when calculating canonical baseline costs of the audited order pool.
+ */
+export const CANONICAL_36_ORDER_NUMBERS: ReadonlySet<string> = new Set([
+  // Bloqueados (11)
+  '241', '246', '247', '248', '251', '252', '254', '262', '263', '266', '268',
+  // Históricos Mar-Set (22)
+  '4', 'SONIA-001', '180', '187', '10', '204', '208', '210', '13', '14', '15',
+  '214', '17', '218', '219', '221', '222', '223', '224', '225', '226', '229',
+  // Iniciais Outubro (3)
+  '231', '232', '234'
+]);
+
 export function isBlockedOrder(orderNumber?: string | number | null): boolean {
   if (orderNumber == null) return false;
   const num = String(orderNumber).trim();

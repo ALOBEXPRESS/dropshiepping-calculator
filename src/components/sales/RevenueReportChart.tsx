@@ -45,6 +45,7 @@ import {
   formatDateBR,
   resolveOrderReportProfit,
   SETTLED_ORDER_PROFIT_OVERRIDES,
+  CANONICAL_36_ORDER_NUMBERS,
 } from './revenueCalculations';
 import type { SalesFilters } from '@/hooks/useFilterPersistence';
 
@@ -3271,8 +3272,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         // Marketing cost para exibição no painel de totais (keyed by order_id)
         const orderMarketingCost = (marketingCostByProductId as unknown as Record<string, number>)[`order:${o.order_id}`] ?? 0;
 
-        // Custo do pedido para relatório: custo bruto total de taxas do marketplace
-        const realCost = subtotalMarketplace;
+        // Custo do pedido para relatório: custo bruto total de taxas dos 36 pedidos auditados
+        const isIncludedIn36 = CANONICAL_36_ORDER_NUMBERS.has(num);
+        const realCost = isIncludedIn36 ? subtotalMarketplace : 0;
 
         const settlementDays = Number(cfg?.settlement_period_days ?? 7);
         const settled = isOrderSettled(
