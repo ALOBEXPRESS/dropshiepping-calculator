@@ -3224,6 +3224,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       const orders = item.orders_data || [];
       let totalRevenue = 0;
       let totalCost = 0;
+      let totalMarketplaceFees = 0;
       let totalProfit = 0;
       let totalWaitingProfit = 0;
       let totalSettledProfit = 0;
@@ -3272,9 +3273,9 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         // Marketing cost para exibição no painel de totais (keyed by order_id)
         const orderMarketingCost = (marketingCostByProductId as unknown as Record<string, number>)[`order:${o.order_id}`] ?? 0;
 
-        // Custo do pedido para relatório: custo bruto total de taxas dos 36 pedidos auditados
+        // Taxas do pedido para relatório (dos pedidos auditados)
         const isIncludedIn36 = CANONICAL_36_ORDER_NUMBERS.has(num);
-        const realCost = isIncludedIn36 ? subtotalMarketplace : 0;
+        const orderMarketplaceFees = isIncludedIn36 ? subtotalMarketplace : 0;
 
         const settlementDays = Number(cfg?.settlement_period_days ?? 7);
         const settled = isOrderSettled(
@@ -3330,9 +3331,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           hasSessionEdit: hasManualModalEdit,
         });
 
+        const isOrderFullySettled = !isAnyRepasseBlocked && (settled || Object.prototype.hasOwnProperty.call(SETTLED_ORDER_PROFIT_OVERRIDES, num));
         if (isAnyRepasseBlocked) {
           totalBlockedProfit += resolvedProfit;
-        } else if (settled || Object.prototype.hasOwnProperty.call(SETTLED_ORDER_PROFIT_OVERRIDES, num)) {
+        } else if (isOrderFullySettled) {
           // Orders registered in the settled ledger are definitively settled
           // regardless of the date-based settlement check
           totalSettledProfit += resolvedProfit;
@@ -3342,8 +3344,12 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
 
         const reportProfit = isAnyRepasseBlocked ? 0 : resolvedProfit;
 
+        // Custo atual: custo dos produtos de pedidos que NÃO foram liquidados
+        const orderProductCost = !isOrderFullySettled ? (totalProductCost > 0 ? totalProductCost : Number(o.total_cost ?? 0)) : 0;
+
         totalRevenue += liquidoFinal;
-        totalCost += realCost;
+        totalCost += orderProductCost;
+        totalMarketplaceFees += orderMarketplaceFees;
         totalProfit += reportProfit;
         totalMarketingCost += orderMarketingCost;
       });
@@ -3352,6 +3358,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         ...item,
         total_revenue: totalRevenue,
         total_cost: totalCost,
+        total_marketplace_fees: totalMarketplaceFees,
         total_profit: totalProfit,
         total_waiting_profit: totalWaitingProfit,
         total_settled_profit: totalSettledProfit,
@@ -3434,16 +3441,27 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     return round2(source.reduce((sum, item) => sum + Number((item as { total_blocked_profit?: number }).total_blocked_profit ?? 0), 0));
   }, [recalculatedYearlyData, recalculatedData]);
 
-  // Custo total de TODOS os dados — usa recalculatedYearlyData para consistência
-  const allDataTotalCost = useMemo(() => {
+  // Custo Atual (produtos de pedidos não liquidados) de TODOS os dados — usa recalculatedYearlyData para consistência
+  const allDataCurrentCost = useMemo(() => {
     const source = recalculatedYearlyData.length > 0 ? recalculatedYearlyData : recalculatedData;
-    return source.reduce((sum, item) => sum + Number(item.total_cost ?? 0), 0);
+    return round2(source.reduce((sum, item) => sum + Number(item.total_cost ?? 0), 0));
   }, [recalculatedYearlyData, recalculatedData]);
 
-  // Lucro bruto: diferença do custo total - Lucro Total (como negativo)
+  // Taxas MK (total de taxas de marketplaces) de TODOS os dados
+  const allDataMarketplaceFees = useMemo(() => {
+    const source = recalculatedYearlyData.length > 0 ? recalculatedYearlyData : recalculatedData;
+    return round2(source.reduce((sum, item) => sum + Number((item as { total_marketplace_fees?: number }).total_marketplace_fees ?? 0), 0));
+  }, [recalculatedYearlyData, recalculatedData]);
+
+  // Taxas MK do período visível
+  const currentPeriodMarketplaceFees = useMemo(() => {
+    return round2(visibleData.reduce((sum, item) => sum + Number((item as { total_marketplace_fees?: number }).total_marketplace_fees ?? 0), 0));
+  }, [visibleData]);
+
+  // Lucro bruto: diferença das Taxas MK - Lucro Total (como negativo)
   const allDataGrossProfit = useMemo(() => {
-    return round2(-Math.abs(allDataTotalCost - availableSettledProfit));
-  }, [allDataTotalCost, availableSettledProfit]);
+    return round2(-Math.abs(allDataMarketplaceFees - availableSettledProfit));
+  }, [allDataMarketplaceFees, availableSettledProfit]);
 
   const marketingCostSeriesData = visibleData.map((periodData) => {
     const periodMarketingCost = (periodData.orders_data ?? []).reduce((sum: number, order: unknown) => {
@@ -3468,7 +3486,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       .reduce((s, e) => s + Number(e.value), 0);
   });
 
-  // Label dinâmico para "Custo {período atual}" — baseado na janela visível (mesmo padrão do periodLabel)
+  // Label dinâmico para "Custo Atual {período atual}" — baseado na janela visível (mesmo padrão do periodLabel)
   const costLabel = (() => {
     if (visibleData.length > 0) {
       const EN_PT: Record<string, string> = {
@@ -3478,11 +3496,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       const firstLabel = EN_PT[visibleData[0].period_label ?? ''] ?? visibleData[0].period_label ?? '';
       const lastLabel = EN_PT[visibleData[visibleData.length - 1].period_label ?? ''] ?? visibleData[visibleData.length - 1].period_label ?? '';
       if (period === 'monthly' || period === 'daily' || period === 'weekly') {
-        return visibleData.length === 1 || firstLabel === lastLabel ? `Custo ${lastLabel}` : `Custo ${firstLabel} a ${lastLabel}`;
+        return visibleData.length === 1 || firstLabel === lastLabel ? `Custo Atual ${lastLabel}` : `Custo Atual ${firstLabel} a ${lastLabel}`;
       }
     }
     const now = new Date();
-    return `Custo ${now.getFullYear()}`;
+    return `Custo Atual ${now.getFullYear()}`;
   })();
 
   // Label dinâmico para "Lucro {período atual}" — baseado na janela visível, não em new Date()
@@ -6809,27 +6827,37 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               <p className={`text-xl font-bold ${currentPeriodProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(currentPeriodProfit)}</p>
             </div>
           </div>
-          {/* Row 2: Lucro Bruto, Custo Total, Custo {mês} */}
+          {/* Row 2: Lucro Bruto, Custo Atual, Custo Atual {mês} */}
           <div className="flex items-center gap-6 mt-2 flex-wrap">
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Lucro Bruto</p>
               <p 
                 className={`text-xl font-bold ${allDataGrossProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                title={`Custo Total (${formatCurrency(allDataTotalCost)}) - Lucro Total (${formatCurrency(availableSettledProfit)}): ${formatCurrency(allDataGrossProfit)}`}
+                title={`Taxas MK (${formatCurrency(allDataMarketplaceFees)}) - Lucro Total (${formatCurrency(availableSettledProfit)}): ${formatCurrency(allDataGrossProfit)}`}
               >
                 {formatCurrency(allDataGrossProfit)}
               </p>
             </div>
             <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Custo Total</p>
-              <p className="text-xl font-bold text-red-600">{formatCurrency(allDataTotalCost)}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Custo Atual</p>
+              <p 
+                className="text-xl font-bold text-red-600"
+                title="Custo dos produtos de pedidos que não foram liquidados"
+              >
+                {formatCurrency(allDataCurrentCost)}
+              </p>
             </div>
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">{costLabel}</p>
-              <p className="text-xl font-bold text-red-600">{formatCurrency(currentPeriodCost)}</p>
+              <p 
+                className="text-xl font-bold text-red-600"
+                title="Custo dos produtos de pedidos não liquidados no período"
+              >
+                {formatCurrency(currentPeriodCost)}
+              </p>
             </div>
           </div>
-          {/* Row 3: Marketing Total, Marketing {mês}, GVM Play Total, GVM Play {mês} */}
+          {/* Row 3: Marketing Total, Marketing {mês}, Taxas MK, Taxas MK {mês}, GVM Play Total, GVM Play {mês} */}
           <div className="flex items-center gap-6 mt-2 flex-wrap">
             {campaignProductsTotalCost > 0 && (
               <div>
@@ -6842,6 +6870,26 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                 <p className="text-xs text-gray-500 dark:text-gray-400">{`Marketing ${periodLabel.replace('Lucro ', '')}`}</p>
                 <p className="text-xl font-bold text-orange-500">
                   {formatCurrency(campaignProductsCurrentPeriodCost)}
+                </p>
+              </div>
+            )}
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Taxas MK</p>
+              <p 
+                className="text-xl font-bold text-red-500 dark:text-red-400"
+                title="Total de taxas de marketplaces dos pedidos"
+              >
+                {formatCurrency(allDataMarketplaceFees)}
+              </p>
+            </div>
+            {currentPeriodMarketplaceFees > 0 && (
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{`Taxas MK ${periodLabel.replace('Lucro ', '')}`}</p>
+                <p 
+                  className="text-xl font-bold text-red-500 dark:text-red-400"
+                  title="Taxas de marketplaces dos pedidos no período"
+                >
+                  {formatCurrency(currentPeriodMarketplaceFees)}
                 </p>
               </div>
             )}
