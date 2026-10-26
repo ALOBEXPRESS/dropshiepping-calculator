@@ -207,6 +207,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
                 reembolso_marketplace_value,
                 reembolso_fornecedor_enabled,
                 reembolso_fornecedor_value,
+                aguardando_reembolso,
                 is_free_sample,
                 is_personal_purchase,
                 is_repasse_bloqueado,
@@ -329,6 +330,7 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             reembolso_marketplace_value?: number | null;
             reembolso_fornecedor_enabled?: boolean | null;
             reembolso_fornecedor_value?: number | null;
+            aguardando_reembolso?: boolean | null;
             is_free_sample?: boolean | string;
             is_personal_purchase?: boolean | string;
             is_repasse_bloqueado?: boolean | null;
@@ -504,10 +506,14 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             const savedProfit = dbOrder.total_profit != null && !isNaN(Number(dbOrder.total_profit))
               ? Number(dbOrder.total_profit)
               : null;
+            // Detect active reembolso that changes the effective profit
+            // (fornecedor refund or waiting refund — should override the static blocked ledger)
+            const hasActiveReembolso = dbOrder.reembolso_fornecedor_enabled === true
+              || dbOrder.aguardando_reembolso === true;
             const isCustomized = hasRetornoLiquido || (savedProfit !== null && canonicalSettled !== null && Math.abs(savedProfit - canonicalSettled) > 0.005);
             const settled = (!hasRetornoLiquido && !isBlocked && !isCustomized) ? canonicalSettled : null;
             const mktCost = mktCostMap.get(tx.id) ?? 0;
-            const computedProfit = isBlocked && blockedProfit !== null
+            const computedProfit = (isBlocked && blockedProfit !== null && !hasActiveReembolso)
               ? blockedProfit
               : settled !== null
               ? settled
