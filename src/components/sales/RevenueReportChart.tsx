@@ -625,9 +625,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         || (enrichment as Partial<OrderDetail>)?.is_replica === true,
       is_replica_unblocked: (order as { is_replica_unblocked?: boolean }).is_replica_unblocked === true
         || (enrichment as Partial<OrderDetail>)?.is_replica_unblocked === true,
-      is_repasse_bloqueado: (order as { is_repasse_bloqueado?: boolean }).is_repasse_bloqueado === true
-        || (enrichment as Partial<OrderDetail>)?.is_repasse_bloqueado === true
-        || repasseBloqueadoOrderIds.has(orderId),
+      is_repasse_bloqueado: (order as { is_repasse_bloqueado?: boolean }).is_repasse_bloqueado === false
+        ? false
+        : ((order as { is_repasse_bloqueado?: boolean }).is_repasse_bloqueado === true
+          || (enrichment as Partial<OrderDetail>)?.is_repasse_bloqueado === true
+          || repasseBloqueadoOrderIds.has(orderId)),
       product_id: (order as { product_id?: string }).product_id
         ?? (enrichment as Partial<OrderDetail>)?.product_id
         ?? (mergedOrder.products?.[0] as { product_id?: string })?.product_id
@@ -690,8 +692,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
       saved?.manualIsReplicaUnblocked ??
       Boolean(detail.is_replica_unblocked || replicaUnblockedOrderIds.has(orderId))
     );
-    const initialRepasseBloqueado = saved?.manualIsRepasseBloqueado ?? Boolean(
-      detail.is_repasse_bloqueado || repasseBloqueadoOrderIds.has(orderId)
+    const initialRepasseBloqueado = saved?.manualIsRepasseBloqueado ?? (
+      detail.is_repasse_bloqueado === false
+        ? false
+        : Boolean(detail.is_repasse_bloqueado || repasseBloqueadoOrderIds.has(orderId))
     );
     setManualIsRepasseBloqueado(initialRepasseBloqueado);
     manualIsRepasseBloqueadoRef.current = initialRepasseBloqueado;
@@ -2644,7 +2648,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   (order as { is_manually_settled?: boolean }).is_manually_settled === true
                 );
                 const isTikTok1 = marketplaceName.toLowerCase().includes('tiktok') || rawMarketplace.toLowerCase().includes('tiktok');
-                const isRepasseBloqueado1 = Boolean((order as { is_repasse_bloqueado?: boolean }).is_repasse_bloqueado || repasseBloqueadoOrderIds.has(orderId1));
+                const isDbRepasseBloqueado1 = (order as { is_repasse_bloqueado?: boolean }).is_repasse_bloqueado;
+                const isExplicitlyUnblocked1 = isDbRepasseBloqueado1 === false;
+                const isRepasseBloqueado1 = isExplicitlyUnblocked1
+                  ? false
+                  : Boolean(isDbRepasseBloqueado1 || repasseBloqueadoOrderIds.has(orderId1));
                 const isReplicaUnblocked1 = Boolean((order as { is_replica_unblocked?: boolean }).is_replica_unblocked || replicaUnblockedOrderIds.has(orderId1));
                 const isOrderReplica1 = Boolean(
                   (order as { is_replica?: boolean }).is_replica ||
@@ -2655,7 +2663,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
                   ((order as { product_name?: string }).product_name && replicaProductNames.has((order as { product_name?: string }).product_name!.trim().toLowerCase()))
                 );
                 const hasAnyReplica1 = isOrderReplica1;
-                const isReplicaBlocked1 = hasAnyReplica1 && isTikTok1 && !isSettled1 && !isReplicaUnblocked1;
+                const isReplicaBlocked1 = !isExplicitlyUnblocked1 && hasAnyReplica1 && isTikTok1 && !isSettled1 && !isReplicaUnblocked1;
                 const isAnyBlocked1 = isRepasseBloqueado1 || isReplicaBlocked1;
                 const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true
                   || String(orderNumber).trim() === '208';
@@ -3302,9 +3310,14 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         const isBlockedExplicit = isBlockedOrder(num);
 
         const isDbRepasseBloqueado = (o as { is_repasse_bloqueado?: boolean }).is_repasse_bloqueado;
-        const isRepasseBloqueado = repasseBloqueadoOrderIds.has(o.order_id)
+        const isExplicitlyUnblocked = isDbRepasseBloqueado === false;
+        const isRepasseBloqueado = isExplicitlyUnblocked
+          ? false
+          : repasseBloqueadoOrderIds.has(o.order_id)
           ? true
-          : (isDbRepasseBloqueado !== undefined ? Boolean(isDbRepasseBloqueado) : isBlockedExplicit);
+          : (isDbRepasseBloqueado !== undefined && isDbRepasseBloqueado !== null
+              ? Boolean(isDbRepasseBloqueado)
+              : isBlockedExplicit);
 
         const isReplicaUnblocked = Boolean(
           (o as { is_replica_unblocked?: boolean }).is_replica_unblocked ||
@@ -3312,8 +3325,8 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
         );
 
         const hasActiveReplica = isOrderReplica;
-        const isReplicaWaitingBlocked = hasActiveReplica && isTikTok && !settled && !isReplicaUnblocked;
-        const isTikTokAccountRestrictedBlocked = isTikTok && !settled && isBlockedExplicit;
+        const isReplicaWaitingBlocked = !isExplicitlyUnblocked && hasActiveReplica && isTikTok && !settled && !isReplicaUnblocked;
+        const isTikTokAccountRestrictedBlocked = !isExplicitlyUnblocked && isTikTok && !settled && isBlockedExplicit;
         const isAnyRepasseBlocked = isRepasseBloqueado || isReplicaWaitingBlocked || isTikTokAccountRestrictedBlocked;
 
         const savedOrderProfit = (o as { total_profit?: number | null }).total_profit != null
@@ -3810,7 +3823,11 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             (order as { is_manually_settled?: boolean }).is_manually_settled === true
           );
           const isTikTok2 = marketplaceName.toLowerCase().includes('tiktok') || rawMarketplace.toLowerCase().includes('tiktok');
-          const isRepasseBloqueado2 = Boolean((order as { is_repasse_bloqueado?: boolean }).is_repasse_bloqueado || repasseBloqueadoOrderIds.has(order.order_id));
+          const isDbRepasseBloqueado2 = (order as { is_repasse_bloqueado?: boolean }).is_repasse_bloqueado;
+          const isExplicitlyUnblocked2 = isDbRepasseBloqueado2 === false;
+          const isRepasseBloqueado2 = isExplicitlyUnblocked2
+            ? false
+            : Boolean(isDbRepasseBloqueado2 || repasseBloqueadoOrderIds.has(order.order_id));
           const isReplicaUnblocked2 = Boolean((order as { is_replica_unblocked?: boolean }).is_replica_unblocked || replicaUnblockedOrderIds.has(order.order_id));
           const isOrderReplica2 = Boolean(
             (order as { is_replica?: boolean }).is_replica ||
@@ -3821,7 +3838,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
             ((order as { product_name?: string }).product_name && replicaProductNames.has((order as { product_name?: string }).product_name!.trim().toLowerCase()))
           );
           const hasAnyReplica2 = isOrderReplica2;
-          const isReplicaBlocked2 = hasAnyReplica2 && isTikTok2 && !isSettled2 && !isReplicaUnblocked2;
+          const isReplicaBlocked2 = !isExplicitlyUnblocked2 && hasAnyReplica2 && isTikTok2 && !isSettled2 && !isReplicaUnblocked2;
           const isAnyBlocked2 = isRepasseBloqueado2 || isReplicaBlocked2;
           const isPersonalPurchase = (order as { is_personal_purchase?: boolean }).is_personal_purchase === true
             || String(orderNumber).trim() === '208';

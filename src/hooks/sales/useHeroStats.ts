@@ -22,7 +22,11 @@ type RpcPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
 function computeProfitFromOrders(orders: Record<string, unknown>[]): number {
   return orders.reduce((sum, o) => {
     const num = String(o.order_number ?? '').trim();
-    if (isBlockedOrder(num)) {
+    const isDbRepasseBloqueado = (o as Record<string, unknown>).is_repasse_bloqueado;
+    const isBlocked = (isDbRepasseBloqueado !== undefined && isDbRepasseBloqueado !== null)
+      ? Boolean(isDbRepasseBloqueado)
+      : isBlockedOrder(num);
+    if (isBlocked) {
       return sum;
     }
     const hasRetornoLiquido = o.tiktok_retorno_liquido != null;
@@ -183,6 +187,7 @@ export const useHeroStats = (
           reembolso_fornecedor_value?: number | null;
           is_free_sample?: boolean | string;
           is_personal_purchase?: boolean | string;
+          is_repasse_bloqueado?: boolean | null;
           marketplace_id?: string;
           affiliate_id?: string | null;
           influencers?: { id: string; name: string; percentage?: number | null } | null;
@@ -233,6 +238,7 @@ export const useHeroStats = (
                   reembolso_fornecedor_value,
                   is_free_sample,
                   is_personal_purchase,
+                  is_repasse_bloqueado,
                   marketplace_id,
                   affiliate_id,
                   influencers!affiliate_id (
@@ -322,7 +328,11 @@ export const useHeroStats = (
           const num = String(orderNumber ?? '').trim();
 
           // Blocked orders (repasse retido) must NEVER contribute to the monthly profit total
-          if (isBlockedOrder(num)) {
+          const isDbRepasseBloqueado = dbOrder?.is_repasse_bloqueado !== undefined ? dbOrder.is_repasse_bloqueado : (rawOrder?.is_repasse_bloqueado as boolean | null | undefined);
+          const isBlocked = (isDbRepasseBloqueado !== undefined && isDbRepasseBloqueado !== null)
+            ? Boolean(isDbRepasseBloqueado)
+            : isBlockedOrder(num);
+          if (isBlocked) {
             return 0;
           }
 

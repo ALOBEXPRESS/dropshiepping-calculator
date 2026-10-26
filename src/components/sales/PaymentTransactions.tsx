@@ -494,7 +494,10 @@ export const PaymentTransactions: React.FC<PaymentTransactionsProps> = ({ organi
             }, hasAffiliate);
 
             const num = String(dbOrder.order_number || tx.order_number || '').trim();
-            const isBlocked = isBlockedOrder(num) || Boolean(dbOrder.is_repasse_bloqueado);
+            const isDbRepasseBloqueado = dbOrder.is_repasse_bloqueado;
+            const isBlocked = (isDbRepasseBloqueado !== undefined && isDbRepasseBloqueado !== null)
+              ? Boolean(isDbRepasseBloqueado)
+              : isBlockedOrder(num);
             const blockedProfit = getBlockedOrderProfit(num);
             const hasRetornoLiquido = bo?.tiktok_retorno_liquido != null && Number(bo.tiktok_retorno_liquido) > 0;
             const canonicalSettled = getSettledOrderProfit(num);

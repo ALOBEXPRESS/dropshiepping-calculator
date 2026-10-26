@@ -285,7 +285,10 @@ export class DashboardService {
       const settled = !isCustomized ? canonicalSettled : null;
       const mktCost = mktCostMap.get(order.id) ?? 0;
       // Blocked orders (repasse retido) must never contribute to total profit
-      const isBlocked = isBlockedOrder(String(order.order_number ?? '').trim());
+      const isDbRepasseBloqueado = (order as any).is_repasse_bloqueado;
+      const isBlocked = (isDbRepasseBloqueado !== undefined && isDbRepasseBloqueado !== null)
+        ? Boolean(isDbRepasseBloqueado)
+        : isBlockedOrder(String(order.order_number ?? '').trim());
       const effectiveProfit = isBlocked ? 0 : (settled !== null ? settled : (result.realProfit - mktCost));
 
 
