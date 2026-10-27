@@ -6,6 +6,7 @@ export interface ProxyProvider {
   name: string;
   website: string | null;
   notes: string | null;
+  logo_url?: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -24,6 +25,8 @@ export const proxyProviderSchema = z.object({
     .optional()
     .or(z.literal('')),
   notes: z.string().trim().max(500, 'Notas devem ter no máximo 500 caracteres').optional().or(z.literal('')),
+  logo_url: z.string().nullable().optional().or(z.literal('')),
 });
 
 export type ProxyProviderFormData = z.infer<typeof proxyProviderSchema>;
+

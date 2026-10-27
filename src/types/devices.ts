@@ -80,7 +80,7 @@ export const deviceSchema = z
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['platform'],
-          message: 'Selecione uma plataforma de Cloud Phone (Douplus, Redfinger, VMSCloud, LDCloud, GeeLark)',
+          message: 'Selecione uma plataforma de Cloud Phone (Douplus, Redfinger, VMSCloud, LDCloud, GeeLark, MoreLogin)',
         });
       }
 

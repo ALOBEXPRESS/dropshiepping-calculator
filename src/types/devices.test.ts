@@ -90,4 +90,15 @@ describe('deviceSchema (Zod Validation)', () => {
     const result = deviceSchema.safeParse(validMobile);
     expect(result.success).toBe(true);
   });
+
+  it('validates MoreLogin as a valid Cloud Phone platform', () => {
+    const validMoreLogin = {
+      label: 'MoreLogin Cloud Phone #01',
+      device_type: 'cloud_phone' as const,
+      platform: 'morelogin',
+    };
+
+    const result = deviceSchema.safeParse(validMoreLogin);
+    expect(result.success).toBe(true);
+  });
 });

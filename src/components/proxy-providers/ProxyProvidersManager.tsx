@@ -170,7 +170,7 @@ export const ProxyProvidersManager: React.FC<ProxyProvidersManagerProps> = ({ or
                 {/* Top: Ícone, Nome e Ações */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <ProviderLogo name={provider.name} className="w-10 h-10" />
+                    <ProviderLogo name={provider.name} logoUrl={provider.logo_url} className="w-10 h-10" />
                     <div>
                       <h4 className="text-sm font-bold text-white group-hover:text-orange-400 transition-colors">
                         {provider.name}

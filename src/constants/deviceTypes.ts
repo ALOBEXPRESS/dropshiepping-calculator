@@ -38,6 +38,7 @@ export const CLOUD_PHONE_PLATFORMS = [
   { value: 'vmscloud', label: 'VMSCloud' },
   { value: 'ldcloud', label: 'LDCloud' },
   { value: 'geelark', label: 'GeeLark' },
+  { value: 'morelogin', label: 'MoreLogin' },
 ] as const;
 
 export type CloudPhonePlatform = (typeof CLOUD_PHONE_PLATFORMS)[number]['value'];

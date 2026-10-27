@@ -36,12 +36,15 @@ import {
   AlertOctagon,
   ChevronDown,
   ShieldAlert,
+  Folder,
+  Compass,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useProxies } from '@/hooks/useProxies';
 import { useDevices } from '@/hooks/useDevices';
+import { useBrowserProfiles } from '@/hooks/useBrowserProfiles';
 import type { DeviceWithStats } from '@/types/devices';
 import { PlatformAccountsService } from '@/services/platformAccountsService';
 import { Badge } from '@/components/ui/badge';
@@ -91,11 +94,13 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
   const { organizationId } = useSettings();
   const { proxies = [] } = useProxies(organizationId ?? '');
   const { devicesWithStats = [] } = useDevices();
+  const { profiles: browserProfiles = [] } = useBrowserProfiles(organizationId ?? '');
 
   const [isSaving, setIsSaving] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
+  const [selectedBrowserProfileIds, setSelectedBrowserProfileIds] = useState<string[]>([]);
   const [deviceAccordionOpen, setDeviceAccordionOpen] = useState(true);
   const [currentSocialKey, setCurrentSocialKey] = useState<SocialKey>('tiktok');
   const fileRef = useRef<HTMLInputElement>(null);
@@ -120,6 +125,7 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
       name: '',
       holder_name: '',
       nickname: '',
+      group_name: '',
       profile_photo_url: null,
       bio: '',
       niche: 'moda_acessorios',
@@ -187,6 +193,16 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
           .catch((err) => {
             console.warn('[EditPlatformAccountDialog] Erro ao buscar dispositivos:', err);
           });
+
+        PlatformAccountsService.getAccountBrowserProfiles(organizationId, account.id)
+          .then((ids) => {
+            if (ids) {
+              setSelectedBrowserProfileIds(ids);
+            }
+          })
+          .catch((err) => {
+            console.warn('[EditPlatformAccountDialog] Erro ao buscar perfis AdsPower:', err);
+          });
       }
 
       reset({
@@ -196,6 +212,7 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
         name: account.name || '',
         holder_name: account.holder_name || '',
         nickname: account.nickname || '',
+        group_name: account.group_name || '',
         profile_photo_url: account.profile_photo_url || null,
         bio: account.bio || '',
         niche: account.niche || 'moda_acessorios',
@@ -258,6 +275,12 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
       }
       setSelectedDeviceIds((prev) => (prev.includes(deviceId) ? prev : [...prev, deviceId]));
     }
+  };
+
+  const handleToggleBrowserProfile = (profileId: string) => {
+    setSelectedBrowserProfileIds((prev) =>
+      prev.includes(profileId) ? prev.filter((id) => id !== profileId) : [...prev, profileId]
+    );
   };
 
   // Upload e compressão de foto de perfil
@@ -341,6 +364,8 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
         meta_account_type: finalMetaType,
         device_ids: selectedDeviceIds,
         device_id: selectedDeviceIds[0] || null,
+        group_name: data.group_name?.trim() || null,
+        browser_profile_ids: selectedBrowserProfileIds,
       });
       toast.success('Conta atualizada com sucesso!');
       onOpenChange(false);
@@ -549,6 +574,23 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
                   className="pl-7 bg-zinc-900 border-zinc-800 text-xs h-10 text-white font-mono"
                 />
               </div>
+            </div>
+
+            {/* Grupo da Conta */}
+            <div className="space-y-1.5">
+              <Label htmlFor="group_name" className="text-xs font-semibold text-zinc-200 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Folder className="w-3.5 h-3.5 text-amber-400" />
+                  Grupo da Conta
+                </span>
+                <span className="text-[10px] text-zinc-500 font-normal">Opcional</span>
+              </Label>
+              <Input
+                id="group_name"
+                {...register('group_name')}
+                placeholder="Ex: Contas Matriz, Aquecimento TikTok..."
+                className="bg-zinc-900 border-zinc-800 text-xs h-10 text-white placeholder:text-zinc-600 focus:border-amber-500/60"
+              />
             </div>
 
             <div className="space-y-1.5">
@@ -847,6 +889,84 @@ export const EditPlatformAccountDialog: React.FC<EditPlatformAccountDialogProps>
                 </Select>
               )}
             />
+          </div>
+
+          {/* ── PERFIS DE NAVEGADOR (ADSPOWER) ── */}
+          <div className="rounded-xl border border-cyan-500/30 bg-gradient-to-b from-cyan-950/20 via-zinc-950/60 to-zinc-950 p-4 space-y-3.5 shadow-lg shadow-cyan-950/10">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-500/35 flex items-center justify-center text-cyan-400 shrink-0 shadow-[0_0_10px_rgba(6,182,212,0.2)]">
+                  <Compass className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-cyan-300 uppercase tracking-wide">
+                      Perfis AdsPower Vinculados
+                    </span>
+                    <Badge variant="outline" className="text-[10px] bg-cyan-500/10 text-cyan-300 border-cyan-500/30 font-medium">
+                      {selectedBrowserProfileIds.length} {selectedBrowserProfileIds.length === 1 ? 'perfil' : 'perfis'}
+                    </Badge>
+                  </div>
+                  <p className="text-[11px] text-cyan-400/80">
+                    1 conta pode estar associada a 1 ou mais perfis de navegadores do AdsPower
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {browserProfiles.length === 0 ? (
+              <div className="p-4 text-center rounded-lg border border-dashed border-zinc-800 bg-zinc-900/30 text-xs text-zinc-500">
+                Nenhum perfil AdsPower cadastrado na organização.
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                {browserProfiles.map((p) => {
+                  const isSelected = selectedBrowserProfileIds.includes(p.id);
+                  const isLinkedToOther = p.platform_account_id && p.platform_account_id !== account?.id;
+
+                  return (
+                    <label
+                      key={p.id}
+                      htmlFor={`browser-profile-checkbox-${p.id}`}
+                      className={`flex items-center justify-between p-2.5 rounded-lg border transition-all cursor-pointer select-none ${
+                        isSelected
+                          ? 'bg-cyan-500/15 border-cyan-500/50 text-white ring-1 ring-cyan-500/30'
+                          : 'bg-zinc-900/50 border-zinc-800/80 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id={`browser-profile-checkbox-${p.id}`}
+                          checked={isSelected}
+                          onCheckedChange={() => handleToggleBrowserProfile(p.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="border-zinc-700 data-[state=checked]:bg-cyan-500 data-[state=checked]:border-cyan-500"
+                        />
+                        <div>
+                          <p className="text-xs font-semibold text-white flex items-center gap-2">
+                            {p.name || 'Perfil AdsPower'}
+                            {p.external_profile_id && (
+                              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-cyan-300 border border-zinc-700">
+                                ID: {p.external_profile_id}
+                              </span>
+                            )}
+                          </p>
+                          {p.notes && (
+                            <p className="text-[11px] text-zinc-400 line-clamp-1 mt-0.5">{p.notes}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {isLinkedToOther && (
+                        <span className="text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-medium">
+                          Vinculado a outra conta
+                        </span>
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* ── ACORDEON EM VERMELHO: DISPOSITIVOS & REGRAS ANTI-BAN TIKTOK ── */}

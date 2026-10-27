@@ -63,6 +63,17 @@ export const ProxiesManager: React.FC<ProxiesManagerProps> = ({
     return map;
   }, [providers]);
 
+  const providerLogoMap = useMemo(() => {
+    const map = new Map<string, string | null>();
+    for (const p of providers) {
+      if (p.logo_url) {
+        map.set(p.id, p.logo_url);
+        map.set(p.name.toLowerCase(), p.logo_url);
+      }
+    }
+    return map;
+  }, [providers]);
+
   // Mapeia proxy_id → platform_account para exibir vinculação
   const proxyToAccount = useMemo(() => {
     const map = new Map<string, PlatformAccount>();
@@ -277,6 +288,7 @@ export const ProxiesManager: React.FC<ProxiesManagerProps> = ({
                       >
                         <ProviderLogo
                           name={group.name === 'Sem Provedor' ? '' : group.name}
+                          logoUrl={providerLogoMap.get(group.name.toLowerCase())}
                           className="w-4 h-4 rounded"
                           size="sm"
                         />
@@ -356,6 +368,7 @@ export const ProxiesManager: React.FC<ProxiesManagerProps> = ({
                         <div className="flex items-center gap-3">
                           <ProviderLogo
                             name={group.name === 'Sem Provedor' ? '' : group.name}
+                            logoUrl={providerLogoMap.get(group.name.toLowerCase())}
                             className="w-8 h-8 rounded-xl"
                             size="sm"
                           />
@@ -385,6 +398,11 @@ export const ProxiesManager: React.FC<ProxiesManagerProps> = ({
                               proxy.provider_id
                                 ? providerMap.get(proxy.provider_id) || proxy.provider
                                 : proxy.provider
+                            }
+                            providerLogoUrl={
+                              proxy.provider_id
+                                ? providerLogoMap.get(proxy.provider_id)
+                                : (proxy.provider ? providerLogoMap.get(proxy.provider.toLowerCase()) : null)
                             }
                             linkedAccount={proxyToAccount.get(proxy.id) ?? null}
                             onEdit={() => {

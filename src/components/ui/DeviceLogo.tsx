@@ -22,6 +22,7 @@ export function getDeviceLogoUrl(platform?: string | null, label?: string | null
   if (target.includes('ldcloud')) return '/devices/ldcloud.png';
   if (target.includes('redfinger')) return '/devices/redfinger.png';
   if (target.includes('vmscloud') || target.includes('vmoscloud') || target.includes('vms')) return '/devices/vmoscloud.png';
+  if (target.includes('morelogin')) return '/devices/morelogin.png';
 
   return null;
 }

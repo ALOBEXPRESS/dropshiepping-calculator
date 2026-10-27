@@ -19,6 +19,7 @@ import {
   Mail,
   X,
   Coins,
+  Folder,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -319,6 +320,7 @@ export const PlatformAccountFormFields: React.FC<PlatformAccountFormFieldsProps>
       platform,
       country: 'BR',
       signup_method: 'google',
+      group_name: '',
       google_ads_currency: 'BRL',
       email: '',
       google_account_age_years: undefined,
@@ -729,6 +731,23 @@ export const PlatformAccountFormFields: React.FC<PlatformAccountFormFieldsProps>
               className="pl-7 bg-zinc-950 border-zinc-800 text-xs h-10 text-white placeholder:text-zinc-600 focus-visible:ring-brand font-mono"
             />
           </div>
+        </div>
+
+        {/* Grupo da Conta */}
+        <div className="space-y-1.5">
+          <Label htmlFor="create_account_group" className="text-xs font-semibold text-zinc-200 flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <Folder className="w-3.5 h-3.5 text-amber-400" />
+              Grupo da Conta
+            </span>
+            <span className="text-[10px] text-zinc-500 font-normal">Opcional</span>
+          </Label>
+          <Input
+            id="create_account_group"
+            {...register('group_name')}
+            placeholder="Ex: Contas Matriz, Aquecimento TikTok..."
+            className="bg-zinc-950 border-zinc-800 text-xs h-10 text-white placeholder:text-zinc-600 focus-visible:ring-brand"
+          />
         </div>
 
         {/* Telefone */}

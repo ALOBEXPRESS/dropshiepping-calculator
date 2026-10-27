@@ -66,6 +66,8 @@ export interface PlatformAccount {
   proxy_id?: string | null;
   device_id?: string | null;
   device_ids?: string[];
+  browser_profile_ids?: string[];
+  group_name?: string | null;
   meta_account_type?: MetaAccountType | null;
   created_by: string | null;
   created_at: string;
@@ -92,6 +94,10 @@ export const platformAccountSchema = z.object({
   email: z.string().email('Informe um e-mail válido').optional().or(z.literal('')),
   // Proxy vinculado
   proxy_id: z.string().uuid().nullable().optional().or(z.literal('')),
+  // Grupo da conta
+  group_name: z.string().trim().max(100).optional().nullable().or(z.literal('')),
+  // Perfis de Navegador vinculados (AdsPower)
+  browser_profile_ids: z.array(z.string().uuid()).optional(),
   // Dispositivos vinculados (N:N)
   device_id: z.string().uuid().nullable().optional().or(z.literal('')),
   device_ids: z.array(z.string().uuid()).optional(),

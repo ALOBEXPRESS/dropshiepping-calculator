@@ -63,6 +63,29 @@ export class PlatformAccountsService {
   }
 
   /**
+   * Obtém a lista de IDs de perfis de navegador (AdsPower) vinculados a uma conta.
+   */
+  static async getAccountBrowserProfiles(
+    organizationId: string,
+    accountId: string
+  ): Promise<string[]> {
+    if (!organizationId || !accountId) return [];
+
+    const { data, error } = await supabase
+      .from('browser_profiles')
+      .select('id')
+      .eq('organization_id', organizationId)
+      .eq('platform_account_id', accountId);
+
+    if (error) {
+      console.error('Erro ao buscar perfis de navegador da conta:', error);
+      return [];
+    }
+
+    return (data ?? []).map((r) => r.id);
+  }
+
+  /**
    * Obtém uma conta de plataforma por ID.
    */
   static async getById(
@@ -124,6 +147,7 @@ export class PlatformAccountsService {
       platform_metadata: platform_metadata ?? null,
       proxy_id: formData.proxy_id || null,
       device_id: initialDevices[0] || formData.device_id || null,
+      group_name: formData.group_name?.trim() || null,
       meta_account_type: formData.platform === 'meta' ? (formData.meta_account_type || null) : null,
       created_by: userId || null,
     };
@@ -146,9 +170,18 @@ export class PlatformAccountsService {
       await supabase.from('platform_account_devices').insert(rows);
     }
 
+    if (formData.browser_profile_ids && formData.browser_profile_ids.length > 0) {
+      await supabase
+        .from('browser_profiles')
+        .update({ platform_account_id: created.id })
+        .eq('organization_id', organizationId)
+        .in('id', formData.browser_profile_ids);
+    }
+
     return {
       ...created,
       device_ids: initialDevices,
+      browser_profile_ids: formData.browser_profile_ids ?? [],
       email: created.platform_metadata?.email ?? null,
     };
   }
@@ -178,6 +211,7 @@ export class PlatformAccountsService {
     if (formData.phone !== undefined) updatePayload.phone = formData.phone?.trim() || null;
     if (formData.birth_date !== undefined) updatePayload.birth_date = formData.birth_date || null;
     if (formData.proxy_id !== undefined) updatePayload.proxy_id = formData.proxy_id || null;
+    if (formData.group_name !== undefined) updatePayload.group_name = formData.group_name?.trim() || null;
     if (formData.device_id !== undefined) updatePayload.device_id = formData.device_id || null;
     if (formData.device_ids !== undefined) {
       updatePayload.device_id = formData.device_ids[0] || null;
@@ -235,6 +269,22 @@ export class PlatformAccountsService {
           device_id: devId,
         }));
         await supabase.from('platform_account_devices').insert(rows);
+      }
+    }
+
+    if (formData.browser_profile_ids !== undefined) {
+      await supabase
+        .from('browser_profiles')
+        .update({ platform_account_id: null })
+        .eq('organization_id', organizationId)
+        .eq('platform_account_id', id);
+
+      if (formData.browser_profile_ids.length > 0) {
+        await supabase
+          .from('browser_profiles')
+          .update({ platform_account_id: id })
+          .eq('organization_id', organizationId)
+          .in('id', formData.browser_profile_ids);
       }
     }
 

@@ -14,6 +14,7 @@ import {
   ExternalLink,
   Sparkles,
   Coins,
+  Folder,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -207,6 +208,20 @@ export const PlatformAccountCard: React.FC<PlatformAccountCardProps> = React.mem
               {account.holder_name}
             </span>
           </div>
+
+          {account.group_name && (
+            <div className="flex items-center justify-between">
+              <span className="text-zinc-400 flex items-center gap-1">
+                <Folder className="w-3 h-3 text-amber-400" /> Grupo:
+              </span>
+              <span
+                className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20 truncate max-w-[170px]"
+                title={account.group_name}
+              >
+                {account.group_name}
+              </span>
+            </div>
+          )}
 
           <div className="flex items-center justify-between">
             <span className="text-zinc-400">Nicho:</span>

@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useProxies } from '@/hooks/useProxies';
+import { ProxiesService } from '@/services/proxiesService';
 import { useProxyProviders } from '@/hooks/useProxyProviders';
 import { useBusinessCenters } from '@/hooks/useBusinessCenters';
 import { ProxyProviderFormDialog } from '@/components/proxy-providers/ProxyProviderFormDialog';
@@ -100,7 +101,7 @@ const InnerProxyForm: React.FC<InnerProxyFormProps> = ({
           host: proxy.host,
           port: proxy.port,
           username: proxy.username ?? '',
-          password: '',
+          password: proxy.password ?? '',
           country: proxy.country ?? '',
           proxy_type: proxy.proxy_type,
           ip_version: proxy.ip_version || 'ipv4',
@@ -120,6 +121,24 @@ const InnerProxyForm: React.FC<InnerProxyFormProps> = ({
           provider: '',
         },
   });
+
+  useEffect(() => {
+    let isMounted = true;
+    if (proxy?.id && organizationId) {
+      ProxiesService.getById(organizationId, proxy.id)
+        .then((fullProxy) => {
+          if (isMounted && fullProxy?.password) {
+            setValue('password', fullProxy.password);
+          }
+        })
+        .catch((err) => {
+          console.warn('[ProxyFormDialog] Erro ao carregar senha do proxy:', err);
+        });
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [proxy?.id, organizationId, setValue]);
 
   const handleCreateProvider = async (providerData: ProxyProviderFormData) => {
     const created = await createProvider(providerData);
@@ -345,7 +364,7 @@ const InnerProxyForm: React.FC<InnerProxyFormProps> = ({
                 id="proxy-pass"
                 type={showPassword ? 'text' : 'password'}
                 {...register('password')}
-                placeholder="••••••••"
+                placeholder={showPassword ? 'Sem senha' : '••••••••'}
                 autoComplete="new-password"
                 className="bg-background border-input pr-9"
               />
@@ -417,7 +436,7 @@ const InnerProxyForm: React.FC<InnerProxyFormProps> = ({
                     {providers.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
                         <div className="flex items-center gap-2">
-                          <ProviderLogo name={p.name} className="w-4 h-4 rounded" size="sm" />
+                          <ProviderLogo name={p.name} logoUrl={p.logo_url} className="w-4 h-4 rounded" size="sm" />
                           <span className="font-medium">{p.name}</span>
                           {p.website && (
                             <span className="text-[10px] text-muted-foreground font-mono">

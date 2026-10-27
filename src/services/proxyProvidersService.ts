@@ -65,6 +65,7 @@ export class ProxyProvidersService {
       name: formData.name.trim(),
       website: formData.website?.trim() || null,
       notes: formData.notes?.trim() || null,
+      logo_url: formData.logo_url?.trim() || null,
       created_by: userId || null,
     };
 
@@ -99,6 +100,7 @@ export class ProxyProvidersService {
     if (formData.name !== undefined) payload.name = formData.name.trim();
     if (formData.website !== undefined) payload.website = formData.website?.trim() || null;
     if (formData.notes !== undefined) payload.notes = formData.notes?.trim() || null;
+    if (formData.logo_url !== undefined) payload.logo_url = formData.logo_url?.trim() || null;
 
     const { data, error } = await supabase
       .from('proxy_providers')

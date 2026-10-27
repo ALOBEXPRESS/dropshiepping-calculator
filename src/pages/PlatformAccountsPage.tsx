@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   Unlink,
   Loader2,
+  Folder,
 } from 'lucide-react';
 import ReactCountryFlag from 'react-country-flag';
 import { useQueryClient } from '@tanstack/react-query';
@@ -116,6 +117,7 @@ export const PlatformAccountsPage: React.FC = () => {
   const [countryFilter, setCountryFilter] = useState<string>('all');
   const [methodFilter, setMethodFilter] = useState<string>('all');
   const [nicheFilter, setNicheFilter] = useState<string>('all');
+  const [groupFilter, setGroupFilter] = useState<string>('all');
 
   // Modais
   const [editingAccount, setEditingAccount] = useState<PlatformAccount | null>(null);
@@ -187,6 +189,17 @@ export const PlatformAccountsPage: React.FC = () => {
     return { total, withEmail, countries, googleAccounts };
   }, [accounts]);
 
+  // Grupos disponíveis na organização
+  const availableGroups = useMemo(() => {
+    const set = new Set<string>();
+    for (const a of accounts) {
+      if (a.group_name && a.group_name.trim()) {
+        set.add(a.group_name.trim());
+      }
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [accounts]);
+
   // Lista filtrada
   const filteredAccounts = useMemo(() => {
     return accounts.filter((acc) => {
@@ -195,10 +208,43 @@ export const PlatformAccountsPage: React.FC = () => {
       if (countryFilter !== 'all' && acc.country !== countryFilter) return false;
       if (methodFilter !== 'all' && acc.signup_method !== methodFilter) return false;
       if (nicheFilter !== 'all' && acc.niche !== nicheFilter) return false;
+      if (groupFilter !== 'all') {
+        if (groupFilter === 'none') {
+          if (acc.group_name && acc.group_name.trim()) return false;
+        } else if (acc.group_name !== groupFilter) {
+          return false;
+        }
+      }
 
       return true;
     });
-  }, [accounts, debouncedSearchTerm, socialFilter, countryFilter, methodFilter, nicheFilter]);
+  }, [accounts, debouncedSearchTerm, socialFilter, countryFilter, methodFilter, nicheFilter, groupFilter]);
+
+  // Agrupa contas filtradas por grupo
+  const groupedAccounts = useMemo(() => {
+    const map = new Map<string, PlatformAccount[]>();
+    const ungrouped: PlatformAccount[] = [];
+
+    for (const acc of filteredAccounts) {
+      const gName = acc.group_name?.trim();
+      if (gName) {
+        if (!map.has(gName)) map.set(gName, []);
+        map.get(gName)!.push(acc);
+      } else {
+        ungrouped.push(acc);
+      }
+    }
+
+    const namedGroups = Array.from(map.entries())
+      .map(([name, items]) => ({ name, items }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    return {
+      namedGroups,
+      ungrouped,
+      hasGroups: namedGroups.length > 0,
+    };
+  }, [filteredAccounts]);
 
   // Busca contas de anúncios vinculadas ao selecionar alvo de exclusão
   useEffect(() => {
@@ -444,6 +490,29 @@ export const PlatformAccountsPage: React.FC = () => {
               ))}
             </SelectContent>
           </Select>
+
+          {availableGroups.length > 0 && (
+            <Select value={groupFilter} onValueChange={setGroupFilter}>
+              <SelectTrigger
+                aria-label="Filtrar por grupo"
+                className="bg-zinc-950 border-zinc-800 h-10 text-xs text-zinc-300 w-[160px]"
+              >
+                <div className="flex items-center gap-1.5 truncate">
+                  <Folder className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <SelectValue placeholder="Grupo" />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-900 border-zinc-800 text-white max-h-56">
+                <SelectItem value="all">Todos os Grupos</SelectItem>
+                {availableGroups.map((g) => (
+                  <SelectItem key={g} value={g}>
+                    {g}
+                  </SelectItem>
+                ))}
+                <SelectItem value="none">Contas sem grupo</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
         </div>
       </div>
 
@@ -484,6 +553,88 @@ export const PlatformAccountsPage: React.FC = () => {
             <Plus className="w-4 h-4 mr-1.5" />
             Cadastrar Conta
           </Button>
+        </div>
+      ) : groupedAccounts.hasGroups ? (
+        <div className="space-y-8">
+          {/* Grupos Nomeados */}
+          {groupedAccounts.namedGroups.map((group) => (
+            <div key={group.name} className="space-y-3.5">
+              <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                    <Folder className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-white tracking-tight">
+                        {group.name}
+                      </h3>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                        {group.items.length} {group.items.length === 1 ? 'conta' : 'contas'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400">
+                      Grupo de contas gerenciadas em conjunto
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {group.items.map((account) => (
+                  <PlatformAccountCard
+                    key={account.id}
+                    account={account}
+                    proxyLabel={account.proxy_id ? proxyMap.get(account.proxy_id) : null}
+                    browserProfiles={profilesByAccount.get(account.id) ?? []}
+                    nicheLabel={nicheLabels[account.niche] || account.niche}
+                    onEdit={handleEdit}
+                    onDelete={handleOpenDelete}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {/* Contas Não Agrupadas (se houver) */}
+          {groupedAccounts.ungrouped.length > 0 && (
+            <div className="space-y-3.5">
+              <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-zinc-300 tracking-tight">
+                        Contas Individuais (Sem Grupo)
+                      </h3>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
+                        {groupedAccounts.ungrouped.length} {groupedAccounts.ungrouped.length === 1 ? 'conta' : 'contas'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500">
+                      Contas não associadas a nenhum grupo específico
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {groupedAccounts.ungrouped.map((account) => (
+                  <PlatformAccountCard
+                    key={account.id}
+                    account={account}
+                    proxyLabel={account.proxy_id ? proxyMap.get(account.proxy_id) : null}
+                    browserProfiles={profilesByAccount.get(account.id) ?? []}
+                    nicheLabel={nicheLabels[account.niche] || account.niche}
+                    onEdit={handleEdit}
+                    onDelete={handleOpenDelete}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

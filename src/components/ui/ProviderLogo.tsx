@@ -3,6 +3,7 @@ import { Server } from 'lucide-react';
 
 interface ProviderLogoProps {
   name: string;
+  logoUrl?: string | null;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
 }
@@ -29,11 +30,12 @@ export function getProviderLogoUrl(name?: string | null): string | null {
 
 export const ProviderLogo: React.FC<ProviderLogoProps> = ({
   name,
+  logoUrl: propLogoUrl,
   className = 'w-10 h-10',
   size = 'md',
 }) => {
   const [hasError, setHasError] = useState(false);
-  const logoUrl = getProviderLogoUrl(name);
+  const logoUrl = propLogoUrl || getProviderLogoUrl(name);
 
   const iconSizes = {
     sm: 'w-3.5 h-3.5',

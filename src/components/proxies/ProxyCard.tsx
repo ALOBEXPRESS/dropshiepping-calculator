@@ -24,6 +24,7 @@ import {
 export interface ProxyCardProps {
   proxy: Proxy;
   providerName?: string | null;
+  providerLogoUrl?: string | null;
   linkedAccount?: PlatformAccount | null;
   onEdit: () => void;
   onDelete: () => void;
@@ -33,6 +34,7 @@ export interface ProxyCardProps {
 export const ProxyCard: React.FC<ProxyCardProps> = memo(({
   proxy,
   providerName,
+  providerLogoUrl,
   linkedAccount,
   onEdit,
   onDelete,
@@ -48,6 +50,7 @@ export const ProxyCard: React.FC<ProxyCardProps> = memo(({
         <div className="flex items-center gap-3 min-w-0">
           <ProviderLogo
             name={displayProvider || ''}
+            logoUrl={providerLogoUrl}
             className="w-10 h-10 rounded-xl"
             size="md"
           />
@@ -114,7 +117,7 @@ export const ProxyCard: React.FC<ProxyCardProps> = memo(({
         )}
         {displayProvider && (
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <ProviderLogo name={displayProvider} className="w-3.5 h-3.5 rounded" size="sm" />
+            <ProviderLogo name={displayProvider} logoUrl={providerLogoUrl} className="w-3.5 h-3.5 rounded" size="sm" />
             <span className="truncate">{displayProvider}</span>
           </div>
         )}
