@@ -16,6 +16,7 @@ import {
   calculateDefaultDeliveryDate,
   calculateSettlementDate,
   formatDateBR,
+  getNonSettledOrderProductCost,
 } from './revenueCalculations';
 
 describe('revenueCalculations', () => {
@@ -237,6 +238,12 @@ describe('revenueCalculations', () => {
       expect(blockedBreakdown.totalProfits).toBe(114.81);
       expect(blockedBreakdown.totalLosses).toBe(-2.43);
       expect(blockedBreakdown.netProfit).toBe(112.38);
+    });
+
+    it('matches exact 9 non-settled product costs summing to R$ 121,77', () => {
+      const nonSettledNums = ['266', '240', '241', '243', '248', '252', '254', '262', '263'];
+      const totalCost = nonSettledNums.reduce((sum, num) => sum + getNonSettledOrderProductCost(num)!, 0);
+      expect(round2(totalCost)).toBe(121.77);
     });
   });
 

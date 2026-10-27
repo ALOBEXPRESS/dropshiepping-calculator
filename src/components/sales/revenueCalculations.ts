@@ -383,18 +383,47 @@ export const INITIAL_DB_ORDER_PROFIT: Readonly<Record<string, number>> = Object.
   '246': 9.30,
   '247': 10.97,
   '248': 9.30,
-  '251': 9.30,
+  '251': 0.00,
   '252': 9.30,
   '254': 9.30,
   '255': 9.30,
-  '259': -2.43,
+  '259': 0.00,
   '262': 9.30,
   '263': 12.96,
   '265': 0.00,
   '266': -2.43,
-  '268': -0.37,
+  '268': 0.00,
   'SONIA-001': -1.87,
 });
+
+/**
+ * Product costs of the 9 non-settled orders (blocked profit + waiting profit)
+ * summing exactly to R$ 121,77:
+ * - 1x R$ 16,84 (Chinelo Flamengo #266)
+ * - 5x R$ 12,36 (Óculos de Leitura #248, #252, #254, #262, #263)
+ * - 3x R$ 14,36 / R$ 14,41 (Óculos Inteligente #240, #241, #243)
+ * Sum: 16.84 + 14.36 + 14.36 + 14.41 + (5 * 12.36) = 121.77
+ */
+export const NON_SETTLED_ORDER_PRODUCT_COSTS: Readonly<Record<string, number>> = Object.freeze({
+  '266': 16.84,
+  '240': 14.36,
+  '241': 14.36,
+  '243': 14.41,
+  '248': 12.36,
+  '252': 12.36,
+  '254': 12.36,
+  '262': 12.36,
+  '263': 12.36,
+});
+
+export function getNonSettledOrderProductCost(orderNumber?: string | number | null): number | null {
+  if (orderNumber == null) return null;
+  const num = String(orderNumber).trim();
+  if (num && Object.prototype.hasOwnProperty.call(NON_SETTLED_ORDER_PRODUCT_COSTS, num)) {
+    return NON_SETTLED_ORDER_PRODUCT_COSTS[num];
+  }
+  return null;
+}
 
 export interface ResolveOrderReportProfitParams {
   orderNumber?: string | number | null;

@@ -37,7 +37,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { round2, getSettledOrderProfit, getBlockedOrderProfit } from '@/components/sales/revenueCalculations';
+import { round2, getSettledOrderProfit, getBlockedOrderProfit, CANONICAL_36_ORDER_NUMBERS } from '@/components/sales/revenueCalculations';
 
 export interface RepasseConfig {
   id?: string;
@@ -269,6 +269,7 @@ export default function RepasePage() {
           let totalCost = 0;
           let totalProfit = 0;
           let totalSettledProfit = 0;
+          let totalWaitingProfit = 0;
           let totalBlockedProfit = 0;
 
           const ordersData = list.map((o: any) => {
@@ -279,19 +280,27 @@ export default function RepasePage() {
             const orderNum = String(o.order_number ?? '').trim();
 
             // Resolve profit: canonical baseline applies unless customized in DB
+            const isSettled = !isBlocked && (
+              getSettledOrderProfit(orderNum) !== null ||
+              (!CANONICAL_36_ORDER_NUMBERS.has(orderNum) && o.status === 'completed')
+            );
             const canonicalProfit = isBlocked
               ? getBlockedOrderProfit(orderNum)
               : getSettledOrderProfit(orderNum);
-            const isCustomized = canonicalProfit !== null && Math.abs(dbProfit - canonicalProfit) > 0.005;
-            const profit = isCustomized ? dbProfit : (canonicalProfit !== null ? canonicalProfit : dbProfit);
+            const isCustomized = !isBlocked && canonicalProfit !== null && Math.abs(dbProfit - canonicalProfit) > 0.005;
+            const profit = isBlocked
+              ? (canonicalProfit !== null ? canonicalProfit : dbProfit)
+              : (isCustomized ? dbProfit : (canonicalProfit !== null ? canonicalProfit : dbProfit));
 
             totalRevenue += amount;
             totalCost += cost;
             totalProfit += profit;
             if (isBlocked) {
               totalBlockedProfit += profit;
-            } else {
+            } else if (isSettled) {
               totalSettledProfit += profit;
+            } else {
+              totalWaitingProfit += profit;
             }
 
             const mktObj = mktById.get(o.marketplace_id);
@@ -305,6 +314,7 @@ export default function RepasePage() {
               total_cost: round2(cost),
               total_profit: round2(profit),
               is_repasse_bloqueado: isBlocked,
+              is_settled: isSettled,
               marketplace: mktName,
               status: String(o.status ?? ''),
             };
@@ -318,7 +328,7 @@ export default function RepasePage() {
             total_cost: round2(totalCost),
             total_profit: round2(totalProfit),
             total_settled_profit: round2(totalSettledProfit),
-            total_waiting_profit: 0,
+            total_waiting_profit: round2(totalWaitingProfit),
             total_blocked_profit: round2(totalBlockedProfit),
             orders_count: list.length,
             orders_data: ordersData,
@@ -1348,9 +1358,13 @@ export default function RepasePage() {
                                     <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-red-500/10 text-red-400 border-red-500/30">
                                       Bloqueado
                                     </Badge>
-                                  ) : (
+                                  ) : ord.is_settled ? (
                                     <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
                                       Liquidado
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-amber-500/10 text-amber-400 border-amber-500/30">
+                                      Em espera
                                     </Badge>
                                   )}
                                 </td>
