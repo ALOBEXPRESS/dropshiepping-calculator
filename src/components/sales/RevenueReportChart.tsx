@@ -3482,10 +3482,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
     return round2(visibleData.reduce((sum, item) => sum + Number((item as { total_marketplace_fees?: number }).total_marketplace_fees ?? 0), 0));
   }, [visibleData]);
 
-  // Lucro bruto: diferença das Taxas MK - Lucro Total (como negativo)
+  // Lucro bruto: diferença de Lucro Total com o Investimento Bruto
   const allDataGrossProfit = useMemo(() => {
-    return round2(-Math.abs(allDataMarketplaceFees - availableSettledProfit));
-  }, [allDataMarketplaceFees, availableSettledProfit]);
+    return round2(allDataTotalProfit - effectiveGrossInvestment);
+  }, [allDataTotalProfit, effectiveGrossInvestment]);
 
   const marketingCostSeriesData = visibleData.map((periodData) => {
     const periodMarketingCost = (periodData.orders_data ?? []).reduce((sum: number, order: unknown) => {
@@ -6861,7 +6861,7 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
               <p className="text-xs text-gray-500 dark:text-gray-400">Lucro Bruto</p>
               <p 
                 className={`text-xl font-bold ${allDataGrossProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                title={`Taxas MK (${formatCurrency(allDataMarketplaceFees)}) - Lucro Total (${formatCurrency(availableSettledProfit)}): ${formatCurrency(allDataGrossProfit)}`}
+                title={`Lucro Total (${formatCurrency(allDataTotalProfit)}) - Investimento Bruto (${formatCurrency(effectiveGrossInvestment)}): ${formatCurrency(allDataGrossProfit)}`}
               >
                 {formatCurrency(allDataGrossProfit)}
               </p>
