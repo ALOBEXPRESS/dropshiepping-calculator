@@ -218,6 +218,8 @@ export const SETTLED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = 
   '233': 10.23,
 
   // TikTok Shop — Pedidos Liquidados (28 orders: 20 profit, 7 loss, 1 zero refund)
+  // #240, #243, #255 movidos para BLOCKED (is_repasse_bloqueado=true no DB)
+  // #246 movido de BLOCKED para SETTLED (is_repasse_bloqueado=false no DB)
   '223': -51.76,
   '210': -40.20,
   '224': -20.17,
@@ -230,14 +232,12 @@ export const SETTLED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = 
   '235': 28.13,
   '237': 15.16,
   '238': 15.16,
-  '240': 15.16,
-  '243': 14.06,
   '231': 10.96,
   '232': 10.96,
   '234': 10.96,
+  '246': 9.30,
   '15': 10.76,
   '239': 9.30,
-  '255': 9.30,
   '187': 8.03,
   '214': 5.74,
   '17': 5.04,
@@ -253,36 +253,44 @@ export const SETTLED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = 
  * TikTok Shop — Pedidos com Repasse Retido / Lucro Bloqueado (11 orders):
  * Devido a restrições na conta TikTok, esses pedidos tiveram repasse bloqueado.
  * 
- * - 9 entradas positivas:   +R$ 98,55
- * - 2 entradas negativas:   -R$ 2,80
- * - Saldo do lote:          +R$ 95,75
+ * Pedidos bloqueados (is_repasse_bloqueado=true no DB):
+ * - #240, #241, #243, #247, #248, #252, #254, #255, #262, #263: positivos
+ * - #266: negativo
+ * 
+ * Removidos: #246 (desbloqueado), #251 (reembolso fornecedor), #268 (is_manually_settled)
+ * 
+ * - 10 entradas positivas: +R$ 127,77
+ * - 1 entrada negativa:    -R$ 2,43
+ * - Saldo do lote:         +R$ 125,34
  */
 export const BLOCKED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = Object.freeze({
+  '240': 15.16,
   '241': 15.16,
-  '246': 9.30,
+  '243': 14.06,
   '247': 10.97,
   '248': 9.30,
-  '251': 9.30,
   '252': 9.30,
   '254': 9.30,
+  '255': 9.30,
   '262': 12.96,
   '263': 12.96,
-  '268': -0.37,
   '266': -2.43,
 });
 
 /**
- * The 36 reconciled historical orders (11 blocked + 22 historical + 3 initial October orders).
+ * The 39 reconciled historical orders (11 blocked + 22 historical + 6 October orders).
+ * Bloqueados: #240, #241, #243, #247, #248, #252, #254, #255, #262, #263, #266
+ * #246 movido para settled; #251, #268 saíram de blocked (reembolso/manually_settled)
  * Used when calculating canonical baseline costs of the audited order pool.
  */
 export const CANONICAL_36_ORDER_NUMBERS: ReadonlySet<string> = new Set([
-  // Bloqueados (11)
-  '241', '246', '247', '248', '251', '252', '254', '262', '263', '266', '268',
+  // Bloqueados (11 — is_repasse_bloqueado=true no DB)
+  '240', '241', '243', '247', '248', '252', '254', '255', '262', '263', '266',
   // Históricos Mar-Set (22)
   '4', 'SONIA-001', '180', '187', '10', '204', '208', '210', '13', '14', '15',
   '214', '17', '218', '219', '221', '222', '223', '224', '225', '226', '229',
-  // Iniciais Outubro (3)
-  '231', '232', '234'
+  // Outubro liquidados/settled (6)
+  '231', '232', '234', '235', '237', '238', '239', '246', '251', '265', '268',
 ]);
 
 export function isBlockedOrder(orderNumber?: string | number | null): boolean {
