@@ -3344,7 +3344,10 @@ export const RevenueReportChart: React.FC<RevenueReportChartProps> = ({ organiza
           hasSessionEdit: hasManualModalEdit,
         });
 
-        const isOrderFullySettled = !isAnyRepasseBlocked && (settled || Object.prototype.hasOwnProperty.call(SETTLED_ORDER_PROFIT_OVERRIDES, num));
+        const isOrderFullySettled = !isAnyRepasseBlocked && (
+          Object.prototype.hasOwnProperty.call(SETTLED_ORDER_PROFIT_OVERRIDES, num) ||
+          (!isIncludedIn36 && settled)
+        );
         if (isAnyRepasseBlocked) {
           totalBlockedProfit += resolvedProfit;
         } else if (isOrderFullySettled) {

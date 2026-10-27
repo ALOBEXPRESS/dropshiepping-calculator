@@ -198,15 +198,16 @@ export function matchesOrderFilters(
  * Subtotal TikTok Profits: +R$ 109,39
  * Subtotal TikTok Net: -R$ 40,11
  * 
- * Settled orders (33 orders):
- * - 23 orders with profit:  +R$ 277,61
- * - 10 orders with loss:    -R$ 158,06
- * - Final Result (Net):     +R$ 119,55
+ * Settled orders (32 orders):
+ * - 21 orders with profit:  +R$ 248,23
+ * - 10 orders with loss:    -R$ 154,61
+ * - 1 order with zero refund: R$ 0,00
+ * - Final Result (Net):     +R$ 93,62
  * 
  * Blocked orders / Repasse Retido (11 orders):
- * - 9 orders with profit:   +R$ 98,43
- * - 2 orders with loss:     -R$ 2,86
- * - Final Blocked Result:   +R$ 95,57
+ * - 10 orders with profit:  +R$ 118,47
+ * - 1 order with loss:      -R$ 2,43
+ * - Final Blocked Result:   +R$ 116,04
  */
 export const SETTLED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = Object.freeze({
   // Shopee (6 orders: 180, 13, 225, 226, 233 + SONIA-001)
@@ -289,8 +290,8 @@ export const CANONICAL_36_ORDER_NUMBERS: ReadonlySet<string> = new Set([
   // Históricos Mar-Set (22)
   '4', 'SONIA-001', '180', '187', '10', '204', '208', '210', '13', '14', '15',
   '214', '17', '218', '219', '221', '222', '223', '224', '225', '226', '229',
-  // Outubro liquidados/settled (6)
-  '231', '232', '234', '235', '237', '238', '239', '246', '251', '265', '268',
+  // Outubro liquidados/settled/auditados (7)
+  '231', '232', '234', '235', '237', '238', '239', '246', '251', '259', '265', '268',
 ]);
 
 export function isBlockedOrder(orderNumber?: string | number | null): boolean {
@@ -386,6 +387,7 @@ export const INITIAL_DB_ORDER_PROFIT: Readonly<Record<string, number>> = Object.
   '252': 9.30,
   '254': 9.30,
   '255': 9.30,
+  '259': -2.43,
   '262': 12.96,
   '263': 12.96,
   '265': 0.00,

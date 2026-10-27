@@ -201,42 +201,42 @@ describe('revenueCalculations', () => {
       expect(breakdown.netProfit).toBe(25.11);
     });
 
-    it('matches exact 34 settled orders (+R$ 122,84 net) across store', () => {
+    it('matches exact 32 settled orders (+R$ 93,62 net) across store', () => {
       const settledNums = [
         // Shopee (6 orders)
         'SONIA-001', '225', '226', '180', '13', '233',
-        // TikTok Settled (28 orders)
+        // TikTok Settled (26 orders)
         '223', '210', '224', '218', '204', '4', '221',
-        '208', '235', '237', '238', '240', '243',
-        '231', '232', '234', '15', '239', '255',
+        '208', '235', '237', '238',
+        '231', '232', '234', '246', '15', '239',
         '187', '214', '17', '222', '219', '14',
         '10', '229', '265'
       ];
       const settledOrders = settledNums.map(num => ({ profit: getSettledOrderProfit(num)! }));
       const settledBreakdown = calculatePlatformBreakdown(settledOrders);
 
-      expect(settledBreakdown.ordersCount).toBe(34);
-      expect(settledBreakdown.profitOrdersCount).toBe(23);
+      expect(settledBreakdown.ordersCount).toBe(32);
+      expect(settledBreakdown.profitOrdersCount).toBe(21);
       expect(settledBreakdown.lossOrdersCount).toBe(10);
-      expect(settledBreakdown.totalProfits).toBe(277.45);
+      expect(settledBreakdown.totalProfits).toBe(248.23);
       expect(settledBreakdown.totalLosses).toBe(-154.61);
-      expect(settledBreakdown.netProfit).toBe(122.84);
+      expect(settledBreakdown.netProfit).toBe(93.62);
     });
 
-    it('matches exact 11 blocked orders (+R$ 95,75 net) with repasse retido', () => {
+    it('matches exact 11 blocked orders (+R$ 116,04 net) with repasse retido', () => {
       const blockedNums = [
-        '241', '246', '247', '248', '251', '252', '254', '262', '263',
-        '268', '266'
+        '240', '241', '243', '247', '248', '252', '254', '255', '262', '263',
+        '266'
       ];
       const blockedOrders = blockedNums.map(num => ({ profit: getBlockedOrderProfit(num)! }));
       const blockedBreakdown = calculatePlatformBreakdown(blockedOrders);
 
       expect(blockedBreakdown.ordersCount).toBe(11);
-      expect(blockedBreakdown.profitOrdersCount).toBe(9);
-      expect(blockedBreakdown.lossOrdersCount).toBe(2);
-      expect(blockedBreakdown.totalProfits).toBe(98.55);
-      expect(blockedBreakdown.totalLosses).toBe(-2.80);
-      expect(blockedBreakdown.netProfit).toBe(95.75);
+      expect(blockedBreakdown.profitOrdersCount).toBe(10);
+      expect(blockedBreakdown.lossOrdersCount).toBe(1);
+      expect(blockedBreakdown.totalProfits).toBe(118.47);
+      expect(blockedBreakdown.totalLosses).toBe(-2.43);
+      expect(blockedBreakdown.netProfit).toBe(116.04);
     });
   });
 
