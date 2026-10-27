@@ -205,9 +205,9 @@ export function matchesOrderFilters(
  * - Final Result (Net):     +R$ 93,62
  * 
  * Blocked orders / Repasse Retido (11 orders):
- * - 10 orders with profit:  +R$ 118,47
+ * - 10 orders with profit:  +R$ 114,81
  * - 1 order with loss:      -R$ 2,43
- * - Final Blocked Result:   +R$ 116,04
+ * - Final Blocked Result:   +R$ 112,38
  */
 export const SETTLED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = Object.freeze({
   // Shopee (6 orders: 180, 13, 225, 226, 233 + SONIA-001)
@@ -260,9 +260,9 @@ export const SETTLED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = 
  * 
  * Removidos: #246 (desbloqueado), #251 (reembolso fornecedor), #268 (is_manually_settled)
  * 
- * - 10 entradas positivas: +R$ 127,77
+ * - 10 entradas positivas: +R$ 114,81
  * - 1 entrada negativa:    -R$ 2,43
- * - Saldo do lote:         +R$ 125,34
+ * - Saldo do lote:         +R$ 112,38
  */
 export const BLOCKED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = Object.freeze({
   '240': 15.16,
@@ -273,7 +273,7 @@ export const BLOCKED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = 
   '252': 9.30,
   '254': 9.30,
   '255': 9.30,
-  '262': 12.96,
+  '262': 9.30,
   '263': 12.96,
   '266': -2.43,
 });
@@ -388,7 +388,7 @@ export const INITIAL_DB_ORDER_PROFIT: Readonly<Record<string, number>> = Object.
   '254': 9.30,
   '255': 9.30,
   '259': -2.43,
-  '262': 12.96,
+  '262': 9.30,
   '263': 12.96,
   '265': 0.00,
   '266': -2.43,

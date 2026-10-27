@@ -223,7 +223,7 @@ describe('revenueCalculations', () => {
       expect(settledBreakdown.netProfit).toBe(93.62);
     });
 
-    it('matches exact 11 blocked orders (+R$ 116,04 net) with repasse retido', () => {
+    it('matches exact 11 blocked orders (+R$ 112,38 net) with repasse retido', () => {
       const blockedNums = [
         '240', '241', '243', '247', '248', '252', '254', '255', '262', '263',
         '266'
@@ -234,9 +234,9 @@ describe('revenueCalculations', () => {
       expect(blockedBreakdown.ordersCount).toBe(11);
       expect(blockedBreakdown.profitOrdersCount).toBe(10);
       expect(blockedBreakdown.lossOrdersCount).toBe(1);
-      expect(blockedBreakdown.totalProfits).toBe(118.47);
+      expect(blockedBreakdown.totalProfits).toBe(114.81);
       expect(blockedBreakdown.totalLosses).toBe(-2.43);
-      expect(blockedBreakdown.netProfit).toBe(116.04);
+      expect(blockedBreakdown.netProfit).toBe(112.38);
     });
   });
 
