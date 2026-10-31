@@ -680,12 +680,12 @@ export const PlatformAccountsPage: React.FC = () => {
                     Cadastrar Perfil {createPlatformKey === 'tiktok'
                       ? 'TikTok'
                       : createPlatformKey === 'instagram'
-                      ? 'Instagram'
-                      : createPlatformKey === 'facebook'
-                      ? 'Facebook'
-                      : createPlatformKey === 'threads'
-                      ? 'Threads'
-                      : 'Google Ads'}
+                        ? 'Instagram'
+                        : createPlatformKey === 'facebook'
+                          ? 'Facebook'
+                          : createPlatformKey === 'threads'
+                            ? 'Threads'
+                            : 'Google Ads'}
                   </DialogTitle>
                   <DialogDescription className="text-xs text-zinc-400">
                     Crie a conta de plataforma para associação às suas operações de tráfego.
@@ -710,11 +710,10 @@ export const PlatformAccountsPage: React.FC = () => {
                     key={item.key}
                     type="button"
                     onClick={() => setCreatePlatformKey(item.key)}
-                    className={`flex items-center justify-center gap-1.5 p-2 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
-                      isSelected
+                    className={`flex items-center justify-center gap-1.5 p-2 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${isSelected
                         ? `${item.activeClass} shadow-xs ring-1 ring-white/10`
                         : 'border-zinc-800 bg-zinc-950/60 text-zinc-400 hover:text-white hover:bg-zinc-900 hover:border-zinc-700'
-                    }`}
+                      }`}
                   >
                     <ItemLogo className="w-3.5 h-3.5 shrink-0" />
                     <span className="hidden sm:inline">{item.name}</span>
@@ -731,17 +730,17 @@ export const PlatformAccountsPage: React.FC = () => {
                 createPlatformKey === 'tiktok'
                   ? 'tiktok'
                   : createPlatformKey === 'google'
-                  ? 'google'
-                  : 'meta'
+                    ? 'google'
+                    : 'meta'
               }
               metaAccountType={
                 createPlatformKey === 'instagram'
                   ? 'instagram'
                   : createPlatformKey === 'facebook'
-                  ? 'facebook'
-                  : createPlatformKey === 'threads'
-                  ? 'threads'
-                  : null
+                    ? 'facebook'
+                    : createPlatformKey === 'threads'
+                      ? 'threads'
+                      : null
               }
               selectedAccount={null}
               defaultMode="create"

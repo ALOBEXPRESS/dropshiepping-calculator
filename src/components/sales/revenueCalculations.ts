@@ -247,7 +247,10 @@ export const SETTLED_ORDER_PROFIT_OVERRIDES: Readonly<Record<string, number>> = 
   '14': 4.31,
   '10': 3.99,
   '229': 2.69,
+  '251': 0.00,
+  '259': -2.43,
   '265': 0.00,
+  '268': -0.37,
 });
 
 /**
@@ -387,12 +390,12 @@ export const INITIAL_DB_ORDER_PROFIT: Readonly<Record<string, number>> = Object.
   '252': 9.30,
   '254': 9.30,
   '255': 9.30,
-  '259': 0.00,
+  '259': -2.43,
   '262': 9.30,
   '263': 12.96,
   '265': 0.00,
   '266': -2.43,
-  '268': 0.00,
+  '268': -0.37,
   'SONIA-001': -1.87,
 });
 

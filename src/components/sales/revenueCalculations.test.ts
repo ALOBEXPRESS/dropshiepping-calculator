@@ -184,6 +184,9 @@ describe('revenueCalculations', () => {
       expect(getSettledOrderProfit('223')).toBe(-51.76);
       expect(getSettledOrderProfit('210')).toBe(-40.20);
       expect(getSettledOrderProfit('214')).toBe(5.74);
+      expect(getSettledOrderProfit('259')).toBe(-2.43);
+      expect(getSettledOrderProfit('268')).toBe(-0.37);
+      expect(getSettledOrderProfit('251')).toBe(0.00);
       expect(getSettledOrderProfit('SONIA-001')).toBe(-1.87);
       expect(getSettledOrderProfit('180')).toBe(9.76);
       expect(getSettledOrderProfit('999999')).toBe(null);
@@ -202,26 +205,26 @@ describe('revenueCalculations', () => {
       expect(breakdown.netProfit).toBe(25.11);
     });
 
-    it('matches exact 32 settled orders (+R$ 93,62 net) across store', () => {
+    it('matches exact 35 settled orders (+R$ 90,82 net with Helena Gomes baseline, +R$ 47,72 with DB) across store', () => {
       const settledNums = [
         // Shopee (6 orders)
         'SONIA-001', '225', '226', '180', '13', '233',
-        // TikTok Settled (26 orders)
+        // TikTok Settled (29 orders)
         '223', '210', '224', '218', '204', '4', '221',
         '208', '235', '237', '238',
         '231', '232', '234', '246', '15', '239',
         '187', '214', '17', '222', '219', '14',
-        '10', '229', '265'
+        '10', '229', '251', '259', '265', '268'
       ];
       const settledOrders = settledNums.map(num => ({ profit: getSettledOrderProfit(num)! }));
       const settledBreakdown = calculatePlatformBreakdown(settledOrders);
 
-      expect(settledBreakdown.ordersCount).toBe(32);
+      expect(settledBreakdown.ordersCount).toBe(35);
       expect(settledBreakdown.profitOrdersCount).toBe(21);
-      expect(settledBreakdown.lossOrdersCount).toBe(10);
+      expect(settledBreakdown.lossOrdersCount).toBe(12);
       expect(settledBreakdown.totalProfits).toBe(248.23);
-      expect(settledBreakdown.totalLosses).toBe(-154.61);
-      expect(settledBreakdown.netProfit).toBe(93.62);
+      expect(settledBreakdown.totalLosses).toBe(-157.41);
+      expect(settledBreakdown.netProfit).toBe(90.82);
     });
 
     it('matches exact 11 blocked orders (+R$ 112,38 net) with repasse retido', () => {
